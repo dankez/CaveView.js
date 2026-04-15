@@ -1,53 +1,30 @@
 {
-  "name": "caveview",
-  "version": "2.9.0",
-  "description": "3D Cave Survey Viewer",
+  "name": "caveview-react",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "dev": "concurrently --names \"ROLLUP,HTTP\" -c \"bgBlue.bold,bgGreen.bold\" \"rollup -c -w \" \"serve -L -l 8080 build \"",
-    "build": "rollup -c",
-    "graph": "rollup -c rollup.graph.mjs | dot -Tpdf > graph.pdf",
-    "build-babel": "rollup -c rollup-babel.config.mjs",
-    "lint": "eslint src",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/aardgoose/CaveView.js.git"
+  "dependencies": {
+    "@react-three/drei": "^9.105.6",
+    "@react-three/fiber": "^8.16.2",
+    "lucide-react": "^0.378.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "three": "^0.164.0",
+    "proj4": "^2.11.0"
   },
-  "keywords": [
-    "cave",
-    "survey",
-    "3d",
-    "compass",
-    "webgl",
-    "browser",
-    "survex",
-    "therion"
-  ],
-  "author": "aardgoose",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/aardgoose/CaveView.js/issues"
-  },
-  "homepage": "https://github.com/aardgoose/CaveView.js#readme",
   "devDependencies": {
-    "@babel/plugin-transform-runtime": "^7.29.0",
-    "@babel/preset-env": "^7.29.0",
-    "@rollup/plugin-babel": "^7.0.0",
-    "@rollup/plugin-commonjs": "^29.0.0",
-    "@rollup/plugin-json": "^6.1.0",
-    "@rollup/plugin-node-resolve": "^16.0.0",
-    "@rollup/plugin-terser": "^1.0.0",
-    "@rollup/pluginutils": "^5.3.0",
-    "concurrently": "^9.0.0",
-    "eslint": "^10.0.0",
-    "postcss": "^8.4.00",
-    "proj4": "^2.20.0",
-    "rollup": "^4.9.0",
-    "rollup-plugin-graph": "^2.0.0",
-    "serve": "^14.2.0",
-    "terser": "^5.37.0",
-    "three": "^0.183.0",
-    "x18n": "^2.0.3"
+    "@types/proj4": "^2.7.3",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@types/three": "^0.163.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "typescript": "^5.2.2",
+    "vite": "^5.2.0"
   }
 }
