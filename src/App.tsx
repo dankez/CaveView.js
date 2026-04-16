@@ -1,0 +1,876 @@
+import React, { useState, useRef, useCallback, useEffect, Suspense } from 'react'
+import { parseLox, parseSvx, parsePlt } from './parsers/caveParser'
+import type { ParsedCave, CaveSurface } from './parsers/caveParser'
+import CaveViewer3D from './components/CaveViewer3D'
+import type { ViewerOptions } from './components/CaveViewer3D'
+
+type AppState = 'welcome' | 'loading' | 'viewer' | 'error'
+
+interface LoadedFile {
+  name: string
+  size: number
+  ext: string
+}
+
+const SUPPORTED = [
+  { ext: '.lox', label: 'Therion LOX', icon: '🗺️' },
+  { ext: '.3d',  label: 'Survex 3D',   icon: '📐' },
+  { ext: '.plt', label: 'Compass PLT', icon: '🧭' },
+]
+
+// ─── GPS & DTM utilities ─────────────────────────────────────────────────────────────
+
+/** Pokus o konverziu UTM (metricke súradnice) → WGS84 lat/lon.
+ *  Funguje pre UTM Severnej pologule zóna 1–60. Vráti null ak nie sú UTM súradnice. */
+function tryUtmToWgs84(easting: number, northing: number): { lat: number; lon: number; zone: number } | null {
+  // Kontrola UTM rozsahu
+  if (easting < 100000 || easting > 900000) return null
+  if (northing < 0 || northing > 10000000) return null
+
+  // Odhadni UTM zónu ze stredového meridiánu
+  // Pre Sl'ovakia: UTM 33N (lon 12–18°) alebo 34N (lon 18–24°)
+  // Heuristika: ak northing ~5000000-5600000 a easting ~200000-700000 → pravdepodobne UTM
+  const a  = 6378137.0
+  const f  = 1 / 298.257223563
+  const b  = a * (1 - f)
+  const e2 = 1 - (b / a) ** 2
+  const k0 = 0.9996
+  const e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2))
+
+  // Skuš zóny okolo predpokladaného rozsahu
+  for (const zone of [33, 34, 32, 35, 31, 36, 30, 29]) {
+    const x  = easting - 500000
+    const y  = northing
+    const M  = y / k0
+    const mu = M / (a * (1 - e2 / 4 - 3 * e2 ** 2 / 64 - 5 * e2 ** 3 / 256))
+
+    const phi1 = mu
+      + (3 * e1 / 2 - 27 * e1 ** 3 / 32) * Math.sin(2 * mu)
+      + (21 * e1 ** 2 / 16 - 55 * e1 ** 4 / 32) * Math.sin(4 * mu)
+      + (151 * e1 ** 3 / 96) * Math.sin(6 * mu)
+      + (1097 * e1 ** 4 / 512) * Math.sin(8 * mu)
+
+    const N1 = a / Math.sqrt(1 - e2 * Math.sin(phi1) ** 2)
+    const T1 = Math.tan(phi1) ** 2
+    const C1 = (e2 / (1 - e2)) * Math.cos(phi1) ** 2
+    const R1 = a * (1 - e2) / (1 - e2 * Math.sin(phi1) ** 2) ** 1.5
+    const D  = x / (N1 * k0)
+
+    const lat = phi1 - (N1 * Math.tan(phi1) / R1) * (
+      D ** 2 / 2
+      - (5 + 3 * T1 + 10 * C1 - 4 * C1 ** 2 - 9 * e2 / (1 - e2)) * D ** 4 / 24
+      + (61 + 90 * T1 + 298 * C1 + 45 * T1 ** 2 - 252 * e2 / (1 - e2) - 3 * C1 ** 2) * D ** 6 / 720
+    )
+    const lon0 = (zone - 1) * 6 - 180 + 3
+    const lon  = lon0 + (D
+      - (1 + 2 * T1 + C1) * D ** 3 / 6
+      + (5 - 2 * C1 + 28 * T1 - 3 * C1 ** 2 + 8 * e2 / (1 - e2) + 24 * T1 ** 2) * D ** 5 / 120
+    ) / Math.cos(phi1)
+
+    const latDeg = lat * 180 / Math.PI
+    const lonDeg = lon * 180 / Math.PI
+    if (latDeg >= -90 && latDeg <= 90 && lonDeg >= -180 && lonDeg <= 180)
+      return { lat: latDeg, lon: lonDeg, zone }
+  }
+  return null
+}
+
+/** Interpoluje výšku povrchu DTM pre danú world-space poziciú (x, y).
+ *  Vráti výšku v metroch alebo null ak je bod mimo gridu. */
+function sampleDtmAt(surface: CaveSurface, worldX: number, worldY: number): number | null {
+  const { dtm } = surface
+  const { data, samples, lines, calib } = dtm
+  const det = calib.xx * calib.yy - calib.xy * calib.yx
+  if (Math.abs(det) < 1e-12) return null
+
+  const dx  = worldX - calib.xOrigin
+  const dy  = worldY - calib.yOrigin
+  const col = (dx * calib.yy - dy * calib.xy) / det
+  const row = (dy * calib.xx - dx * calib.yx) / det
+
+  if (col < 0 || col >= samples - 1 || row < 0 || row >= lines - 1) return null
+
+  const c0 = Math.floor(col), r0 = Math.floor(row)
+  const fc = col - c0, fr = row - r0
+  const z00 = data[r0 * samples + c0]
+  const z10 = data[r0 * samples + c0 + 1]
+  const z01 = data[(r0 + 1) * samples + c0]
+  const z11 = data[(r0 + 1) * samples + c0 + 1]
+  return z00 * (1 - fc) * (1 - fr) + z10 * fc * (1 - fr) + z01 * (1 - fc) * fr + z11 * fc * fr
+}
+
+// ─── Station detail card ─────────────────────────────────────────────────────────────
+
+interface SelStation {
+  idx:          number
+  name:         string
+  origX:        number
+  origY:        number
+  altitude:     number    // m n.m.
+  gps:          { lat: number; lon: number; zone: number } | null
+  distToSurf:   number | null   // m, kladné = jaskyňa je pod povrchom
+  screenX:      number
+  screenY:      number
+}
+
+function StationDetailCard({ st, onClose }: { st: SelStation; onClose: () => void }) {
+  // Fixovana poloha — lavý horny roh, s malym offsetom od stredu
+  const cx = Math.min(Math.max(st.screenX, 280), window.innerWidth - 320)
+  const cy = Math.min(Math.max(st.screenY + 20, 60), window.innerHeight - 370)
+
+  const Row = ({ label, value, sub }: { label: string; value: string; sub?: string }) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+      padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,.06)', gap: 8 }}>
+      <span style={{ fontSize: 11, color: '#94a3b8', flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 600, textAlign: 'right', fontFamily: 'monospace' }}>
+        {value}{sub && <span style={{ fontSize: 10, color: '#64748b', marginLeft: 4 }}>{sub}</span>}
+      </span>
+    </div>
+  )
+
+  return (
+    <div style={{
+      position: 'fixed', left: cx, top: cy, zIndex: 200, minWidth: 280,
+      background: 'linear-gradient(135deg,rgba(8,15,35,.97),rgba(15,25,50,.97))',
+      border: '1px solid rgba(79,195,247,.35)',
+      borderRadius: 14, padding: '16px 18px',
+      boxShadow: '0 8px 40px rgba(0,0,0,.7),0 0 0 1px rgba(79,195,247,.1)',
+      backdropFilter: 'blur(12px)',
+      fontFamily: 'Inter, system-ui, sans-serif',
+      userSelect: 'text',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4fc3f7', boxShadow: '0 0 6px #4fc3f7' }} />
+          <span style={{ fontSize: 15, fontWeight: 700, color: '#e2e8f0', letterSpacing: '0.01em' }}>{st.name}</span>
+        </div>
+        <button onClick={onClose} style={{
+          background: 'none', border: 'none', color: '#64748b', cursor: 'pointer',
+          fontSize: 16, lineHeight: 1, padding: '2px 4px', borderRadius: 4,
+        }} title="Zatvoriť" aria-label="Zatvoriť">✕</button>
+      </div>
+
+      {/* Data rows */}
+      <Row label="Stanica" value={`#${st.idx}`} />
+      <Row label="Nadm. výška" value={`${st.altitude.toFixed(2)} m`} sub="n.m." />
+      <Row label="Súradnica X" value={st.origX.toFixed(2)} sub="m" />
+      <Row label="Súradnica Y" value={st.origY.toFixed(2)} sub="m" />
+
+      {/* GPS */}
+      <div style={{ margin: '10px 0 2px', fontSize: 10, color: '#4fc3f7', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+        GPS WGS84 {st.gps ? `(UTM ${st.gps.zone}N)` : ''}
+      </div>
+      {st.gps ? (
+        <>
+          <Row label="Latitude" value={`${st.gps.lat.toFixed(6)}°`} />
+          <Row label="Longitude" value={`${st.gps.lon.toFixed(6)}°`} />
+          <div style={{ marginTop: 4 }}>
+            <a
+              href={`https://maps.google.com/?q=${st.gps.lat.toFixed(6)},${st.gps.lon.toFixed(6)}`}
+              target="_blank" rel="noopener noreferrer"
+              style={{ fontSize: 11, color: '#4fc3f7', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
+            >
+              🗺️ Zobraziť v Google Maps
+            </a>
+          </div>
+        </>
+      ) : (
+        <Row label="GPS" value="Nedostupné" sub="(národna siet)" />
+      )}
+
+      {/* Distance to surface */}
+      {st.distToSurf !== null && (
+        <>
+          <div style={{ margin: '10px 0 2px', fontSize: 10, color: '#4fc3f7', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            Povrch
+          </div>
+          <Row
+            label="Hĺbka pod povrchom"
+            value={st.distToSurf >= 0 ? `${st.distToSurf.toFixed(1)} m` : `+${Math.abs(st.distToSurf).toFixed(1)} m (nad)`}
+            sub={st.distToSurf >= 0 ? 'pod povrchom' : 'nad povrchom'}
+          />
+        </>
+      )}
+
+      {/* Footer hint */}
+      <div style={{ marginTop: 10, fontSize: 10, color: '#334155', textAlign: 'center' }}>
+        Klikni kdekoľvek mimo pre zatvorenie
+      </div>
+    </div>
+  )
+}
+
+export default function App() {
+  const [appState, setAppState] = useState<AppState>('welcome')
+  const [loadedFile, setLoadedFile] = useState<LoadedFile | null>(null)
+  const [cave, setCave] = useState<ParsedCave | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [selectedStation, setSelectedStation] = useState<SelStation | null>(null)
+  const [opts, setOpts] = useState<ViewerOptions>({
+    showSplay:           false,
+    showStations:        true,
+    showStationNames:    false,
+    showStationAlt:      false,
+    showGrid:            true,
+    // Cave scraps
+    showScraps:          true,
+    scrapsOpacity:       0.60,
+    scrapsSolid:         true,
+    scrapsWireframe:     false,
+    scrapsAltitude:      false,   // farebné podľa výšky
+    // Cave traverse
+    showTraverse:        false,   // polygonový ťah
+    traverseRadius:      0.3,     // polomer rúrky v m
+    // Terrain surface
+    showSurfaceMesh:     true,
+    showSurfaceMeshWire: false,
+    showSurfaceTexture:  true,
+    showSurfaceNetwork:  false,   // sieťový model (farebná výška)
+    surfaceOpacity:      0.8,
+  })
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  // Handler pre klik na stanicu
+  const handleStationClick = useCallback((idx: number, screenX: number, screenY: number) => {
+    if (!cave) return
+    const sl = cave.stationLabels[idx]
+    if (!sl) return
+
+    const origX = sl.pos.x + cave.centerOffset.x
+    const origY = sl.pos.y + cave.centerOffset.y
+    const altitude = sl.altitude
+
+    const gps = tryUtmToWgs84(origX, origY)
+
+    let distToSurf: number | null = null
+    if (cave.surfaces?.length > 0) {
+      const surf = cave.surfaces[0]
+      const zSurf = sampleDtmAt(surf, origX, origY)
+      if (zSurf !== null) distToSurf = zSurf - altitude
+    }
+
+    setSelectedStation({ idx, name: sl.name, origX, origY, altitude, gps, distToSurf, screenX, screenY })
+  }, [cave])
+
+  // particle background
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight }
+    resize()
+    window.addEventListener('resize', resize)
+
+    type P = { x: number; y: number; vx: number; vy: number; r: number; a: number }
+    const pts: P[] = Array.from({ length: 55 }, () => ({
+      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25,
+      r: Math.random() * 1.4 + 0.4, a: Math.random() * 0.4 + 0.08,
+    }))
+
+    let id: number
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      pts.forEach(p => {
+        p.x += p.vx; p.y += p.vy
+        if (p.x < 0) p.x = canvas.width; if (p.x > canvas.width) p.x = 0
+        if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(99,179,237,${p.a})`; ctx.fill()
+      })
+      id = requestAnimationFrame(draw)
+    }
+    draw()
+    return () => { cancelAnimationFrame(id); window.removeEventListener('resize', resize) }
+  }, [])
+
+  const getExt = (name: string) => '.' + name.split('.').pop()!.toLowerCase()
+
+  const handleFile = useCallback(async (file: File) => {
+    const ext = getExt(file.name)
+    if (!['.lox', '.3d', '.plt'].includes(ext)) {
+      setErrorMsg(`Nepodporovaný formát: ${ext}. Použite .lox, .3d alebo .plt`)
+      return
+    }
+    setErrorMsg(null)
+    setLoadedFile({ name: file.name, size: file.size, ext })
+    setAppState('loading')
+    setProgress(10)
+
+    try {
+      let parsed: ParsedCave
+
+      if (ext === '.plt') {
+        const text = await file.text()
+        setProgress(50)
+        parsed = parsePlt(text)
+      } else {
+        const buf = await file.arrayBuffer()
+        setProgress(50)
+        if (ext === '.lox') parsed = parseLox(buf)
+        else parsed = parseSvx(buf)
+      }
+
+      setProgress(95)
+
+      if (parsed.segments.length === 0 && parsed.stations.length === 0) {
+        throw new Error('Súbor neobsahuje žiadne merania alebo stanice.')
+      }
+
+      setCave(parsed)
+      setTimeout(() => { setProgress(100); setTimeout(() => setAppState('viewer'), 200) }, 100)
+    } catch (e: any) {
+      console.error(e)
+      setErrorMsg('Chyba pri načítaní: ' + (e?.message || String(e)))
+      setAppState('error')
+    }
+  }, [])
+
+  // Load from URL (for demo/test models served from public/)
+  const loadFromUrl = useCallback(async (url: string, label: string) => {
+    const ext = '.' + url.split('.').pop()!.toLowerCase()
+    setErrorMsg(null)
+    setLoadedFile({ name: label, size: 0, ext })
+    setAppState('loading')
+    setProgress(10)
+    try {
+      const resp = await fetch(url)
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+      setProgress(40)
+      const contentLength = Number(resp.headers.get('content-length') || 0)
+      if (ext === '.plt') {
+        const text = await resp.text()
+        setProgress(60)
+        const parsed = parsePlt(text)
+        setLoadedFile({ name: label, size: text.length, ext })
+        if (parsed.segments.length === 0 && parsed.stations.length === 0)
+          throw new Error('Súbor neobsahuje žiadne dáta.')
+        setCave(parsed)
+      } else {
+        const buf = await resp.arrayBuffer()
+        setProgress(60)
+        setLoadedFile({ name: label, size: buf.byteLength, ext })
+        const parsed = ext === '.lox' ? parseLox(buf) : parseSvx(buf)
+        if (parsed.segments.length === 0 && parsed.stations.length === 0)
+          throw new Error('Súbor neobsahuje žiadne dáta.')
+        setCave(parsed)
+      }
+      setProgress(100)
+      setTimeout(() => setAppState('viewer'), 150)
+    } catch (e: any) {
+      console.error(e)
+      setErrorMsg('Chyba pri načítaní demo modelu: ' + (e?.message || String(e)))
+      setAppState('error')
+    }
+  }, [])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); setIsDragging(false)
+    const files = Array.from(e.dataTransfer.files)
+    if (files[0]) handleFile(files[0])
+  }, [handleFile])
+
+  const handleReset = () => {
+    setAppState('welcome'); setLoadedFile(null); setCave(null)
+    setProgress(0); setErrorMsg(null)
+  }
+
+  const toggleOpt = (key: keyof ViewerOptions) =>
+    setOpts(prev => ({ ...prev, [key]: !prev[key] }))
+
+  const setOpacity = (key: 'scrapsOpacity' | 'surfaceOpacity', v: number) =>
+    setOpts(prev => ({ ...prev, [key]: v }))
+
+  const formatSize = (bytes: number) =>
+    bytes > 1024 * 1024 ? (bytes / 1024 / 1024).toFixed(2) + ' MB' : (bytes / 1024).toFixed(1) + ' KB'
+
+  // ── RENDER ──────────────────────────────────────────────────────────────────
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',system-ui,sans-serif;background:#050810;color:#e2e8f0;overflow:hidden}
+        .bg-canvas{position:fixed;inset:0;pointer-events:none;z-index:0}
+
+        /* WELCOME */
+        .app{position:relative;z-index:1;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
+        .welcome{display:flex;flex-direction:column;align-items:center;gap:2rem;padding:2rem;max-width:680px;width:100%}
+        .logo-icon{font-size:4rem;filter:drop-shadow(0 0 28px rgba(99,179,237,.55));animation:float 4s ease-in-out infinite}
+        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+        .logo-title{font-size:2.8rem;font-weight:800;letter-spacing:-.02em;background:linear-gradient(135deg,#63b3ed 0%,#9f7aea 50%,#63b3ed 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 4s linear infinite}
+        @keyframes shimmer{0%{background-position:0% center}100%{background-position:200% center}}
+        .logo-sub{font-size:.85rem;color:#718096;margin-top:.3rem;letter-spacing:.08em;text-transform:uppercase}
+
+        .dropzone{width:100%;border:2px dashed rgba(99,179,237,.3);border-radius:20px;padding:2.5rem 2rem;text-align:center;cursor:pointer;transition:all .25s ease;background:rgba(99,179,237,.03);position:relative;overflow:hidden}
+        .dropzone:hover,.dropzone.over{border-color:rgba(99,179,237,.7);background:rgba(99,179,237,.08);transform:scale(1.01);box-shadow:0 0 40px rgba(99,179,237,.15)}
+        .dz-icon{font-size:2.5rem;margin-bottom:.7rem;display:block}
+        .dz-title{font-size:1.05rem;font-weight:600;margin-bottom:.3rem}
+        .dz-sub{font-size:.82rem;color:#718096}
+        .dz-or{margin:.9rem 0;color:#4a5568;font-size:.82rem}
+        .btn-open{display:inline-flex;align-items:center;gap:.45rem;background:linear-gradient(135deg,#4299e1,#9f7aea);color:#fff;border:none;border-radius:10px;padding:.65rem 1.5rem;font-size:.875rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;box-shadow:0 4px 20px rgba(66,153,225,.3)}
+        .btn-open:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(66,153,225,.45)}
+
+        .formats{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;width:100%}
+        .fmt-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:.8rem;text-align:center;transition:all .2s}
+        .fmt-card:hover{background:rgba(99,179,237,.06);border-color:rgba(99,179,237,.25);transform:translateY(-2px)}
+        .fmt-icon{font-size:1.4rem;margin-bottom:.25rem}
+        .fmt-label{font-size:.77rem;font-weight:600;color:#a0aec0}
+        .fmt-ext{font-size:.72rem;color:#4a5568;margin-top:.1rem}
+
+        .err-msg{width:100%;background:rgba(245,101,101,.12);border:1px solid rgba(245,101,101,.3);border-radius:10px;padding:.75rem 1rem;font-size:.85rem;color:#fc8181;display:flex;align-items:flex-start;gap:.5rem}
+        input[type="file"]{display:none}
+
+        /* LOADING */
+        .loading-screen{display:flex;flex-direction:column;align-items:center;gap:1.4rem;padding:2rem;text-align:center}
+        .load-icon{font-size:3.5rem;animation:pulse 1.4s ease-in-out infinite}
+        @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.1);opacity:.7}}
+        .load-title{font-size:1.35rem;font-weight:700}
+        .load-file{font-size:.82rem;color:#718096;margin-top:.15rem}
+        .prog-wrap{width:320px;background:rgba(255,255,255,.05);border-radius:100px;height:7px;overflow:hidden}
+        .prog-bar{height:100%;border-radius:100px;background:linear-gradient(90deg,#4299e1,#9f7aea);transition:width .1s linear;box-shadow:0 0 10px rgba(99,179,237,.6)}
+        .prog-pct{font-size:.82rem;color:#718096}
+
+        /* VIEWER */
+        .viewer-shell{width:100vw;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+        .topbar{height:50px;background:rgba(5,8,16,.95);border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:1rem;padding:0 1.1rem;flex-shrink:0;backdrop-filter:blur(8px)}
+        .tb-logo{font-size:1rem;font-weight:700;color:#63b3ed;white-space:nowrap}
+        .tb-file{font-size:.77rem;color:#718096;background:rgba(255,255,255,.05);padding:.22rem .65rem;border-radius:6px;border:1px solid rgba(255,255,255,.08);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .tb-badge{font-size:.7rem;font-weight:700;padding:.2rem .5rem;border-radius:4px;background:rgba(99,179,237,.15);color:#63b3ed;border:1px solid rgba(99,179,237,.3)}
+        .tb-space{flex:1}
+        .tb-stat{font-size:.75rem;color:#4a5568}
+        .btn-back{display:flex;align-items:center;gap:.4rem;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#a0aec0;border-radius:8px;padding:.38rem .85rem;font-size:.78rem;font-weight:500;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap}
+        .btn-back:hover{background:rgba(255,255,255,.1);color:#e2e8f0}
+
+        .viewer-body{flex:1;display:flex;overflow:hidden;position:relative}
+        .canvas-wrap{flex:1;position:relative}
+
+        /* Sidebar */
+        .sidebar{width:230px;background:rgba(8,12,24,.97);border-left:1px solid rgba(255,255,255,.05);padding:.9rem;display:flex;flex-direction:column;gap:1rem;overflow-y:auto;flex-shrink:0}
+        .s-label{font-size:.62rem;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.45rem}
+        .info-row{display:flex;justify-content:space-between;font-size:.75rem;padding:.28rem 0;border-bottom:1px solid rgba(255,255,255,.04);color:#718096}
+        .info-val{color:#63b3ed;font-weight:600}
+
+        .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid rgba(255,255,255,.04)}
+        .toggle-label{display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:#a0aec0;cursor:pointer}
+        .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+        .switch{width:32px;height:17px;background:rgba(255,255,255,.1);border-radius:100px;position:relative;cursor:pointer;transition:background .2s;border:1px solid rgba(255,255,255,.1);flex-shrink:0}
+        .switch.on{background:rgba(66,153,225,.6);border-color:rgba(66,153,225,.5)}
+        .switch::after{content:'';position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+        .switch.on::after{transform:translateX(15px)}
+
+        .slider-row{padding:.45rem 0;border-bottom:1px solid rgba(255,255,255,.04)}
+        .slider-top{display:flex;justify-content:space-between;font-size:.76rem;color:#a0aec0;margin-bottom:.3rem}
+        .slider-val{color:#63b3ed;font-weight:600}
+        input[type=range]{width:100%;height:3px;-webkit-appearance:none;background:rgba(255,255,255,.1);border-radius:100px;outline:none;cursor:pointer}
+        input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#4299e1;cursor:pointer;box-shadow:0 0 6px rgba(66,153,225,.5)}
+
+        .btn-demo{background:rgba(99,179,237,.08);border:1px solid rgba(99,179,237,.25);color:#63b3ed;border-radius:8px;padding:.45rem 1rem;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+        .btn-demo:hover{background:rgba(99,179,237,.18);border-color:rgba(99,179,237,.5);transform:translateY(-1px)}
+
+        .help-text{font-size:.72rem;color:#2d3748;line-height:1.6}
+        .loading-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+        .loading-3d{font-size:.85rem;color:#4a5568}
+      `}</style>
+
+      <canvas ref={canvasRef} className="bg-canvas" />
+
+      <div className="app">
+
+        {/* ── WELCOME ── */}
+        {(appState === 'welcome' || appState === 'error') && (
+          <div className="welcome">
+            <div style={{ textAlign: 'center' }}>
+              <div className="logo-icon">🏔️</div>
+              <h1 className="logo-title">CaveView 3D</h1>
+              <p className="logo-sub">3D Prehliadač jaskynných prieskumov</p>
+            </div>
+
+            <div
+              className={`dropzone${isDragging ? ' over' : ''}`}
+              onDrop={handleDrop}
+              onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
+              onDragLeave={e => { e.preventDefault(); setIsDragging(false) }}
+              onClick={() => fileInputRef.current?.click()}
+              role="button" tabIndex={0}
+              onKeyDown={e => e.key === 'Enter' && fileInputRef.current?.click()}
+            >
+              <span className="dz-icon">📂</span>
+              <p className="dz-title">Pretiahnite jaskynný súbor sem</p>
+              <p className="dz-sub">Podporované: .lox (Therion), .3d (Survex), .plt (Compass)</p>
+              <div className="dz-or">— alebo —</div>
+              <button
+                className="btn-open"
+                onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }}
+                type="button"
+              >
+                📁 Vybrať súbor
+              </button>
+              <input ref={fileInputRef} type="file" accept=".lox,.3d,.plt" onChange={e => {
+                const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''
+              }} />
+            </div>
+
+            {errorMsg && (
+              <div className="err-msg" role="alert">⚠️ {errorMsg}</div>
+            )}
+
+            {/* Demo models */}
+            <div style={{ width: '100%' }}>
+              <div style={{ fontSize: '.62rem', fontWeight: 700, color: '#4a5568', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '.5rem', textAlign: 'center' }}>Testovacie modely</div>
+              <div style={{ display: 'flex', gap: '.6rem', justifyContent: 'center' }}>
+                <button className="btn-demo" onClick={() => loadFromUrl('/test_simple.lox', 'model-simple.lox')} type="button">
+                  🗺️ Simple LOX
+                </button>
+                <button className="btn-demo" onClick={() => loadFromUrl('/test_model2.lox', 'model2.lox')} type="button">
+                  🗺️ Model2 LOX (scraps)
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── LOADING ── */}
+        {appState === 'loading' && (
+          <div className="loading-screen">
+            <div className="load-icon">⛏️</div>
+            <div>
+              <div className="load-title">Parsovanie súboru…</div>
+              <div className="load-file">{loadedFile?.name}</div>
+            </div>
+            <div className="prog-wrap">
+              <div className="prog-bar" style={{ width: `${progress}%` }} />
+            </div>
+            <div className="prog-pct">{progress}%</div>
+          </div>
+        )}
+
+        {/* ── VIEWER ── */}
+        {appState === 'viewer' && cave && (
+          <div className="viewer-shell">
+            {/* Top bar */}
+            <div className="topbar">
+              <span className="tb-logo">🏔️ CaveView</span>
+              <span className="tb-file" title={loadedFile?.name}>{loadedFile?.name}</span>
+              <span className="tb-badge">{loadedFile?.ext.replace('.', '').toUpperCase()}</span>
+              <span className="tb-badge" style={{ background: 'rgba(159,122,234,.15)', color: '#9f7aea', borderColor: 'rgba(159,122,234,.3)' }}>
+                {cave.segmentCount} meraní
+              </span>
+              <span className="tb-badge" style={{ background: 'rgba(72,187,120,.1)', color: '#68d391', borderColor: 'rgba(72,187,120,.25)' }}>
+                {cave.stationCount} staníc
+              </span>
+              {cave.scrapCount > 0 && (
+                <span className="tb-badge" style={{ background: 'rgba(237,137,54,.1)', color: '#f6ad55', borderColor: 'rgba(237,137,54,.25)' }}>
+                  {cave.scrapCount} scrapov
+                </span>
+              )}
+              <div className="tb-space" />
+              <span className="tb-stat">Veľkosť: {formatSize(loadedFile?.size || 0)}</span>
+              <button className="btn-back" onClick={handleReset} type="button">← Zavrieť</button>
+            </div>
+
+            <div className="viewer-body">
+              {/* 3D Canvas */}
+              <div className="canvas-wrap">
+                <Suspense fallback={
+                  <div className="loading-overlay">
+                    <span className="loading-3d">Inicializácia 3D…</span>
+                  </div>
+                }>
+                  <CaveViewer3D
+                    cave={cave}
+                    options={opts}
+                    onStationClick={handleStationClick}
+                  />
+                </Suspense>
+
+                {/* Station detail card overlay */}
+                {selectedStation && (
+                  <StationDetailCard
+                    st={selectedStation}
+                    onClose={() => setSelectedStation(null)}
+                  />
+                )}
+              </div>
+
+              {/* Sidebar */}
+              <aside className="sidebar">
+                {/* Info */}
+                <div>
+                  <div className="s-label">Súbor</div>
+                  <div className="info-row"><span>Formát</span><span className="info-val">{loadedFile?.ext.replace('.', '').toUpperCase()}</span></div>
+                  <div className="info-row"><span>Merania</span><span className="info-val">{cave.segmentCount.toLocaleString()}</span></div>
+                  <div className="info-row"><span>Stanice</span><span className="info-val">{cave.stationCount.toLocaleString()}</span></div>
+                  {cave.scrapCount > 0 && (
+                    <div className="info-row"><span>Scraps (steny)</span><span className="info-val">{cave.scrapCount.toLocaleString()}</span></div>
+                  )}
+                  <div className="info-row"><span>Šírka (X)</span><span className="info-val">{cave.bounds.size.x.toFixed(0)} m</span></div>
+                  <div className="info-row"><span>Výška (Z)</span><span className="info-val">{cave.bounds.size.z.toFixed(0)} m</span></div>
+                  <div className="info-row"><span>Dĺžka (Y)</span><span className="info-val">{cave.bounds.size.y.toFixed(0)} m</span></div>
+                </div>
+
+                {/* ── VRSTVY (survey) ── */}
+                <div>
+                  <div className="s-label">Merania</div>
+                  {([
+                    { key: 'showSplay' as const, color: '#78909c', label: 'Splay merania' },
+                    { key: 'showGrid'  as const, color: '#1e3a6e', label: 'Mriežka' },
+                  ]).map(({ key, color, label }) => (
+                    <div className="toggle-row" key={key}>
+                      <label className="toggle-label">
+                        <div className="dot" style={{ background: color, border: '1px solid rgba(255,255,255,.2)' }} />
+                        {label}
+                      </label>
+                      <div className={`switch${opts[key] ? ' on' : ''}`}
+                        onClick={() => toggleOpt(key)} role="switch"
+                        aria-checked={opts[key] as boolean} tabIndex={0}
+                        onKeyDown={e => e.key === 'Enter' && toggleOpt(key)} />
+                    </div>
+                  ))}
+
+                  {/* Polygonový ťah — 3D rúrky */}
+                  <div className="toggle-row">
+                    <label className="toggle-label">
+                      <div className="dot" style={{ background: 'linear-gradient(90deg,#1565c0,#00b894,#e17055)', borderRadius: '50%', border: '1px solid rgba(255,255,255,.2)' }} />
+                      Polygonový ťah (3D)
+                    </label>
+                    <div className={`switch${opts.showTraverse ? ' on' : ''}`}
+                      onClick={() => toggleOpt('showTraverse')} role="switch"
+                      aria-checked={opts.showTraverse} tabIndex={0}
+                      onKeyDown={e => e.key === 'Enter' && toggleOpt('showTraverse')} />
+                  </div>
+                  {opts.showTraverse && (
+                    <div className="slider-row">
+                      <div className="slider-top">
+                        <span>Polomer rúrky</span>
+                        <span className="slider-val">{opts.traverseRadius.toFixed(1)} m</span>
+                      </div>
+                      <input type="range" min={1} max={30} step={1}
+                        value={Math.round(opts.traverseRadius * 10)}
+                        onChange={e => setOpts(p => ({ ...p, traverseRadius: Number(e.target.value) / 10 }))} />
+                    </div>
+                  )}
+                </div>
+
+                {/* ── STENY JASKYNE (scraps) ── */}
+                {cave.scrapCount > 0 && (
+                  <div>
+                    <div className="s-label">Steny jaskyne</div>
+
+                    {/* Master toggle */}
+                    <div className="toggle-row">
+                      <label className="toggle-label">
+                        <div className="dot" style={{ background: '#f6ad55' }} />
+                        Zobraziť steny
+                      </label>
+                      <div className={`switch${opts.showScraps ? ' on' : ''}`}
+                        onClick={() => toggleOpt('showScraps')} role="switch"
+                        aria-checked={opts.showScraps} tabIndex={0}
+                        onKeyDown={e => e.key === 'Enter' && toggleOpt('showScraps')} />
+                    </div>
+
+                    {opts.showScraps && (
+                      <>
+                        {/* Solid tieňovaný mesh */}
+                        <div className="toggle-row">
+                          <label className="toggle-label">
+                            <div className="dot" style={{ background: '#2a5585' }} />
+                            Trojuholník. mesh
+                          </label>
+                          <div className={`switch${opts.scrapsSolid ? ' on' : ''}`}
+                            onClick={() => toggleOpt('scrapsSolid')} role="switch"
+                            aria-checked={opts.scrapsSolid} tabIndex={0}
+                            onKeyDown={e => e.key === 'Enter' && toggleOpt('scrapsSolid')} />
+                        </div>
+
+                        {/* Drôtený model */}
+                        <div className="toggle-row">
+                          <label className="toggle-label">
+                            <div className="dot" style={{ background: '#6a9fd8', border: '1px solid #4a5568' }} />
+                            Drôtený model
+                          </label>
+                          <div className={`switch${opts.scrapsWireframe ? ' on' : ''}`}
+                            onClick={() => toggleOpt('scrapsWireframe')} role="switch"
+                            aria-checked={opts.scrapsWireframe} tabIndex={0}
+                            onKeyDown={e => e.key === 'Enter' && toggleOpt('scrapsWireframe')} />
+                        </div>
+
+                        {/* Farebné podľa výšky */}
+                        <div className="toggle-row">
+                          <label className="toggle-label">
+                            <div className="dot" style={{ background: 'linear-gradient(180deg,#e53935 0%,#f9a825 40%,#43a047 70%,#1565c0 100%)', border: 'none' }} />
+                            Farebné podľa výšky
+                          </label>
+                          <div className={`switch${opts.scrapsAltitude ? ' on' : ''}`}
+                            onClick={() => toggleOpt('scrapsAltitude')} role="switch"
+                            aria-checked={opts.scrapsAltitude} tabIndex={0}
+                            onKeyDown={e => e.key === 'Enter' && toggleOpt('scrapsAltitude')} />
+                        </div>
+
+                        {/* Opacity slider */}
+                        {(opts.scrapsSolid || opts.scrapsAltitude) && (
+                          <div className="slider-row">
+                            <div className="slider-top">
+                              <span>Priehľadnosť</span>
+                              <span className="slider-val">{Math.round(opts.scrapsOpacity * 100)}%</span>
+                            </div>
+                            <input type="range" min={5} max={100} step={5}
+                              value={Math.round(opts.scrapsOpacity * 100)}
+                              onChange={e => setOpacity('scrapsOpacity', Number(e.target.value) / 100)} />
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* ── TERÉN (surface) — len LOX ── */}
+                {cave.hasSurface && (
+                  <div>
+                    <div className="s-label">Terén (povrch)</div>
+
+                    {/* Tieňovaný solid mesh */}
+                    <div className="toggle-row">
+                      <label className="toggle-label">
+                        <div className="dot" style={{ background: '#3a6030' }} />
+                        Tieňovaný model
+                      </label>
+                      <div className={`switch${opts.showSurfaceMesh ? ' on' : ''}`}
+                        onClick={() => toggleOpt('showSurfaceMesh')} role="switch"
+                        aria-checked={opts.showSurfaceMesh} tabIndex={0}
+                        onKeyDown={e => e.key === 'Enter' && toggleOpt('showSurfaceMesh')} />
+                    </div>
+
+                    {/* Drôtená sieť terénu */}
+                    <div className="toggle-row">
+                      <label className="toggle-label">
+                        <div className="dot" style={{ background: '#6ab04c', border: '1px solid #4a7c3f' }} />
+                        Drôtená sieť
+                      </label>
+                      <div className={`switch${opts.showSurfaceMeshWire ? ' on' : ''}`}
+                        onClick={() => toggleOpt('showSurfaceMeshWire')} role="switch"
+                        aria-checked={opts.showSurfaceMeshWire} tabIndex={0}
+                        onKeyDown={e => e.key === 'Enter' && toggleOpt('showSurfaceMeshWire')} />
+                    </div>
+
+                    {/* Sieťový model povrchu — farebná výška */}
+                    <div className="toggle-row">
+                      <label className="toggle-label">
+                        <div className="dot" style={{ background: 'linear-gradient(180deg,#e53935 0%,#f9a825 33%,#43a047 66%,#1565c0 100%)', border: 'none' }} />
+                        Sieťový model (výšky)
+                      </label>
+                      <div className={`switch${opts.showSurfaceNetwork ? ' on' : ''}`}
+                        onClick={() => toggleOpt('showSurfaceNetwork')} role="switch"
+                        aria-checked={opts.showSurfaceNetwork} tabIndex={0}
+                        onKeyDown={e => e.key === 'Enter' && toggleOpt('showSurfaceNetwork')} />
+                    </div>
+
+                    {/* Textura JPG */}
+                    <div className="toggle-row">
+                      <label className="toggle-label">
+                        <div className="dot" style={{ background: '#8fbc8f', border: '1px solid #4a7c3f' }} />
+                        Textura (JPG/PNG)
+                      </label>
+                      <div className={`switch${opts.showSurfaceTexture ? ' on' : ''}`}
+                        onClick={() => toggleOpt('showSurfaceTexture')} role="switch"
+                        aria-checked={opts.showSurfaceTexture} tabIndex={0}
+                        onKeyDown={e => e.key === 'Enter' && toggleOpt('showSurfaceTexture')} />
+                    </div>
+
+                    {/* Spoločný opacity slider */}
+                    {(opts.showSurfaceMesh || opts.showSurfaceMeshWire || opts.showSurfaceTexture || opts.showSurfaceNetwork) && (
+                      <div className="slider-row">
+                        <div className="slider-top">
+                          <span>Priehľadnosť</span>
+                          <span className="slider-val">{Math.round(opts.surfaceOpacity * 100)}%</span>
+                        </div>
+                        <input type="range" min={5} max={100} step={5}
+                          value={Math.round(opts.surfaceOpacity * 100)}
+                          onChange={e => setOpacity('surfaceOpacity', Number(e.target.value) / 100)} />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Stations section */}
+                <div>
+                  <div className="s-label">Stanice</div>
+                  <div className="toggle-row">
+                    <label className="toggle-label">
+                      <div className="dot" style={{ background: '#fff', border: '1px solid rgba(255,255,255,.2)' }} />
+                      Zobraziť body
+                    </label>
+                    <div
+                      className={`switch${opts.showStations ? ' on' : ''}`}
+                      onClick={() => toggleOpt('showStations')}
+                      role="switch" aria-checked={opts.showStations} tabIndex={0}
+                      onKeyDown={e => e.key === 'Enter' && toggleOpt('showStations')}
+                    />
+                  </div>
+                  <div className="toggle-row">
+                    <label className="toggle-label">
+                      <div className="dot" style={{ background: '#fbbf24' }} />
+                      Meno bodu
+                    </label>
+                    <div
+                      className={`switch${opts.showStationNames ? ' on' : ''}`}
+                      onClick={() => toggleOpt('showStationNames')}
+                      role="switch" aria-checked={opts.showStationNames} tabIndex={0}
+                      onKeyDown={e => e.key === 'Enter' && toggleOpt('showStationNames')}
+                    />
+                  </div>
+                  <div className="toggle-row">
+                    <label className="toggle-label">
+                      <div className="dot" style={{ background: '#a5f3fc' }} />
+                      Nadm. výška (m)
+                    </label>
+                    <div
+                      className={`switch${opts.showStationAlt ? ' on' : ''}`}
+                      onClick={() => toggleOpt('showStationAlt')}
+                      role="switch" aria-checked={opts.showStationAlt} tabIndex={0}
+                      onKeyDown={e => e.key === 'Enter' && toggleOpt('showStationAlt')}
+                    />
+                  </div>
+                </div>
+
+                {/* Help */}
+                <div>
+                  <div className="s-label">Ovládanie</div>
+                  <div className="help-text">
+                    🖱️ ľavé tlačidlo — otáčanie<br />
+                    🖱️ pravé tlačidlo — posun<br />
+                    🖱️ koliesko — zoom<br />
+                    📱 dotykové gestá podporované
+                  </div>
+                </div>
+
+                {/* Legend */}
+                <div>
+                  <div className="s-label">Legenda</div>
+                  {[
+                    { color: '#4fc3f7', label: 'Merania (cave)' },
+                    { color: '#78909c', label: 'Splaše' },
+                    { color: '#81c784', label: 'Povrch' },
+                  ].map(({ color, label }) => (
+                    <div className="toggle-row" key={label}>
+                      <div className="toggle-label">
+                        <div className="dot" style={{ background: color }} />
+                        <span>{label}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </aside>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  )
+}
