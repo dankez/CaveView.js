@@ -51,24 +51,43 @@ Aplikácia beží na čisto modernom stacku:
 4. **Vite** – Rýchly kompilátor a deveserver.
 5. **TypeScript** – prísna typová kultúra a detekcia chýb naprieč parsermi a GUI (žiadne voľné `any`).
 
-## 🚀 Spustenie a Development (Start)
+## 🚀 Inštalácia a Spustenie pre začiatočníkov
 
-Najprv si nainštaluj prerekvizity (Node.js prostredie).
+Na to, aby si si mohol tento prehliadač spustiť u seba v počítači, nepotrebuješ žiadne zložité serverové nastavenia. Aplikácia beží čisto z lokálnych súborov cez odľahčený testovací webový server.
 
-```bash
-# Otvor prislusny priecinok
-cd CaveView-modernized
+### Čo potrebuješ stiahnuť (Prerekvizity)
+Aplikácia využíva štandardné javascriptové balíčky.
+1. Stiahni a nainštaluj si **[Node.js](https://nodejs.org/en/)** (Odporúča sa stiahnuť verziu s označením "LTS" - Long Term Support).
+2. To je všetko! Aplikácia npm, ktorá stiahne balíčky, sa nainštaluje spolu s Node.js.
 
-# Nainstaluj balicky / zavislosti
-npm install
+### Prvé spustenie (Krok po kroku)
 
-# Spusti lokalny server
-npm run dev
-```
-Následne otvor prehliadač na [http://localhost:5173/].
+1. **Stiahni si tento projekt** z GitHubu ako ZIP súbor (a rozbaľ ho) alebo si ho naklonuj cez Git (`git clone`).
+2. **Otvor terminál (Príkazový riadok)** vo svojom počítači (Vo Windows: aplikácia "cmd" alebo PowerShell. V MacOS / Linux: aplikácia "Terminal").
+3. Vojdi do zložky s projektom. Nahraď cestu za tú tvoju:
+   ```bash
+   cd cesta/ku/zlozke/CaveView.js
+   ```
 
-## 📦 Produkčný Build
+4. **Nainštaluj závislosti**. Tento príkaz stiahne všetky potrebné knižnice z internetu do zložky `node_modules` (Tento krok robíš len pri úplne prvom spustení):
+   ```bash
+   npm install
+   ```
+
+5. **Spusti lokálny server a prehliadač jaskyne:**
+   ```bash
+   npm run dev
+   ```
+
+6. Terminál ti vypíše lokálnu webovú adresu (obyčajne `http://localhost:5173/`). Skupíruj si tento link a otvor si ho vo svojom obľúbenom internetovom prehliadači (Chrome, Firefox, Safari atď.).
+7. Hotovo! Objaví sa uvítacia obrazovka aplikácie, kde môžeš priamo myšou potiahnuť tvoj jaskynný model (napríklad jeden z LOX súborov zo zložky `test_model/`). Zložka s projektom taktiež obsahuje testovacie modely.
+
+## 📦 Ako to zverejniť na webe (Produkčný Build)
+Chceš prehliadač zavesiť na svoj vlastný WordPress alebo statický web server? V tom prípade v termináli napíš:
+
 ```bash
 npm run build
 ```
-Zložkovú štruktúru `dist/` vieš nahrať na hociktorú statickú doménu (GitHub Pages, Netlify alebo hocijaký bežný web server). Nespúšťa žiadne procesy typu Node/PHP za oponou.
+
+Príkaz ti vytvorí zložku s názvom `dist/`. V nej sa nachádzajú hotové čisté HTML, CSS a JS súbory, ktoré stačí akokoľvek myšou nahrať na ľubovoľný hosting / webový FTP priestor. Aplikácia bude fungovať u každého a všade nezávisle na databázach.
+
