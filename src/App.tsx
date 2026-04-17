@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, Suspense } from 'react'
+import proj4 from 'proj4'
 import { parseLox, parseSvx, parsePlt } from './parsers/caveParser'
 import type { ParsedCave, CaveSurface } from './parsers/caveParser'
 import CaveViewer3D from './components/CaveViewer3D'
@@ -27,8 +28,8 @@ function tryUtmToWgs84(easting: number, northing: number): { lat: number; lon: n
   if (easting < 100000 || easting > 900000) return null
   if (northing < 0 || northing > 10000000) return null
 
-  // Odhadni UTM zónu ze stredového meridiánu
-  // Pre Sl'ovakia: UTM 33N (lon 12–18°) alebo 34N (lon 18–24°)
+  // Odhadni UTM zónu zo stredového meridiánu
+  // Pre Slovakia: UTM 34N (lon 18–24°, stred/východ) alebo 33N (lon 12–18°, západ)
   // Heuristika: ak northing ~5000000-5600000 a easting ~200000-700000 → pravdepodobne UTM
   const a  = 6378137.0
   const f  = 1 / 298.257223563
@@ -37,8 +38,8 @@ function tryUtmToWgs84(easting: number, northing: number): { lat: number; lon: n
   const k0 = 0.9996
   const e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2))
 
-  // Skuš zóny okolo predpokladaného rozsahu
-  for (const zone of [33, 34, 32, 35, 31, 36, 30, 29]) {
+  // Skuš zóny, preferuj 34N vzhľadom na najčastejšie jaskynné oblasti SR (Slovenský kras, Tatry)
+  for (const zone of [34, 33, 32, 35, 31, 36, 30, 29]) {
     const x  = easting - 500000
     const y  = northing
     const M  = y / k0
@@ -61,16 +62,41 @@ function tryUtmToWgs84(easting: number, northing: number): { lat: number; lon: n
       - (5 + 3 * T1 + 10 * C1 - 4 * C1 ** 2 - 9 * e2 / (1 - e2)) * D ** 4 / 24
       + (61 + 90 * T1 + 298 * C1 + 45 * T1 ** 2 - 252 * e2 / (1 - e2) - 3 * C1 ** 2) * D ** 6 / 720
     )
-    const lon0 = (zone - 1) * 6 - 180 + 3
-    const lon  = lon0 + (D
+    const lon0_deg = (zone - 1) * 6 - 180 + 3
+    const lon0_rad = lon0_deg * Math.PI / 180
+    const lon  = lon0_rad + (D
       - (1 + 2 * T1 + C1) * D ** 3 / 6
       + (5 - 2 * C1 + 28 * T1 - 3 * C1 ** 2 + 8 * e2 / (1 - e2) + 24 * T1 ** 2) * D ** 5 / 120
     ) / Math.cos(phi1)
 
     const latDeg = lat * 180 / Math.PI
     const lonDeg = lon * 180 / Math.PI
-    if (latDeg >= -90 && latDeg <= 90 && lonDeg >= -180 && lonDeg <= 180)
-      return { lat: latDeg, lon: lonDeg, zone }
+    
+    // Potrebujeme sa uistiť, že vypočítaná dĺžka naozaj patrí (alebo je veľmi blízko) do danej UTM zóny.
+    // UTM zóna má šírku 6°. Povolíme malý presah (napr. 3.5° namiesto 3°) kvôli okraju.
+    if (latDeg >= -90 && latDeg <= 90 && lonDeg >= -180 && lonDeg <= 180) {
+      if (Math.abs(lonDeg - lon0_deg) <= 3.5) {
+        return { lat: latDeg, lon: lonDeg, zone }
+      }
+    }
+  }
+  return null
+}
+
+/** Pokus o konverziu S-JTSK (metricke súradnice záporné) → WGS84 lat/lon. */
+function tryJtskToWgs84(x: number, y: number): { lat: number; lon: number; epsg: string } | null {
+  // S-JTSK má špecifické rozsahy (na Slovensku / v ČR).
+  // Therion .lox zvyčajne exportuje orientáciu tak, že originX je -Y a originY je -X.
+  // Easting (x) je typicky od -900000 do -150000 
+  // Northing (y) je typicky od -1350000 do -900000
+  if (x > -950000 && x < -150000 && y > -1350000 && y < -900000) {
+    const sjtskDef = "+proj=krovak +lat_0=49.5 +lon_0=24.83333333333333 +alpha=30.28813972222222 +k=0.9999 +x_0=0 +y_0=0 +ellps=bessel +towgs84=589,76,480,0,0,0,0 +units=m +no_defs"
+    try {
+      const wgs = proj4(sjtskDef, "WGS84", [x, y])
+      if (wgs && wgs.length === 2) return { lat: wgs[1], lon: wgs[0], epsg: 'S-JTSK Křovák' }
+    } catch (e) {
+      console.warn("Chyba proj4 pri S-JTSK:", e)
+    }
   }
   return null
 }
@@ -107,7 +133,7 @@ interface SelStation {
   origX:        number
   origY:        number
   altitude:     number    // m n.m.
-  gps:          { lat: number; lon: number; zone: number } | null
+  gps:          { lat: number; lon: number; zone?: number; epsg?: string } | null
   distToSurf:   number | null   // m, kladné = jaskyňa je pod povrchom
   screenX:      number
   screenY:      number
@@ -159,7 +185,7 @@ function StationDetailCard({ st, onClose }: { st: SelStation; onClose: () => voi
 
       {/* GPS */}
       <div style={{ margin: '10px 0 2px', fontSize: 10, color: '#4fc3f7', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-        GPS WGS84 {st.gps ? `(UTM ${st.gps.zone}N)` : ''}
+        GPS WGS84 {st.gps ? (st.gps.zone ? `(UTM ${st.gps.zone}N)` : `(${st.gps.epsg})`) : ''}
       </div>
       {st.gps ? (
         <>
@@ -245,7 +271,11 @@ export default function App() {
     const origY = sl.pos.y + cave.centerOffset.y
     const altitude = sl.altitude
 
-    const gps = tryUtmToWgs84(origX, origY)
+    let gps: { lat: number; lon: number; zone?: number; epsg?: string } | null = null;
+    gps = tryUtmToWgs84(origX, origY);
+    if (!gps) {
+      gps = tryJtskToWgs84(origX, origY);
+    }
 
     let distToSurf: number | null = null
     if (cave.surfaces?.length > 0) {

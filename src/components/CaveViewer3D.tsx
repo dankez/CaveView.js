@@ -328,13 +328,22 @@ function buildTerrainGeo(surface: CaveSurface, withColors: boolean): THREE.Buffe
 
   const positions: number[] = [], uvs: number[] = [], colors: number[] = [], indices: number[] = []
 
+  const det = calib.xx * calib.yy - calib.xy * calib.yx
+
   for (let row = 0; row < lines; row++) {
     for (let col = 0; col < samples; col++) {
       const wx = calib.xOrigin + col * calib.xx + row * calib.xy
       const wy = calib.yOrigin + col * calib.yx + row * calib.yy
       const wz = data[row * samples + col]
       positions.push(wx - cx, wz - cz, -(wy - cy))
-      uvs.push(col / (samples - 1), 1 - row / (lines - 1))
+
+      // WebGL textúry majú UV počiatok vľavo dole (0, 0).
+      // Ak calib.xx > 0, col rastie na Východ, inak je potrebné presadiť U zľava doprava.
+      // Ak calib.yy > 0, row rastie na Sever (čiže row 0 je Juh a ukladá sa na V=0 - spodok obrázka).
+      const u = calib.xx > 0 ? col / (samples - 1) : 1 - col / (samples - 1)
+      const v = calib.yy > 0 ? row / (lines - 1) : 1 - row / (lines - 1)
+      uvs.push(u, v)
+
       if (withColors) {
         const c = elevColor(normZ(wz, minZ, maxZ))
         colors.push(c.r, c.g, c.b)
@@ -345,7 +354,13 @@ function buildTerrainGeo(surface: CaveSurface, withColors: boolean): THREE.Buffe
   for (let row = 0; row < lines - 1; row++) {
     for (let col = 0; col < samples - 1; col++) {
       const i0 = row * samples + col, i1 = i0 + 1, i2 = i0 + samples, i3 = i2 + 1
-      indices.push(i0, i2, i1, i1, i2, i3)
+      if (det > 0) {
+        // Kladný determinant (typicky z Juhu na Sever): pre smer normály nahor volíme (i0, i1, i2)
+        indices.push(i0, i1, i2, i2, i1, i3)
+      } else {
+        // Pre záporný determinant (čo by indikovalo zhora nadol) zachovávame druhú orientáciu
+        indices.push(i0, i2, i1, i1, i2, i3)
+      }
     }
   }
 
