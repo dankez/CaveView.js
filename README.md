@@ -19,17 +19,30 @@ Prehliadač obsahuje interaktívny bočný panel, ktorý poskytuje absolútnu ko
 - **Merania / Splay** – možnosť vypnúť/zapnúť pomocné slepé zamerania.
 - **Trojuholníkový Mesh a "Scraps"** – vizualizácia plných solid stien vypočítaných z nákresov.
 - **Drôtený model (Wireframe)** – štruktúrovaná siet obrysov stien nezávisle nastaviteľná a viditeľná cez plné textúry.
+  
+  ![Drôtený model (Wireframe)](public/screenshots/wireframe.png)
+
 - **Altitude Colormap (Výškové prechody)** – farebné tieňovanie podľa nadmorskej výšky (tzv. "tepelná mapa" výšok) plynulo pre steny aj polygónový ťah.
+  
+  ![Farebné tieňovanie (Altitude)](public/screenshots/altitude.png)
 
 ### 3. Vizualizácia Terénu (DTM) a Overlay Textúr
 Rozsiahla správa vonkajšieho terénu so zachovaním ideálneho depth-sorting (jaskynný model zostáva viditeľný popod vrstvou, terén sa navzájom neprekrýva).
 - **Solid Tieňovaný model** terénu.
-- **Drôtená sieť (Terén)**.
-- **Farebný výškový network model**.
-- **Ortofotomapa (JPG/PNG textura overlay)** ak je k DTM mriežke priradená mapa.
+  
+  ![Základný pohľad (Solid Terén)](public/screenshots/viewer_main.png)
 
-![Ukážka zobrazenia Viewer](public/screenshots/viewer_main.png)
-![Farebné tieňovanie (Altitude)](public/screenshots/altitude.png)
+- **Drôtená sieť (Terén)** - jemná drôtená mriežka topografického povrchu.
+  
+  ![Drôtená sieť povrchu](public/screenshots/surface_wireframe.png)
+
+- **Farebný výškový network model** - povrch je farbený podľa výšky bez textúr.
+  
+  ![Farebná sieť terénu](public/screenshots/surface_network.png)
+
+- **Ortofotomapa (JPG/PNG textura overlay)** ak je k DTM mriežke priradená mapa.
+  
+  ![Texturovaná horná vrstva](public/screenshots/surface_texture.png)
 
 ### 4. Detailné informácie o stanici a interakcia (Raycasting)
 Aplikácia buduje hit-sférický strom. Ak myškou ťukneš na ktorúkoľvek biele bodovú značku (Stanicu), applikácia extrahuje údaje:
