@@ -428,9 +428,11 @@ function buildResult(
   // Build station labels — use original z for altitude
   const stationLabels: StationLabel[] = centeredStations.map((pos, i) => {
     const meta = stationMeta.get(i)
+    let n = meta?.name ?? `S${i}`
+    if (!/[a-zA-Z0-9]/.test(n)) n = ''
     return {
       pos,
-      name:     meta?.name     ?? `S${i}`,
+      name:     n,
       altitude: meta?.z        ?? (pos.z + cz),   // original altitude in metres
     }
   })

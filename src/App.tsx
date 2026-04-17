@@ -137,9 +137,16 @@ interface SelStation {
   distToSurf:   number | null   // m, kladné = jaskyňa je pod povrchom
   screenX:      number
   screenY:      number
+  centerX?:     number
+  centerY?:     number
+  centerZ?:     number
 }
 
-function StationDetailCard({ stations, onClose }: { stations: SelStation[]; onClose: () => void }) {
+function StationDetailCard({ stations, onClose, onPlaceCaver }: { 
+  stations: SelStation[]; 
+  onClose: () => void;
+  onPlaceCaver: (pos: [number, number, number], pose: 'standing' | 'crawling') => void 
+}) {
   if (stations.length === 0) return null
   const st1 = stations[0]
   const st2 = stations.length > 1 ? stations[1] : null
@@ -238,15 +245,10 @@ function StationDetailCard({ stations, onClose }: { stations: SelStation[]; onCl
         const dx = st2.origX - st1.origX
         const dy = st2.origY - st1.origY
         const dz = st2.altitude - st1.altitude
-        
         const horizDist = Math.sqrt(dx * dx + dy * dy)
         const dist3D = Math.sqrt(dx * dx + dy * dy + dz * dz)
-        
-        // Azimut: Sever je Y+, Východ je X+ -> atan2(dx, dy) robí nulu pre Sever a kladný uhol v smere chodu hodín
         const az = (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360
-        // Sklon (Pitch): Vertikála vs 3D Vzdialenosť
         const inc = Math.asin(dz / dist3D) * 180 / Math.PI
-
         return (
           <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,.1)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, color: '#ef4444', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -255,12 +257,49 @@ function StationDetailCard({ stations, onClose }: { stations: SelStation[]; onCl
             </div>
             <Row label="3D Vzdialenosť" value={`${dist3D.toFixed(2)} m`} />
             <Row label="Pôdorysná dĺžka" value={`${horizDist.toFixed(2)} m`} />
-            <Row label="Prevýšenie (ΔZ)" value={`${(dz > 0 ? '+' : '')}${dz.toFixed(2)} m`} />
+            <Row label="Prevýšenie" value={`${(dz > 0 ? '+' : '')}${dz.toFixed(2)} m`} />
             <Row label="Azimut (Kurz)" value={`${az.toFixed(1)}°`} />
-            <Row label="Sklon (Uhlové kles/stúp)" value={`${(inc > 0 ? '+' : '')}${inc.toFixed(1)}°`} />
+            <Row label="Sklon" value={`${(inc > 0 ? '+' : '')}${inc.toFixed(1)}°`} />
           </div>
         )
       })()}
+
+      {/* Mierka - Jaskyniar */}
+      {stations.length === 1 && (
+        <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,.1)' }}>
+          <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em' }}>
+            Vizualizácia mierky (jaskyniar)
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div 
+              onClick={() => onPlaceCaver([st1.origX - (stations[0].centerX || 0), st1.altitude - (stations[0].centerZ || 0), -st1.origY + (stations[0].centerY || 0)], 'standing')}
+              style={{ 
+                flex: 1, height: 48, borderRadius: 8, background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.borderColor = '#ef4444' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
+            >
+              <img src="/assets/caver_standing.png" style={{ height: 24, marginBottom: 2 }} alt="Stojaci" />
+              <span style={{ fontSize: 9, color: '#e2e8f0' }}>Stojaci</span>
+            </div>
+            <div 
+              onClick={() => onPlaceCaver([st1.origX - (stations[0].centerX || 0), st1.altitude - (stations[0].centerZ || 0), -st1.origY + (stations[0].centerY || 0)], 'crawling')}
+              style={{ 
+                flex: 1, height: 48, borderRadius: 8, background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.borderColor = '#ef4444' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
+            >
+              <img src="/assets/caver_crawling.png" style={{ height: 24, marginBottom: 2 }} alt="Plaziaci" />
+              <span style={{ fontSize: 9, color: '#e2e8f0' }}>Plaziaci</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer hint */}
       <div style={{ marginTop: 14, fontSize: 10, color: '#64748b', textAlign: 'center' }}>
@@ -283,28 +322,36 @@ export default function App() {
   const [man2, setMan2] = useState('')
   const [surfPointCache, setSurfPointCache] = useState<Record<string, SelStation>>({})
   const [fitTrigger, setFitTrigger] = useState(0)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const surfNextId = useRef(1)
   const [opts, setOpts] = useState<ViewerOptions>({
     showSplay:           false,
     showStations:        true,
-    showStationNames:    false,
+    showStationNames:    true,
     showStationAlt:      false,
     showGrid:            true,
     // Cave scraps
     showScraps:          true,
-    scrapsOpacity:       0.60,
+    scrapsOpacity:       0.75,
     scrapsSolid:         true,
     scrapsWireframe:     false,
-    scrapsAltitude:      false,   // farebné podľa výšky
+    scrapsAltitude:      true,   // farebné podľa výšky
+    smoothScraps:        false,
+    showRenderCave:      false,
+    caveTexture:         'rock',
+    renderOpacity:       1.0,
+    placedCaver:         null,
     // Cave traverse
-    showTraverse:        false,   // polygonový ťah
-    traverseRadius:      0.3,     // polomer rúrky v m
+    showTraverse:        true,   // polygonový ťah
+    traverseRadius:      0.1,     // polomer rúrky v m
+    traverseAltitude:    true,   // farebné podľa výšky
     // Terrain surface
     showSurfaceMesh:     true,
     showSurfaceMeshWire: false,
     showSurfaceTexture:  true,
-    showSurfaceNetwork:  false,   // sieťový model (farebná výška)
+    showSurfaceNetwork:  false,
     surfaceOpacity:      0.8,
+    surfaceColor:        '#e2e8f0',
   })
 
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -339,7 +386,10 @@ export default function App() {
       if (zSurf !== null) distToSurf = zSurf - altitude
     }
 
-    const newSt: SelStation = { idx, name: sl.name, origX, origY, altitude, gps, distToSurf, screenX, screenY }
+    const newSt: SelStation = { 
+      idx, name: sl.name, origX, origY, altitude, gps, distToSurf, screenX, screenY,
+      centerX: cave.centerOffset.x, centerY: cave.centerOffset.y, centerZ: cave.centerOffset.z
+    }
     
     setSelectedStations(prev => {
       // Ak meranie VYP, vždy vraciame len aktuálny bod
@@ -374,7 +424,8 @@ export default function App() {
       name: sid,
       origX, origY, altitude,
       gps, distToSurf: 0,
-      screenX, screenY
+      screenX, screenY,
+      centerX: cave.centerOffset.x, centerY: cave.centerOffset.y, centerZ: cave.centerOffset.z
     }
     
     setSurfPointCache(prev => ({ ...prev, [sid]: newSt }))
@@ -419,7 +470,11 @@ export default function App() {
       const zSurf = sampleDtmAt(cave.surfaces[0], origX, origY)
       if (zSurf !== null) distToSurf = zSurf - altitude
     }
-    return { idx, name: sl.name, origX, origY, altitude, gps, distToSurf, screenX: window.innerWidth/2 - 140, screenY: window.innerHeight/2 - 150 }
+    return { 
+      idx, name: sl.name, origX, origY, altitude, gps, distToSurf, 
+      screenX: window.innerWidth/2 - 140, screenY: window.innerHeight/2 - 150,
+      centerX: cave.centerOffset.x, centerY: cave.centerOffset.y, centerZ: cave.centerOffset.z
+    }
   }, [cave, surfPointCache])
 
   const execManualMeasure = () => {
@@ -562,7 +617,7 @@ export default function App() {
 
   // Compute stats for Legend
   const legendCave = useMemo(() => {
-    if (!cave || !opts.scrapsAltitude) return null
+    if (!cave || (!opts.scrapsAltitude && !opts.traverseAltitude)) return null
     let minZ = Infinity, maxZ = -Infinity
     if (cave.scraps?.length) {
       for (const sc of cave.scraps) {
@@ -580,7 +635,7 @@ export default function App() {
       minAlt: minZ + cave.centerOffset.z,
       maxAlt: maxZ + cave.centerOffset.z
     }
-  }, [cave, opts.scrapsAltitude])
+  }, [cave, opts.scrapsAltitude, opts.traverseAltitude])
 
   const legendSurf = useMemo(() => {
     if (!cave || !opts.showSurfaceNetwork) return null
@@ -692,6 +747,27 @@ export default function App() {
         .help-text{font-size:.72rem;color:#2d3748;line-height:1.6}
         .loading-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
         .loading-3d{font-size:.85rem;color:#4a5568}
+
+        @media (max-width: 1023px) {
+          .sidebar-container { display: none; }
+          .sidebar-container.open { 
+            display: flex; position: fixed; inset: 0; z-index: 9999; width: 100vw; height: 100vh;
+            background: rgba(8,12,24,.96); backdrop-filter: blur(12px);
+          }
+          .sidebar { width: 100%; height: 100%; border-left: none; padding: 2rem 1.5rem; }
+          .btn-menu { display: flex !important; }
+          .tb-file, .tb-badge, .tb-stat { display: none; }
+          .s-label { font-size: 0.9rem; margin-top: 1rem; color: #a0aec0; }
+          .toggle-row, .slider-row, .info-row { padding: 0.8rem 0; font-size: 1rem; }
+          .toggle-label { font-size: 1.05rem; }
+          .switch { width: 44px; height: 24px; }
+          .switch::after { width: 18px; height: 18px; top: 2px; left: 2px; }
+          .switch.on::after { transform: translateX(20px); }
+          .btn-back { font-size: 1rem; padding: 0.5rem 0.6rem; }
+          .hide-mobile { display: none !important; }
+          .hide-mobile-flex { display: none !important; }
+          .btn-fit { display: none !important; }
+        }
       `}</style>
 
       <canvas ref={canvasRef} className="bg-canvas" />
@@ -771,49 +847,56 @@ export default function App() {
           <div className="viewer-shell">
             {/* Top bar */}
             <div className="topbar">
-              <span className="tb-logo">🏔️ CaveView</span>
+              {/* Menu Button pre Mobily (prvá položka) */}
+              <button className="btn-menu btn-back" style={{ display: 'none', marginRight: 8, background: 'rgba(255,255,255,0.15)', borderWidth: 0, padding: '0.4rem 0.7rem' }} onClick={() => setIsMobileMenuOpen(true)}>
+                <span>☰</span>
+              </button>
+
               <span className="tb-file" title={loadedFile?.name}>{loadedFile?.name}</span>
               <span className="tb-badge">{loadedFile?.ext.replace('.', '').toUpperCase()}</span>
-              <span className="tb-badge" style={{ background: 'rgba(159,122,234,.15)', color: '#9f7aea', borderColor: 'rgba(159,122,234,.3)' }}>
+              <span className="tb-badge hide-mobile" style={{ background: 'rgba(159,122,234,.15)', color: '#9f7aea', borderColor: 'rgba(159,122,234,.3)' }}>
                 {cave.segmentCount} meraní
               </span>
-              <span className="tb-badge" style={{ background: 'rgba(72,187,120,.1)', color: '#68d391', borderColor: 'rgba(72,187,120,.25)' }}>
+              <span className="tb-badge hide-mobile" style={{ background: 'rgba(72,187,120,.1)', color: '#68d391', borderColor: 'rgba(72,187,120,.25)' }}>
                 {cave.stationCount} staníc
               </span>
               {cave.scrapCount > 0 && (
-                <span className="tb-badge" style={{ background: 'rgba(237,137,54,.1)', color: '#f6ad55', borderColor: 'rgba(237,137,54,.25)' }}>
+                <span className="tb-badge hide-mobile" style={{ background: 'rgba(237,137,54,.1)', color: '#f6ad55', borderColor: 'rgba(237,137,54,.25)' }}>
                   {cave.scrapCount} scrapov
                 </span>
               )}
               <div className="tb-space" />
               <button
                 type="button"
-                className="tb-badge"
+                className="tb-badge btn-back"
                 style={{
                   cursor: 'pointer',
                   background: isMeasuringMode ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.05)',
                   color: isMeasuringMode ? '#f87171' : '#94a3b8',
                   borderColor: isMeasuringMode ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255, 255, 255, 0.15)',
-                  outline: 'none'
+                  outline: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4
                 }}
                 onClick={() => {
                   setIsMeasuringMode(!isMeasuringMode)
                   setSelectedStations([])
                 }}
-                title="Zapne logiku merania vzdialeností pre klikanie (umožní klikanie pre dva body)"
+                title="Zapne logiku merania vzdialeností pre klikanie"
               >
-                {isMeasuringMode ? '📏 Meranie zapnuté' : '📏 Meranie vypnuté'}
+                📏 <span className="hide-mobile">{isMeasuringMode ? 'Meranie zap.' : 'Meranie vyp.'}</span>
               </button>
               {isMeasuringMode && (
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginLeft: 6 }}>
-                  <input type="text" value={man1} onChange={e => setMan1(e.target.value)} placeholder="Bod A (napr. 5)" style={{ width: 100, fontSize: 11, padding: '4px 6px', background: '#0f172a', border: '1px solid #334155', color: '#e2e8f0', borderRadius: 4, outline: 'none' }} />
-                  <input type="text" value={man2} onChange={e => setMan2(e.target.value)} placeholder="Bod B (napr. Z1)" style={{ width: 100, fontSize: 11, padding: '4px 6px', background: '#0f172a', border: '1px solid #334155', color: '#e2e8f0', borderRadius: 4, outline: 'none' }} />
-                  <button onClick={execManualMeasure} style={{ background: '#3b82f6', border: 'none', color: '#fff', fontSize: 11, padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }}>Spočítať / Ukázať</button>
+                <div className="hide-mobile-flex" style={{ display: 'flex', gap: 6, alignItems: 'center', marginLeft: 6 }}>
+                  <input type="text" value={man1} onChange={e => setMan1(e.target.value)} placeholder="Bod A" style={{ width: 60, fontSize: 11, padding: '4px 6px', background: '#0f172a', border: '1px solid #334155', color: '#e2e8f0', borderRadius: 4, outline: 'none' }} />
+                  <input type="text" value={man2} onChange={e => setMan2(e.target.value)} placeholder="Bod B" style={{ width: 60, fontSize: 11, padding: '4px 6px', background: '#0f172a', border: '1px solid #334155', color: '#e2e8f0', borderRadius: 4, outline: 'none' }} />
+                  <button onClick={execManualMeasure} style={{ background: '#3b82f6', border: 'none', color: '#fff', fontSize: 11, padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }}>Spočítať</button>
                 </div>
               )}
               <div className="tb-space" />
-              <button className="btn-back" style={{ background: '#3b82f6', color: '#fff', border: 'none', marginLeft: 'auto' }} onClick={() => setFitTrigger(t => t + 1)} type="button">◎ Celá jaskyňa (Fit)</button>
-              <button className="btn-back" onClick={handleReset} type="button" style={{ marginLeft: 6 }}>← Zavrieť</button>
+              <button className="btn-back btn-fit" style={{ background: '#3b82f6', color: '#fff', border: 'none', marginLeft: 'auto' }} onClick={() => setFitTrigger(t => t + 1)} type="button">◎ <span className="hide-mobile">Celá jaskyňa</span></button>
+              <button className="btn-back" onClick={handleReset} type="button" style={{ marginLeft: 6 }}>✖ <span className="hide-mobile">Zavrieť</span></button>
             </div>
 
             <div className="viewer-body">
@@ -879,13 +962,23 @@ export default function App() {
                   <StationDetailCard
                     stations={selectedStations}
                     onClose={() => setSelectedStations([])}
+                    onPlaceCaver={(pos, pose) => setOpts(p => ({ ...p, placedCaver: { pos, pose } }))}
                   />
                 )}
               </div>
 
-              {/* Sidebar */}
-              <aside className="sidebar">
-                {/* Info */}
+              {/* Sidebar container (respektovaný na mobile) */}
+              <div className={`sidebar-container ${isMobileMenuOpen ? 'open' : ''}`}>
+                <aside className="sidebar">
+                  {/* Zatváracie tlačidlo pre mobily */}
+                  {isMobileMenuOpen && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                      <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#e2e8f0' }}>Ovládanie 3D scény</span>
+                      <button className="btn-back" style={{ background: '#ef4444', color: '#fff', border: 'none' }} onClick={() => setIsMobileMenuOpen(false)}>✖ Zatvoriť</button>
+                    </div>
+                  )}
+
+                  {/* Info */}
                 <div>
                   <div className="s-label">Súbor</div>
                   <div className="info-row"><span>Formát</span><span className="info-val">{loadedFile?.ext.replace('.', '').toUpperCase()}</span></div>
@@ -917,6 +1010,18 @@ export default function App() {
                         onKeyDown={e => e.key === 'Enter' && toggleOpt(key)} />
                     </div>
                   ))}
+
+                  {/* Farebné podľa výšky pre merania */}
+                  <div className="toggle-row">
+                    <label className="toggle-label">
+                      <div className="dot" style={{ background: 'linear-gradient(180deg,#e53935 0%,#f9a825 40%,#43a047 70%,#1565c0 100%)', border: 'none' }} />
+                      Farebné podľa výšky
+                    </label>
+                    <div className={`switch${opts.traverseAltitude ? ' on' : ''}`}
+                      onClick={() => toggleOpt('traverseAltitude')} role="switch"
+                      aria-checked={opts.traverseAltitude} tabIndex={0}
+                      onKeyDown={e => e.key === 'Enter' && toggleOpt('traverseAltitude')} />
+                  </div>
 
                   {/* Polygonový ťah — 3D rúrky */}
                   <div className="toggle-row">
@@ -961,6 +1066,64 @@ export default function App() {
 
                     {opts.showScraps && (
                       <>
+                        {/* Nový Smoothing Switch */}
+                        <div className="toggle-row">
+                          <label className="toggle-label" style={{ color: '#fbbf24' }}>
+                            <div className="dot" style={{ background: '#fbbf24', boxShadow: '0 0 6px #fbbf24' }} />
+                            Organický / Vyhladený
+                          </label>
+                          <div className={`switch${opts.smoothScraps ? ' on' : ''}`}
+                            onClick={() => toggleOpt('smoothScraps')} role="switch"
+                            aria-checked={opts.smoothScraps} tabIndex={0}
+                            style={opts.smoothScraps ? { background: '#fbbf24' } : {}}
+                            onKeyDown={e => e.key === 'Enter' && toggleOpt('smoothScraps')} />
+                        </div>
+
+                        {/* Render Mode 3D */}
+                        <div className="toggle-row">
+                          <label className="toggle-label" style={{ color: '#63b3ed', fontWeight: 700 }}>
+                            <div className="dot" style={{ background: 'url(/assets/cave_rock.png)', backgroundSize: 'cover', border: '1px solid #63b3ed' }} />
+                            Render model 3D
+                          </label>
+                          <div className={`switch${opts.showRenderCave ? ' on' : ''}`}
+                            onClick={() => toggleOpt('showRenderCave')} role="switch"
+                            aria-checked={opts.showRenderCave} tabIndex={0}
+                            style={opts.showRenderCave ? { background: '#63b3ed' } : {}}
+                            onKeyDown={e => e.key === 'Enter' && toggleOpt('showRenderCave')} />
+                        </div>
+
+                        {opts.showRenderCave && (
+                          <div style={{ padding: '4px 0 12px 12px', borderLeft: '2px solid rgba(99,179,237,0.2)', marginBottom: 8 }}>
+                            <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 6, textTransform: 'uppercase' }}>Typ povrchu</div>
+                            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                              {[
+                                { id: 'rock', n: 'Základná', img: '/assets/cave_rock.png' },
+                                { id: 'limestone', n: 'Vápenec', img: '/assets/cave_limestone.png' },
+                                { id: 'granite', n: 'Granit', img: '/assets/cave_granite.png' },
+                              ].map(t => (
+                                <div key={t.id}
+                                  onClick={() => setOpts(p => ({ ...p, caveTexture: t.id as any }))}
+                                  style={{ 
+                                    width: 32, height: 32, borderRadius: 6, cursor: 'pointer',
+                                    backgroundImage: `url(${t.img})`, backgroundSize: 'cover',
+                                    border: opts.caveTexture === t.id ? '2px solid #63b3ed' : '1px solid rgba(255,255,255,0.1)',
+                                    boxShadow: opts.caveTexture === t.id ? '0 0 8px rgba(99,179,237,0.5)' : 'none'
+                                  }}
+                                  title={t.n} />
+                              ))}
+                            </div>
+                            <div className="slider-row" style={{ marginTop: 0 }}>
+                              <div className="slider-top">
+                                <span style={{ fontSize: 10 }}>Priehľadnosť textúry</span>
+                                <span className="slider-val" style={{ fontSize: 10 }}>{Math.round(opts.renderOpacity * 100)}%</span>
+                              </div>
+                              <input type="range" min={5} max={100} step={5}
+                                value={Math.round(opts.renderOpacity * 100)}
+                                onChange={e => setOpts(p => ({ ...p, renderOpacity: Number(e.target.value) / 100 }))} />
+                            </div>
+                          </div>
+                        )}
+
                         {/* Solid tieňovaný mesh */}
                         <div className="toggle-row">
                           <label className="toggle-label">
@@ -1030,6 +1193,42 @@ export default function App() {
                         aria-checked={opts.showSurfaceMesh} tabIndex={0}
                         onKeyDown={e => e.key === 'Enter' && toggleOpt('showSurfaceMesh')} />
                     </div>
+
+                    {/* Paleta farieb pre terén */}
+                    {opts.showSurfaceMesh && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px 4px', marginBottom: 4 }}>
+                        {[
+                          { c: '#f1f5f9', n: 'Perla' },
+                          { c: '#ecfdf5', n: 'Mäta' },
+                          { c: '#eff6ff', n: 'Nebeská' },
+                          { c: '#fefce8', n: 'Piesok' },
+                          { c: '#fff1f2', n: 'Ruža' },
+                        ].map(item => (
+                          <div key={item.c}
+                            onClick={() => setOpts(p => ({ ...p, surfaceColor: item.c }))}
+                            style={{ 
+                              width: 20, height: 20, borderRadius: 4, cursor: 'pointer', background: item.c,
+                              border: opts.surfaceColor.toLowerCase() === item.c.toLowerCase() ? '2px solid #63b3ed' : '1px solid rgba(255,255,255,0.15)',
+                              boxShadow: opts.surfaceColor.toLowerCase() === item.c.toLowerCase() ? '0 0 8px rgba(99,179,237,0.5)' : 'none',
+                              transition: 'transform 0.1s'
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'}
+                            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                            title={item.n} />
+                        ))}
+                        {/* Custom Color Picker */}
+                        <div style={{ position: 'relative', width: 20, height: 20 }}>
+                          <input type="color" 
+                            value={opts.surfaceColor}
+                            onChange={e => setOpts(p => ({ ...p, surfaceColor: e.target.value }))}
+                            style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', zIndex: 2 }} />
+                          <div style={{ 
+                            width: 20, height: 20, borderRadius: 4, background: 'conic-gradient(red, yellow, green, cyan, blue, magenta, red)',
+                            border: '1px solid rgba(255,255,255,0.2)'
+                          }} />
+                        </div>
+                      </div>
+                    )}
 
                     {/* Drôtená sieť terénu */}
                     <div className="toggle-row">
@@ -1151,6 +1350,7 @@ export default function App() {
                   ))}
                 </div>
               </aside>
+              </div>
             </div>
           </div>
         )}
