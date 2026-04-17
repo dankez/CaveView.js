@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, Suspense } from 'react'
+import React, { useState, useRef, useCallback, useEffect, Suspense, useMemo } from 'react'
 import proj4 from 'proj4'
 import { parseLox, parseSvx, parsePlt } from './parsers/caveParser'
 import type { ParsedCave, CaveSurface } from './parsers/caveParser'
@@ -139,10 +139,14 @@ interface SelStation {
   screenY:      number
 }
 
-function StationDetailCard({ st, onClose }: { st: SelStation; onClose: () => void }) {
-  // Fixovana poloha — lavý horny roh, s malym offsetom od stredu
-  const cx = Math.min(Math.max(st.screenX, 280), window.innerWidth - 320)
-  const cy = Math.min(Math.max(st.screenY + 20, 60), window.innerHeight - 370)
+function StationDetailCard({ stations, onClose }: { stations: SelStation[]; onClose: () => void }) {
+  if (stations.length === 0) return null
+  const st1 = stations[0]
+  const st2 = stations.length > 1 ? stations[1] : null
+
+  // Fixovana poloha karty
+  const cx = Math.min(Math.max(st1.screenX, 280), window.innerWidth - 320)
+  const cy = Math.min(Math.max(st1.screenY + 20, 60), window.innerHeight - 450)
 
   const Row = ({ label, value, sub }: { label: string; value: string; sub?: string }) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
@@ -169,7 +173,9 @@ function StationDetailCard({ st, onClose }: { st: SelStation; onClose: () => voi
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4fc3f7', boxShadow: '0 0 6px #4fc3f7' }} />
-          <span style={{ fontSize: 15, fontWeight: 700, color: '#e2e8f0', letterSpacing: '0.01em' }}>{st.name}</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: '#e2e8f0', letterSpacing: '0.01em' }}>
+            {stations.length === 1 ? st1.name : `Výber: ${st1.name} → ${st2?.name}`}
+          </span>
         </div>
         <button onClick={onClose} style={{
           background: 'none', border: 'none', color: '#64748b', cursor: 'pointer',
@@ -177,51 +183,88 @@ function StationDetailCard({ st, onClose }: { st: SelStation; onClose: () => voi
         }} title="Zatvoriť" aria-label="Zatvoriť">✕</button>
       </div>
 
-      {/* Data rows */}
-      <Row label="Stanica" value={`#${st.idx}`} />
-      <Row label="Nadm. výška" value={`${st.altitude.toFixed(2)} m`} sub="n.m." />
-      <Row label="Súradnica X" value={st.origX.toFixed(2)} sub="m" />
-      <Row label="Súradnica Y" value={st.origY.toFixed(2)} sub="m" />
+      {/* Podrobnosti bodu */}
+      {stations.map((st, i) => (
+        <div key={i} style={{ marginBottom: stations.length > 1 ? 12 : 0 }}>
+          {stations.length > 1 && (
+            <div style={{ fontSize: 10, color: i === 0 ? '#fbbf24' : '#ef4444', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
+              {i === 0 ? 'Počiatočný bod' : 'Koncový bod'}
+            </div>
+          )}
+          {st.idx !== -1 ? (
+            <Row label="Stanica" value={`#${st.idx}`} sub={`(${st.name})`} />
+          ) : (
+            <Row label="Bod povrchu ID" value={st.name} />
+          )}
+          <Row label="Nadm. výška" value={`${st.altitude.toFixed(2)} m`} sub="n.m." />
+          {st.distToSurf !== null && (
+            <Row
+              label="Hĺbka pod povrchom"
+              value={Math.abs(st.distToSurf).toFixed(1) + ' m'}
+              sub={st.distToSurf >= 0 ? 'pod povrchom' : 'nad povrchom'}
+            />
+          )}
 
-      {/* GPS */}
-      <div style={{ margin: '10px 0 2px', fontSize: 10, color: '#4fc3f7', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-        GPS WGS84 {st.gps ? (st.gps.zone ? `(UTM ${st.gps.zone}N)` : `(${st.gps.epsg})`) : ''}
-      </div>
-      {st.gps ? (
-        <>
-          <Row label="Latitude" value={`${st.gps.lat.toFixed(6)}°`} />
-          <Row label="Longitude" value={`${st.gps.lon.toFixed(6)}°`} />
-          <div style={{ marginTop: 4 }}>
-            <a
-              href={`https://maps.google.com/?q=${st.gps.lat.toFixed(6)},${st.gps.lon.toFixed(6)}`}
-              target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: 11, color: '#4fc3f7', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
-            >
-              🗺️ Zobraziť v Google Maps
-            </a>
-          </div>
-        </>
-      ) : (
-        <Row label="GPS" value="Nedostupné" sub="(národna siet)" />
-      )}
+          {/* GPS Section only if 1 station is selected to save space */}
+          {stations.length === 1 && (
+            <>
+              <div style={{ margin: '10px 0 2px', fontSize: 10, color: '#4fc3f7', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                GPS WGS84 {st.gps ? (st.gps.zone ? `(UTM ${st.gps.zone}N)` : `(${st.gps.epsg})`) : ''}
+              </div>
+              {st.gps ? (
+                <>
+                  <Row label="Latitude" value={`${st.gps.lat.toFixed(6)}°`} />
+                  <Row label="Longitude" value={`${st.gps.lon.toFixed(6)}°`} />
+                  <div style={{ marginTop: 4 }}>
+                    <a
+                      href={`https://maps.google.com/?q=${st.gps.lat.toFixed(6)},${st.gps.lon.toFixed(6)}`}
+                      target="_blank" rel="noopener noreferrer"
+                      style={{ fontSize: 11, color: '#4fc3f7', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
+                    >
+                      🗺️ Zobraziť v Google Maps
+                    </a>
+                  </div>
+                </>
+              ) : (
+                <Row label="GPS" value="Nedostupné" sub="(národna siet)" />
+              )}
+            </>
+          )}
+        </div>
+      ))}
 
-      {/* Distance to surface */}
-      {st.distToSurf !== null && (
-        <>
-          <div style={{ margin: '10px 0 2px', fontSize: 10, color: '#4fc3f7', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            Povrch
+      {/* Meranie ak sú zvolené dva body */}
+      {st1 && st2 && (() => {
+        const dx = st2.origX - st1.origX
+        const dy = st2.origY - st1.origY
+        const dz = st2.altitude - st1.altitude
+        
+        const horizDist = Math.sqrt(dx * dx + dy * dy)
+        const dist3D = Math.sqrt(dx * dx + dy * dy + dz * dz)
+        
+        // Azimut: Sever je Y+, Východ je X+ -> atan2(dx, dy) robí nulu pre Sever a kladný uhol v smere chodu hodín
+        const az = (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360
+        // Sklon (Pitch): Vertikála vs 3D Vzdialenosť
+        const inc = Math.asin(dz / dist3D) * 180 / Math.PI
+
+        return (
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, color: '#ef4444', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ width: 14, height: 2, borderBottom: '2px dashed #ef4444' }}></div>
+              Meranie vzdialenosti
+            </div>
+            <Row label="3D Vzdialenosť" value={`${dist3D.toFixed(2)} m`} />
+            <Row label="Pôdorysná dĺžka" value={`${horizDist.toFixed(2)} m`} />
+            <Row label="Prevýšenie (ΔZ)" value={`${(dz > 0 ? '+' : '')}${dz.toFixed(2)} m`} />
+            <Row label="Azimut (Kurz)" value={`${az.toFixed(1)}°`} />
+            <Row label="Sklon (Uhlové kles/stúp)" value={`${(inc > 0 ? '+' : '')}${inc.toFixed(1)}°`} />
           </div>
-          <Row
-            label="Hĺbka pod povrchom"
-            value={st.distToSurf >= 0 ? `${st.distToSurf.toFixed(1)} m` : `+${Math.abs(st.distToSurf).toFixed(1)} m (nad)`}
-            sub={st.distToSurf >= 0 ? 'pod povrchom' : 'nad povrchom'}
-          />
-        </>
-      )}
+        )
+      })()}
 
       {/* Footer hint */}
-      <div style={{ marginTop: 10, fontSize: 10, color: '#334155', textAlign: 'center' }}>
-        Klikni kdekoľvek mimo pre zatvorenie
+      <div style={{ marginTop: 14, fontSize: 10, color: '#64748b', textAlign: 'center' }}>
+        {stations.length === 1 ? 'Kliknutím na ďalší bod k nemu zmeriaš vzdialenosť' : 'Kliknutím na ďalší bod začneš nové meranie'}
       </div>
     </div>
   )
@@ -234,7 +277,13 @@ export default function App() {
   const [isDragging, setIsDragging] = useState(false)
   const [progress, setProgress] = useState(0)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  const [selectedStation, setSelectedStation] = useState<SelStation | null>(null)
+  const [selectedStations, setSelectedStations] = useState<SelStation[]>([])
+  const [isMeasuringMode, setIsMeasuringMode] = useState(false)
+  const [man1, setMan1] = useState('')
+  const [man2, setMan2] = useState('')
+  const [surfPointCache, setSurfPointCache] = useState<Record<string, SelStation>>({})
+  const [fitTrigger, setFitTrigger] = useState(0)
+  const surfNextId = useRef(1)
   const [opts, setOpts] = useState<ViewerOptions>({
     showSplay:           false,
     showStations:        true,
@@ -260,10 +309,16 @@ export default function App() {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const lastClickRef = useRef<{time: number, idx: number}>({time: 0, idx: -1})
 
-  // Handler pre klik na stanicu
-  const handleStationClick = useCallback((idx: number, screenX: number, screenY: number) => {
+  const handleStationClick = useCallback((idx: number, screenX: number, screenY: number, ctrlKey: boolean) => {
     if (!cave) return
+    const now = Date.now()
+    if (now - lastClickRef.current.time < 300 && lastClickRef.current.idx === idx) {
+      return // Zamedzenie double-click bugu na ten istý bod
+    }
+    lastClickRef.current = { time: now, idx }
+
     const sl = cave.stationLabels[idx]
     if (!sl) return
 
@@ -284,8 +339,99 @@ export default function App() {
       if (zSurf !== null) distToSurf = zSurf - altitude
     }
 
-    setSelectedStation({ idx, name: sl.name, origX, origY, altitude, gps, distToSurf, screenX, screenY })
-  }, [cave])
+    const newSt: SelStation = { idx, name: sl.name, origX, origY, altitude, gps, distToSurf, screenX, screenY }
+    
+    setSelectedStations(prev => {
+      // Ak meranie VYP, vždy vraciame len aktuálny bod
+      if (!isMeasuringMode) return [newSt]
+
+      // Zjednodušené ovládanie:
+      // Ak máme už presne 1 bod, klik na ďalší ho nastaví ako druhý bod (bez ohľadu na CTRL).
+      if (prev.length === 1 && prev[0].idx !== newSt.idx) {
+        return [prev[0], newSt]
+      }
+      // Ak nemáme nič, alebo máme už 2 body zmerané, resetujeme na 1 nový bod merania.
+      // Kliknutie na rovnaký bod (idx) slúži ako "zrušenie výberu" = vyberie ho len raz a začne sa od neho znova
+      return [newSt]
+    })
+  }, [cave, isMeasuringMode])
+
+  const handleSurfaceClick = useCallback((origX: number, origY: number, altitude: number, screenX: number, screenY: number) => {
+    if (!cave || !isMeasuringMode) return // Klik na terén berieme IBA v režime merania
+    const now = Date.now()
+    if (now - lastClickRef.current.time < 300 && lastClickRef.current.idx === -1) return
+    lastClickRef.current = { time: now, idx: -1 }
+
+    let gps: { lat: number; lon: number; zone?: number; epsg?: string } | null = null;
+    gps = tryUtmToWgs84(origX, origY);
+    if (!gps) {
+      gps = tryJtskToWgs84(origX, origY);
+    }
+
+    const sid = `Z${surfNextId.current++}`
+    const newSt: SelStation = {
+      idx: -1,
+      name: sid,
+      origX, origY, altitude,
+      gps, distToSurf: 0,
+      screenX, screenY
+    }
+    
+    setSurfPointCache(prev => ({ ...prev, [sid]: newSt }))
+
+    setSelectedStations(prev => {
+      if (!isMeasuringMode) return [newSt]
+      if (prev.length === 1 && (prev[0].origX !== newSt.origX || prev[0].origY !== newSt.origY)) {
+        return [prev[0], newSt]
+      }
+      return [newSt]
+    })
+  }, [cave, isMeasuringMode])
+
+  // Manuálne meranie cez textové vstupy
+  useEffect(() => {
+    if (selectedStations.length > 0) {
+      setMan1(selectedStations[0].name)
+      if (selectedStations.length > 1) setMan2(selectedStations[1].name)
+      else setMan2('')
+    } else {
+      setMan1('')
+      setMan2('')
+    }
+  }, [selectedStations])
+
+  const findStationByName = useCallback((name: string): SelStation | null => {
+    if (!name) return null
+    if (surfPointCache[name]) return surfPointCache[name]
+    if (!cave) return null
+    const idx = cave.stationLabels.findIndex(sl => sl.name.toLowerCase() === name.toLowerCase())
+    if (idx === -1) return null
+
+    const sl = cave.stationLabels[idx]
+    const origX = sl.pos.x + cave.centerOffset.x
+    const origY = sl.pos.y + cave.centerOffset.y
+    const altitude = sl.altitude
+
+    let gps = tryUtmToWgs84(origX, origY) || tryJtskToWgs84(origX, origY) || null
+
+    let distToSurf: number | null = null
+    if (cave.surfaces?.length > 0) {
+      const zSurf = sampleDtmAt(cave.surfaces[0], origX, origY)
+      if (zSurf !== null) distToSurf = zSurf - altitude
+    }
+    return { idx, name: sl.name, origX, origY, altitude, gps, distToSurf, screenX: window.innerWidth/2 - 140, screenY: window.innerHeight/2 - 150 }
+  }, [cave, surfPointCache])
+
+  const execManualMeasure = () => {
+    const s1 = findStationByName(man1.trim())
+    const s2 = findStationByName(man2.trim())
+    if (!s1 || !s2) {
+      setErrorMsg('Jeden alebo oba body zadané v meraní neboli nájdené!')
+      setTimeout(() => setErrorMsg(null), 3500)
+    } else {
+      setSelectedStations([s1, s2])
+    }
+  }
 
   // particle background
   useEffect(() => {
@@ -413,6 +559,45 @@ export default function App() {
 
   const toggleOpt = (key: keyof ViewerOptions) =>
     setOpts(prev => ({ ...prev, [key]: !prev[key] }))
+
+  // Compute stats for Legend
+  const legendCave = useMemo(() => {
+    if (!cave || !opts.scrapsAltitude) return null
+    let minZ = Infinity, maxZ = -Infinity
+    if (cave.scraps?.length) {
+      for (const sc of cave.scraps) {
+        for (const v of sc.vertices) {
+          if (v.z < minZ) minZ = v.z
+          if (v.z > maxZ) maxZ = v.z
+        }
+      }
+    } else {
+      minZ = cave.bounds.min.z
+      maxZ = cave.bounds.max.z
+    }
+    if (minZ === Infinity) return null
+    return {
+      minAlt: minZ + cave.centerOffset.z,
+      maxAlt: maxZ + cave.centerOffset.z
+    }
+  }, [cave, opts.scrapsAltitude])
+
+  const legendSurf = useMemo(() => {
+    if (!cave || !opts.showSurfaceNetwork) return null
+    let minZ = Infinity, maxZ = -Infinity
+    if (cave.surfaces?.length > 0) {
+      const d = cave.surfaces[0].dtm.data
+      for(let i=0; i<d.length; i++){
+        if (d[i] < minZ) minZ = d[i]
+        if (d[i] > maxZ) maxZ = d[i]
+      }
+    }
+    if (minZ === Infinity) return null
+    return {
+      minAlt: minZ,
+      maxAlt: maxZ
+    }
+  }, [cave, opts.showSurfaceNetwork])
 
   const setOpacity = (key: 'scrapsOpacity' | 'surfaceOpacity', v: number) =>
     setOpts(prev => ({ ...prev, [key]: v }))
@@ -601,8 +786,34 @@ export default function App() {
                 </span>
               )}
               <div className="tb-space" />
-              <span className="tb-stat">Veľkosť: {formatSize(loadedFile?.size || 0)}</span>
-              <button className="btn-back" onClick={handleReset} type="button">← Zavrieť</button>
+              <button
+                type="button"
+                className="tb-badge"
+                style={{
+                  cursor: 'pointer',
+                  background: isMeasuringMode ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                  color: isMeasuringMode ? '#f87171' : '#94a3b8',
+                  borderColor: isMeasuringMode ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255, 255, 255, 0.15)',
+                  outline: 'none'
+                }}
+                onClick={() => {
+                  setIsMeasuringMode(!isMeasuringMode)
+                  setSelectedStations([])
+                }}
+                title="Zapne logiku merania vzdialeností pre klikanie (umožní klikanie pre dva body)"
+              >
+                {isMeasuringMode ? '📏 Meranie zapnuté' : '📏 Meranie vypnuté'}
+              </button>
+              {isMeasuringMode && (
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginLeft: 6 }}>
+                  <input type="text" value={man1} onChange={e => setMan1(e.target.value)} placeholder="Bod A (napr. 5)" style={{ width: 100, fontSize: 11, padding: '4px 6px', background: '#0f172a', border: '1px solid #334155', color: '#e2e8f0', borderRadius: 4, outline: 'none' }} />
+                  <input type="text" value={man2} onChange={e => setMan2(e.target.value)} placeholder="Bod B (napr. Z1)" style={{ width: 100, fontSize: 11, padding: '4px 6px', background: '#0f172a', border: '1px solid #334155', color: '#e2e8f0', borderRadius: 4, outline: 'none' }} />
+                  <button onClick={execManualMeasure} style={{ background: '#3b82f6', border: 'none', color: '#fff', fontSize: 11, padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }}>Spočítať / Ukázať</button>
+                </div>
+              )}
+              <div className="tb-space" />
+              <button className="btn-back" style={{ background: '#3b82f6', color: '#fff', border: 'none', marginLeft: 'auto' }} onClick={() => setFitTrigger(t => t + 1)} type="button">◎ Celá jaskyňa (Fit)</button>
+              <button className="btn-back" onClick={handleReset} type="button" style={{ marginLeft: 6 }}>← Zavrieť</button>
             </div>
 
             <div className="viewer-body">
@@ -617,14 +828,57 @@ export default function App() {
                     cave={cave}
                     options={opts}
                     onStationClick={handleStationClick}
+                    onSurfaceClick={isMeasuringMode ? handleSurfaceClick : undefined}
+                    onBackgroundClick={() => setSelectedStations([])}
+                    fitTrigger={fitTrigger}
+                    manualConnection={
+                      selectedStations.length === 2 && selectedStations[0] && selectedStations[1]
+                        ? {
+                            p1: { x: selectedStations[0].origX - cave.centerOffset.x, y: selectedStations[0].origY - cave.centerOffset.y, z: selectedStations[0].altitude - cave.centerOffset.z },
+                            p2: { x: selectedStations[1].origX - cave.centerOffset.x, y: selectedStations[1].origY - cave.centerOffset.y, z: selectedStations[1].altitude - cave.centerOffset.z }
+                          }
+                        : null
+                    }
                   />
                 </Suspense>
+                {/* Altitude Legend Overlay */}
+                {(legendCave || legendSurf) && (
+                  <div style={{ position: 'absolute', bottom: 120, right: 24, padding: '10px 14px', background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(6px)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)', color: '#fff', fontSize: 11, display: 'flex', gap: 16, alignItems: 'stretch', pointerEvents: 'none', zIndex: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
+                    {legendCave && (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                        <div style={{ fontSize: 9, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Jaskyňa</div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between', height: 120, fontFamily: 'monospace' }}>
+                            <span>{legendCave.maxAlt.toFixed(0)}m</span>
+                            <span>{(legendCave.minAlt + (legendCave.maxAlt - legendCave.minAlt)/2).toFixed(0)}m</span>
+                            <span>{legendCave.minAlt.toFixed(0)}m</span>
+                          </div>
+                          <div style={{ width: 14, height: 120, borderRadius: 4, background: `linear-gradient(to top, rgb(20,45,165) 0%, rgb(25,122,216) 18%, rgb(30,198,183) 35%, rgb(45,221,96) 50%, rgb(204,239,25) 65%, rgb(247,153,12) 80%, rgb(224,25,25) 100%)` }} />
+                        </div>
+                      </div>
+                    )}
+                    {legendCave && legendSurf && <div style={{ width: 1, background: 'rgba(255,255,255,0.1)', margin: '0 2px' }} />}
+                    {legendSurf && (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                        <div style={{ fontSize: 9, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Povrch</div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between', height: 120, fontFamily: 'monospace' }}>
+                            <span>{legendSurf.maxAlt.toFixed(0)}m</span>
+                            <span>{(legendSurf.minAlt + (legendSurf.maxAlt - legendSurf.minAlt)/2).toFixed(0)}m</span>
+                            <span>{legendSurf.minAlt.toFixed(0)}m</span>
+                          </div>
+                          <div style={{ width: 14, height: 120, borderRadius: 4, background: `linear-gradient(to top, rgb(20,45,165) 0%, rgb(25,122,216) 18%, rgb(30,198,183) 35%, rgb(45,221,96) 50%, rgb(204,239,25) 65%, rgb(247,153,12) 80%, rgb(224,25,25) 100%)` }} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Station detail card overlay */}
-                {selectedStation && (
+                {selectedStations.length > 0 && (
                   <StationDetailCard
-                    st={selectedStation}
-                    onClose={() => setSelectedStation(null)}
+                    stations={selectedStations}
+                    onClose={() => setSelectedStations([])}
                   />
                 )}
               </div>

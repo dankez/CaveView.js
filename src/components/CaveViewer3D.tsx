@@ -1,6 +1,6 @@
-import { useMemo, useEffect } from 'react'
+import { useMemo, useEffect, useState } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
-import { OrbitControls, Grid, Html } from '@react-three/drei'
+import { OrbitControls, Grid, Html, GizmoHelper, GizmoViewport } from '@react-three/drei'
 import * as THREE from 'three'
 import type { ParsedCave, CaveSurface } from '../parsers/caveParser'
 
@@ -31,12 +31,14 @@ export interface ViewerOptions {
   surfaceOpacity:      number
 }
 
-// ─── Clickable stations (neviditelné gule, raycasting) ───────────────────────
+// ─── Clickable stations (neviditelné gule, raycasting) & Hover Highlight ───
 function ClickableStations({ cave, onStationClick }: {
   cave: ParsedCave
-  onStationClick: (idx: number, screenX: number, screenY: number) => void
+  onStationClick: (idx: number, screenX: number, screenY: number, ctrlKey: boolean) => void
 }) {
-  const sphereGeo = useMemo(() => new THREE.SphereGeometry(0.7, 6, 4), [])
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
+
+  const sphereGeo = useMemo(() => new THREE.SphereGeometry(1.2, 8, 6), [])
   const mat       = useMemo(() => new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }), [])
 
   const mesh = useMemo(() => {
@@ -51,21 +53,48 @@ function ClickableStations({ cave, onStationClick }: {
     return im
   }, [cave, sphereGeo, mat])
 
+  useEffect(() => {
+    document.body.style.cursor = hoveredIdx !== null ? 'crosshair' : 'auto'
+    return () => { document.body.style.cursor = 'auto' }
+  }, [hoveredIdx])
+
+  const hoveredObj = useMemo(() => {
+    if (hoveredIdx === null) return null
+    const s = cave.stations[hoveredIdx]
+    return s ? [s.x, s.z, -s.y] as [number, number, number] : null
+  }, [hoveredIdx, cave])
+
   return (
-    <primitive
-      object={mesh}
-      onClick={(e: any) => {
-        e.stopPropagation()
-        if (e.instanceId !== undefined)
-          onStationClick(e.instanceId, e.nativeEvent.clientX, e.nativeEvent.clientY)
-      }}
-    />
+    <group>
+      <primitive
+        object={mesh}
+        onPointerOver={(e: any) => {
+          e.stopPropagation()
+          if (e.instanceId !== undefined) setHoveredIdx(e.instanceId)
+        }}
+        onPointerOut={() => setHoveredIdx(null)}
+        onClick={(e: any) => {
+          e.stopPropagation()
+          if (e.instanceId !== undefined) {
+            const ctrl = e.nativeEvent.ctrlKey || e.nativeEvent.metaKey
+            onStationClick(e.instanceId, e.nativeEvent.clientX, e.nativeEvent.clientY, ctrl)
+          }
+        }}
+      />
+      {/* ── Highlight Sphere ── */}
+      {hoveredObj && (
+        <mesh position={hoveredObj} renderOrder={110}>
+          <sphereGeometry args={[0.3, 8, 8]} />
+          <meshBasicMaterial color="#ef4444" depthTest={false} />
+        </mesh>
+      )}
+    </group>
   )
 }
 
 // ─── Elevation colormap ───────────────────────────────────────────────────────
 // Hladký prechod: tmavá modrá → azúrová → zelená → žltá → oranžová → červená
-const ELEV_STOPS: [number, [number, number, number]][] = [
+export const ELEV_STOPS: [number, [number, number, number]][] = [
   [0.00, [0.08, 0.18, 0.65]],
   [0.18, [0.10, 0.48, 0.85]],
   [0.35, [0.12, 0.78, 0.72]],
@@ -374,10 +403,11 @@ function buildTerrainGeo(surface: CaveSurface, withColors: boolean): THREE.Buffe
 }
 
 // ─── Terrain surface mesh (všetky módy) ──────────────────────────────────────
-function TerrainMesh({ surface, showMesh, showMeshWire, showTexture, showNetwork, opacity }: {
+function TerrainMesh({ surface, showMesh, showMeshWire, showTexture, showNetwork, opacity, onSurfaceClick }: {
   surface: CaveSurface
   showMesh: boolean; showMeshWire: boolean; showTexture: boolean; showNetwork: boolean
   opacity: number
+  onSurfaceClick?: (origX: number, origY: number, altitude: number, screenX: number, screenY: number) => void
 }) {
   const solidGeo   = useMemo(() => buildTerrainGeo(surface, false), [surface])
   const networkGeo = useMemo(() => buildTerrainGeo(surface, true),  [surface])
@@ -387,10 +417,30 @@ function TerrainMesh({ surface, showMesh, showMeshWire, showTexture, showNetwork
     return new THREE.TextureLoader().load(surface.bitmapUrl)
   }, [surface])
 
+  const [hoveredSurf, setHoveredSurf] = useState<[number, number, number] | null>(null)
+
   if (!showMesh && !showMeshWire && !showTexture && !showNetwork) return null
 
   return (
-    <group>
+    <group
+      onClick={(e: any) => {
+        if (onSurfaceClick && e.point) {
+          e.stopPropagation()
+          const { x, y, z } = e.point // e.point je priesečník lúča a povrchu v scéne
+          const origX = x + surface.centerOffset.x
+          const origY = -z + surface.centerOffset.y // vráti späť inverzné Z (3D -Z je 2D +Y)
+          const altitude = y + surface.centerOffset.z
+          onSurfaceClick(origX, origY, altitude, e.nativeEvent.clientX, e.nativeEvent.clientY)
+        }
+      }}
+      onPointerMove={(e: any) => {
+        if (onSurfaceClick && e.point) {
+          e.stopPropagation()
+          setHoveredSurf([e.point.x, e.point.y, e.point.z])
+        }
+      }}
+      onPointerOut={() => setHoveredSurf(null)}
+    >
       {/* ── Tieňovaný solid (zelený) ── */}
       {showMesh && (
         <mesh geometry={solidGeo} renderOrder={0}>
@@ -427,13 +477,43 @@ function TerrainMesh({ surface, showMesh, showMeshWire, showTexture, showNetwork
           <meshBasicMaterial color="#6ab04c" wireframe depthWrite={false} transparent opacity={0.45} />
         </mesh>
       )}
+
+      {/* ── Hover Surface Point ── */}
+      {hoveredSurf && onSurfaceClick && (
+        <mesh position={hoveredSurf} renderOrder={100}>
+          <sphereGeometry args={[0.25, 8, 8]} />
+          <meshBasicMaterial color="#ef4444" depthTest={false} />
+        </mesh>
+      )}
     </group>
   )
 }
 
+// ─── Manual Connection Line (Ctrl+Click measuring) ────────────────────────────
+function ManualConnection({ p1, p2 }: { p1: {x:number, y:number, z:number}, p2: {x:number, y:number, z:number} }) {
+  const geo = useMemo(() => {
+    const pts = [
+      new THREE.Vector3(p1.x, p1.z, -p1.y),
+      new THREE.Vector3(p2.x, p2.z, -p2.y)
+    ]
+    const g = new THREE.BufferGeometry().setFromPoints(pts)
+    // Aby fungoval dashed material, treba vypočítať vzdialenosti v geometrii
+    const line = new THREE.Line(g)
+    line.computeLineDistances()
+    return g
+  }, [p1, p2])
+
+  return (
+    // @ts-ignore R3F line extends correctly but conflicts with SVG line locally 
+    <line renderOrder={100} geometry={geo}>
+      <lineDashedMaterial color="#ef4444" dashSize={1} gapSize={0.5} linewidth={2} depthTest={false} />
+    </line>
+  )
+}
+
 // ─── Auto-fit camera ──────────────────────────────────────────────────────────
-function AutoFit({ cave }: { cave: ParsedCave }) {
-  const { camera } = useThree() as any
+function AutoFit({ cave, trigger }: { cave: ParsedCave, trigger?: number }) {
+  const { camera, controls } = useThree() as any
   useEffect(() => {
     const b    = cave.bounds
     const diag = Math.sqrt(b.size.x ** 2 + b.size.y ** 2 + b.size.z ** 2)
@@ -441,7 +521,11 @@ function AutoFit({ cave }: { cave: ParsedCave }) {
     camera.position.set(dist * 0.6, dist * 0.5, dist * 0.6)
     camera.near = 0.1; camera.far = diag * 15
     camera.updateProjectionMatrix()
-  }, [cave])
+    if (controls && controls.target) {
+      controls.target.set(0, 0, 0)
+      controls.update()
+    }
+  }, [cave, trigger, camera, controls])
   return null
 }
 
@@ -449,10 +533,14 @@ function AutoFit({ cave }: { cave: ParsedCave }) {
 interface Props {
   cave: ParsedCave
   options: ViewerOptions
-  onStationClick: (idx: number, screenX: number, screenY: number) => void
+  onStationClick: (idx: number, screenX: number, screenY: number, ctrlKey: boolean) => void
+  onSurfaceClick?: (origX: number, origY: number, altitude: number, screenX: number, screenY: number) => void
+  onBackgroundClick?: () => void
+  manualConnection?: { p1: {x:number, y:number, z:number}, p2: {x:number, y:number, z:number} } | null
+  fitTrigger?: number
 }
 
-export default function CaveViewer3D({ cave, options: o, onStationClick }: Props) {
+export default function CaveViewer3D({ cave, options: o, onStationClick, onSurfaceClick, onBackgroundClick, manualConnection, fitTrigger }: Props) {
   const diag     = Math.sqrt(cave.bounds.size.x ** 2 + cave.bounds.size.y ** 2 + cave.bounds.size.z ** 2)
   const gridSize = Math.max(diag * 1.5, 200)
 
@@ -461,6 +549,7 @@ export default function CaveViewer3D({ cave, options: o, onStationClick }: Props
       gl={{ antialias: true, alpha: false }}
       camera={{ fov: 55, near: 0.1, far: Math.max(diag * 20, 10000) }}
       onCreated={({ gl }) => gl.setClearColor(new THREE.Color('#050a18'))}
+      onPointerMissed={() => onBackgroundClick?.()}
     >
       <ambientLight intensity={0.55} />
       <directionalLight position={[1, 2, 1]}    intensity={0.70} />
@@ -475,6 +564,7 @@ export default function CaveViewer3D({ cave, options: o, onStationClick }: Props
           showTexture={o.showSurfaceTexture}
           showNetwork={o.showSurfaceNetwork}
           opacity={o.surfaceOpacity}
+          onSurfaceClick={onSurfaceClick}
         />
       ))}
 
@@ -493,6 +583,16 @@ export default function CaveViewer3D({ cave, options: o, onStationClick }: Props
         <CaveTraverse cave={cave} radius={o.traverseRadius} />
       )}
 
+      {/* ── Auto-fit pri zmene jaskyne alebo aktivácii triggera ── */}
+      <AutoFit cave={cave} trigger={fitTrigger} />
+
+      {/* ── Kompas / Gizmo v rohu ── */}
+      <GizmoHelper alignment="bottom-right" margin={[60, 60]}>
+        <GizmoViewport axisColors={['#ef4444', '#84cc16', '#3b82f6']} labelColor="white" labels={['V', 'H', 'J']} />
+      </GizmoHelper>
+
+      <OrbitControls makeDefault dampingFactor={0.15} />
+
       {/* ── Survey legs ── */}
       <CaveLegs cave={cave} showSplay={o.showSplay} />
 
@@ -504,6 +604,8 @@ export default function CaveViewer3D({ cave, options: o, onStationClick }: Props
       )}
 
       {/* ── Ground grid ── */}
+      {manualConnection && <ManualConnection p1={manualConnection.p1} p2={manualConnection.p2} />}
+
       {o.showGrid && (
         <Grid
           args={[gridSize, gridSize]}
