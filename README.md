@@ -52,12 +52,24 @@ Tento update sa zameral na plynulosť práce s extrémne veľkými modelmi (napr
 - **Vizuálny status:** Pridaný indikátor stavu modelu (DRAFT/STABLE) v hornej lište pre okamžitú spätnú väzbu o režime renderovania.
 - **WebGL Fine-tuning:** Nastavenie `high-performance` priority pre GPU a optimalizácia renderovacej slučky.
 
+## 🆕 Release Notes - 19.04.2026 (UI & Viewport Optimization)
+
+Druhý update dňa 19.04.2026 sa zameral na vizuálnu čistotu, presnosť merania a užívateľský komfort.
+
+- **Stabilná mierka (UI Scale Bar):** Mierka bola presunutá z 3D scény priamo do hlavného rozhrania (UI layer). Už sa "nehýbe" s modelom, je pevne prilepená na spodnom okraji obrazovky, čím pôsobí ako profesionálny GIS nástroj.
+- **Inteligentný Auto-Fit:** Refaktorovaná logika počiatočného zoomu. Pri otvorení modelu sa kamera automaticky nastaví tak, aby bol v zábere **celý model** vrátane terénu a všetkých odľahlých častí jaskyne (Fit to screen).
+- **Zjednotený Color Picker systém:** Každá vrstva (Splay, 3D ťah, Body, Steny, Terén) má teraz v Sidebare vlastnú ikonku palety pre okamžitú zmenu farby bez nutnosti reštartu aplikácie.
+- **Kompaktný Sidebar:** Odstránené rozmerné palety farieb pod terénom a nahradené elegantným výsuvným Color Pickerom, čo šetrí miesto na menších obrazovkách.
+- **Optimalizácia priblíženia:** Zvýšený limit maximálneho oddialenia pre prácu s rozsiahlymi povrchmi pohorí.
+
 ## 🛠️ TODO / Plán optimalizácie
 *Aktuálny stav po GPU update:*
 
 - [x] **GPU Akcelerácia:** Presun výpočtu výškového farbenia do shaderov a optimalizácia renderovania.
 - [x] **Instanced Rendering:** Tisíce staníc sú vykresľované pomocou `InstancedMesh`.
 - [x] **LOD Systém:** Implementácia Level of Detail pre rozsiahle modely terénu a stien.
+- [x] **Stabilná Mierka:** Presun mierky do UI vrstvy a fixácia polohy.
+- [x] **Dynamic Colors:** Plná podpora pre užívateľský výber farieb pre všetky vrstvy.
 - [ ] **BVH Integrácia:** Implementácia `three-mesh-bvh` pre extrémne rýchly raycasting v zložitej geometrii.
 - [ ] **Web Workers:** Presun parsovania veľkých .LOX a .DTM súborov na pozadie.
 - [ ] **Dátová kompresia:** Optimalizácia prenosu dát medzi parserom a GPU.
