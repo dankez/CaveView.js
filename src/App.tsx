@@ -351,6 +351,76 @@ const MemoizedStatusBadge = React.memo(({ isMoving }: { isMoving: boolean }) => 
   </div>
 ))
 
+// ─── Color Picker Component (Opravený — neblokuje UI) ─────────────────────────
+const ColorPicker = ({ value, onChange, label }: { value: string, onChange: (c: string) => void, label?: string }) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const palette = ['#fbbf24', '#ef4444', '#ffffff']
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setIsOpen(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isOpen])
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', marginLeft: 8 }}>
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        title={label || 'Zmeniť farbu'}
+        style={{ 
+          width: 22, height: 16, borderRadius: 3, background: value, 
+          border: '1px solid rgba(255,255,255,0.3)', cursor: 'pointer',
+          padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}
+      >
+        <span style={{ fontSize: 9, filter: 'invert(1) grayscale(1) contrast(100)' }}>🎨</span>
+      </button>
+
+      {isOpen && (
+        <div style={{ 
+          position: 'absolute', top: '100%', right: 0, marginTop: 6, zIndex: 1001,
+          background: '#1e293b', border: '1px solid #334155', borderRadius: 8,
+          padding: 8, boxShadow: '0 10px 25px rgba(0,0,0,0.5)', display: 'flex', gap: 6
+        }}>
+          {palette.map(c => (
+            <div key={c} onClick={() => { onChange(c); setIsOpen(false) }}
+              style={{ width: 20, height: 20, borderRadius: 4, background: c, cursor: 'pointer', border: '1px solid rgba(255,255,255,0.1)' }} />
+          ))}
+          <div style={{ width: 1, background: 'rgba(255,255,255,0.1)', margin: '0 2px' }} />
+          <input type="color" value={value} onChange={e => onChange(e.target.value)} onBlur={() => setIsOpen(false)}
+            style={{ width: 22, height: 22, padding: 0, border: 'none', background: 'none', cursor: 'pointer' }} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Scale Bar UI Component (Stabilná — mimo Canvasu) ─────────────────────────
+const ScaleBar = ({ cameraData }: { cameraData: { dist: number, fov: number, height: number } | null }) => {
+  if (!cameraData) return null
+  const { dist, fov, height } = cameraData
+  const fovRad = fov * Math.PI / 180
+  const visibleHeight = 2 * Math.tan(fovRad / 2) * dist
+  const pixelsPerUnit = height / visibleHeight
+  const targetPx = 100
+  const targetUnits = targetPx / pixelsPerUnit
+  const niceUnits = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000]
+  let best = niceUnits[0]
+  for (const u of niceUnits) if (Math.abs(u - targetUnits) < Math.abs(best - targetUnits)) best = u
+  const width = best * pixelsPerUnit
+  const label = best < 1 ? `${best * 100} cm` : `${best} m`
+  return (
+    <div style={{ position: 'fixed', bottom: 12, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'none', zIndex: 100 }}>
+      <div style={{ fontSize: 9, color: '#fff', marginBottom: 1, textShadow: '0 1px 2px #000', fontWeight: 600 }}>{label}</div>
+      <div style={{ width: `${width}px`, height: 3, border: '1px solid white', borderTop: 'none', background: 'rgba(255,255,255,0.2)' }} />
+    </div>
+  )
+}
+
 export default function App() {
   const [appState, setAppState] = useState<AppState>('welcome')
   const [loadedFile, setLoadedFile] = useState<LoadedFile | null>(null)
@@ -366,6 +436,7 @@ export default function App() {
   const [fitTrigger, setFitTrigger] = useState(0)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isModelMoving, setIsModelMoving] = useState(false)
+  const [cameraData, setCameraData] = useState<{ dist: number, fov: number, height: number } | null>(null)
   const surfNextId = useRef(1)
   const [opts, setOpts] = useState<ViewerOptions>({
     showSplay:           false,
@@ -395,6 +466,15 @@ export default function App() {
     showSurfaceNetwork:  false,
     surfaceOpacity:      0.8,
     surfaceColor:        '#e2e8f0',
+    // Colors
+    colorSplay:          '#78909c',
+    colorTraverse:       '#4fc3f7',
+    colorScraps:         '#2a5585',
+    colorScrapsWire:     '#6a9fd8',
+    colorStations:       '#fbbf24',
+    colorStationNames:   '#fbbf24',
+    colorStationAlt:     '#a5f3fc',
+    colorTerrainWire:    '#6ab04c',
   })
 
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -963,6 +1043,7 @@ export default function App() {
                     onSurfaceClick={isMeasuringMode ? handleSurfaceClick : undefined}
                     onBackgroundClick={() => setSelectedStations([])}
                     onMoveStateChange={setIsModelMoving}
+                    onCameraUpdate={setCameraData}
                     fitTrigger={fitTrigger}
                     manualConnection={
                       selectedStations.length === 2 && selectedStations[0] && selectedStations[1]
@@ -1046,13 +1127,14 @@ export default function App() {
                 <div>
                   <div className="s-label">Merania</div>
                   {([
-                    { key: 'showSplay' as const, color: '#78909c', label: 'Splay merania' },
-                    { key: 'showGrid'  as const, color: '#1e3a6e', label: 'Mriežka' },
-                  ]).map(({ key, color, label }) => (
+                    { key: 'showSplay' as const, colorKey: 'colorSplay' as const, label: 'Splay merania' },
+                    { key: 'showGrid'  as const, colorKey: null, label: 'Mriežka' },
+                  ]).map(({ key, colorKey, label }) => (
                     <div className="toggle-row" key={key}>
                       <label className="toggle-label">
-                        <div className="dot" style={{ background: color, border: '1px solid rgba(255,255,255,.2)' }} />
+                        <div className="dot" style={{ background: colorKey ? (opts[colorKey] as string) : '#1e3a6e', border: '1px solid rgba(255,255,255,.2)' }} />
                         {label}
+                        {colorKey && <ColorPicker value={opts[colorKey] as string} onChange={(c) => setOpts(p => ({ ...p, [colorKey]: c }))} />}
                       </label>
                       <div className={`switch${opts[key] ? ' on' : ''}`}
                         onClick={() => toggleOpt(key)} role="switch"
@@ -1076,8 +1158,9 @@ export default function App() {
                   {/* Polygonový ťah — 3D rúrky */}
                   <div className="toggle-row">
                     <label className="toggle-label">
-                      <div className="dot" style={{ background: 'linear-gradient(90deg,#1565c0,#00b894,#e17055)', borderRadius: '50%', border: '1px solid rgba(255,255,255,.2)' }} />
+                      <div className="dot" style={{ background: opts.colorTraverse, borderRadius: '50%', border: '1px solid rgba(255,255,255,.2)' }} />
                       Polygonový ťah (3D)
+                      <ColorPicker value={opts.colorTraverse} onChange={(c) => setOpts(p => ({ ...p, colorTraverse: c }))} />
                     </label>
                     <div className={`switch${opts.showTraverse ? ' on' : ''}`}
                       onClick={() => toggleOpt('showTraverse')} role="switch"
@@ -1177,8 +1260,9 @@ export default function App() {
                         {/* Solid tieňovaný mesh */}
                         <div className="toggle-row">
                           <label className="toggle-label">
-                            <div className="dot" style={{ background: '#2a5585' }} />
+                            <div className="dot" style={{ background: opts.colorScraps }} />
                             Trojuholník. mesh
+                            <ColorPicker value={opts.colorScraps} onChange={(c) => setOpts(p => ({ ...p, colorScraps: c }))} />
                           </label>
                           <div className={`switch${opts.scrapsSolid ? ' on' : ''}`}
                             onClick={() => toggleOpt('scrapsSolid')} role="switch"
@@ -1189,8 +1273,9 @@ export default function App() {
                         {/* Drôtený model */}
                         <div className="toggle-row">
                           <label className="toggle-label">
-                            <div className="dot" style={{ background: '#6a9fd8', border: '1px solid #4a5568' }} />
+                            <div className="dot" style={{ background: opts.colorScrapsWire, border: '1px solid #4a5568' }} />
                             Drôtený model
+                            <ColorPicker value={opts.colorScrapsWire} onChange={(c) => setOpts(p => ({ ...p, colorScrapsWire: c }))} />
                           </label>
                           <div className={`switch${opts.scrapsWireframe ? ' on' : ''}`}
                             onClick={() => toggleOpt('scrapsWireframe')} role="switch"
@@ -1235,8 +1320,9 @@ export default function App() {
                     {/* Tieňovaný solid mesh */}
                     <div className="toggle-row">
                       <label className="toggle-label">
-                        <div className="dot" style={{ background: '#3a6030' }} />
+                        <div className="dot" style={{ background: opts.surfaceColor }} />
                         Tieňovaný model
+                        <ColorPicker value={opts.surfaceColor} onChange={(c) => setOpts(p => ({ ...p, surfaceColor: c }))} />
                       </label>
                       <div className={`switch${opts.showSurfaceMesh ? ' on' : ''}`}
                         onClick={() => toggleOpt('showSurfaceMesh')} role="switch"
@@ -1244,47 +1330,13 @@ export default function App() {
                         onKeyDown={e => e.key === 'Enter' && toggleOpt('showSurfaceMesh')} />
                     </div>
 
-                    {/* Paleta farieb pre terén */}
-                    {opts.showSurfaceMesh && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px 4px', marginBottom: 4 }}>
-                        {[
-                          { c: '#f1f5f9', n: 'Perla' },
-                          { c: '#ecfdf5', n: 'Mäta' },
-                          { c: '#eff6ff', n: 'Nebeská' },
-                          { c: '#fefce8', n: 'Piesok' },
-                          { c: '#fff1f2', n: 'Ruža' },
-                        ].map(item => (
-                          <div key={item.c}
-                            onClick={() => setOpts(p => ({ ...p, surfaceColor: item.c }))}
-                            style={{ 
-                              width: 20, height: 20, borderRadius: 4, cursor: 'pointer', background: item.c,
-                              border: opts.surfaceColor.toLowerCase() === item.c.toLowerCase() ? '2px solid #63b3ed' : '1px solid rgba(255,255,255,0.15)',
-                              boxShadow: opts.surfaceColor.toLowerCase() === item.c.toLowerCase() ? '0 0 8px rgba(99,179,237,0.5)' : 'none',
-                              transition: 'transform 0.1s'
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'}
-                            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                            title={item.n} />
-                        ))}
-                        {/* Custom Color Picker */}
-                        <div style={{ position: 'relative', width: 20, height: 20 }}>
-                          <input type="color" 
-                            value={opts.surfaceColor}
-                            onChange={e => setOpts(p => ({ ...p, surfaceColor: e.target.value }))}
-                            style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', zIndex: 2 }} />
-                          <div style={{ 
-                            width: 20, height: 20, borderRadius: 4, background: 'conic-gradient(red, yellow, green, cyan, blue, magenta, red)',
-                            border: '1px solid rgba(255,255,255,0.2)'
-                          }} />
-                        </div>
-                      </div>
-                    )}
 
                     {/* Drôtená sieť terénu */}
                     <div className="toggle-row">
                       <label className="toggle-label">
-                        <div className="dot" style={{ background: '#6ab04c', border: '1px solid #4a7c3f' }} />
+                        <div className="dot" style={{ background: opts.colorTerrainWire, border: '1px solid #4a7c3f' }} />
                         Drôtená sieť
+                        <ColorPicker value={opts.colorTerrainWire} onChange={(c) => setOpts(p => ({ ...p, colorTerrainWire: c }))} />
                       </label>
                       <div className={`switch${opts.showSurfaceMeshWire ? ' on' : ''}`}
                         onClick={() => toggleOpt('showSurfaceMeshWire')} role="switch"
@@ -1336,8 +1388,9 @@ export default function App() {
                   <div className="s-label">Stanice</div>
                   <div className="toggle-row">
                     <label className="toggle-label">
-                      <div className="dot" style={{ background: '#fff', border: '1px solid rgba(255,255,255,.2)' }} />
+                      <div className="dot" style={{ background: opts.colorStations, border: '1px solid rgba(255,255,255,.2)' }} />
                       Zobraziť body
+                      <ColorPicker value={opts.colorStations} onChange={(c) => setOpts(p => ({ ...p, colorStations: c }))} />
                     </label>
                     <div
                       className={`switch${opts.showStations ? ' on' : ''}`}
@@ -1348,8 +1401,9 @@ export default function App() {
                   </div>
                   <div className="toggle-row">
                     <label className="toggle-label">
-                      <div className="dot" style={{ background: '#fbbf24' }} />
+                      <div className="dot" style={{ background: opts.colorStationNames }} />
                       Meno bodu
+                      <ColorPicker value={opts.colorStationNames} onChange={(c) => setOpts(p => ({ ...p, colorStationNames: c }))} />
                     </label>
                     <div
                       className={`switch${opts.showStationNames ? ' on' : ''}`}
@@ -1360,8 +1414,9 @@ export default function App() {
                   </div>
                   <div className="toggle-row">
                     <label className="toggle-label">
-                      <div className="dot" style={{ background: '#a5f3fc' }} />
+                      <div className="dot" style={{ background: opts.colorStationAlt }} />
                       Nadm. výška (m)
+                      <ColorPicker value={opts.colorStationAlt} onChange={(c) => setOpts(p => ({ ...p, colorStationAlt: c }))} />
                     </label>
                     <div
                       className={`switch${opts.showStationAlt ? ' on' : ''}`}
@@ -1401,6 +1456,7 @@ export default function App() {
                 </div>
               </aside>
               </div>
+              <ScaleBar cameraData={cameraData} />
             </div>
           </div>
         )}
