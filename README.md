@@ -41,14 +41,25 @@ Moderná webová aplikácia na 3D vizualizáciu jaskynných systémov, vybudovan
    npm run build
    ```
 
-## 🛠️ TODO / Plán optimalizácie
-*Podľa analýzy výkonu pre veľké modely:*
+## 🆕 Release Notes - 19.04.2026 (GPU Optimization Update)
 
-- [ ] **GPU Akcelerácia:** Presun výpočtu výškového farbenia z CPU do GLSL shaderov.
+Tento update sa zameral na plynulosť práce s extrémne veľkými modelmi (napr. Zádiel - státisíce trojuholníkov).
+
+- **Inteligentný LOD Systém (Draft/Stable):** Aplikácia dynamicky prepína medzi plným detailom a odľahčeným modelom (20x subsampling) počas pohybu.
+- **Aggressive Detection:** Draft mód sa aktivuje okamžite pri kliknutí (`mousedown`), čím sa eliminuje "seknutie" pri prvom pohybe.
+- **Sticky Draft & Cooldown:** Draft mód zostáva aktívny počas celého držania tlačidla myši a doostruje model až 1 sekundu po ukončení pohybu pre maximálnu plynulosť.
+- **Optimalizácia React stromu:** Implementácia `React.memo` a `Visibility Toggling` pre popisy staníc. Prepínanie režimov je teraz okamžité bez ohľadu na počet bodov.
+- **Vizuálny status:** Pridaný indikátor stavu modelu (DRAFT/STABLE) v hornej lište pre okamžitú spätnú väzbu o režime renderovania.
+- **WebGL Fine-tuning:** Nastavenie `high-performance` priority pre GPU a optimalizácia renderovacej slučky.
+
+## 🛠️ TODO / Plán optimalizácie
+*Aktuálny stav po GPU update:*
+
+- [x] **GPU Akcelerácia:** Presun výpočtu výškového farbenia do shaderov a optimalizácia renderovania.
+- [x] **Instanced Rendering:** Tisíce staníc sú vykresľované pomocou `InstancedMesh`.
+- [x] **LOD Systém:** Implementácia Level of Detail pre rozsiahle modely terénu a stien.
 - [ ] **BVH Integrácia:** Implementácia `three-mesh-bvh` pre extrémne rýchly raycasting v zložitej geometrii.
-- [ ] **Web Workers:** Presun parsovania veľkých .LOX a .DTM súborov na pozadie pre plynulosť UI.
-- [ ] **Instanced Rendering:** Optimalizácia vykresľovania tisícok staníc pomocou `InstancedMesh`.
-- [ ] **LOD Systém:** Implementácia Level of Detail pre rozsiahle modely terénu.
+- [ ] **Web Workers:** Presun parsovania veľkých .LOX a .DTM súborov na pozadie.
 - [ ] **Dátová kompresia:** Optimalizácia prenosu dát medzi parserom a GPU.
 
 ---
