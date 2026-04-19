@@ -16,7 +16,8 @@
     "proj4": "^2.11.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "three": "^0.164.0"
+    "three": "^0.164.0",
+    "three-mesh-bvh": "^0.9.9"
   },
   "devDependencies": {
     "@types/proj4": "^2.7.3",

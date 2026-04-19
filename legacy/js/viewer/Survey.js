@@ -1012,6 +1012,8 @@ class Survey extends Object3D {
 			this.setWallShading( this.features.get( FACE_SCRAPS ), material );
 			this.setWallShading( this.features.get( FACE_MODEL ), material );
 
+			this.stations.setShading( mode === SHADING_SURVEY ? 'survey' : 'default' );
+
 			this.caveShading = mode;
 
 		}
@@ -1281,21 +1283,10 @@ class Survey extends Object3D {
 
 		while ( node.children.length === 1 ) node = node.children[ 0 ];
 
-		__set.clear();
-		node.getSubtreeIds( __set );
+		// ensure the survey to colour map is built and texture updated
+		this.ctx.surveyColourMapper.getColourMap( node );
 
-		const surveyToColourMap = this.ctx.surveyColourMapper.getColourMap( node );
-
-		mesh.setShading( __set, _colourSegment, 'basic', false, filterConnected );
-
-		function _colourSegment ( vertices, colors, v1, v2, survey ) {
-
-			const colour = surveyToColourMap[ survey ];
-
-			colour.toArray( colors, v1 * 3 );
-			colour.toArray( colors, v2 * 3 );
-
-		}
+		this.setLegColourByMaterial( mesh, 'survey', false, filterConnected );
 
 	}
 

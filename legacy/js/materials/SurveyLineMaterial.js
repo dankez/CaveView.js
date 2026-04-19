@@ -99,6 +99,15 @@ class SurveyLineMaterial extends Line2Material {
 			defines.CV_Z = true;
 			break;
 
+		case 'survey':
+
+			defines.CV_SURVEY = true;
+			customUniforms = {
+				surveyColors: { value: ctx.surveyColourMapper.getTexture() },
+				surveyCount:  { value: ctx.surveyColourMapper.getTexture().image.width }
+			};
+			break;
+
 		default:
 
 			defines.CV_BASIC = true;

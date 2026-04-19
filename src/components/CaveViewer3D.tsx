@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState } from 'react'
+import { useMemo, useEffect, useState, useCallback, useRef } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls, Grid, Html, GizmoHelper, GizmoViewport } from '@react-three/drei'
 import * as THREE from 'three'
@@ -108,7 +108,7 @@ function ClickableStations({ cave, onStationClick }: {
 
 // ─── Elevation colormap ───────────────────────────────────────────────────────
 // Hladký prechod: tmavá modrá → azúrová → zelená → žltá → oranžová → červená
-export const ELEV_STOPS: [number, [number, number, number]][] = [
+const ELEV_STOPS: [number, [number, number, number]][] = [
   [0.00, [0.08, 0.18, 0.65]],
   [0.18, [0.10, 0.48, 0.85]],
   [0.35, [0.12, 0.78, 0.72]],
@@ -214,7 +214,8 @@ function CaveLegs({ cave, showSplay, showAltitude }: { cave: ParsedCave; showSpl
 }
 
 // ─── Cave traverse — polygonový ťah (InstancedMesh rúrky s altitude farbami) ──
-function CaveTraverse({ cave, radius, showAltitude }: { cave: ParsedCave; radius: number; showAltitude: boolean }) {
+const CaveTraverse = React.memo(({ cave, radius, showAltitude, isMoving }: { cave: ParsedCave; radius: number; showAltitude: boolean, isMoving: boolean }) => {
+  if (isMoving) return null // Skryť ťažké rúry pri pohybe (zostanú viditeľné tenké čiary z CaveLegs)
   const caveLegs = useMemo(() => cave.segments.filter(s => s.type === 'cave'), [cave])
 
   const zRange = useMemo(() => {
@@ -272,7 +273,7 @@ function CaveTraverse({ cave, radius, showAltitude }: { cave: ParsedCave; radius
   }, [caveLegs, zRange, cylGeo, radius, showAltitude])
 
   return <primitive object={mesh} renderOrder={6} />
-}
+})
 
 // ─── Station dots ─────────────────────────────────────────────────────────────
 function Stations({ cave }: { cave: ParsedCave }) {
@@ -474,12 +475,13 @@ function buildScrapsGeo(cave: ParsedCave, withColors: boolean, smooth: boolean):
 }
 
 // ─── Cave wall scraps — solid + wireframe + altitude (independent) ─────────────
-function CaveScraps({ cave, opacity, showSolid, showWire, showAltitude, smooth, showRender, caveTexture, renderOpacity }: {
+const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitude, smooth, showRender, caveTexture, renderOpacity, isMoving }: {
   cave: ParsedCave; opacity: number
   showSolid: boolean; showWire: boolean; showAltitude: boolean; smooth: boolean; showRender: boolean
   caveTexture: 'rock' | 'limestone' | 'granite'
   renderOpacity: number
-}) {
+  isMoving: boolean
+}) => {
   // Solid geometry (no colors)
   const solidGeo = useMemo(() => buildScrapsGeo(cave, false, smooth), [cave, smooth])
   // Altitude geometry (with vertex colors)
@@ -499,7 +501,7 @@ function CaveScraps({ cave, opacity, showSolid, showWire, showAltitude, smooth, 
   return (
     <>
       {/* ── Tieňovaný solid mesh ── */}
-      {showSolid && !showRender && solidGeo && (
+      {showSolid && !showRender && !isMoving && solidGeo && (
         <mesh geometry={solidGeo} renderOrder={2}>
           <meshStandardMaterial color="#2a5585" side={THREE.DoubleSide} transparent={opacity < 1} opacity={opacity}
             roughness={0.7} metalness={0.1}
@@ -508,7 +510,7 @@ function CaveScraps({ cave, opacity, showSolid, showWire, showAltitude, smooth, 
       )}
 
       {/* ── Realistický Render Mode (Textúra) ── */}
-      {showRender && solidGeo && (
+      {showRender && !isMoving && solidGeo && (
         <mesh geometry={solidGeo} renderOrder={4}>
           <meshStandardMaterial map={rockTex} color="#ffffff" side={THREE.DoubleSide} 
             transparent={renderOpacity < 1} opacity={renderOpacity}
@@ -527,21 +529,24 @@ function CaveScraps({ cave, opacity, showSolid, showWire, showAltitude, smooth, 
         </mesh>
       )}
 
-      {/* ── Drôtený model — vždy navrch ── */}
-      {showWire && solidGeo && (
+      {/* ── Drôtený model — vždy navrch, alebo ako draft pri pohybe ── */}
+      {(showWire || isMoving) && solidGeo && (
         <mesh geometry={solidGeo} renderOrder={10}>
           <meshBasicMaterial color="#6a9fd8" wireframe depthWrite={false} transparent={true}
-            opacity={showSolid || showAltitude ? 0.28 : 0.65} />
+            opacity={isMoving ? 0.4 : (showSolid || showAltitude ? 0.28 : 0.65)} />
         </mesh>
       )}
     </>
   )
-}
+})
 
 // ─── Terrain geometry builder ────────────────────────────────────────────────
-function buildTerrainBaseData(surface: CaveSurface) {
+function buildTerrainBaseData(surface: CaveSurface, subsample = 1) {
   const { dtm, centerOffset: { x: cx, y: cy, z: cz } } = surface;
-  const { data, samples, lines, calib } = dtm;
+  const { data, samples: origSamples, lines: origLines, calib } = dtm;
+
+  const samples = Math.ceil(origSamples / subsample);
+  const lines = Math.ceil(origLines / subsample);
 
   let minZ = Infinity, maxZ = -Infinity;
   for (let i = 0; i < data.length; i++) {
@@ -557,9 +562,12 @@ function buildTerrainBaseData(surface: CaveSurface) {
   const det = calib.xx * calib.yy - calib.xy * calib.yx;
   let vIdx = 0, uIdx = 0, cIdx = 0;
 
-  for (let row = 0; row < lines; row++) {
-    for (let col = 0; col < samples; col++) {
-      const idx = row * samples + col;
+  for (let r = 0; r < lines; r++) {
+    const row = Math.min(r * subsample, origLines - 1);
+    for (let c = 0; c < samples; c++) {
+      const col = Math.min(c * subsample, origSamples - 1);
+      
+      const idx = row * origSamples + col;
       const wx = calib.xOrigin + col * calib.xx + row * calib.xy;
       const wy = calib.yOrigin + col * calib.yx + row * calib.yy;
       const wz = data[idx];
@@ -568,11 +576,11 @@ function buildTerrainBaseData(surface: CaveSurface) {
       positions[vIdx++] = wz - cz;
       positions[vIdx++] = -(wy - cy);
 
-      uvs[uIdx++] = calib.xx > 0 ? col / (samples - 1) : 1 - col / (samples - 1);
-      uvs[uIdx++] = calib.yy > 0 ? row / (lines - 1) : 1 - row / (lines - 1);
+      uvs[uIdx++] = calib.xx > 0 ? col / (origSamples - 1) : 1 - col / (origSamples - 1);
+      uvs[uIdx++] = calib.yy > 0 ? row / (origLines - 1) : 1 - row / (origLines - 1);
 
-      const c = elevColor(normZ(wz, minZ, maxZ));
-      colors[cIdx++] = c.r; colors[cIdx++] = c.g; colors[cIdx++] = c.b;
+      const colorVal = elevColor(normZ(wz, minZ, maxZ));
+      colors[cIdx++] = colorVal.r; colors[cIdx++] = colorVal.g; colors[cIdx++] = colorVal.b;
     }
   }
 
@@ -591,16 +599,18 @@ function buildTerrainBaseData(surface: CaveSurface) {
 }
 
 // ─── Terrain surface mesh (všetky módy) ──────────────────────────────────────
-function TerrainMesh({ surface, showMesh, showMeshWire, showTexture, showNetwork, opacity, surfaceColor, onSurfaceClick }: {
+const TerrainMesh = React.memo(({ surface, showMesh, showMeshWire, showTexture, showNetwork, opacity, surfaceColor, onSurfaceClick, isMoving }: {
   surface: CaveSurface
   showMesh: boolean; showMeshWire: boolean; showTexture: boolean; showNetwork: boolean
   opacity: number
   surfaceColor: string
   onSurfaceClick?: (origX: number, origY: number, altitude: number, screenX: number, screenY: number) => void
-}) {
-  const baseBase = useMemo(() => buildTerrainBaseData(surface), [surface])
+  isMoving: boolean
+}) => {
+  const baseBase = useMemo(() => buildTerrainBaseData(surface, 1), [surface])
+  const draftBase = useMemo(() => buildTerrainBaseData(surface, 20), [surface]) // 20x subsampling for huge models
   
-  const solidGeo = useMemo(() => {
+  const solidGeoBase = useMemo(() => {
     const g = new THREE.BufferGeometry()
     g.setAttribute('position', new THREE.BufferAttribute(baseBase.positions, 3))
     g.setAttribute('uv',       new THREE.BufferAttribute(baseBase.uvs, 2))
@@ -609,16 +619,34 @@ function TerrainMesh({ surface, showMesh, showMeshWire, showTexture, showNetwork
     return g
   }, [baseBase])
 
-  const networkGeo = useMemo(() => {
+  const solidGeoDraft = useMemo(() => {
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.BufferAttribute(draftBase.positions, 3))
+    g.setAttribute('uv',       new THREE.BufferAttribute(draftBase.uvs, 2))
+    g.setIndex(draftBase.indices)
+    g.computeVertexNormals()
+    return g
+  }, [draftBase])
+
+  const networkGeoBase = useMemo(() => {
     const g = new THREE.BufferGeometry()
     g.setAttribute('position', new THREE.BufferAttribute(baseBase.positions, 3))
     g.setAttribute('uv',       new THREE.BufferAttribute(baseBase.uvs, 2))
     g.setAttribute('color',    new THREE.BufferAttribute(baseBase.colors, 3))
     g.setIndex(baseBase.indices)
-    // Ak už bol solidGeo vytvorený poctivo, aj tu už budú buffer údaje identické, ale normály sa zídu
     g.computeVertexNormals()
     return g
   }, [baseBase])
+
+  const networkGeoDraft = useMemo(() => {
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.BufferAttribute(draftBase.positions, 3))
+    g.setAttribute('uv',       new THREE.BufferAttribute(draftBase.uvs, 2))
+    g.setAttribute('color',    new THREE.BufferAttribute(draftBase.colors, 3))
+    g.setIndex(draftBase.indices)
+    g.computeVertexNormals()
+    return g
+  }, [draftBase])
 
   const texture = useMemo(() => {
     if (!surface.bitmapUrl) return null
@@ -631,6 +659,9 @@ function TerrainMesh({ surface, showMesh, showMeshWire, showTexture, showNetwork
   const [hoveredSurf, setHoveredSurf] = useState<[number, number, number] | null>(null)
 
   if (!showMesh && !showMeshWire && !showTexture && !showNetwork) return null
+
+  const solidGeo = isMoving ? solidGeoDraft : solidGeoBase
+  const networkGeo = isMoving ? networkGeoDraft : networkGeoBase
 
   return (
     <group
@@ -697,7 +728,7 @@ function TerrainMesh({ surface, showMesh, showMeshWire, showTexture, showNetwork
       )}
     </group>
   )
-}
+})
 
 // ─── Manual Connection Line (Ctrl+Click measuring) ────────────────────────────
 function ManualConnection({ p1, p2 }: { p1: {x:number, y:number, z:number}, p2: {x:number, y:number, z:number} }) {
@@ -874,21 +905,70 @@ interface Props {
   onStationClick: (idx: number, screenX: number, screenY: number, ctrlKey: boolean) => void
   onSurfaceClick?: (origX: number, origY: number, altitude: number, screenX: number, screenY: number) => void
   onBackgroundClick?: () => void
+  onMoveStateChange?: (moving: boolean) => void
   manualConnection?: { p1: {x:number, y:number, z:number}, p2: {x:number, y:number, z:number} } | null
   placedCaver?: { pos: [number, number, number], pose: 'standing' | 'crawling' } | null
   fitTrigger?: number
 }
 
-export default function CaveViewer3D({ cave, options: o, onStationClick, onSurfaceClick, onBackgroundClick, manualConnection, placedCaver, fitTrigger }: Props) {
+export default function CaveViewer3D({ cave, options: o, onStationClick, onSurfaceClick, onBackgroundClick, onMoveStateChange, manualConnection, placedCaver, fitTrigger }: Props) {
+  const [isMoving, setIsMoving] = useState(false)
+  const movingTimeout = useRef<any>(null)
+
+  const startStopTimeout = useCallback(() => {
+    if (movingTimeout.current) clearTimeout(movingTimeout.current)
+    movingTimeout.current = setTimeout(() => {
+      setIsMoving(false)
+      movingTimeout.current = null
+    }, 800) // Návrat do stable po 0.8s od uvoľnenia
+  }, [])
+
+  const handleCameraChange = useCallback(() => {
+    if (!isMoving) setIsMoving(true)
+    // Ak sa hýbe kamerou, predlžujeme draft stav
+    startStopTimeout()
+  }, [isMoving, startStopTimeout])
+
+  useEffect(() => {
+    onMoveStateChange?.(isMoving)
+  }, [isMoving, onMoveStateChange])
+
+  useEffect(() => {
+    // Globálna a agresívna detekcia
+    const onStart = () => { if (!isMoving) setIsMoving(true) }
+    const onEnd = () => { startStopTimeout() }
+    
+    window.addEventListener('mousedown', onStart, { capture: true })
+    window.addEventListener('mouseup', onEnd, { capture: true })
+    window.addEventListener('wheel', handleCameraChange, { capture: true, passive: true })
+    window.addEventListener('touchstart', onStart, { capture: true })
+    window.addEventListener('touchend', onEnd, { capture: true })
+
+    return () => {
+      if (movingTimeout.current) clearTimeout(movingTimeout.current)
+      window.removeEventListener('mousedown', onStart, { capture: true })
+      window.removeEventListener('mouseup', onEnd, { capture: true })
+      window.removeEventListener('wheel', handleCameraChange, { capture: true })
+      window.removeEventListener('touchstart', onStart, { capture: true })
+      window.removeEventListener('touchend', onEnd, { capture: true })
+    }
+  }, [isMoving, handleCameraChange, startStopTimeout])
   const diag     = Math.sqrt(cave.bounds.size.x ** 2 + cave.bounds.size.y ** 2 + cave.bounds.size.z ** 2)
   const gridSize = Math.max(diag * 1.5, 200)
 
   return (
     <Canvas
-      gl={{ antialias: true, alpha: false }}
+      gl={{ antialias: true, alpha: false, preserveDrawingBuffer: false, powerPreference: 'high-performance' }}
       camera={{ fov: 55, near: 0.1, far: Math.max(diag * 20, 10000) }}
-      onCreated={({ gl }) => gl.setClearColor(new THREE.Color('#050a18'))}
+      onCreated={({ gl }) => {
+        gl.setClearColor(new THREE.Color('#050a18'))
+        // Optimalizácia pre veľké modely – ak GPU nestíha
+        gl.debug.checkShaderErrors = false 
+      }}
       onPointerMissed={() => onBackgroundClick?.()}
+      onPointerDown={() => setIsMoving(true)}
+      onPointerMove={(e) => { if (e.buttons > 0) handleCameraChange() }}
+      onWheel={() => handleCameraChange()}
     >
       <ambientLight intensity={0.4} />
       <directionalLight position={[1, 3, 1]}    intensity={0.8} />
@@ -906,6 +986,7 @@ export default function CaveViewer3D({ cave, options: o, onStationClick, onSurfa
           opacity={o.surfaceOpacity}
           surfaceColor={o.surfaceColor}
           onSurfaceClick={onSurfaceClick}
+          isMoving={isMoving}
         />
       ))}
 
@@ -920,12 +1001,13 @@ export default function CaveViewer3D({ cave, options: o, onStationClick, onSurfa
           showRender={o.showRenderCave}
           caveTexture={o.caveTexture}
           renderOpacity={o.renderOpacity}
+          isMoving={isMoving}
         />
       )}
 
       {/* ── Cave traverse (3D rúrky) ── */}
       {o.showTraverse && cave.segments?.length > 0 && (
-        <CaveTraverse cave={cave} radius={o.traverseRadius} showAltitude={o.traverseAltitude} />
+        <CaveTraverse cave={cave} radius={o.traverseRadius} showAltitude={o.traverseAltitude} isMoving={isMoving} />
       )}
 
       {/* ── Auto-fit pri zmene jaskyne alebo aktivácii triggera ── */}
@@ -942,9 +1024,11 @@ export default function CaveViewer3D({ cave, options: o, onStationClick, onSurfa
       {/* ── Station dots & labels & clickable targets ── */}
       {o.showStations && <Stations cave={cave} />}
       <ClickableStations cave={cave} onStationClick={onStationClick} />
-      {(o.showStationNames || o.showStationAlt) && (
-        <StationLabels cave={cave} showNames={o.showStationNames} showAltitudes={o.showStationAlt} />
-      )}
+      <group visible={!isMoving}>
+        {(o.showStationNames || o.showStationAlt) && (
+          <StationLabels cave={cave} showNames={o.showStationNames} showAltitudes={o.showStationAlt} />
+        )}
+      </group>
 
       {/* ── Ground grid ── */}
       {manualConnection && <ManualConnection p1={manualConnection.p1} p2={manualConnection.p2} />}
@@ -961,13 +1045,15 @@ export default function CaveViewer3D({ cave, options: o, onStationClick, onSurfa
       )}
 
       <OrbitControls
-        makeDefault enableDamping dampingFactor={0.08}
+        makeDefault
+        enableDamping={false}
+        onStart={() => setIsMoving(true)}
+        onChange={handleCameraChange}
         rotateSpeed={0.6} zoomSpeed={0.8} panSpeed={0.8}
         minDistance={1} maxDistance={Math.max(diag * 8, 10000)}
       />
-      
+
       <DynamicScaleBar />
-      <AutoFit cave={cave} />
     </Canvas>
   )
 }

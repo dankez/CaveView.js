@@ -13,6 +13,7 @@ import { HypsometricMaterial } from './HypsometricMaterial';
 import { Line2Material } from './Line2Material';
 import { WallMaterial } from './WallMaterial';
 import { MissingMaterial } from './MissingMaterial';
+import { StationMaterial } from './StationMaterial';
 import { SurveyLineMaterial } from './SurveyLineMaterial';
 import { TextureCache } from '../core/TextureCache';
 
@@ -251,6 +252,12 @@ function Materials ( viewer ) {
 	this.getSingleWallMaterial = function  () {
 
 		return getWallMaterial( 'single', WallMaterial, true );
+
+	};
+
+	this.getStationMaterial = function ( options ) {
+
+		return new StationMaterial( ctx, options );
 
 	};
 

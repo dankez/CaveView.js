@@ -1,4 +1,5 @@
 import { BufferGeometry, Float32BufferAttribute, Mesh } from '../../Three';
+import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
 
 class Walls extends Mesh {
 
@@ -10,9 +11,12 @@ class Walls extends Mesh {
 	constructor ( ctx ) {
 
 		const geometry = new BufferGeometry();
+		geometry.computeBoundsTree = computeBoundsTree;
+		geometry.disposeBoundsTree = disposeBoundsTree;
 
 		super( geometry, ctx.materials.getUnselectedWallMaterial() );
 
+		this.raycast = acceleratedRaycast;
 		this.ctx = ctx;
 		this.type = 'Walls';
 
@@ -31,6 +35,7 @@ class Walls extends Mesh {
 
 		geometry.computeVertexNormals();
 		geometry.computeBoundingBox();
+		geometry.computeBoundsTree();
 
 		this.indexRuns = indexRuns;
 

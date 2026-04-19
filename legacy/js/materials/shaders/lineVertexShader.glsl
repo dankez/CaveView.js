@@ -16,6 +16,13 @@ attribute float instanceHideVertex;
 varying vec2 vUv;
 varying float vHide;
 
+#ifdef CV_SURVEY
+
+	attribute float instanceSurveyId;
+	varying float vSurveyId;
+
+#endif
+
 #ifdef CV_HEIGHT
 
 	uniform sampler2D cmap;
@@ -207,6 +214,12 @@ void main() {
 	#endif
 
 	vHide = instanceHideVertex;
+
+	#ifdef CV_SURVEY
+
+		vSurveyId = instanceSurveyId;
+
+	#endif
 
 	gl_Position = clip;
 

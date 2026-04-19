@@ -22,118 +22,122 @@ class StationLabels extends Group {
 		this.junctionLabelMaterial = materials.getLabelMaterial( 'stations.junctions' );
 		this.linkedLabelMaterial = materials.getLabelMaterial( 'stations.linked' );
 
+		this.lastUpdate = 0;
+		this.lastCameraPosition = new Vector3();
+
 	}
 
 	update ( camera, target, inverseWorld ) {
 
+		const now = performance.now();
+		if ( now - this.lastUpdate < 100 ) return; // 10Hz limit
+
 		const cameraPosition = _tmpVector3.copy( camera.position );
 
 		if ( camera.isOrthographicCamera ) {
-
-			// if orthographic, calculate 'virtual' camera position
-
-			cameraPosition.sub( target ); // now vector from target
-
-			cameraPosition.setLength( CAMERA_OFFSET / camera.zoom ); // scale for zoom factor
-			cameraPosition.add( target ); // relocate in world space
-
+			cameraPosition.sub( target ).setLength( CAMERA_OFFSET / camera.zoom ).add( target );
 		}
-
-		// transform camera position into model coordinate system
 
 		cameraPosition.applyMatrix4( inverseWorld );
 
-		const stations = this.stations;
-		const points = stations.vertices;
-		const l = points.length;
+		if ( cameraPosition.distanceToSquared( this.lastCameraPosition ) < 1 ) return; // moved < 1m
+
+		this.lastUpdate = now;
+		this.lastCameraPosition.copy( cameraPosition );
 
 		const showName = ( ( camera.layers.mask & 1 << LABEL_STATION ) !== 0 );
 		const showComments = ( ( camera.layers.mask & 1 << LABEL_STATION_COMMENT ) !== 0 );
-		const commentRatio = l / this.commentCount;
 
-		for ( let i = 0; i < l; i++ ) {
+		this._updateFromTree( this.ctx.survey.surveyTree, camera, cameraPosition, showName, showComments );
 
-			const station = points[ i ];
-			const comment = station.comment;
-			const label = station.label;
+	}
 
-			const showComment = showComments && comment !== undefined;
+	_updateFromTree ( node, camera, cameraPosition, showName, showComments ) {
 
-			if ( ! stations.isStationVisible( station ) ) {
+		if ( node.isStation() ) {
 
-				if ( label ) label.visible = false;
-				continue;
+			this.updateStationLabel( node, camera, cameraPosition, showName, showComments );
+			return;
 
-			}
+		}
 
-			const connections = station.effectiveConnections();
-			let d2 = 40000;
+		// Spatial pruning: if the entire bounding box is too far, hide all labels in this subtree
+		if ( node.boundingBox.distanceToPoint( cameraPosition ) > 500 ) {
+			
+			node.traverse( n => { if ( n.label ) n.label.visible = false; } );
+			return;
 
-			if ( label?.visible ) {
+		}
 
-				if ( connections === 0 ) {
+		const children = node.children;
+		for ( let i = 0, l = children.length; i < l; i++ ) {
+			this._updateFromTree( children[ i ], camera, cameraPosition, showName, showComments );
+		}
 
-					d2 = 600;
+	}
 
-				} else if ( connections < 3 ) {
+	updateStationLabel ( station, camera, cameraPosition, showName, showComments ) {
 
-					d2 = 10000;
+		const comment = station.comment;
+		const label = station.label;
+		const showComment = showComments && comment !== undefined;
 
-				} else {
+		if ( ! this.stations.isStationVisible( station ) ) {
+			if ( label ) label.visible = false;
+			return;
+		}
 
-					d2 = 50000;
+		const connections = station.effectiveConnections();
+		let d2 = 40000;
 
-				}
+		if ( label?.visible ) {
 
+			if ( connections === 0 ) {
+				d2 = 600;
+			} else if ( connections < 3 ) {
+				d2 = 10000;
 			} else {
-
-				if ( connections === 0 ) {
-
-					d2 = 250;
-
-				} else if ( connections < 3 ) {
-
-					d2 = 5000;
-
-				}
-
+				d2 = 50000;
 			}
 
-			// eager display of comments scaled by density of comments in survey
-			if ( showComment ) d2 *= commentRatio;
+		} else {
 
-			// show labels for network vertices at greater distance than intermediate stations
-			const visible = ( station.distanceToSquared( cameraPosition ) < d2 );
-
-			if ( visible ) {
-
-				let name = '';
-
-				if ( showName ) name += station.name;
-				if ( showName && showComment ) name += ' ';
-				if ( showComment ) name += comment;
-
-				if ( label && label.name !== name ) {
-
-					// remove label with the wrong text
-					this.remove( label );
-					station.label = null;
-
-				}
-
-				if ( ! station.label ) {
-
-					this.addLabel( station, name, connections );
-
-				}
-
-				if ( station.label ) station.label.visible = true;
-
-			} else {
-
-				if ( label ) label.visible = false;
-
+			if ( connections === 0 ) {
+				d2 = 250;
+			} else if ( connections < 3 ) {
+				d2 = 5000;
 			}
+
+		}
+
+		// eager display of comments
+		if ( showComment ) d2 *= ( this.stations.vertices.length / this.commentCount );
+
+		// show labels for network vertices at greater distance than intermediate stations
+		const visible = ( station.distanceToSquared( cameraPosition ) < d2 );
+
+		if ( visible ) {
+
+			let name = '';
+
+			if ( showName ) name += station.name;
+			if ( showName && showComment ) name += ' ';
+			if ( showComment ) name += comment;
+
+			if ( label && label.name !== name ) {
+				this.remove( label );
+				station.label = null;
+			}
+
+			if ( ! station.label ) {
+				this.addLabel( station, name, connections );
+			}
+
+			if ( station.label ) station.label.visible = true;
+
+		} else {
+
+			if ( label ) label.visible = false;
 
 		}
 

@@ -134,6 +134,26 @@ class LineSegmentsGeometry extends InstancedBufferGeometry {
 
 	}
 
+	setSurveyIds ( array ) {
+
+		let surveyIds;
+
+		if ( array instanceof Float32Array ) {
+
+			surveyIds = array;
+
+		} else if ( Array.isArray( array ) ) {
+
+			surveyIds = new Float32Array( array );
+
+		}
+
+		this.setAttribute( 'instanceSurveyId', new InstancedBufferAttribute( surveyIds, 1, false, 1 ) );
+
+		return this;
+
+	}
+
 	clearHide () {
 
 		this.deleteAttribute( 'instanceHideVertex' );

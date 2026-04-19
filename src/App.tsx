@@ -309,6 +309,17 @@ function StationDetailCard({ stations, onClose, onPlaceCaver }: {
   )
 }
 
+const MemoizedStatusBadge = React.memo(({ isMoving }: { isMoving: boolean }) => (
+  <div className={`tb-badge ${isMoving ? 'draft' : 'stable'}`} style={{
+    fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 4,
+    background: isMoving ? '#f56565' : '#48bb78',
+    color: '#fff', marginLeft: -4, boxShadow: isMoving ? '0 0 10px rgba(245,101,101,0.4)' : 'none',
+    transition: 'all 0.1s'
+  }}>
+    {isMoving ? 'DRAFT' : 'STABLE'}
+  </div>
+))
+
 export default function App() {
   const [appState, setAppState] = useState<AppState>('welcome')
   const [loadedFile, setLoadedFile] = useState<LoadedFile | null>(null)
@@ -323,6 +334,7 @@ export default function App() {
   const [surfPointCache, setSurfPointCache] = useState<Record<string, SelStation>>({})
   const [fitTrigger, setFitTrigger] = useState(0)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isModelMoving, setIsModelMoving] = useState(false)
   const surfNextId = useRef(1)
   const [opts, setOpts] = useState<ViewerOptions>({
     showSplay:           false,
@@ -852,8 +864,10 @@ export default function App() {
                 <span>☰</span>
               </button>
 
+              <span className="tb-logo">CV 3D</span>
               <span className="tb-file" title={loadedFile?.name}>{loadedFile?.name}</span>
-              <span className="tb-badge">{loadedFile?.ext.replace('.', '').toUpperCase()}</span>
+              <MemoizedStatusBadge isMoving={isModelMoving} />
+              <span className="tb-badge hide-mobile">{loadedFile?.ext?.replace('.', '')?.toUpperCase()}</span>
               <span className="tb-badge hide-mobile" style={{ background: 'rgba(159,122,234,.15)', color: '#9f7aea', borderColor: 'rgba(159,122,234,.3)' }}>
                 {cave.segmentCount} meraní
               </span>
@@ -913,6 +927,7 @@ export default function App() {
                     onStationClick={handleStationClick}
                     onSurfaceClick={isMeasuringMode ? handleSurfaceClick : undefined}
                     onBackgroundClick={() => setSelectedStations([])}
+                    onMoveStateChange={setIsModelMoving}
                     fitTrigger={fitTrigger}
                     manualConnection={
                       selectedStations.length === 2 && selectedStations[0] && selectedStations[1]

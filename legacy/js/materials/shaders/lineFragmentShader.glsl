@@ -12,6 +12,14 @@ uniform float opacity;
 
 #endif
 
+#ifdef CV_SURVEY
+
+	uniform sampler2D surveyColors;
+	uniform float surveyCount;
+	varying float vSurveyId;
+
+#endif
+
 #if defined( CV_DEPTH ) || defined( CV_DEPTH_CURSOR )
 
 	uniform sampler2D depthMap;
@@ -89,6 +97,12 @@ void main() {
 	#ifdef CV_HEIGHT
 
 		gl_FragColor = texture2D( cmap, vec2( 1.0 - zMap, 1.0 ) ) * vec4( vColor, 1.0 );
+
+	#endif
+
+	#ifdef CV_SURVEY
+
+		gl_FragColor = texture2D( surveyColors, vec2( ( vSurveyId + 0.5 ) / surveyCount, 0.5 ) ) * vec4( vColor, 1.0 );
 
 	#endif
 

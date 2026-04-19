@@ -1,6 +1,6 @@
 import {
-	BufferGeometry, Float32BufferAttribute, InterleavedBuffer, InterleavedBufferAttribute,
-	Matrix4, Points, Vector3, Vector4
+	BufferGeometry, Float32BufferAttribute, InstancedMesh, InterleavedBuffer, InterleavedBufferAttribute,
+	Matrix4, CircleGeometry, MeshBasicMaterial, Vector3, Vector4, Color, InstancedBufferAttribute
 } from '../Three';
 
 import { STATION_ENTRANCE } from '../core/constants';
@@ -11,13 +11,13 @@ const _ssOrigin = new Vector4();
 const _mouse = new Vector3();
 const _mvMatrix = new Matrix4();
 
-class Stations extends Points {
+class Stations extends InstancedMesh {
 
 	constructor ( survey ) {
 
 		const ctx = survey.ctx;
 
-		super( new BufferGeometry, ctx.materials.getExtendedPointsMaterial() );
+		super( new BufferGeometry(), ctx.materials.getExtendedPointsMaterial(), 1 );
 
 		this.type = 'CV.Stations';
 		this.stationCount = 0;
@@ -31,7 +31,7 @@ class Stations extends Points {
 
 		this.vertices = [];
 		this.pointSizes = [];
-		this.instanceData = [];
+		this.instanceData = []; // will be used for positions and colors until finalise
 
 		this.survey = survey;
 		this.selected = null;
@@ -156,6 +156,7 @@ class Stations extends Points {
 
 		node.toArray( instanceData, offset );
 		color.toArray( instanceData, offset + 3 );
+		instanceData.push( node.parent.id ); // [offset + 6]
 
 		this.pointSizes.push( pointSize );
 
@@ -181,10 +182,18 @@ class Stations extends Points {
 
 		if ( this.selected !== null ) {
 
-			const pSize = this.geometry.getAttribute( 'pSize' );
+			const matrix = new Matrix4();
+			const position = new Vector3();
 
-			pSize.setX( this.selected, this.selectedSize );
-			pSize.needsUpdate = true;
+			this.getMatrixAt( this.selected, matrix );
+			position.setFromMatrixPosition( matrix );
+
+			const scale = this.selectedSize * 0.1;
+			matrix.makeTranslation( position.x, position.y, position.z );
+			matrix.scale( new Vector3( scale, scale, scale ) );
+
+			this.setMatrixAt( this.selected, matrix );
+			this.instanceMatrix.needsUpdate = true;
 
 			this.selected = null;
 
@@ -219,20 +228,52 @@ class Stations extends Points {
 
 	selectStationByIndex ( index ) {
 
-		const pSize = this.geometry.getAttribute( 'pSize' );
+		const matrix = new Matrix4();
+		const position = new Vector3();
 
 		if ( this.selected !== null ) {
 
-			pSize.setX( this.selected, this.selectedSize );
+			this.getMatrixAt( this.selected, matrix );
+			position.setFromMatrixPosition( matrix );
+
+			const oldScale = this.selectedSize * 0.1;
+			matrix.makeTranslation( position.x, position.y, position.z );
+			matrix.scale( new Vector3( oldScale, oldScale, oldScale ) );
+
+			this.setMatrixAt( this.selected, matrix );
 
 		}
 
-		this.selectedSize = pSize.getX( index );
+		this.getMatrixAt( index, matrix );
+		position.setFromMatrixPosition( matrix );
+		
+		// Extract current size (scale) to restore it later
+		this.selectedSize = matrix.elements[ 0 ] * 10.0; // approximation
 
-		pSize.setX( index, this.selectedSize * 2 );
-		pSize.needsUpdate = true;
+		const newScale = this.selectedSize * 0.2; // double the size for selection
+		matrix.makeTranslation( position.x, position.y, position.z );
+		matrix.scale( new Vector3( newScale, newScale, newScale ) );
+
+		this.setMatrixAt( index, matrix );
+		this.instanceMatrix.needsUpdate = true;
 
 		this.selected = index;
+
+	}
+
+	setShading ( mode ) {
+
+		const materials = this.ctx.materials;
+
+		if ( mode === 'survey' ) {
+
+			this.material = materials.getStationMaterial( { survey: true } );
+
+		} else {
+
+			this.material = materials.getStationMaterial();
+
+		}
 
 	}
 
@@ -240,15 +281,16 @@ class Stations extends Points {
 
 		const vertices = this.vertices;
 		const l = vertices.length;
-		const pSize = this.geometry.getAttribute( 'pSize' );
 		const splaySize = this.splaysVisible ? 6.0 : 0.0;
 		const idSet = selection.getIds();
 		const isEmpty = selection.isEmpty();
 
+		const matrix = new Matrix4();
+		const position = new Vector3();
+
 		for ( let i = 0; i < l; i++ ) {
 
 			const node = vertices[ i ];
-
 			let size = 8;
 
 			if ( isEmpty || idSet.has( node.parent.id ) ) {
@@ -263,34 +305,74 @@ class Stations extends Points {
 
 				}
 
-				pSize.setX( i, size );
-
 			} else {
 
-				pSize.setX( i, 0 );
-
+				size = 0;
 				if ( node.label !== undefined ) node.label.visible = false;
 
 			}
 
+			// Update instance matrix scale
+			this.getMatrixAt( i, matrix );
+			position.setFromMatrixPosition( matrix );
+			
+			const scale = size * 0.1;
+			matrix.makeTranslation( position.x, position.y, position.z );
+			matrix.scale( new Vector3( scale, scale, scale ) );
+			
+			this.setMatrixAt( i, matrix );
+
 		}
 
-		pSize.needsUpdate = true;
+		this.instanceMatrix.needsUpdate = true;
 
 	}
 
 	finalise () {
 
-		const bufferGeometry = this.geometry;
+		const count = this.stationCount;
+		const instanceData = this.instanceData;
+		const pointSizes = this.pointSizes;
 
-		const buffer = new Float32Array( this.instanceData );
-		const instanceBuffer = new InterleavedBuffer( buffer, 6 ); // position, color
+		// Re-initialize InstancedMesh properties
+		this.geometry = new CircleGeometry( 0.5, 8 );
+		
+		// Use custom StationMaterial for instances
+		this.material = ctx.materials.getStationMaterial();
 
-		bufferGeometry.setAttribute( 'position', new InterleavedBufferAttribute( instanceBuffer, 3, 0 ) );
-		bufferGeometry.setAttribute( 'color', new InterleavedBufferAttribute( instanceBuffer, 3, 3 ) );
+		this.count = count;
+		this.instanceMatrix.setUsage( 35048 ); // StaticDrawUsage
+		this.instanceMatrix.array = new Float32Array( count * 16 );
+		
+		const colors = new Float32Array( count * 3 );
+		this.instanceColor = new Float32BufferAttribute( colors, 3 );
+		
+		const surveyIds = new Float32Array( count );
+		const surveyIdAttribute = new InstancedBufferAttribute( surveyIds, 1 );
+		this.geometry.setAttribute( 'surveyId', surveyIdAttribute );
 
-		// non-interleaved to avoid excess data uploads to GPU
-		bufferGeometry.setAttribute( 'pSize', new Float32BufferAttribute( this.pointSizes, 1 ) );
+		const matrix = new Matrix4();
+		const position = new Vector3();
+		const color = new Color();
+
+		for ( let i = 0; i < count; i++ ) {
+
+			const offset = i * 7;
+			position.set( instanceData[ offset ], instanceData[ offset + 1 ], instanceData[ offset + 2 ] );
+			color.setRGB( instanceData[ offset + 3 ], instanceData[ offset + 4 ], instanceData[ offset + 5 ] );
+			surveyIds[ i ] = instanceData[ offset + 6 ];
+
+			const size = pointSizes[ i ] * 0.1; // scale down for 3D space
+			matrix.makeTranslation( position.x, position.y, position.z );
+			matrix.scale( new Vector3( size, size, size ) );
+
+			this.setMatrixAt( i, matrix );
+			this.setColorAt( i, color );
+
+		}
+
+		this.instanceMatrix.needsUpdate = true;
+		if ( this.instanceColor ) this.instanceColor.needsUpdate = true;
 
 		this.instanceData = null;
 
@@ -302,9 +384,11 @@ class Stations extends Points {
 		const splaySize = visible ? 6.0 : 0.0;
 
 		const vertices = this.vertices;
-		const pSize = this.geometry.getAttribute( 'pSize' );
 		const l = vertices.length;
 		const selection = this.selection;
+
+		const matrix = new Matrix4();
+		const position = new Vector3();
 
 		for ( let i = 0; i < l; i++ ) {
 
@@ -312,13 +396,20 @@ class Stations extends Points {
 
 			if ( node.connections === 0 && ( splaySize === 0 || selection.contains( node.id ) ) ) {
 
-				pSize.setX( i, splaySize );
+				this.getMatrixAt( i, matrix );
+				position.setFromMatrixPosition( matrix );
+
+				const scale = splaySize * 0.1;
+				matrix.makeTranslation( position.x, position.y, position.z );
+				matrix.scale( new Vector3( scale, scale, scale ) );
+
+				this.setMatrixAt( i, matrix );
 
 			}
 
 		}
 
-		pSize.needsUpdate = true;
+		this.instanceMatrix.needsUpdate = true;
 	}
 
 	resetPaths () {

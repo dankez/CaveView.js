@@ -33,15 +33,24 @@ class Legs extends LineSegments2 {
 
 		const positions = new Float32BufferAttribute( vertices.length * 3, 3 );
 		const colors = new Float32BufferAttribute( vertices.length * 3, 3 );
+		const surveyIds = new Float32Array( vertices.length / 2 );
 
 		vertices.forEach( ( v, i ) => { positions.setXYZ( i, v.x, v.y, v.z ); } );
 
 		colors.array.fill( 1.0 );
 
+		// Fill surveyIds based on legRuns
+		legRuns.forEach( run => {
+			for ( let i = run.start / 2; i < run.end / 2; i++ ) {
+				surveyIds[ i ] = run.survey;
+			}
+		} );
+
 		const geometry = this.geometry;
 
 		geometry.setPositions( positions.array );
 		geometry.setColors( colors.array );
+		geometry.setSurveyIds( surveyIds );
 
 		this.computeLineDistances();
 		this.computeStats( survey );
