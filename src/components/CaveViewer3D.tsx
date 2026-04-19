@@ -688,8 +688,9 @@ const TerrainMesh = React.memo(({ surface, showMesh, showMeshWire, showTexture, 
         <mesh geometry={solidGeo} renderOrder={0}>
           <meshStandardMaterial color={surfaceColor} side={THREE.DoubleSide} 
             transparent={opacity < 1} opacity={opacity}
-            roughness={0.65} 
-            metalness={0.25}
+            roughness={0.9} 
+            metalness={0.1}
+            flatShading={true} // Zvýrazní hrany a detaily terénu
             depthWrite={false}
             polygonOffset polygonOffsetFactor={4} polygonOffsetUnits={4} />
         </mesh>
@@ -699,7 +700,9 @@ const TerrainMesh = React.memo(({ surface, showMesh, showMeshWire, showTexture, 
       {showNetwork && (
         <mesh geometry={networkGeo} renderOrder={1}>
           <meshStandardMaterial vertexColors side={THREE.DoubleSide} transparent={opacity < 1} opacity={opacity}
-            roughness={0.85}
+            roughness={0.9} 
+            metalness={0.1}
+            flatShading={true}
             depthWrite={false}
             polygonOffset polygonOffsetFactor={3} polygonOffsetUnits={3} />
         </mesh>
@@ -970,10 +973,18 @@ export default function CaveViewer3D({ cave, options: o, onStationClick, onSurfa
       onPointerMove={(e) => { if (e.buttons > 0) handleCameraChange() }}
       onWheel={() => handleCameraChange()}
     >
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[1, 3, 1]}    intensity={0.8} />
-      <directionalLight position={[-2, 1, -2]} intensity={0.4} />
-      <directionalLight position={[0, -2, 0]}   intensity={0.1} /> {/* Mierne svetlo odspodu kvôli čitateľnosti stien */}
+      <ambientLight intensity={0.25} /> {/* Znížené pre lepší kontrast tieňov */}
+      <directionalLight position={[1, 3, 1]}    intensity={0.6} />
+      <directionalLight position={[-2, 1, -2]} intensity={0.3} />
+      
+      {/* ── Svetlo pre zvýraznenie reliéfu (Hillshading) ── */}
+      <directionalLight 
+        position={[5, 1, 5]} 
+        intensity={1.2} 
+        color="#ffffff" 
+      />
+      
+      <directionalLight position={[0, -2, 0]}   intensity={0.05} />
 
       {/* ── Terrain ── */}
       {(o.showSurfaceMesh || o.showSurfaceMeshWire || o.showSurfaceTexture || o.showSurfaceNetwork) && cave.surfaces?.map((surf, i) => (
