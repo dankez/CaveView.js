@@ -147,13 +147,38 @@ function StationDetailCard({ stations, onClose, onPlaceCaver }: {
   onClose: () => void;
   onPlaceCaver: (pos: [number, number, number], pose: 'standing' | 'crawling') => void 
 }) {
+  const [posOffset, setPosOffset] = useState({ x: 0, y: 0 })
+  const dragRef = useRef<{ startX: number; startY: number; isDragging: boolean }>({ startX: 0, startY: 0, isDragging: false })
+
   if (stations.length === 0) return null
   const st1 = stations[0]
   const st2 = stations.length > 1 ? stations[1] : null
 
-  // Fixovana poloha karty
+  // Pôvodná poloha karty
   const cx = Math.min(Math.max(st1.screenX, 280), window.innerWidth - 320)
   const cy = Math.min(Math.max(st1.screenY + 20, 60), window.innerHeight - 450)
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    dragRef.current = {
+      startX: e.clientX - posOffset.x,
+      startY: e.clientY - posOffset.y,
+      isDragging: true
+    }
+    const handleMouseMove = (em: MouseEvent) => {
+      if (!dragRef.current.isDragging) return
+      setPosOffset({
+        x: em.clientX - dragRef.current.startX,
+        y: em.clientY - dragRef.current.startY
+      })
+    }
+    const handleMouseUp = () => {
+      dragRef.current.isDragging = false
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+  }
 
   const Row = ({ label, value, sub }: { label: string; value: string; sub?: string }) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
@@ -167,7 +192,7 @@ function StationDetailCard({ stations, onClose, onPlaceCaver }: {
 
   return (
     <div style={{
-      position: 'fixed', left: cx, top: cy, zIndex: 200, minWidth: 280,
+      position: 'fixed', left: cx + posOffset.x, top: cy + posOffset.y, zIndex: 200, minWidth: 280,
       background: 'linear-gradient(135deg,rgba(8,15,35,.97),rgba(15,25,50,.97))',
       border: '1px solid rgba(79,195,247,.35)',
       borderRadius: 14, padding: '16px 18px',
@@ -176,8 +201,14 @@ function StationDetailCard({ stations, onClose, onPlaceCaver }: {
       fontFamily: 'Inter, system-ui, sans-serif',
       userSelect: 'text',
     }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      {/* Header - Drag Handle */}
+      <div 
+        onMouseDown={handleMouseDown}
+        style={{ 
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, 
+          cursor: 'grab', padding: '4px 0' 
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4fc3f7', boxShadow: '0 0 6px #4fc3f7' }} />
           <span style={{ fontSize: 15, fontWeight: 700, color: '#e2e8f0', letterSpacing: '0.01em' }}>
@@ -734,7 +765,11 @@ export default function App() {
         .canvas-wrap{flex:1;position:relative}
 
         /* Sidebar */
-        .sidebar{width:230px;background:rgba(8,12,24,.97);border-left:1px solid rgba(255,255,255,.05);padding:.9rem;display:flex;flex-direction:column;gap:1rem;overflow-y:auto;flex-shrink:0}
+        .sidebar{width:230px;background:rgba(8,12,24,.97);border-left:1px solid rgba(255,255,255,.05);padding:.9rem;display:flex;flex-direction:column;gap:1rem;overflow-y:auto;flex-shrink:0;height:100%;max-height:100%}
+        .sidebar::-webkit-scrollbar{width:5px}
+        .sidebar::-webkit-scrollbar-track{background:rgba(0,0,0,0.1)}
+        .sidebar::-webkit-scrollbar-thumb{background:rgba(99,179,237,0.3);border-radius:10px}
+        .sidebar::-webkit-scrollbar-thumb:hover{background:rgba(99,179,237,0.5)}
         .s-label{font-size:.62rem;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.45rem}
         .info-row{display:flex;justify-content:space-between;font-size:.75rem;padding:.28rem 0;border-bottom:1px solid rgba(255,255,255,.04);color:#718096}
         .info-val{color:#63b3ed;font-weight:600}
