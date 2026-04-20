@@ -2,6 +2,8 @@
 
 Moderná webová aplikácia na 3D vizualizáciu jaskynných systémov, vybudovaná na technológiách **React**, **Three.js** a **React Three Fiber**. Aplikácia umožňuje speleológom interaktívne skúmať jaskynné dáta, merať vzdialenosti a vizualizovať podzemie v realistickom kontexte.
 
+### 🌐 Live Demo: [loch.sss.sk](https://loch.sss.sk)
+
 ## ✨ Kľúčové funkcie
 
 ### 🔍 3D Prehliadač a Vizualizácia
