@@ -58,6 +58,13 @@ Tento update transformuje CaveView na plnohodnotný analytický nástroj pre spe
   - **Nezávislosť:** Analytické rezy zostávajú aktívne aj po zatvorení detailu bodu alebo kliknutí na pozadie, až kým ich užívateľ manuálne neresetuje.
 - **Konzistentný Render:** Orezávanie sa teraz korektne aplikuje na všetky vrstvy modelu vrátane Drôtenej siete terénu, Sieťového modelu (výšky) a textúrovaného povrchu.
 
+### 🖼️ Ukážka Analýzy (Vertikálny Profil)
+![Vertikálny rez 1](./docs/img/profile_clip_1.png)
+*Obr 1: Aktivácia vertikálneho profilu medzi dvoma bodmi s pohľadom na terén.*
+
+![Vertikálny rez 2](./docs/img/profile_clip_2.png)
+*Obr 2: Detailný prierez jaskynnou chodbou s využitím funkcie Offset (posun rezu).*
+
 ## 🆕 Release Notes - 20.04.2026-02 (Performance & Adaptive Themes)
 
 Tento update prináša zásadnú architektonickú zmenu zameranú na plynulosť a vizuálnu čistotu pri extrémnych záťažiach.
