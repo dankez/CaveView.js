@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh'
 import type { ParsedCave, CaveSurface, Segment } from '../parsers/caveParser'
+import type { SelStation } from '../App'
 
 // ─── BVH Initialization ───────────────────────────────────────────────────────
 // @ts-ignore
@@ -59,6 +60,13 @@ export interface ViewerOptions {
   colorStationNames:   string
   colorStationAlt:     string
   colorTerrainWire:    string
+  // Clipping
+  showClipping:        boolean
+  clippingHeight:      number
+  showProfileClipping: boolean
+  profileClipFlip:     boolean
+  profileClipOffset:   number
+  clippingPlanes?:     any[]
 }
 
 // ─── Clickable stations (neviditelné gule, raycasting) & Hover Highlight ───
@@ -292,7 +300,7 @@ function segsToGeoWithColors(segs: Segment[], mnZ: number, mxZ: number) {
 // ─── Cave survey legs ─────────────────────────────────────────────────────────
 const CYL_UP = new THREE.Vector3(0, 1, 0)
 
-function CaveLegs({ cave, showSplay, showAltitude, options: o }: { cave: ParsedCave; showSplay: boolean; showAltitude: boolean, options: ViewerOptions }) {
+function CaveLegs({ cave, showSplay, showAltitude, options: o, ...props }: { cave: ParsedCave; showSplay: boolean; showAltitude: boolean, options: ViewerOptions, clippingPlanes: any[] }) {
   const caveSegs    = useMemo(() => cave.segments.filter(s => s.type === 'cave'),    [cave])
   const splaySegs   = useMemo(() => cave.segments.filter(s => s.type === 'splay'),   [cave])
   const surfaceSegs = useMemo(() => cave.segments.filter(s => s.type === 'surface'), [cave])
@@ -319,7 +327,11 @@ function CaveLegs({ cave, showSplay, showAltitude, options: o }: { cave: ParsedC
   return (
     <group renderOrder={10}>
       <lineSegments geometry={caveGeo}>
-        <lineBasicMaterial color={o.colorTraverse} linewidth={2} vertexColors={showAltitude} transparent={false} depthTest={true} />
+        <lineBasicMaterial 
+          color={o.colorTraverse} linewidth={2} vertexColors={showAltitude} 
+          transparent={false} depthTest={true} 
+          clippingPlanes={props.clippingPlanes}
+        />
       </lineSegments>
       {showSplay && splaySegs.length > 0 && (
         <lineSegments geometry={splayGeo}>
@@ -336,7 +348,7 @@ function CaveLegs({ cave, showSplay, showAltitude, options: o }: { cave: ParsedC
 }
 
 // ─── Cave traverse — polygonový ťah (InstancedMesh rúrky s altitude farbami) ──
-const CaveTraverse = React.memo(({ cave, radius, showAltitude, isMoving }: { cave: ParsedCave; radius: number; showAltitude: boolean, isMoving: boolean }) => {
+const CaveTraverse = React.memo(({ cave, radius, showAltitude, isMoving, ...props }: { cave: ParsedCave; radius: number; showAltitude: boolean, isMoving: boolean, clippingPlanes: any[] }) => {
   if (isMoving) return null 
   const caveLegs = useMemo(() => cave.segments.filter(s => s.type === 'cave'), [cave])
 
@@ -389,10 +401,11 @@ const CaveTraverse = React.memo(({ cave, radius, showAltitude, isMoving }: { cav
       }
     })
 
+    mat.clippingPlanes = props.clippingPlanes
     im.instanceMatrix.needsUpdate = true
     if (im.instanceColor) im.instanceColor.needsUpdate = true
     return im
-  }, [caveLegs, zRange, cylGeo, radius, showAltitude])
+  }, [caveLegs, zRange, cylGeo, radius, showAltitude, props.clippingPlanes])
 
   return <primitive object={mesh} renderOrder={10} />
 })
@@ -601,16 +614,18 @@ function buildScrapsGeo(cave: ParsedCave, withColors: boolean, smooth: boolean):
 }
 
 // ─── Cave wall scraps — solid + wireframe + altitude (independent) ─────────────
-const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitude, smooth, showRender, caveTexture, renderOpacity, isMoving, options, onProcessingStart, onProcessingEnd }: {
+const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitude, smooth, showRender, caveTexture, renderOpacity, isMoving, options, ...props }: {
   cave: ParsedCave; opacity: number
   showSolid: boolean; showWire: boolean; showAltitude: boolean; smooth: boolean; showRender: boolean
   caveTexture: 'rock' | 'limestone' | 'granite'
   renderOpacity: number
   isMoving: boolean
   options: ViewerOptions
+  clippingPlanes?: any[]
   onProcessingStart?: (i: string) => void
   onProcessingEnd?: () => void
 }) => {
+  const { onProcessingStart, onProcessingEnd } = props as any;
   const [geos, setGeos] = useState<{ solid: THREE.BufferGeometry | null, alt: THREE.BufferGeometry | null }>({ solid: null, alt: null })
 
   useEffect(() => {
@@ -647,7 +662,8 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
         <mesh geometry={solidGeo} renderOrder={5}>
           <meshStandardMaterial color={options.colorScraps} side={THREE.DoubleSide} transparent={opacity < 1} opacity={opacity}
             roughness={0.7} metalness={0.1}
-            polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1} />
+            polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1}
+            clippingPlanes={props.clippingPlanes} />
         </mesh>
       )}
 
@@ -781,7 +797,8 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
             transparent={props.opacity < 1} opacity={props.opacity}
             roughness={0.9} metalness={0.1} flatShading={true} 
             depthWrite={props.opacity === 1}
-            polygonOffset polygonOffsetFactor={4} polygonOffsetUnits={4} />
+            polygonOffset polygonOffsetFactor={4} polygonOffsetUnits={4}
+            clippingPlanes={props.clippingPlanes} />
         </mesh>
       )}
       {props.showNetwork && (
@@ -789,19 +806,21 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
           <meshStandardMaterial vertexColors side={THREE.DoubleSide} transparent={props.opacity < 1} opacity={props.opacity}
             roughness={0.9} metalness={0.1} flatShading={true} 
             depthWrite={props.opacity === 1}
-            polygonOffset polygonOffsetFactor={3} polygonOffsetUnits={3} />
+            polygonOffset polygonOffsetFactor={3} polygonOffsetUnits={3} 
+            clippingPlanes={props.clippingPlanes} />
         </mesh>
       )}
       {props.showTexture && props.texture && (
         <mesh geometry={geo}>
           <meshStandardMaterial map={props.texture} side={THREE.DoubleSide} transparent={props.opacity < 1} opacity={props.opacity}
             roughness={0.85} depthWrite={props.opacity === 1}
-            polygonOffset polygonOffsetFactor={2} polygonOffsetUnits={2} />
+            polygonOffset polygonOffsetFactor={2} polygonOffsetUnits={2}
+            clippingPlanes={props.clippingPlanes} />
         </mesh>
       )}
       {props.showMeshWire && (
         <mesh geometry={geo}>
-          <meshBasicMaterial color={props.colorTerrainWire} wireframe depthWrite={false} transparent={true} opacity={0.45} />
+          <meshBasicMaterial color={props.colorTerrainWire} wireframe depthWrite={false} transparent={true} opacity={0.45} clippingPlanes={props.clippingPlanes} />
         </mesh>
       )}
     </group>
@@ -844,7 +863,8 @@ const TerrainMesh = React.memo(({ surface, ...props }: any) => {
           const origX = x + surface.centerOffset.x
           const origY = -z + surface.centerOffset.y
           const altitude = y + surface.centerOffset.z
-          props.onSurfaceClick(origX, origY, altitude, e.nativeEvent.clientX, e.nativeEvent.clientY)
+          const ctrl = e.nativeEvent.ctrlKey || e.nativeEvent.metaKey
+          props.onSurfaceClick(origX, origY, altitude, e.nativeEvent.clientX, e.nativeEvent.clientY, ctrl)
         }
       }}
       onPointerMove={(e: any) => {
@@ -996,11 +1016,13 @@ interface Props {
   manualConnection?: { p1: {x:number, y:number, z:number}, p2: {x:number, y:number, z:number} } | null
   placedCaver?: { pos: [number, number, number], pose: 'standing' | 'crawling' } | null
   fitTrigger?: number
+  selectedStations?: SelStation[]
+  activeProfilePoints?: SelStation[] | null
 }
 
 export default function CaveViewer3D({ 
   cave, options: o, onStationClick, onSurfaceClick, onBackgroundClick, onMoveStateChange, onCameraUpdate, 
-  onProcessingStart, onProcessingEnd, manualConnection, placedCaver, fitTrigger 
+  onProcessingStart, onProcessingEnd, manualConnection, placedCaver, fitTrigger, selectedStations, activeProfilePoints 
 }: Props) {
   const [isMoving, setIsMoving] = useState(false)
   const [camData, setCamData] = useState<{ dist: number, fov: number, height: number } | null>(null)
@@ -1047,9 +1069,43 @@ export default function CaveViewer3D({
   const diag     = Math.sqrt(cave.bounds.size.x ** 2 + cave.bounds.size.y ** 2 + cave.bounds.size.z ** 2)
   const gridSize = Math.max(diag * 1.5, 200)
 
+  // ─── Clipping Planes ───
+  const compositeClippingPlanes = useMemo(() => {
+    const planes: THREE.Plane[] = []
+    
+    // 1. Horizontálny rez
+    if (o.showClipping) {
+      planes.push(new THREE.Plane(new THREE.Vector3(0, -1, 0), o.clippingHeight - cave.centerOffset.z))
+    }
+    
+    // 2. Vertikálny (profilový) rez
+    if (o.showProfileClipping && activeProfilePoints && activeProfilePoints.length === 2) {
+      const s1 = activeProfilePoints[0]
+      const s2 = activeProfilePoints[1]
+      
+      const p1 = new THREE.Vector3(s1.origX - (s1.centerX||0), 0, -(s1.origY - (s1.centerY||0)))
+      const p2 = new THREE.Vector3(s2.origX - (s1.centerX||0), 0, -(s2.origY - (s1.centerY||0)))
+      
+      const v = new THREE.Vector3().subVectors(p2, p1).normalize()
+      if (v.lengthSq() > 0.0001) {
+        let normal = new THREE.Vector3(-v.z, 0, v.x)
+        if (o.profileClipFlip) normal.multiplyScalar(-1)
+        planes.push(new THREE.Plane(normal, -normal.dot(p1) - o.profileClipOffset))
+      }
+    }
+    
+    return planes
+  }, [o.showClipping, o.clippingHeight, o.showProfileClipping, o.profileClipFlip, o.profileClipOffset, activeProfilePoints, cave.centerOffset.z])
+
   return (
     <Canvas
-      gl={{ antialias: true, alpha: false, preserveDrawingBuffer: false, powerPreference: 'high-performance' }}
+      gl={{ 
+        antialias: true, 
+        alpha: false, 
+        preserveDrawingBuffer: false, 
+        powerPreference: 'high-performance',
+        localClippingEnabled: true // Aktivácia rezov
+      }}
       camera={{ fov: 55, near: 0.1, far: Math.max(diag * 20, 10000) }}
       onCreated={({ gl }) => {
         // Optimalizácia pre veľké modely – ak GPU nestíha
@@ -1084,11 +1140,11 @@ export default function CaveViewer3D({
           showNetwork={o.showSurfaceNetwork}
           opacity={o.surfaceOpacity}
           surfaceColor={o.surfaceColor}
+          colorTerrainWire={o.colorTerrainWire}
           onSurfaceClick={onSurfaceClick}
           isMoving={isMoving}
           options={o}
-          onProcessingStart={onProcessingStart}
-          onProcessingEnd={onProcessingEnd}
+          clippingPlanes={compositeClippingPlanes}
         />
       ))}
 
@@ -1105,12 +1161,19 @@ export default function CaveViewer3D({
           renderOpacity={o.renderOpacity}
           isMoving={isMoving}
           options={o}
+          clippingPlanes={compositeClippingPlanes}
         />
       )}
 
       {/* ── Cave traverse (3D rúrky) ── */}
       {o.showTraverse && cave.segments?.length > 0 && (
-        <CaveTraverse cave={cave} radius={o.traverseRadius} showAltitude={o.traverseAltitude} isMoving={isMoving} />
+        <CaveTraverse 
+          cave={cave} 
+          radius={o.traverseRadius} 
+          showAltitude={o.traverseAltitude} 
+          isMoving={isMoving} 
+          clippingPlanes={compositeClippingPlanes}
+        />
       )}
 
       {/* ── Auto-fit pri zmene jaskyne alebo aktivácii triggera ── */}
@@ -1122,7 +1185,13 @@ export default function CaveViewer3D({
       </GizmoHelper>
 
       {/* ── Survey legs ── */}
-      <CaveLegs cave={cave} showSplay={o.showSplay} showAltitude={o.traverseAltitude} options={o} />
+      <CaveLegs 
+        cave={cave} 
+        showSplay={o.showSplay} 
+        showAltitude={o.traverseAltitude} 
+        options={o} 
+        clippingPlanes={compositeClippingPlanes}
+      />
 
       {/* ── Station dots & labels & clickable targets ── */}
       {o.showStations && <Stations cave={cave} options={o} />}

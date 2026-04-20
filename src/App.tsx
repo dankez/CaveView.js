@@ -127,7 +127,7 @@ function sampleDtmAt(surface: CaveSurface, worldX: number, worldY: number): numb
 
 // ─── Station detail card ─────────────────────────────────────────────────────────────
 
-interface SelStation {
+export interface SelStation {
   idx:          number
   name:         string
   origX:        number
@@ -142,10 +142,11 @@ interface SelStation {
   centerZ?:     number
 }
 
-function StationDetailCard({ stations, onClose, onPlaceCaver }: { 
+function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile }: { 
   stations: SelStation[]; 
   onClose: () => void;
-  onPlaceCaver: (pos: [number, number, number], pose: 'standing' | 'crawling') => void 
+  onPlaceCaver: (pos: [number, number, number], pose: 'standing' | 'crawling') => void;
+  onSetProfile: (sts: SelStation[]) => void;
 }) {
   const [posOffset, setPosOffset] = useState({ x: 0, y: 0 })
   const dragRef = useRef<{ startX: number; startY: number; isDragging: boolean }>({ startX: 0, startY: 0, isDragging: false })
@@ -332,6 +333,32 @@ function StationDetailCard({ stations, onClose, onPlaceCaver }: {
         </div>
       )}
 
+      {/* Actions */}
+      <div style={{ marginTop: 16 }}>
+        {stations.length === 2 && (
+          <button 
+            onClick={() => onSetProfile(stations)}
+            style={{ 
+              width: '100%', padding: '10px', background: 'rgba(34, 211, 238, 0.15)', color: '#22d3ee', 
+              fontSize: '11px', fontWeight: 'bold', border: '1px solid rgba(34, 211, 238, 0.3)', borderRadius: '6px', 
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              transition: 'all 0.2s', marginBottom: '8px'
+            }}
+          >
+            <span className="material-symbols-outlined text-sm">linear_scale</span>
+            Vytvoriť rez (línia)
+          </button>
+        )}
+
+        <button 
+          className="btn-back" 
+          style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8', borderRadius: '6px', cursor: 'pointer', fontSize: '11px' }} 
+          onClick={onClose}
+        >
+          Zavrieť okno
+        </button>
+      </div>
+
       {/* Footer hint */}
       <div style={{ marginTop: 14, fontSize: 10, color: '#64748b', textAlign: 'center' }}>
         {stations.length === 1 ? 'Kliknutím na ďalší bod k nemu zmeriaš vzdialenosť' : 'Kliknutím na ďalší bod začneš nové meranie'}
@@ -454,6 +481,8 @@ const ProcessingOverlay = ({ info }: { info: string | null }) => {
 export default function App() {
   const [appState, setAppState] = useState<AppState>('welcome')
   const [loadedFile, setLoadedFile] = useState<LoadedFile | null>(null)
+  const [showStationCard, setShowStationCard] = useState(false)
+  const [activeProfilePoints, setActiveProfilePoints] = useState<SelStation[] | null>(null)
   const [cave, setCave] = useState<ParsedCave | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -510,6 +539,12 @@ export default function App() {
     colorStationNames:   '#fbbf24',
     colorStationAlt:     '#a5f3fc',
     colorTerrainWire:    '#6ab04c',
+    // Clipping
+    showClipping:        false,
+    clippingHeight:      0,
+    showProfileClipping: false,
+    profileClipFlip:     false,
+    profileClipOffset:   0,
   })
 
   // ─── DEFINÍCIA ŠABLÓN ────────────────────────────────────────────────────────
@@ -601,8 +636,8 @@ export default function App() {
     }
     
     setSelectedStations(prev => {
-      // Ak meranie VYP, vždy vraciame len aktuálny bod
-      if (!isMeasuringMode) return [newSt]
+      // Ak meranie VYP a nie je stlačený CTRL, vždy vraciame len aktuálny bod
+      if (!isMeasuringMode && !ctrlKey) return [newSt]
 
       // Zjednodušené ovládanie:
       // Ak máme už presne 1 bod, klik na ďalší ho nastaví ako druhý bod (bez ohľadu na CTRL).
@@ -613,10 +648,11 @@ export default function App() {
       // Kliknutie na rovnaký bod (idx) slúži ako "zrušenie výberu" = vyberie ho len raz a začne sa od neho znova
       return [newSt]
     })
+    setShowStationCard(true)
   }, [cave, isMeasuringMode])
 
-  const handleSurfaceClick = useCallback((origX: number, origY: number, altitude: number, screenX: number, screenY: number) => {
-    if (!cave || !isMeasuringMode) return // Klik na terén berieme IBA v režime merania
+  const handleSurfaceClick = useCallback((origX: number, origY: number, altitude: number, screenX: number, screenY: number, ctrlKey: boolean = false) => {
+    if (!cave || (!isMeasuringMode && !ctrlKey)) return // Klik na terén berieme IBA v režime merania alebo s CTRL
     const now = Date.now()
     if (now - lastClickRef.current.time < 300 && lastClickRef.current.idx === -1) return
     lastClickRef.current = { time: now, idx: -1 }
@@ -640,12 +676,13 @@ export default function App() {
     setSurfPointCache(prev => ({ ...prev, [sid]: newSt }))
 
     setSelectedStations(prev => {
-      if (!isMeasuringMode) return [newSt]
+      if (!isMeasuringMode && !ctrlKey) return [newSt]
       if (prev.length === 1 && (prev[0].origX !== newSt.origX || prev[0].origY !== newSt.origY)) {
         return [prev[0], newSt]
       }
       return [newSt]
     })
+    setShowStationCard(true)
   }, [cave, isMeasuringMode])
 
   // Manuálne meranie cez textové vstupy
@@ -694,6 +731,7 @@ export default function App() {
       setTimeout(() => setErrorMsg(null), 3500)
     } else {
       setSelectedStations([s1, s2])
+      setShowStationCard(true)
     }
   }
 
@@ -785,6 +823,8 @@ export default function App() {
       }
 
       setCave(parsed)
+      // Inicializovať výšku rezu na vrchol modelu
+      setOpts(prev => ({ ...prev, clippingHeight: parsed.bounds.max.z + parsed.centerOffset.z }))
       setTimeout(() => { setProgress(100); setTimeout(() => setAppState('viewer'), 200) }, 100)
     } catch (e: any) {
       console.error(e)
@@ -1198,12 +1238,17 @@ export default function App() {
                     options={opts}
                     onStationClick={handleStationClick}
                     onSurfaceClick={isMeasuringMode ? handleSurfaceClick : undefined}
-                    onBackgroundClick={() => setSelectedStations([])}
+                    onBackgroundClick={() => {
+                      setSelectedStations([])
+                      setShowStationCard(false)
+                    }}
                     onMoveStateChange={setIsModelMoving}
                     onCameraUpdate={setCameraData}
                     onProcessingStart={setProcessingInfo}
                     onProcessingEnd={() => setProcessingInfo(null)}
                     fitTrigger={fitTrigger}
+                    selectedStations={selectedStations}
+                    activeProfilePoints={activeProfilePoints}
                     manualConnection={
                       selectedStations.length === 2 && selectedStations[0] && selectedStations[1]
                         ? {
@@ -1248,11 +1293,16 @@ export default function App() {
                 )}
 
                 {/* Station detail card overlay */}
-                {selectedStations.length > 0 && (
+                {selectedStations.length > 0 && showStationCard && (
                   <StationDetailCard
                     stations={selectedStations}
-                    onClose={() => setSelectedStations([])}
+                    onClose={() => setShowStationCard(false)}
                     onPlaceCaver={(pos, pose) => setOpts(p => ({ ...p, placedCaver: { pos, pose } }))}
+                    onSetProfile={(sts) => {
+                      setActiveProfilePoints([...sts])
+                      setOpts(p => ({ ...p, showProfileClipping: true, profileClipOffset: 0 }))
+                      setShowStationCard(false)
+                    }}
                   />
                 )}
               </div>
@@ -1293,7 +1343,136 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* ── VRSTVY (survey) ── */}
+                {/* ── ANALÝZA PRIESTOROVÝCH REZOV ── */}
+                <div>
+                  <div className="s-label">Analýza priestorových rezov</div>
+                  
+                  {/* Horizontálny rez */}
+                  <div className="toggle-row">
+                    <label className="toggle-label">
+                      <span className="material-symbols-outlined text-sm" style={{ color: '#818cf8', marginRight: '4px' }}>content_cut</span>
+                      Horizontálny rez (Z)
+                    </label>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" checked={opts.showClipping} onChange={() => toggleOpt('showClipping')} className="sr-only peer" />
+                      <div className="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-indigo-500"></div>
+                    </label>
+                  </div>
+                  {opts.showClipping && (
+                    <div style={{ padding: '4px 0 12px 28px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', marginBottom: '6px' }}>
+                        <span>Výška rezu</span>
+                        <span style={{ color: '#818cf8', fontWeight: 'bold' }}>{opts.clippingHeight.toFixed(1)} m</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button 
+                          onClick={() => setOpts(prev => ({ ...prev, clippingHeight: prev.clippingHeight - 0.1 }))}
+                          style={{ width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e293b', color: '#94a3b8', border: '1px solid #334155', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
+                        >−</button>
+                        <input 
+                          type="range"
+                          min={cave ? cave.bounds.min.z + cave.centerOffset.z - 10 : 0}
+                          max={cave ? cave.bounds.max.z + cave.centerOffset.z + 10 : 2000}
+                          step={0.1}
+                          value={opts.clippingHeight}
+                          onChange={(e) => setOpts(prev => ({ ...prev, clippingHeight: parseFloat(e.target.value) }))}
+                          className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                          style={{ flex: 1 }}
+                        />
+                        <button 
+                          onClick={() => setOpts(prev => ({ ...prev, clippingHeight: prev.clippingHeight + 0.1 }))}
+                          style={{ width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e293b', color: '#94a3b8', border: '1px solid #334155', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
+                        >+</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Vertikálny rez */}
+                  <div className="toggle-row">
+                    <label className="toggle-label">
+                      <span className="material-symbols-outlined text-sm" style={{ color: '#22d3ee', marginRight: '4px' }}>linear_scale</span>
+                      Vertikálny profil (Línia)
+                    </label>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" checked={opts.showProfileClipping} onChange={() => toggleOpt('showProfileClipping')} className="sr-only peer" />
+                      <div className="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-500"></div>
+                    </label>
+                  </div>
+
+                  {opts.showProfileClipping && (
+                    <div style={{ padding: '4px 0 12px 28px' }}>
+                      {(!activeProfilePoints && selectedStations.length < 2) && (
+                        <p style={{ fontSize: '10px', color: '#64748b', fontStyle: 'italic', lineHeight: '1.3' }}>
+                          Pre aktiváciu profilu vyberte 2 body meraním (Ctrl+klik).
+                        </p>
+                      )}
+                      
+                      {selectedStations.length === 2 && (
+                        <button 
+                          onClick={() => setActiveProfilePoints([...selectedStations])}
+                          style={{ width: '100%', padding: '6px', background: 'rgba(79, 195, 247, 0.1)', color: '#4fc3f7', fontSize: '10px', fontWeight: 'bold', border: '1px solid rgba(79, 195, 247, 0.2)', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}
+                        >
+                          <span className="material-symbols-outlined text-xs">check_circle</span>
+                          Nastaviť rez z výberu
+                        </button>
+                      )}
+
+                      {activeProfilePoints && (
+                        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', marginBottom: '6px' }}>
+                            <span>Posun rezu (Offset)</span>
+                            <span style={{ color: '#22d3ee', fontWeight: 'bold' }}>{opts.profileClipOffset.toFixed(1)} m</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                            <button 
+                              onClick={() => setOpts(prev => ({ ...prev, profileClipOffset: prev.profileClipOffset - 0.1 }))}
+                              style={{ width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e293b', color: '#94a3b8', border: '1px solid #334155', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
+                            >−</button>
+                            <input 
+                              type="range"
+                              min={-50}
+                              max={50}
+                              step={0.1}
+                              value={opts.profileClipOffset}
+                              onChange={(e) => setOpts(prev => ({ ...prev, profileClipOffset: parseFloat(e.target.value) }))}
+                              className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                              style={{ flex: 1 }}
+                            />
+                            <button 
+                              onClick={() => setOpts(prev => ({ ...prev, profileClipOffset: prev.profileClipOffset + 0.1 }))}
+                              style={{ width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e293b', color: '#94a3b8', border: '1px solid #334155', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
+                            >+</button>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                             <button 
+                              onClick={() => toggleOpt('profileClipFlip')}
+                              style={{ flex: 1, padding: '4px', background: '#1e293b', color: '#94a3b8', fontSize: '9px', border: '1px solid #334155', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                            >
+                              <span className="material-symbols-outlined text-xs">swap_horiz</span>
+                              Otočiť
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setActiveProfilePoints(null)
+                                setOpts(p => ({ ...p, profileClipOffset: 0 }))
+                              }}
+                              style={{ padding: '4px 8px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', fontSize: '9px', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '4px', cursor: 'pointer' }}
+                              title="Zrušiť rez"
+                            >
+                              <span className="material-symbols-outlined text-xs">delete</span>
+                            </button>
+                          </div>
+                          <p style={{ fontSize: '9px', color: '#64748b', textAlign: 'center', fontFamily: 'monospace' }}>
+                            {activeProfilePoints[0].name} → {activeProfilePoints[1].name}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+              {/* ── VRSTVY (survey) ── */}
                 <div>
                   <div className="s-label">Merania</div>
                   {([
