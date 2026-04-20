@@ -421,6 +421,36 @@ const ScaleBar = ({ cameraData }: { cameraData: { dist: number, fov: number, hei
   )
 }
 
+// ─── Processing Overlay (Zobrazí sa len ak operácia trvá > 0.5s) ────────────────
+const ProcessingOverlay = ({ info }: { info: string | null }) => {
+  if (!info) return null
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(8px)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      zIndex: 9999, transition: 'all 0.3s ease'
+    }}>
+      <div style={{
+        background: '#1e293b', padding: '24px 40px', borderRadius: 16,
+        border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16
+      }}>
+        <div className="processing-spinner" style={{
+          width: 40, height: 40, border: '3px solid rgba(79, 195, 247, 0.1)',
+          borderTopColor: '#4fc3f7', borderRadius: '50%', animation: 'spin 0.8s linear infinite'
+        }} />
+        <div style={{ color: '#e2e8f0', fontSize: 14, fontWeight: 600, letterSpacing: '0.02em' }}>{info}</div>
+        <div style={{ color: '#64748b', fontSize: 11 }}>Toto môže trvať chvíľu pri veľkých modeloch...</div>
+      </div>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
+    </div>
+  )
+}
+
 export default function App() {
   const [appState, setAppState] = useState<AppState>('welcome')
   const [loadedFile, setLoadedFile] = useState<LoadedFile | null>(null)
@@ -437,6 +467,7 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isModelMoving, setIsModelMoving] = useState(false)
   const [cameraData, setCameraData] = useState<{ dist: number, fov: number, height: number } | null>(null)
+  const [processingInfo, setProcessingInfo] = useState<string | null>(null)
   const surfNextId = useRef(1)
   const [opts, setOpts] = useState<ViewerOptions>({
     showSplay:           false,
@@ -444,6 +475,8 @@ export default function App() {
     showStationNames:    true,
     showStationAlt:      false,
     showGrid:            true,
+    colorGrid:           '#222222',
+    showBoundingBox:     false,
     // Cave scraps
     showScraps:          true,
     scrapsOpacity:       0.75,
@@ -940,15 +973,26 @@ export default function App() {
             )}
 
             {/* Demo models */}
-            <div style={{ width: '100%' }}>
-              <div style={{ fontSize: '.62rem', fontWeight: 700, color: '#4a5568', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '.5rem', textAlign: 'center' }}>Testovacie modely</div>
-              <div style={{ display: 'flex', gap: '.6rem', justifyContent: 'center' }}>
-                <button className="btn-demo" onClick={() => loadFromUrl('/test_simple.lox', 'model-simple.lox')} type="button">
-                  🗺️ Simple LOX
-                </button>
-                <button className="btn-demo" onClick={() => loadFromUrl('/test_model2.lox', 'model2.lox')} type="button">
-                  🗺️ Model2 LOX (scraps)
-                </button>
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <div style={{ fontSize: '.62rem', fontWeight: 700, color: '#4a5568', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '.5rem', textAlign: 'center' }}>Testovacie modely</div>
+                <div style={{ display: 'flex', gap: '.6rem', justifyContent: 'center' }}>
+                  <button className="btn-demo" onClick={() => loadFromUrl('/test_simple.lox', 'model-simple.lox')} type="button">
+                    🗺️ Simple LOX
+                  </button>
+                  <button className="btn-demo" onClick={() => loadFromUrl('/test_model2.lox', 'model2.lox')} type="button">
+                    🗺️ Model2 (scraps)
+                  </button>
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '.62rem', fontWeight: 700, color: '#f56565', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '.5rem', textAlign: 'center' }}>Záťažový test (Big Model)</div>
+                <div style={{ display: 'flex', gap: '.6rem', justifyContent: 'center' }}>
+                  <button className="btn-demo" style={{ borderColor: 'rgba(245,101,101,0.4)', color: '#feb2b2', background: 'rgba(245,101,101,0.05)' }} 
+                    onClick={() => loadFromUrl('/zadiel.lox', 'zadiel.lox')} type="button">
+                    🏔️ Veľký model (32MB)
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1044,6 +1088,8 @@ export default function App() {
                     onBackgroundClick={() => setSelectedStations([])}
                     onMoveStateChange={setIsModelMoving}
                     onCameraUpdate={setCameraData}
+                    onProcessingStart={setProcessingInfo}
+                    onProcessingEnd={() => setProcessingInfo(null)}
                     fitTrigger={fitTrigger}
                     manualConnection={
                       selectedStations.length === 2 && selectedStations[0] && selectedStations[1]
@@ -1128,7 +1174,7 @@ export default function App() {
                   <div className="s-label">Merania</div>
                   {([
                     { key: 'showSplay' as const, colorKey: 'colorSplay' as const, label: 'Splay merania' },
-                    { key: 'showGrid'  as const, colorKey: null, label: 'Mriežka' },
+                    { key: 'showGrid'  as const, colorKey: 'colorGrid' as const, label: 'Mriežka' },
                   ]).map(({ key, colorKey, label }) => (
                     <div className="toggle-row" key={key}>
                       <label className="toggle-label">
@@ -1142,6 +1188,17 @@ export default function App() {
                         onKeyDown={e => e.key === 'Enter' && toggleOpt(key)} />
                     </div>
                   ))}
+
+                  <div className="toggle-row">
+                    <label className="toggle-label">
+                      <div className="dot" style={{ background: '#4a5568', border: '1px solid rgba(255,255,255,.2)' }} />
+                      Bounding Box
+                    </label>
+                    <div className={`switch${opts.showBoundingBox ? ' on' : ''}`}
+                      onClick={() => toggleOpt('showBoundingBox')} role="switch"
+                      aria-checked={opts.showBoundingBox} tabIndex={0}
+                      onKeyDown={e => e.key === 'Enter' && toggleOpt('showBoundingBox')} />
+                  </div>
 
                   {/* Farebné podľa výšky pre merania */}
                   <div className="toggle-row">
@@ -1457,6 +1514,7 @@ export default function App() {
               </aside>
               </div>
               <ScaleBar cameraData={cameraData} />
+              <ProcessingOverlay info={processingInfo} />
             </div>
           </div>
         )}

@@ -41,36 +41,30 @@ Moderná webová aplikácia na 3D vizualizáciu jaskynných systémov, vybudovan
    npm run build
    ```
 
-## 🆕 Release Notes - 19.04.2026 (GPU Optimization Update)
+## 🆕 Release Notes - 20.04.2026 (Spatial Analysis & BVH Update)
 
-Tento update sa zameral na plynulosť práce s extrémne veľkými modelmi (napr. Zádiel - státisíce trojuholníkov).
+Update z 20.04.2026 transformuje aplikáciu na profesionálny analytický nástroj s vysokým výkonom interakcie.
 
-- **Inteligentný LOD Systém (Draft/Stable):** Aplikácia dynamicky prepína medzi plným detailom a odľahčeným modelom (20x subsampling) počas pohybu.
-- **Aggressive Detection:** Draft mód sa aktivuje okamžite pri kliknutí (`mousedown`), čím sa eliminuje "seknutie" pri prvom pohybe.
-- **Sticky Draft & Cooldown:** Draft mód zostáva aktívny počas celého držania tlačidla myši a doostruje model až 1 sekundu po ukončení pohybu pre maximálnu plynulosť.
-- **Optimalizácia React stromu:** Implementácia `React.memo` a `Visibility Toggling` pre popisy staníc. Prepínanie režimov je teraz okamžité bez ohľadu na počet bodov.
-- **Vizuálny status:** Pridaný indikátor stavu modelu (DRAFT/STABLE) v hornej lište pre okamžitú spätnú väzbu o režime renderovania.
-- **WebGL Fine-tuning:** Nastavenie `high-performance` priority pre GPU a optimalizácia renderovacej slučky.
-
-## 🆕 Release Notes - 19.04.2026 (UI & Viewport Optimization)
-
-Druhý update dňa 19.04.2026 sa zameral na vizuálnu čistotu, presnosť merania a užívateľský komfort.
-
-- **Stabilná mierka (UI Scale Bar):** Mierka bola presunutá z 3D scény priamo do hlavného rozhrania (UI layer). Už sa "nehýbe" s modelom, je pevne prilepená na spodnom okraji obrazovky, čím pôsobí ako profesionálny GIS nástroj.
-- **Inteligentný Auto-Fit:** Refaktorovaná logika počiatočného zoomu. Pri otvorení modelu sa kamera automaticky nastaví tak, aby bol v zábere **celý model** vrátane terénu a všetkých odľahlých častí jaskyne (Fit to screen).
-- **Zjednotený Color Picker systém:** Každá vrstva (Splay, 3D ťah, Body, Steny, Terén) má teraz v Sidebare vlastnú ikonku palety pre okamžitú zmenu farby bez nutnosti reštartu aplikácie.
-- **Kompaktný Sidebar:** Odstránené rozmerné palety farieb pod terénom a nahradené elegantným výsuvným Color Pickerom, čo šetrí miesto na menších obrazovkách.
-- **Optimalizácia priblíženia:** Zvýšený limit maximálneho oddialenia pre prácu s rozsiahlymi povrchmi pohorí.
+- **BVH Priestorový Index (three-mesh-bvh):** Integrácia hierarchie ohraničujúcich objemov pre všetky steny jaskyne a modely terénu. To umožňuje bleskurýchly raycasting (detekcia klikov) aj na modeloch s miliónmi polygónov bez zásekov.
+- **Dynamická priestorová mriežka (Grid):** Implementácia inteligentnej mriežky, ktorá automaticky mení svoju hustotu (`cellSize`) a mierku podľa aktuálneho zoomu. Poskytuje stabilný vizuálny referenčný rámec v každom detaile.
+- **Viacvrstvový Bounding Box:**
+  - Pridaná vizualizácia ohraničujúceho boxu celého systému v prémiovej Ferrari červenej farbe.
+  - **Dynamický rozsah:** Box automaticky mení svoju veľkosť podľa viditeľnosti vrstiev (zväčší sa pre terén, stiahne sa len pre jaskyňu).
+  - **Vertikálna optimalizácia:** Pridaná 10% výšková rezerva pre lepšiu vizuálnu kompozíciu.
+- **Profesionálny Processing Overlay:** Implementácia asynchrónneho spracovania geometrie s vizuálnym indikátorom. Používateľ vidí stav generovania stien a indexovania BVH v reálnom čase (napr. *"Indexujem BVH priestor..."*).
+- **Vylepšená stabilita parsera:** LOX parser bol upravený tak, aby ignoroval neznáme typy dátových blokov, čo zabezpečuje kompatibilitu s najnovšími verziami exportov z Therionu.
+- **Záťažový test (Big Model):** Pridaný priamy prístup k modelu **Zádiel (32MB)** na úvodnú obrazovku pre overenie výkonu na masívnych dátach.
 
 ## 🛠️ TODO / Plán optimalizácie
-*Aktuálny stav po GPU update:*
+*Aktuálny stav po Spatial update:*
 
 - [x] **GPU Akcelerácia:** Presun výpočtu výškového farbenia do shaderov a optimalizácia renderovania.
 - [x] **Instanced Rendering:** Tisíce staníc sú vykresľované pomocou `InstancedMesh`.
 - [x] **LOD Systém:** Implementácia Level of Detail pre rozsiahle modely terénu a stien.
 - [x] **Stabilná Mierka:** Presun mierky do UI vrstvy a fixácia polohy.
 - [x] **Dynamic Colors:** Plná podpora pre užívateľský výber farieb pre všetky vrstvy.
-- [ ] **BVH Integrácia:** Implementácia `three-mesh-bvh` pre extrémne rýchly raycasting v zložitej geometrii.
+- [x] **BVH Integrácia:** Implementácia `three-mesh-bvh` pre extrémne rýchly raycasting v zložitej geometrii.
+- [x] **Asynchrónne spracovanie:** Vizualizácia stavu generovania modelu a BVH.
 - [ ] **Web Workers:** Presun parsovania veľkých .LOX a .DTM súborov na pozadie.
 - [ ] **Dátová kompresia:** Optimalizácia prenosu dát medzi parserom a GPU.
 

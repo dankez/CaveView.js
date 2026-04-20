@@ -97,7 +97,10 @@ export function parseLox(buffer: ArrayBuffer): ParsedCave {
         case 4: readScrap();      break
         case 5: readSurface();    break
         case 6: readSurfaceBMP(); break
-        default: throw new Error('Unknown LOX chunk type: ' + m_type)
+        default: 
+          // Neznámy typ chunku — preskočíme ho namiesto chyby
+          pos += m_recSize
+          break
       }
     }
     pos += m_dataSize

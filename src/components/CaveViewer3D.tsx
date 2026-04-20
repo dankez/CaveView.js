@@ -3,7 +3,16 @@ import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls, Grid, Html, GizmoHelper, GizmoViewport } from '@react-three/drei'
 import * as THREE from 'three'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh'
 import type { ParsedCave, CaveSurface, Segment } from '../parsers/caveParser'
+
+// ─── BVH Initialization ───────────────────────────────────────────────────────
+// @ts-ignore
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+// @ts-ignore
+THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+// @ts-ignore
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 // ─── ViewerOptions ────────────────────────────────────────────────────────────
 export interface ViewerOptions {
@@ -15,6 +24,8 @@ export interface ViewerOptions {
   showStationAlt:      boolean
   // Grid
   showGrid:            boolean
+  colorGrid:           string
+  showBoundingBox:     boolean
   // Cave scraps (walls)
   showScraps:          boolean
   scrapsOpacity:       number
@@ -146,6 +157,106 @@ function elevColor(t: number): THREE.Color {
 
 function normZ(z: number, minZ: number, maxZ: number): number {
   return maxZ === minZ ? 0.5 : Math.max(0, Math.min(1, (z - minZ) / (maxZ - minZ)))
+}
+
+// ─── Dynamic Grid ─────────────────────────────────────────────────────────────
+function DynamicGrid({ options, cameraData }: { options: ViewerOptions, cameraData: { dist: number, fov: number, height: number } | null }) {
+  if (!options.showGrid) return null
+
+  // Výpočet "peknej" veľkosti mriežky podobne ako ScaleBar
+  const targetPx = 80 // chceme mriežku zhruba 80px veľkú
+  const dist = cameraData?.dist || 100
+  const height = cameraData?.height || 600
+  const fov = cameraData?.fov || 45
+  
+  const vFov = (fov * Math.PI) / 180
+  const visibleHeight = 2 * Math.tan(vFov / 2) * dist
+  const pixelsPerUnit = height / visibleHeight
+  
+  const targetUnits = targetPx / pixelsPerUnit
+  const niceUnits = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000]
+  let best = niceUnits[0]
+  for (const u of niceUnits) if (Math.abs(u - targetUnits) < Math.abs(best - targetUnits)) best = u
+
+  return (
+    <Grid 
+      infiniteGrid 
+      fadeDistance={best * 25} 
+      fadeStrength={5} 
+      sectionSize={best * 10} 
+      sectionColor={options.colorGrid} 
+      sectionThickness={1.2}
+      cellSize={best} 
+      cellColor={options.colorGrid} 
+      cellThickness={0.5}
+      position={[0, -0.05, 0]} 
+    />
+  )
+}
+
+// ─── Bounding Box ─────────────────────────────────────────────────────────────
+function BoundingBox({ cave, show, options: o }: { cave: ParsedCave, show: boolean, options: ViewerOptions }) {
+  if (!show) return null
+
+  // Výpočet kombinovaných hraníc
+  const box = useMemo(() => {
+    const b = new THREE.Box3()
+    // Základ: jaskynné merania
+    b.min.set(cave.bounds.min.x, cave.bounds.min.z, -cave.bounds.max.y)
+    b.max.set(cave.bounds.max.x, cave.bounds.max.z, -cave.bounds.min.y)
+
+    const surfaceVisible = o.showSurfaceMesh || o.showSurfaceMeshWire || o.showSurfaceTexture || o.showSurfaceNetwork
+    if (surfaceVisible && cave.surfaces) {
+      cave.surfaces.forEach(s => {
+        const { dtm, centerOffset: cx } = s
+        const { calib, data } = dtm
+        
+        // Rozsah v rovine XZ (Three.js coords)
+        const corners = [
+          { c: 0, r: 0 },
+          { c: dtm.samples - 1, r: 0 },
+          { c: 0, r: dtm.lines - 1 },
+          { c: dtm.samples - 1, r: dtm.lines - 1 }
+        ]
+        corners.forEach(p => {
+          const wx = calib.xOrigin + p.c * calib.xx + p.r * calib.xy - cx.x
+          const wy = calib.yOrigin + p.c * calib.yx + p.r * calib.yy - cx.y
+          // Pridáme len rovinné súradnice (Y v Three.js je výška, tú nastavíme nižšie)
+          b.expandByPoint(new THREE.Vector3(wx, b.min.y, -wy))
+          b.expandByPoint(new THREE.Vector3(wx, b.max.y, -wy))
+        })
+        
+        // Reálny výškový rozsah terénu
+        let sMinZ = Infinity, sMaxZ = -Infinity
+        for (let i = 0; i < data.length; i++) {
+          if (data[i] < sMinZ) sMinZ = data[i]
+          if (data[i] > sMaxZ) sMaxZ = data[i]
+        }
+        b.min.y = Math.min(b.min.y, sMinZ - cx.z)
+        b.max.y = Math.max(b.max.y, sMaxZ - cx.z)
+      })
+    }
+
+    // Pridáme 10% rezervu na výšku (Y os)
+    const h = b.max.y - b.min.y
+    const padding = h * 0.05 // 5% hore, 5% dole
+    b.min.y -= padding
+    b.max.y += padding
+
+    return b
+  }, [cave, o.showSurfaceMesh, o.showSurfaceMeshWire, o.showSurfaceTexture, o.showSurfaceNetwork])
+
+  const center = new THREE.Vector3()
+  box.getCenter(center)
+  const size = new THREE.Vector3()
+  box.getSize(size)
+
+  return (
+    <mesh position={center}>
+      <boxGeometry args={[size.x, size.y, size.z]} />
+      <meshBasicMaterial color="#990000" wireframe transparent opacity={0.4} />
+    </mesh>
+  )
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -480,22 +591,41 @@ function buildScrapsGeo(cave: ParsedCave, withColors: boolean, smooth: boolean):
     g.computeVertexNormals()
   }
   
+  // Vypočítať BVH strom pre bleskový raycasting
+  // @ts-ignore
+  g.computeBoundsTree()
+  
   return g
 }
 
 // ─── Cave wall scraps — solid + wireframe + altitude (independent) ─────────────
-const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitude, smooth, showRender, caveTexture, renderOpacity, isMoving, options }: {
+const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitude, smooth, showRender, caveTexture, renderOpacity, isMoving, options, onProcessingStart, onProcessingEnd }: {
   cave: ParsedCave; opacity: number
   showSolid: boolean; showWire: boolean; showAltitude: boolean; smooth: boolean; showRender: boolean
   caveTexture: 'rock' | 'limestone' | 'granite'
   renderOpacity: number
   isMoving: boolean
   options: ViewerOptions
+  onProcessingStart?: (i: string) => void
+  onProcessingEnd?: () => void
 }) => {
-  // Solid geometry (no colors)
-  const solidGeo = useMemo(() => buildScrapsGeo(cave, false, smooth), [cave, smooth])
-  // Altitude geometry (with vertex colors)
-  const altGeo   = useMemo(() => buildScrapsGeo(cave, true, smooth),  [cave, smooth])
+  const [geos, setGeos] = useState<{ solid: THREE.BufferGeometry | null, alt: THREE.BufferGeometry | null }>({ solid: null, alt: null })
+
+  useEffect(() => {
+    if (onProcessingStart) onProcessingStart('Generujem steny jaskyne...')
+    
+    const timer = setTimeout(() => {
+      const solid = buildScrapsGeo(cave, false, smooth)
+      const alt = buildScrapsGeo(cave, true, smooth)
+      setGeos({ solid, alt })
+      if (onProcessingEnd) onProcessingEnd()
+    }, 50)
+
+    return () => clearTimeout(timer)
+  }, [cave, smooth])
+
+  const solidGeo = geos.solid
+  const altGeo = geos.alt
  
   const rockTex = useMemo(() => {
     let path = '/assets/cave_rock.png'
@@ -551,6 +681,21 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
 })
 
 // ─── Terrain geometry builder ────────────────────────────────────────────────
+function buildTerrainGeo({ positions, uvs, colors, indices }: { positions: Float32Array, uvs: Float32Array, colors: Float32Array, indices: number[] }) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  g.setAttribute('uv',       new THREE.BufferAttribute(uvs, 2));
+  g.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
+  g.setIndex(indices);
+  g.computeVertexNormals();
+
+  // Vypočítať BVH strom pre bleskový raycasting terénu
+  // @ts-ignore
+  g.computeBoundsTree();
+
+  return g;
+}
+
 function buildTerrainBaseData(surface: CaveSurface, subsample = 1) {
   const { dtm, centerOffset: { x: cx, y: cy, z: cz } } = surface;
   const { data, samples: origSamples, lines: origLines, calib } = dtm;
@@ -609,7 +754,7 @@ function buildTerrainBaseData(surface: CaveSurface, subsample = 1) {
 }
 
 // ─── Terrain surface mesh (všetky módy) ──────────────────────────────────────
-const TerrainMesh = React.memo(({ surface, showMesh, showMeshWire, showTexture, showNetwork, opacity, surfaceColor, onSurfaceClick, isMoving, options: o }: {
+const TerrainMesh = React.memo(({ surface, showMesh, showMeshWire, showTexture, showNetwork, opacity, surfaceColor, onSurfaceClick, isMoving, options: o, onProcessingStart, onProcessingEnd }: {
   surface: CaveSurface
   showMesh: boolean; showMeshWire: boolean; showTexture: boolean; showNetwork: boolean
   opacity: number
@@ -617,47 +762,30 @@ const TerrainMesh = React.memo(({ surface, showMesh, showMeshWire, showTexture, 
   onSurfaceClick?: (origX: number, origY: number, altitude: number, screenX: number, screenY: number) => void
   isMoving: boolean
   options: ViewerOptions
+  onProcessingStart?: (i: string) => void
+  onProcessingEnd?: () => void
 }) => {
-  const baseBase = useMemo(() => buildTerrainBaseData(surface, 1), [surface])
-  const draftBase = useMemo(() => buildTerrainBaseData(surface, 20), [surface]) // 20x subsampling for huge models
-  
-  const solidGeoBase = useMemo(() => {
-    const g = new THREE.BufferGeometry()
-    g.setAttribute('position', new THREE.BufferAttribute(baseBase.positions, 3))
-    g.setAttribute('uv',       new THREE.BufferAttribute(baseBase.uvs, 2))
-    g.setIndex(baseBase.indices)
-    g.computeVertexNormals()
-    return g
-  }, [baseBase])
+  const [geos, setGeos] = useState<{ base: any, draft: any }>({ base: null, draft: null })
 
-  const solidGeoDraft = useMemo(() => {
-    const g = new THREE.BufferGeometry()
-    g.setAttribute('position', new THREE.BufferAttribute(draftBase.positions, 3))
-    g.setAttribute('uv',       new THREE.BufferAttribute(draftBase.uvs, 2))
-    g.setIndex(draftBase.indices)
-    g.computeVertexNormals()
-    return g
-  }, [draftBase])
+  useEffect(() => {
+    if (onProcessingStart) onProcessingStart('Spracovávam terén a BVH...')
 
-  const networkGeoBase = useMemo(() => {
-    const g = new THREE.BufferGeometry()
-    g.setAttribute('position', new THREE.BufferAttribute(baseBase.positions, 3))
-    g.setAttribute('uv',       new THREE.BufferAttribute(baseBase.uvs, 2))
-    g.setAttribute('color',    new THREE.BufferAttribute(baseBase.colors, 3))
-    g.setIndex(baseBase.indices)
-    g.computeVertexNormals()
-    return g
-  }, [baseBase])
+    const timer = setTimeout(() => {
+      const bBase = buildTerrainBaseData(surface, 1)
+      const dBase = buildTerrainBaseData(surface, 20)
+      const sGeoBase = buildTerrainGeo(bBase)
+      const sGeoDraft = buildTerrainGeo(dBase)
+      setGeos({ base: sGeoBase, draft: sGeoDraft })
+      if (onProcessingEnd) onProcessingEnd()
+    }, 50)
 
-  const networkGeoDraft = useMemo(() => {
-    const g = new THREE.BufferGeometry()
-    g.setAttribute('position', new THREE.BufferAttribute(draftBase.positions, 3))
-    g.setAttribute('uv',       new THREE.BufferAttribute(draftBase.uvs, 2))
-    g.setAttribute('color',    new THREE.BufferAttribute(draftBase.colors, 3))
-    g.setIndex(draftBase.indices)
-    g.computeVertexNormals()
-    return g
-  }, [draftBase])
+    return () => clearTimeout(timer)
+  }, [surface])
+
+  const solidGeoBase = geos.base
+  const solidGeoDraft = geos.draft
+  const networkGeoBase = geos.base
+  const networkGeoDraft = geos.draft
 
   const texture = useMemo(() => {
     if (!surface.bitmapUrl) return null
@@ -869,15 +997,19 @@ interface Props {
   onBackgroundClick?: () => void
   onMoveStateChange?: (moving: boolean) => void
   onCameraUpdate?: (data: { dist: number, fov: number, height: number }) => void
+  onProcessingStart?: (info: string) => void
+  onProcessingEnd?: () => void
   manualConnection?: { p1: {x:number, y:number, z:number}, p2: {x:number, y:number, z:number} } | null
   placedCaver?: { pos: [number, number, number], pose: 'standing' | 'crawling' } | null
   fitTrigger?: number
 }
 
 export default function CaveViewer3D({ 
-  cave, options: o, onStationClick, onSurfaceClick, onBackgroundClick, onMoveStateChange, onCameraUpdate, manualConnection, placedCaver, fitTrigger 
+  cave, options: o, onStationClick, onSurfaceClick, onBackgroundClick, onMoveStateChange, onCameraUpdate, 
+  onProcessingStart, onProcessingEnd, manualConnection, placedCaver, fitTrigger 
 }: Props) {
   const [isMoving, setIsMoving] = useState(false)
+  const [camData, setCamData] = useState<{ dist: number, fov: number, height: number } | null>(null)
   const movingTimeout = useRef<any>(null)
 
   const startStopTimeout = useCallback(() => {
@@ -961,6 +1093,8 @@ export default function CaveViewer3D({
           onSurfaceClick={onSurfaceClick}
           isMoving={isMoving}
           options={o}
+          onProcessingStart={onProcessingStart}
+          onProcessingEnd={onProcessingEnd}
         />
       ))}
 
@@ -1009,15 +1143,8 @@ export default function CaveViewer3D({
       {manualConnection && <ManualConnection p1={manualConnection.p1} p2={manualConnection.p2} />}
       {o.placedCaver && <Character3D pos={o.placedCaver.pos} pose={o.placedCaver.pose} />}
 
-      {o.showGrid && (
-        <Grid
-          args={[gridSize, gridSize]}
-          cellSize={10} cellThickness={0.3} cellColor="#1a2744"
-          sectionSize={50} sectionThickness={0.8} sectionColor="#1e3a6e"
-          fadeDistance={diag * 2}
-          position={[0, cave.bounds.min.z, 0]}
-        />
-      )}
+      <DynamicGrid options={o} cameraData={camData} />
+      {o.showBoundingBox && <BoundingBox cave={cave} show={o.showBoundingBox} options={o} />}
 
       <OrbitControls
         makeDefault
@@ -1028,7 +1155,10 @@ export default function CaveViewer3D({
         minDistance={1} maxDistance={Math.max(diag * 25, 10000)}
       />
 
-      {onCameraUpdate && <CameraMonitor onUpdate={onCameraUpdate} />}
+      <CameraMonitor onUpdate={(data) => {
+        setCamData(data)
+        if (onCameraUpdate) onCameraUpdate(data)
+      }} />
     </Canvas>
   )
 }
