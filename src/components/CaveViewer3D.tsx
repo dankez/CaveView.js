@@ -25,7 +25,9 @@ export interface ViewerOptions {
   // Grid
   showGrid:            boolean
   colorGrid:           string
+  colorBoundingBox:    string
   showBoundingBox:     boolean
+  colorBackground:     string
   // Cave scraps (walls)
   showScraps:          boolean
   scrapsOpacity:       number
@@ -254,7 +256,7 @@ function BoundingBox({ cave, show, options: o }: { cave: ParsedCave, show: boole
   return (
     <mesh position={center}>
       <boxGeometry args={[size.x, size.y, size.z]} />
-      <meshBasicMaterial color="#990000" wireframe transparent opacity={0.4} />
+      <meshBasicMaterial color={o.colorBoundingBox || "#990000"} wireframe transparent opacity={0.4} />
     </mesh>
   )
 }
@@ -315,18 +317,18 @@ function CaveLegs({ cave, showSplay, showAltitude, options: o }: { cave: ParsedC
   const surfaceGeo  = useMemo(() => segsToGeo(surfaceSegs), [surfaceSegs])
 
   return (
-    <group>
+    <group renderOrder={10}>
       <lineSegments geometry={caveGeo}>
-        <lineBasicMaterial color={o.colorTraverse} linewidth={2} vertexColors={showAltitude} transparent={false} />
+        <lineBasicMaterial color={o.colorTraverse} linewidth={2} vertexColors={showAltitude} transparent={false} depthTest={true} />
       </lineSegments>
       {showSplay && splaySegs.length > 0 && (
         <lineSegments geometry={splayGeo}>
-          <lineBasicMaterial color={o.colorSplay} transparent opacity={0.45} />
+          <lineBasicMaterial color={o.colorSplay} transparent opacity={0.45} depthTest={true} />
         </lineSegments>
       )}
       {surfaceSegs.length > 0 && (
         <lineSegments geometry={surfaceGeo}>
-          <lineBasicMaterial color="#a0aec0" transparent opacity={0.6} />
+          <lineBasicMaterial color="#a0aec0" transparent opacity={0.6} depthTest={true} />
         </lineSegments>
       )}
     </group>
@@ -335,7 +337,7 @@ function CaveLegs({ cave, showSplay, showAltitude, options: o }: { cave: ParsedC
 
 // ─── Cave traverse — polygonový ťah (InstancedMesh rúrky s altitude farbami) ──
 const CaveTraverse = React.memo(({ cave, radius, showAltitude, isMoving }: { cave: ParsedCave; radius: number; showAltitude: boolean, isMoving: boolean }) => {
-  if (isMoving) return null // Skryť ťažké rúry pri pohybe (zostanú viditeľné tenké čiary z CaveLegs)
+  if (isMoving) return null 
   const caveLegs = useMemo(() => cave.segments.filter(s => s.type === 'cave'), [cave])
 
   const zRange = useMemo(() => {
@@ -392,7 +394,7 @@ const CaveTraverse = React.memo(({ cave, radius, showAltitude, isMoving }: { cav
     return im
   }, [caveLegs, zRange, cylGeo, radius, showAltitude])
 
-  return <primitive object={mesh} renderOrder={6} />
+  return <primitive object={mesh} renderOrder={10} />
 })
 
 // ─── Station dots ─────────────────────────────────────────────────────────────
@@ -414,14 +416,14 @@ function Stations({ cave, options: o }: { cave: ParsedCave, options: ViewerOptio
   }, [cave])
 
   return (
-    <group renderOrder={7}>
+    <group renderOrder={12}>
       {/* Splay body */}
       <points geometry={splayGeo}>
-        <pointsMaterial color={o.colorStations} size={2} sizeAttenuation={false} depthTest={false} />
+        <pointsMaterial color={o.colorStations} size={2} sizeAttenuation={false} depthTest={true} />
       </points>
       {/* Polygonové body */}
       <points geometry={polyGeo}>
-        <pointsMaterial color={o.colorStations} size={5} sizeAttenuation={false} depthTest={false} />
+        <pointsMaterial color={o.colorStations} size={5} sizeAttenuation={false} depthTest={true} />
       </points>
     </group>
   )
@@ -642,7 +644,7 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
     <>
       {/* ── Tieňovaný solid mesh ── */}
       {showSolid && !showRender && !isMoving && solidGeo && (
-        <mesh geometry={solidGeo} renderOrder={2}>
+        <mesh geometry={solidGeo} renderOrder={5}>
           <meshStandardMaterial color={options.colorScraps} side={THREE.DoubleSide} transparent={opacity < 1} opacity={opacity}
             roughness={0.7} metalness={0.1}
             polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1} />
@@ -696,17 +698,20 @@ function buildTerrainGeo({ positions, uvs, colors, indices }: { positions: Float
   return g;
 }
 
-function buildTerrainBaseData(surface: CaveSurface, subsample = 1) {
+function buildTerrainTileData(surface: CaveSurface, colStart: number, rowStart: number, colCount: number, rowCount: number, subsample = 1) {
   const { dtm, centerOffset: { x: cx, y: cy, z: cz } } = surface;
   const { data, samples: origSamples, lines: origLines, calib } = dtm;
 
-  const samples = Math.ceil(origSamples / subsample);
-  const lines = Math.ceil(origLines / subsample);
+  const samples = colCount;
+  const lines = rowCount;
 
-  let minZ = Infinity, maxZ = -Infinity;
+  // Lokálny výškový rozsah pre tento tile (kvôli farbám)
+  // Poznámka: pre konzistentné farby cez celú jaskyňu by sme mali použiť globálny min/max
+  // Alebo aspoň odovzdať globálne minZ/maxZ
+  let globalMinZ = Infinity, globalMaxZ = -Infinity;
   for (let i = 0; i < data.length; i++) {
-    if (data[i] < minZ) minZ = data[i];
-    if (data[i] > maxZ) maxZ = data[i];
+    if (data[i] < globalMinZ) globalMinZ = data[i];
+    if (data[i] > globalMaxZ) globalMaxZ = data[i];
   }
 
   const positions = new Float32Array(lines * samples * 3);
@@ -718,9 +723,9 @@ function buildTerrainBaseData(surface: CaveSurface, subsample = 1) {
   let vIdx = 0, uIdx = 0, cIdx = 0;
 
   for (let r = 0; r < lines; r++) {
-    const row = Math.min(r * subsample, origLines - 1);
+    const row = rowStart + r;
     for (let c = 0; c < samples; c++) {
-      const col = Math.min(c * subsample, origSamples - 1);
+      const col = colStart + c;
       
       const idx = row * origSamples + col;
       const wx = calib.xOrigin + col * calib.xx + row * calib.xy;
@@ -731,17 +736,17 @@ function buildTerrainBaseData(surface: CaveSurface, subsample = 1) {
       positions[vIdx++] = wz - cz;
       positions[vIdx++] = -(wy - cy);
 
-      uvs[uIdx++] = calib.xx > 0 ? col / (origSamples - 1) : 1 - col / (origSamples - 1);
-      uvs[uIdx++] = calib.yy > 0 ? row / (origLines - 1) : 1 - row / (origLines - 1);
+      uvs[uIdx++] = col / (origSamples - 1);
+      uvs[uIdx++] = row / (origLines - 1);
 
-      const colorVal = elevColor(normZ(wz, minZ, maxZ));
+      const colorVal = elevColor(normZ(wz, globalMinZ, globalMaxZ));
       colors[cIdx++] = colorVal.r; colors[cIdx++] = colorVal.g; colors[cIdx++] = colorVal.b;
     }
   }
 
-  for (let row = 0; row < lines - 1; row++) {
-    for (let col = 0; col < samples - 1; col++) {
-      const i0 = row * samples + col, i1 = i0 + 1, i2 = i0 + samples, i3 = i2 + 1;
+  for (let r = 0; r < lines - 1; r++) {
+    for (let c = 0; c < samples - 1; c++) {
+      const i0 = r * samples + c, i1 = i0 + 1, i2 = i0 + samples, i3 = i2 + 1;
       if (det > 0) {
         indices.push(i0, i1, i2, i2, i1, i3);
       } else {
@@ -754,118 +759,107 @@ function buildTerrainBaseData(surface: CaveSurface, subsample = 1) {
 }
 
 // ─── Terrain surface mesh (všetky módy) ──────────────────────────────────────
-const TerrainMesh = React.memo(({ surface, showMesh, showMeshWire, showTexture, showNetwork, opacity, surfaceColor, onSurfaceClick, isMoving, options: o, onProcessingStart, onProcessingEnd }: {
-  surface: CaveSurface
-  showMesh: boolean; showMeshWire: boolean; showTexture: boolean; showNetwork: boolean
-  opacity: number
-  surfaceColor: string
-  onSurfaceClick?: (origX: number, origY: number, altitude: number, screenX: number, screenY: number) => void
-  isMoving: boolean
-  options: ViewerOptions
-  onProcessingStart?: (i: string) => void
-  onProcessingEnd?: () => void
-}) => {
-  const [geos, setGeos] = useState<{ base: any, draft: any }>({ base: null, draft: null })
+const TILE_SIZE = 128; // Počet vrcholov na hranu dlaždice
+
+const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCount, ...props }: any) => {
+  const [geo, setGeo] = useState<THREE.BufferGeometry | null>(null);
 
   useEffect(() => {
-    if (onProcessingStart) onProcessingStart('Spracovávam terén a BVH...')
+    const data = buildTerrainTileData(surface, colStart, rowStart, colCount, rowCount, 1);
+    const g = buildTerrainGeo(data);
+    setGeo(g);
+    return () => g.dispose();
+  }, [surface, colStart, rowStart, colCount, rowCount]);
 
-    const timer = setTimeout(() => {
-      const bBase = buildTerrainBaseData(surface, 1)
-      const dBase = buildTerrainBaseData(surface, 20)
-      const sGeoBase = buildTerrainGeo(bBase)
-      const sGeoDraft = buildTerrainGeo(dBase)
-      setGeos({ base: sGeoBase, draft: sGeoDraft })
-      if (onProcessingEnd) onProcessingEnd()
-    }, 50)
+  if (!geo) return null;
 
-    return () => clearTimeout(timer)
-  }, [surface])
+  return (
+    <group renderOrder={1}>
+      {props.showMesh && (
+        <mesh geometry={geo}>
+          <meshStandardMaterial color={props.surfaceColor} side={THREE.DoubleSide} 
+            transparent={props.opacity < 1} opacity={props.opacity}
+            roughness={0.9} metalness={0.1} flatShading={true} 
+            depthWrite={props.opacity === 1}
+            polygonOffset polygonOffsetFactor={4} polygonOffsetUnits={4} />
+        </mesh>
+      )}
+      {props.showNetwork && (
+        <mesh geometry={geo}>
+          <meshStandardMaterial vertexColors side={THREE.DoubleSide} transparent={props.opacity < 1} opacity={props.opacity}
+            roughness={0.9} metalness={0.1} flatShading={true} 
+            depthWrite={props.opacity === 1}
+            polygonOffset polygonOffsetFactor={3} polygonOffsetUnits={3} />
+        </mesh>
+      )}
+      {props.showTexture && props.texture && (
+        <mesh geometry={geo}>
+          <meshStandardMaterial map={props.texture} side={THREE.DoubleSide} transparent={props.opacity < 1} opacity={props.opacity}
+            roughness={0.85} depthWrite={props.opacity === 1}
+            polygonOffset polygonOffsetFactor={2} polygonOffsetUnits={2} />
+        </mesh>
+      )}
+      {props.showMeshWire && (
+        <mesh geometry={geo}>
+          <meshBasicMaterial color={props.colorTerrainWire} wireframe depthWrite={false} transparent={true} opacity={0.45} />
+        </mesh>
+      )}
+    </group>
+  );
+});
 
-  const solidGeoBase = geos.base
-  const solidGeoDraft = geos.draft
-  const networkGeoBase = geos.base
-  const networkGeoDraft = geos.draft
+const TerrainMesh = React.memo(({ surface, ...props }: any) => {
+  const { samples, lines } = surface.dtm;
+  
+  const tiles = useMemo(() => {
+    const t = [];
+    for (let r = 0; r < lines - 1; r += TILE_SIZE - 1) {
+      const rowCount = Math.min(TILE_SIZE, lines - r);
+      for (let c = 0; c < samples - 1; c += TILE_SIZE - 1) {
+        const colCount = Math.min(TILE_SIZE, samples - c);
+        t.push({ colStart: c, rowStart: r, colCount, rowCount });
+      }
+    }
+    return t;
+  }, [samples, lines]);
 
   const texture = useMemo(() => {
     if (!surface.bitmapUrl) return null
-    return new THREE.TextureLoader().load(surface.bitmapUrl)
-  }, [surface])
+    const tex = new THREE.TextureLoader().load(surface.bitmapUrl)
+    return tex
+  }, [surface.bitmapUrl])
 
   const hoverGeo = useMemo(() => new THREE.SphereGeometry(0.25, 8, 8), [])
   const hoverMat = useMemo(() => new THREE.MeshBasicMaterial({ color: "#ef4444", depthTest: false }), [])
-
   const [hoveredSurf, setHoveredSurf] = useState<[number, number, number] | null>(null)
 
-  if (!showMesh && !showMeshWire && !showTexture && !showNetwork) return null
-
-  const solidGeo = isMoving ? solidGeoDraft : solidGeoBase
-  const networkGeo = isMoving ? networkGeoDraft : networkGeoBase
+  if (!props.showMesh && !props.showMeshWire && !props.showTexture && !props.showNetwork) return null
 
   return (
     <group
       onClick={(e: any) => {
-        if (onSurfaceClick && e.point) {
+        if (props.onSurfaceClick && e.point) {
           e.stopPropagation()
           const { x, y, z } = e.point
           const origX = x + surface.centerOffset.x
           const origY = -z + surface.centerOffset.y
           const altitude = y + surface.centerOffset.z
-          onSurfaceClick(origX, origY, altitude, e.nativeEvent.clientX, e.nativeEvent.clientY)
+          props.onSurfaceClick(origX, origY, altitude, e.nativeEvent.clientX, e.nativeEvent.clientY)
         }
       }}
       onPointerMove={(e: any) => {
-        if (onSurfaceClick && e.point) {
+        if (props.onSurfaceClick && e.point) {
           e.stopPropagation()
           setHoveredSurf([e.point.x, e.point.y, e.point.z])
         }
       }}
       onPointerOut={() => setHoveredSurf(null)}
     >
-      {/* ── Tieňovaný solid (voliteľná farba) ── */}
-      {showMesh && (
-        <mesh geometry={solidGeo} renderOrder={0}>
-          <meshStandardMaterial color={surfaceColor} side={THREE.DoubleSide} 
-            transparent={opacity < 1} opacity={opacity}
-            roughness={0.9} 
-            metalness={0.1}
-            flatShading={true} // Zvýrazní hrany a detaily terénu
-            depthWrite={false}
-            polygonOffset polygonOffsetFactor={4} polygonOffsetUnits={4} />
-        </mesh>
-      )}
-
-      {/* ── Sieťový model — farebné výšky ── */}
-      {showNetwork && (
-        <mesh geometry={networkGeo} renderOrder={1}>
-          <meshStandardMaterial vertexColors side={THREE.DoubleSide} transparent={opacity < 1} opacity={opacity}
-            roughness={0.9} 
-            metalness={0.1}
-            flatShading={true}
-            depthWrite={false}
-            polygonOffset polygonOffsetFactor={3} polygonOffsetUnits={3} />
-        </mesh>
-      )}
-
-      {/* ── Textura overlay ── */}
-      {showTexture && texture && (
-        <mesh geometry={solidGeo} renderOrder={2}>
-          <meshStandardMaterial map={texture} side={THREE.DoubleSide} transparent={opacity < 1} opacity={opacity}
-            roughness={0.85}
-            depthWrite={false}
-            polygonOffset polygonOffsetFactor={2} polygonOffsetUnits={2} />
-        </mesh>
-      )}
-
-      {/* ── Drôtená sieť terénu ── */}
-      {showMeshWire && (
-        <mesh geometry={solidGeo} renderOrder={9}>
-          <meshBasicMaterial color={o.colorTerrainWire} wireframe depthWrite={false} transparent={true} opacity={0.45} />
-        </mesh>
-      )}
-
-      {/* ── Hover Surface Point ── */}
-      {hoveredSurf && onSurfaceClick && (
+      {tiles.map((tile, i) => (
+        <TerrainTile key={`${tile.colStart}-${tile.rowStart}`} surface={surface} {...tile} {...props} texture={texture} />
+      ))}
+      
+      {hoveredSurf && props.onSurfaceClick && (
         <mesh position={hoveredSurf} renderOrder={100} geometry={hoverGeo} material={hoverMat} />
       )}
     </group>
@@ -1058,7 +1052,6 @@ export default function CaveViewer3D({
       gl={{ antialias: true, alpha: false, preserveDrawingBuffer: false, powerPreference: 'high-performance' }}
       camera={{ fov: 55, near: 0.1, far: Math.max(diag * 20, 10000) }}
       onCreated={({ gl }) => {
-        gl.setClearColor(new THREE.Color('#050a18'))
         // Optimalizácia pre veľké modely – ak GPU nestíha
         gl.debug.checkShaderErrors = false 
       }}
@@ -1067,6 +1060,7 @@ export default function CaveViewer3D({
       onPointerMove={(e) => { if (e.buttons > 0) handleCameraChange() }}
       onWheel={() => handleCameraChange()}
     >
+      <color attach="background" args={[o.colorBackground]} />
       <ambientLight intensity={0.25} /> {/* Znížené pre lepší kontrast tieňov */}
       <directionalLight position={[1, 3, 1]}    intensity={0.6} />
       <directionalLight position={[-2, 1, -2]} intensity={0.3} />

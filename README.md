@@ -41,31 +41,33 @@ Moderná webová aplikácia na 3D vizualizáciu jaskynných systémov, vybudovan
    npm run build
    ```
 
-## 🆕 Release Notes - 20.04.2026 (Spatial Analysis & BVH Update)
+## 🆕 Release Notes - 20.04.2026-02 (Performance & Adaptive Themes)
 
-Update z 20.04.2026 transformuje aplikáciu na profesionálny analytický nástroj s vysokým výkonom interakcie.
+Tento update prináša zásadnú architektonickú zmenu zameranú na plynulosť a vizuálnu čistotu pri extrémnych záťažiach.
 
-- **BVH Priestorový Index (three-mesh-bvh):** Integrácia hierarchie ohraničujúcich objemov pre všetky steny jaskyne a modely terénu. To umožňuje bleskurýchly raycasting (detekcia klikov) aj na modeloch s miliónmi polygónov bez zásekov.
-- **Dynamická priestorová mriežka (Grid):** Implementácia inteligentnej mriežky, ktorá automaticky mení svoju hustotu (`cellSize`) a mierku podľa aktuálneho zoomu. Poskytuje stabilný vizuálny referenčný rámec v každom detaile.
-- **Viacvrstvový Bounding Box:**
-  - Pridaná vizualizácia ohraničujúceho boxu celého systému v prémiovej Ferrari červenej farbe.
-  - **Dynamický rozsah:** Box automaticky mení svoju veľkosť podľa viditeľnosti vrstiev (zväčší sa pre terén, stiahne sa len pre jaskyňu).
-  - **Vertikálna optimalizácia:** Pridaná 10% výšková rezerva pre lepšiu vizuálnu kompozíciu.
-- **Profesionálny Processing Overlay:** Implementácia asynchrónneho spracovania geometrie s vizuálnym indikátorom. Používateľ vidí stav generovania stien a indexovania BVH v reálnom čase (napr. *"Indexujem BVH priestor..."*).
-- **Vylepšená stabilita parsera:** LOX parser bol upravený tak, aby ignoroval neznáme typy dátových blokov, čo zabezpečuje kompatibilitu s najnovšími verziami exportov z Therionu.
-- **Záťažový test (Big Model):** Pridaný priamy prístup k modelu **Zádiel (32MB)** na úvodnú obrazovku pre overenie výkonu na masívnych dátach.
+- **Web Workers (Background Parsing):** Parsovanie veľkých `.lox` súborov bolo presunuté do samostatného vlákna (Worker). Užívateľské rozhranie zostáva plne responzívne aj pri načítavaní 30MB+ modelov.
+- **Tiled Terrain (OVR Subdivision):** Terén je teraz rozdelený na dlaždice (tiles) o veľkosti 128x128 bodov. To umožňuje efektívny **Frustum Culling** (GPU spracováva len viditeľné časti) a plynulý pohyb kamerou v rozsiahlych územiach.
+- **Adaptive Multi-Theme System:** Implementácia troch nezávislých vizuálnych šablón prepínateľných v reálnom čase:
+  - **Precision:** Neutrálna polnočná modrá so zlatými akcentmi (podľa GIS dizajnu).
+  - **Classic:** Tradičný čierny mód s prvkami pripomínajúcimi Loch/Aven (biely ťah, zelená mriežka).
+  - **Light:** Svetlá téma optimalizovaná pre prácu na priamom slnku.
+- **Optimalizácia Priehľadnosti (X-ray View):**
+  - Implementovaná prísna hierarchia vykresľovania (`renderOrder`).
+  - Inteligentný `depthWrite` pre polopriehľadný terén zabezpečuje, že chodby jaskyne sú vždy jasne viditeľné a korektne vrstvené pod povrchom.
+- **Zjednotené UI:** Nový prepínač tém v hornom paneli s okamžitou odozvou.
 
 ## 🛠️ TODO / Plán optimalizácie
-*Aktuálny stav po Spatial update:*
+*Aktuálny stav:*
 
 - [x] **GPU Akcelerácia:** Presun výpočtu výškového farbenia do shaderov a optimalizácia renderovania.
 - [x] **Instanced Rendering:** Tisíce staníc sú vykresľované pomocou `InstancedMesh`.
 - [x] **LOD Systém:** Implementácia Level of Detail pre rozsiahle modely terénu a stien.
-- [x] **Stabilná Mierka:** Presun mierky do UI vrstvy a fixácia polohy.
+- [x] **Stable Scale Bar:** Dynamická grafická mierka v UI vrstve.
 - [x] **Dynamic Colors:** Plná podpora pre užívateľský výber farieb pre všetky vrstvy.
-- [x] **BVH Integrácia:** Implementácia `three-mesh-bvh` pre extrémne rýchly raycasting v zložitej geometrii.
+- [x] **BVH Integrácia:** `three-mesh-bvh` pre extrémne rýchly raycasting.
 - [x] **Asynchrónne spracovanie:** Vizualizácia stavu generovania modelu a BVH.
-- [ ] **Web Workers:** Presun parsovania veľkých .LOX a .DTM súborov na pozadie.
+- [x] **Web Workers:** Parsovanie .LOX na pozadí (zero UI-freeze).
+- [x] **Tiled Rendering:** Rozdelenie terénu na dlaždice pre lepší Frustum Culling.
 - [ ] **Dátová kompresia:** Optimalizácia prenosu dát medzi parserom a GPU.
 
 ---

@@ -468,6 +468,7 @@ export default function App() {
   const [isModelMoving, setIsModelMoving] = useState(false)
   const [cameraData, setCameraData] = useState<{ dist: number, fov: number, height: number } | null>(null)
   const [processingInfo, setProcessingInfo] = useState<string | null>(null)
+  const [currentTheme, setCurrentTheme] = useState<string>('precision')
   const surfNextId = useRef(1)
   const [opts, setOpts] = useState<ViewerOptions>({
     showSplay:           false,
@@ -476,7 +477,9 @@ export default function App() {
     showStationAlt:      false,
     showGrid:            true,
     colorGrid:           '#222222',
+    colorBoundingBox:    '#990000',
     showBoundingBox:     false,
+    colorBackground:     '#0a0f1a',
     // Cave scraps
     showScraps:          true,
     scrapsOpacity:       0.75,
@@ -499,7 +502,6 @@ export default function App() {
     showSurfaceNetwork:  false,
     surfaceOpacity:      0.8,
     surfaceColor:        '#e2e8f0',
-    // Colors
     colorSplay:          '#78909c',
     colorTraverse:       '#4fc3f7',
     colorScraps:         '#2a5585',
@@ -509,6 +511,57 @@ export default function App() {
     colorStationAlt:     '#a5f3fc',
     colorTerrainWire:    '#6ab04c',
   })
+
+  // ─── DEFINÍCIA ŠABLÓN ────────────────────────────────────────────────────────
+  const THEMES = {
+    default: {
+      colorBackground:   '#050505',
+      colorTraverse:     '#ffffff',
+      colorSplay:        '#78909c',
+      colorStations:     '#fbbf24',
+      colorStationNames: '#fbbf24',
+      colorStationAlt:   '#a5f3fc',
+      colorGrid:         '#224422',
+      colorScraps:       '#2a5585',
+      colorScrapsWire:   '#6a9fd8',
+      colorTerrainWire:  '#6ab04c',
+      colorBoundingBox:  '#990000',
+      surfaceColor:      '#e2e8f0',
+    },
+    subterranean: {
+      colorBackground:   '#0a0f1a',
+      colorTraverse:     '#ffffff',
+      colorSplay:        '#a5f3fc',
+      colorStations:     '#fbbf24',
+      colorStationNames: '#fbbf24',
+      colorStationAlt:   '#a5f3fc',
+      colorGrid:         '#161e2b',
+      colorScraps:       '#2a5585',
+      colorScrapsWire:   '#a5f3fc',
+      colorTerrainWire:  '#1e293b',
+      colorBoundingBox:  '#990000',
+      surfaceColor:      '#dee2f2',
+    },
+    light: {
+      colorBackground:   '#f8fafc',
+      colorTraverse:     '#2a5585',
+      colorSplay:        '#64748b',
+      colorStations:     '#fbbf24',
+      colorStationNames: '#1e293b',
+      colorStationAlt:   '#0891b2',
+      colorGrid:         '#cbd5e1',
+      colorScraps:       '#94a3b8',
+      colorScrapsWire:   '#475569',
+      colorTerrainWire:  '#166534',
+      colorBoundingBox:  '#990000',
+      surfaceColor:      '#ffffff',
+    }
+  }
+
+  const applyTheme = (name: keyof typeof THEMES) => {
+    setCurrentTheme(name)
+    setOpts(prev => ({ ...prev, ...THEMES[name] }))
+  }
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -679,6 +732,24 @@ export default function App() {
 
   const getExt = (name: string) => '.' + name.split('.').pop()!.toLowerCase()
 
+  const runParserWorker = useCallback((buffer: ArrayBuffer): Promise<ParsedCave> => {
+    return new Promise((resolve, reject) => {
+      // Vite 4/5 syntax pre worker
+      const worker = new Worker(new URL('./parsers/parser.worker.ts', import.meta.url), { type: 'module' });
+      worker.onmessage = (e) => {
+        if (e.data.type === 'done') resolve(e.data.cave);
+        else reject(new Error(e.data.error || 'Worker parsing failed'));
+        worker.terminate();
+      };
+      worker.onerror = (err) => {
+        reject(err);
+        worker.terminate();
+      };
+      // Transferable ArrayBuffer pre nulové oneskorenie pri kopírovaní dát
+      worker.postMessage({ buffer }, [buffer]);
+    });
+  }, []);
+
   const handleFile = useCallback(async (file: File) => {
     const ext = getExt(file.name)
     if (!['.lox', '.3d', '.plt'].includes(ext)) {
@@ -700,8 +771,11 @@ export default function App() {
       } else {
         const buf = await file.arrayBuffer()
         setProgress(50)
-        if (ext === '.lox') parsed = parseLox(buf)
-        else parsed = parseSvx(buf)
+        if (ext === '.lox') {
+          parsed = await runParserWorker(buf)
+        } else {
+          parsed = parseSvx(buf)
+        }
       }
 
       setProgress(95)
@@ -743,7 +817,14 @@ export default function App() {
         const buf = await resp.arrayBuffer()
         setProgress(60)
         setLoadedFile({ name: label, size: buf.byteLength, ext })
-        const parsed = ext === '.lox' ? parseLox(buf) : parseSvx(buf)
+        
+        let parsed: ParsedCave
+        if (ext === '.lox') {
+          parsed = await runParserWorker(buf)
+        } else {
+          parsed = parseSvx(buf)
+        }
+
         if (parsed.segments.length === 0 && parsed.stations.length === 0)
           throw new Error('Súbor neobsahuje žiadne dáta.')
         setCave(parsed)
@@ -930,7 +1011,7 @@ export default function App() {
         }
       `}</style>
 
-      <canvas ref={canvasRef} className="bg-canvas" />
+      <canvas ref={canvasRef} className="bg-canvas" style={{ background: opts.colorBackground }} />
 
       <div className="app">
 
@@ -1038,6 +1119,38 @@ export default function App() {
                   {cave.scrapCount} scrapov
                 </span>
               )}
+
+              {/* TÉMY (Templates) */}
+              <div style={{ display: 'flex', gap: '0.4rem', background: 'rgba(255,255,255,0.05)', padding: '3px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', marginLeft: '1rem' }}>
+                <button 
+                  onClick={() => applyTheme('default')}
+                  title="Klasický tmavý mód (Loch/Aven)"
+                  style={{ 
+                    fontSize: '9px', padding: '3px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                    background: currentTheme === 'default' ? '#4299e1' : 'transparent',
+                    color: currentTheme === 'default' ? '#fff' : '#718096',
+                    fontWeight: 700, transition: 'all 0.2s', letterSpacing: '0.05em'
+                  }}>CLASSIC</button>
+                <button 
+                  onClick={() => applyTheme('subterranean')}
+                  title="Prémiová téma Subterranean Precision"
+                  style={{ 
+                    fontSize: '9px', padding: '3px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                    background: currentTheme === 'subterranean' ? '#9f7aea' : 'transparent',
+                    color: currentTheme === 'subterranean' ? '#fff' : '#718096',
+                    fontWeight: 700, transition: 'all 0.2s', letterSpacing: '0.05em'
+                  }}>PRECISION</button>
+                <button 
+                  onClick={() => applyTheme('light')}
+                  title="Svetlá téma pre denné svetlo"
+                  style={{ 
+                    fontSize: '9px', padding: '3px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                    background: currentTheme === 'light' ? '#fbbf24' : 'transparent',
+                    color: currentTheme === 'light' ? '#000' : '#718096',
+                    fontWeight: 700, transition: 'all 0.2s', letterSpacing: '0.05em'
+                  }}>LIGHT</button>
+              </div>
+
               <div className="tb-space" />
               <button
                 type="button"
@@ -1169,6 +1282,17 @@ export default function App() {
                   <div className="info-row"><span>Dĺžka (Y)</span><span className="info-val">{cave.bounds.size.y.toFixed(0)} m</span></div>
                 </div>
 
+                <div>
+                  <div className="s-label">Prostredie (Environment)</div>
+                  <div className="toggle-row">
+                    <label className="toggle-label">
+                      <div className="dot" style={{ background: opts.colorBackground, border: '1px solid rgba(255,255,255,.2)' }} />
+                      Farba pozadia
+                      <ColorPicker value={opts.colorBackground} onChange={(c) => setOpts(p => ({ ...p, colorBackground: c }))} />
+                    </label>
+                  </div>
+                </div>
+
                 {/* ── VRSTVY (survey) ── */}
                 <div>
                   <div className="s-label">Merania</div>
@@ -1191,8 +1315,9 @@ export default function App() {
 
                   <div className="toggle-row">
                     <label className="toggle-label">
-                      <div className="dot" style={{ background: '#4a5568', border: '1px solid rgba(255,255,255,.2)' }} />
+                      <div className="dot" style={{ background: opts.colorBoundingBox, border: '1px solid rgba(255,255,255,.2)' }} />
                       Bounding Box
+                      <ColorPicker value={opts.colorBoundingBox} onChange={(c) => setOpts(p => ({ ...p, colorBoundingBox: c }))} />
                     </label>
                     <div className={`switch${opts.showBoundingBox ? ' on' : ''}`}
                       onClick={() => toggleOpt('showBoundingBox')} role="switch"
