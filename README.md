@@ -17,6 +17,10 @@ Moderná webová aplikácia na 3D vizualizáciu jaskynných systémov, vybudovan
 - **3D Mierka (Jaskyniar):** Možnosť umiestniť do modelu postavičku jaskyniara (stojaci 1.8m / plaziaci sa 0.5m) pre okamžité posúdenie veľkosti priestorov.
 - **Dynamická grafická mierka:** Živý Scale-Bar v rohu obrazovky, ktorý sa prispôsobuje úrovni priblíženia (zoomu).
 - **Relatívne meranie:** Po výbere dvoch bodov aplikácia vypočíta 3D vzdialenosť, azimut, sklon a prevýšenie medzi nimi.
+- **Analýza priestorových rezov (Clipping):**
+  - **Vertikálny profil:** Vytvorenie rezu medzi dvoma bodmi s funkciou **Offset (Skenovanie)** pre plynulý posun roviny rezu.
+  - **Horizontálny rez:** Dynamické odrezanie horných vrstiev terénu pre pohľad do podzemia.
+  - **Precízne ladenie:** Tlačidlá `+` / `-` s krokom 0.1 m pre maximálnu presnosť pri analýze prierezov.
 
 ### 📱 Optimalizované UI/UX
 - **Mobile-First Design:** Plne responzívne rozhranie s hamburger menu pre smartfóny a tablety.
@@ -61,10 +65,10 @@ Tento update transformuje CaveView na plnohodnotný analytický nástroj pre spe
 - **Konzistentný Render:** Orezávanie sa teraz korektne aplikuje na všetky vrstvy modelu vrátane Drôtenej siete terénu, Sieťového modelu (výšky) a textúrovaného povrchu.
 
 ### 🖼️ Ukážka Analýzy (Vertikálny Profil)
-![Vertikálny rez 1](./docs/img/profile_clip_1.png)
+![Vertikálny rez 1](./screenshots/profile_clip_1.png)
 *Obr 1: Aktivácia vertikálneho profilu medzi dvoma bodmi s pohľadom na terén.*
 
-![Vertikálny rez 2](./docs/img/profile_clip_2.png)
+![Vertikálny rez 2](./screenshots/profile_clip_2.png)
 *Obr 2: Detailný prierez jaskynnou chodbou s využitím funkcie Offset (posun rezu).*
 
 ## 🆕 Release Notes - 20.04.2026-02 (Performance & Adaptive Themes)
