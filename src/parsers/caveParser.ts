@@ -116,7 +116,8 @@ export function parseLox(buffer: ArrayBuffer): ParsedCave {
   }
 
   const stations = Array.from(stationsById.values())
-  return buildResult(segments, stations, stationMeta, scraps, surfaces)
+  const ids      = Array.from(stationsById.keys())
+  return buildResult(segments, stations, stationMeta, scraps, surfaces, ids)
 
   // ── type 1 ─ Survey ──────────────────────────────────────────────────────────
   function readSurvey() {
@@ -396,6 +397,7 @@ function buildResult(
   stationMeta: Map<number, { name: string; z: number }>,
   scraps:      Scrap[],
   surfaces:    CaveSurface[],
+  stationIds?: number[]
 ): ParsedCave {
   if (stations.length === 0 && segments.length > 0) {
     segments.forEach(s => { stations.push(s.from, s.to) })
@@ -430,7 +432,8 @@ function buildResult(
 
   // Build station labels — use original z for altitude
   const stationLabels: StationLabel[] = centeredStations.map((pos, i) => {
-    const meta = stationMeta.get(i)
+    const lookupId = stationIds ? stationIds[i] : i
+    const meta = stationMeta.get(lookupId)
     let n = meta?.name ?? `S${i}`
     if (!/[a-zA-Z0-9]/.test(n)) n = ''
     return {

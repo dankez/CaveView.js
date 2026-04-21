@@ -20,7 +20,7 @@ Moderná webová aplikácia na 3D vizualizáciu jaskynných systémov, vybudovan
 - **Analýza priestorových rezov (Clipping):**
   - **Vertikálny profil:** Vytvorenie rezu medzi dvoma bodmi s funkciou **Offset (Skenovanie)** pre plynulý posun roviny rezu.
   - **Horizontálny rez:** Dynamické odrezanie horných vrstiev terénu pre pohľad do podzemia.
-  - **Precízne ladenie:** Tlačidlá `+` / `-` s krokom 0.1 m pre maximálnu presnosť pri analýze prierezov.
+  - **Precízne ladenie:** Tlačidlá `+` / `-` s krokom **0.5 m** (profil) a **1 m** (výška) pre maximálnu presnosť pri analýze prierezov.
 
 ### 📱 Optimalizované UI/UX
 - **Mobile-First Design:** Plne responzívne rozhranie s hamburger menu pre smartfóny a tablety.
@@ -46,6 +46,26 @@ Moderná webová aplikácia na 3D vizualizáciu jaskynných systémov, vybudovan
    ```bash
    npm run build
    ```
+
+## 🆕 Release Notes - 21.04.2026-01 (Internationalization & UI Polish)
+
+Tento update prináša plnú podporu pre medzinárodné tímy a výrazne vylepšuje stabilitu a vizuálnu čistotu používateľského rozhrania.
+
+- **Plná Internacionalizácia (i18n):**
+  - Implementovaná podpora pre 4 jazyky: **Slovenčina (SK)**, **Angličtina (EN)**, **Francúzština (FR)** a **Nemčina (DE)**.
+  - **Dynamická detekcia:** Aplikácia automaticky rozpozná jazyk prehliadača pri prvom spustení.
+  - **Live Switcher:** Možnosť prepínať jazyky v reálnom čase bez nutnosti znovunačítania stránky.
+  - **100% Lokalizácia:** Preložené sú všetky prvky vrátane legendy, pomocníka, analytických nástrojov aj úvodnej obrazovky (Welcome Screen).
+- **Vylepšené UI a Ikony:**
+  - Integrácia **Material Symbols Outlined** pre moderný a čistý vizuálny štýl ikon.
+  - Oprava vykresľovania ikon v tlačidlách (odstránenie textových názvov ikon).
+  - Vylepšené rozloženie tlačidiel v hornom paneli (Meranie, Témy, Jazyky).
+- **Precízne Analytické Ovládanie:**
+  - Optimalizácia kroku tlačidiel `+` / `-` pri vertikálnom profile na **0.5 m** pre detailnú speleologickú analýzu.
+  - Obnovenie chýbajúcich ovládacích prvkov pre hrúbku polygónového ťahu a výber farieb mriežky.
+- **Technická Stabilita:**
+  - Odstránenie redundancií v kóde a oprava JSX štruktúry pre lepšiu kompatibilitu s React 18+.
+  - Fix farebných šablón (Themes), ktoré teraz korektne menia pozadie scény a farby vrstiev v reálnom čase.
 
 ## 🆕 Release Notes - 20.04.2026-03 (Professional Analytical Clipping)
 
@@ -98,6 +118,8 @@ Tento update prináša zásadnú architektonickú zmenu zameranú na plynulosť 
 - [x] **Asynchrónne spracovanie:** Vizualizácia stavu generovania modelu a BVH.
 - [x] **Web Workers:** Parsovanie .LOX na pozadí (zero UI-freeze).
 - [x] **Tiled Rendering:** Rozdelenie terénu na dlaždice pre lepší Frustum Culling.
+- [x] **Full i18n:** Podpora viacerých jazykov (SK, EN, FR, DE).
+- [x] **Precise UI Controls:** Tlačidlá +/- pre analytické nástroje.
 - [ ] **Dátová kompresia:** Optimalizácia prenosu dát medzi parserom a GPU.
 
 ---

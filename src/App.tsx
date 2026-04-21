@@ -4,6 +4,7 @@ import { parseLox, parseSvx, parsePlt } from './parsers/caveParser'
 import type { ParsedCave, CaveSurface } from './parsers/caveParser'
 import CaveViewer3D from './components/CaveViewer3D'
 import type { ViewerOptions } from './components/CaveViewer3D'
+import { getBrowserLanguage, getTranslation, Language, languages } from './i18n'
 
 type AppState = 'welcome' | 'loading' | 'viewer' | 'error'
 
@@ -142,11 +143,12 @@ export interface SelStation {
   centerZ?:     number
 }
 
-function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile }: { 
+function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, t }: { 
   stations: SelStation[]; 
   onClose: () => void;
   onPlaceCaver: (pos: [number, number, number], pose: 'standing' | 'crawling') => void;
   onSetProfile: (sts: SelStation[]) => void;
+  t: (key: string) => string;
 }) {
   const [posOffset, setPosOffset] = useState({ x: 0, y: 0 })
   const dragRef = useRef<{ startX: number; startY: number; isDragging: boolean }>({ startX: 0, startY: 0, isDragging: false })
@@ -213,13 +215,13 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile }: {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4fc3f7', boxShadow: '0 0 6px #4fc3f7' }} />
           <span style={{ fontSize: 15, fontWeight: 700, color: '#e2e8f0', letterSpacing: '0.01em' }}>
-            {stations.length === 1 ? st1.name : `Výber: ${st1.name} → ${st2?.name}`}
+            {stations.length === 1 ? st1.name : `${t('measuring.selection')}: ${st1.name} → ${st2?.name}`}
           </span>
         </div>
         <button onClick={onClose} style={{
           background: 'none', border: 'none', color: '#64748b', cursor: 'pointer',
           fontSize: 16, lineHeight: 1, padding: '2px 4px', borderRadius: 4,
-        }} title="Zatvoriť" aria-label="Zatvoriť">✕</button>
+        }} title={t('ui.close')} aria-label={t('ui.close')}>✕</button>
       </div>
 
       {/* Podrobnosti bodu */}
@@ -227,20 +229,20 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile }: {
         <div key={i} style={{ marginBottom: stations.length > 1 ? 12 : 0 }}>
           {stations.length > 1 && (
             <div style={{ fontSize: 10, color: i === 0 ? '#fbbf24' : '#ef4444', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
-              {i === 0 ? 'Počiatočný bod' : 'Koncový bod'}
+              {i === 0 ? t('measuring.startPoint') : t('measuring.endPoint')}
             </div>
           )}
           {st.idx !== -1 ? (
-            <Row label="Stanica" value={`#${st.idx}`} sub={`(${st.name})`} />
+            <Row label={t('stations.title')} value={`#${st.idx}`} sub={`(${st.name})`} />
           ) : (
-            <Row label="Bod povrchu ID" value={st.name} />
+            <Row label={t('stations.coordinates')} value={st.name} />
           )}
-          <Row label="Nadm. výška" value={`${st.altitude.toFixed(2)} m`} sub="n.m." />
+          <Row label={t('stations.altitude')} value={`${st.altitude.toFixed(2)} m`} sub="n.m." />
           {st.distToSurf !== null && (
             <Row
-              label="Hĺbka pod povrchom"
+              label={t('stations.depth')}
               value={Math.abs(st.distToSurf).toFixed(1) + ' m'}
-              sub={st.distToSurf >= 0 ? 'pod povrchom' : 'nad povrchom'}
+              sub={st.distToSurf >= 0 ? `(${t('terrain.title').toLowerCase()})` : `(nad ${t('terrain.title').toLowerCase()})`}
             />
           )}
 
@@ -260,12 +262,12 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile }: {
                       target="_blank" rel="noopener noreferrer"
                       style={{ fontSize: 11, color: '#4fc3f7', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
                     >
-                      🗺️ Zobraziť v Google Maps
+                      🗺️ {t('ui.googleMaps')}
                     </a>
                   </div>
                 </>
               ) : (
-                <Row label="GPS" value="Nedostupné" sub="(národna siet)" />
+                <Row label="GPS" value={t('measuring.unavailable')} sub="" />
               )}
             </>
           )}
@@ -285,83 +287,60 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile }: {
           <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,.1)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, color: '#ef4444', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               <div style={{ width: 14, height: 2, borderBottom: '2px dashed #ef4444' }}></div>
-              Meranie vzdialenosti
+              {t('measuring.title')}
             </div>
-            <Row label="3D Vzdialenosť" value={`${dist3D.toFixed(2)} m`} />
-            <Row label="Pôdorysná dĺžka" value={`${horizDist.toFixed(2)} m`} />
-            <Row label="Prevýšenie" value={`${(dz > 0 ? '+' : '')}${dz.toFixed(2)} m`} />
-            <Row label="Azimut (Kurz)" value={`${az.toFixed(1)}°`} />
-            <Row label="Sklon" value={`${(inc > 0 ? '+' : '')}${inc.toFixed(1)}°`} />
+            <Row label={t('measuring.dist3d')} value={`${dist3D.toFixed(2)} m`} />
+            <Row label={t('measuring.distHoriz')} value={`${horizDist.toFixed(2)} m`} />
+            <Row label={t('measuring.climb')} value={`${(dz > 0 ? '+' : '')}${dz.toFixed(2)} m`} />
+            <Row label={t('measuring.azimuth')} value={`${az.toFixed(1)}°`} />
+            <Row label={t('measuring.slope')} value={`${(inc > 0 ? '+' : '')}${inc.toFixed(1)}°`} />
           </div>
         )
       })()}
 
       {/* Mierka - Jaskyniar */}
       {stations.length === 1 && (
-        <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,.1)' }}>
-          <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em' }}>
-            Vizualizácia mierky (jaskyniar)
-          </div>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <div 
-              onClick={() => onPlaceCaver([st1.origX - (stations[0].centerX || 0), st1.altitude - (stations[0].centerZ || 0), -st1.origY + (stations[0].centerY || 0)], 'standing')}
-              style={{ 
-                flex: 1, height: 48, borderRadius: 8, background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.borderColor = '#ef4444' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
-            >
-              <img src="/assets/caver_standing.png" style={{ height: 24, marginBottom: 2 }} alt="Stojaci" />
-              <span style={{ fontSize: 9, color: '#e2e8f0' }}>Stojaci</span>
-            </div>
-            <div 
-              onClick={() => onPlaceCaver([st1.origX - (stations[0].centerX || 0), st1.altitude - (stations[0].centerZ || 0), -st1.origY + (stations[0].centerY || 0)], 'crawling')}
-              style={{ 
-                flex: 1, height: 48, borderRadius: 8, background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.borderColor = '#ef4444' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
-            >
-              <img src="/assets/caver_crawling.png" style={{ height: 24, marginBottom: 2 }} alt="Plaziaci" />
-              <span style={{ fontSize: 9, color: '#e2e8f0' }}>Plaziaci</span>
-            </div>
-          </div>
+        <div style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <button 
+            onClick={() => onPlaceCaver([st1.origX - (stations[0].centerX || 0), st1.altitude - (stations[0].centerZ || 0), -st1.origY + (stations[0].centerY || 0)], 'standing')}
+            style={{ flex: 1, minWidth: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 12px', background: 'rgba(79,195,247,.1)', border: '1px solid rgba(79,195,247,.3)', borderRadius: 8, color: '#4fc3f7', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 18, display: 'block' }}>accessibility_new</span>
+            <span>{t('caver.standing')}</span>
+          </button>
+          <button 
+            onClick={() => onPlaceCaver([st1.origX - (stations[0].centerX || 0), st1.altitude - (stations[0].centerZ || 0), -st1.origY + (stations[0].centerY || 0)], 'crawling')}
+            style={{ flex: 1, minWidth: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 12px', background: 'rgba(79,195,247,.1)', border: '1px solid rgba(79,195,247,.3)', borderRadius: 8, color: '#4fc3f7', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 18, display: 'block' }}>child_care</span>
+            <span>{t('caver.crawling')}</span>
+          </button>
         </div>
       )}
 
-      {/* Actions */}
-      <div style={{ marginTop: 16 }}>
-        {stations.length === 2 && (
-          <button 
-            onClick={() => onSetProfile(stations)}
-            style={{ 
-              width: '100%', padding: '10px', background: 'rgba(34, 211, 238, 0.15)', color: '#22d3ee', 
-              fontSize: '11px', fontWeight: 'bold', border: '1px solid rgba(34, 211, 238, 0.3)', borderRadius: '6px', 
-              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              transition: 'all 0.2s', marginBottom: '8px'
-            }}
-          >
-            <span className="material-symbols-outlined text-sm">linear_scale</span>
-            Vytvoriť rez (línia)
-          </button>
-        )}
+      {stations.length >= 2 && (
+        <button 
+          onClick={() => onSetProfile(stations)}
+          style={{ marginTop: 8, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px', background: '#3b82f6', border: 'none', borderRadius: 8, color: 'white', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 20, display: 'block' }}>content_cut</span>
+          <span>{t('clipping.create')}</span>
+        </button>
+      )}
 
+      <div style={{ marginTop: 12 }}>
         <button 
           className="btn-back" 
           style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8', borderRadius: '6px', cursor: 'pointer', fontSize: '11px' }} 
           onClick={onClose}
         >
-          Zavrieť okno
+          {t('ui.closeWindow')}
         </button>
       </div>
 
       {/* Footer hint */}
       <div style={{ marginTop: 14, fontSize: 10, color: '#64748b', textAlign: 'center' }}>
-        {stations.length === 1 ? 'Kliknutím na ďalší bod k nemu zmeriaš vzdialenosť' : 'Kliknutím na ďalší bod začneš nové meranie'}
+        {stations.length === 1 ? t('ui.hint1') : t('ui.hint2')}
       </div>
     </div>
   )
@@ -449,7 +428,7 @@ const ScaleBar = ({ cameraData }: { cameraData: { dist: number, fov: number, hei
 }
 
 // ─── Processing Overlay (Zobrazí sa len ak operácia trvá > 0.5s) ────────────────
-const ProcessingOverlay = ({ info }: { info: string | null }) => {
+const ProcessingOverlay = ({ info, lang }: { info: string | null, lang: string }) => {
   if (!info) return null
 
   return (
@@ -469,7 +448,7 @@ const ProcessingOverlay = ({ info }: { info: string | null }) => {
           borderTopColor: '#4fc3f7', borderRadius: '50%', animation: 'spin 0.8s linear infinite'
         }} />
         <div style={{ color: '#e2e8f0', fontSize: 14, fontWeight: 600, letterSpacing: '0.02em' }}>{info}</div>
-        <div style={{ color: '#64748b', fontSize: 11 }}>Toto môže trvať chvíľu pri veľkých modeloch...</div>
+        <div style={{ color: '#64748b', fontSize: 11 }}>{lang === 'sk' ? 'Toto môže trvať chvíľu pri veľkých modeloch...' : 'This may take a while for large models...'}</div>
       </div>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -493,6 +472,9 @@ export default function App() {
   const [man2, setMan2] = useState('')
   const [surfPointCache, setSurfPointCache] = useState<Record<string, SelStation>>({})
   const [fitTrigger, setFitTrigger] = useState(0)
+  const [lang, setLang] = useState<Language>(getBrowserLanguage())
+
+  const t = useCallback((key: string) => getTranslation(lang, key), [lang])
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isModelMoving, setIsModelMoving] = useState(false)
   const [cameraData, setCameraData] = useState<{ dist: number, fov: number, height: number } | null>(null)
@@ -549,7 +531,7 @@ export default function App() {
 
   // ─── DEFINÍCIA ŠABLÓN ────────────────────────────────────────────────────────
   const THEMES = {
-    default: {
+    classic: {
       colorBackground:   '#050505',
       colorTraverse:     '#ffffff',
       colorSplay:        '#78909c',
@@ -563,7 +545,7 @@ export default function App() {
       colorBoundingBox:  '#990000',
       surfaceColor:      '#e2e8f0',
     },
-    subterranean: {
+    precision: {
       colorBackground:   '#0a0f1a',
       colorTraverse:     '#ffffff',
       colorSplay:        '#a5f3fc',
@@ -942,6 +924,7 @@ export default function App() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:'Inter',system-ui,sans-serif;background:#050810;color:#e2e8f0;overflow:hidden}
         .bg-canvas{position:fixed;inset:0;pointer-events:none;z-index:0}
@@ -1061,7 +1044,7 @@ export default function App() {
             <div style={{ textAlign: 'center' }}>
               <div className="logo-icon">🏔️</div>
               <h1 className="logo-title">CaveView 3D</h1>
-              <p className="logo-sub">3D Prehliadač jaskynných prieskumov</p>
+              <p className="logo-sub">{t('welcome.sub')}</p>
             </div>
 
             <div
@@ -1074,15 +1057,15 @@ export default function App() {
               onKeyDown={e => e.key === 'Enter' && fileInputRef.current?.click()}
             >
               <span className="dz-icon">📂</span>
-              <p className="dz-title">Pretiahnite jaskynný súbor sem</p>
-              <p className="dz-sub">Podporované: .lox (Therion), .3d (Survex), .plt (Compass)</p>
+              <p className="dz-title">{t('welcome.dzTitle')}</p>
+              <p className="dz-sub">{t('welcome.dzSub')}</p>
               <div className="dz-or">— alebo —</div>
               <button
                 className="btn-open"
                 onClick={e => { e.stopPropagation(); fileInputRef.current?.click() }}
                 type="button"
               >
-                📁 Vybrať súbor
+                📁 {t('welcome.selectFile')}
               </button>
               <input ref={fileInputRef} type="file" accept=".lox,.3d,.plt" onChange={e => {
                 const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''
@@ -1096,7 +1079,7 @@ export default function App() {
             {/* Demo models */}
             <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <div style={{ fontSize: '.62rem', fontWeight: 700, color: '#4a5568', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '.5rem', textAlign: 'center' }}>Testovacie modely</div>
+                <div style={{ fontSize: '.62rem', fontWeight: 700, color: '#4a5568', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '.5rem', textAlign: 'center' }}>{t('welcome.demoTitle')}</div>
                 <div style={{ display: 'flex', gap: '.6rem', justifyContent: 'center' }}>
                   <button className="btn-demo" onClick={() => loadFromUrl('/test_simple.lox', 'model-simple.lox')} type="button">
                     🗺️ Simple LOX
@@ -1107,11 +1090,11 @@ export default function App() {
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: '.62rem', fontWeight: 700, color: '#f56565', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '.5rem', textAlign: 'center' }}>Záťažový test (Big Model)</div>
+                <div style={{ fontSize: '.62rem', fontWeight: 700, color: '#f56565', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '.5rem', textAlign: 'center' }}>{t('welcome.stressTitle')}</div>
                 <div style={{ display: 'flex', gap: '.6rem', justifyContent: 'center' }}>
                   <button className="btn-demo" style={{ borderColor: 'rgba(245,101,101,0.4)', color: '#feb2b2', background: 'rgba(245,101,101,0.05)' }} 
                     onClick={() => loadFromUrl('/zadiel.lox', 'zadiel.lox')} type="button">
-                    🏔️ Veľký model (32MB)
+                    🏔️ {t('welcome.bigModel')}
                   </button>
                 </div>
               </div>
@@ -1124,7 +1107,7 @@ export default function App() {
           <div className="loading-screen">
             <div className="load-icon">⛏️</div>
             <div>
-              <div className="load-title">Parsovanie súboru…</div>
+              <div className="load-title">{t('ui.parsing')}</div>
               <div className="load-file">{loadedFile?.name}</div>
             </div>
             <div className="prog-wrap">
@@ -1148,89 +1131,64 @@ export default function App() {
               <span className="tb-file" title={loadedFile?.name}>{loadedFile?.name}</span>
               <MemoizedStatusBadge isMoving={isModelMoving} />
               <span className="tb-badge hide-mobile">{loadedFile?.ext?.replace('.', '')?.toUpperCase()}</span>
-              <span className="tb-badge hide-mobile" style={{ background: 'rgba(159,122,234,.15)', color: '#9f7aea', borderColor: 'rgba(159,122,234,.3)' }}>
-                {cave.segmentCount} meraní
-              </span>
-              <span className="tb-badge hide-mobile" style={{ background: 'rgba(72,187,120,.1)', color: '#68d391', borderColor: 'rgba(72,187,120,.25)' }}>
-                {cave.stationCount} staníc
-              </span>
-              {cave.scrapCount > 0 && (
-                <span className="tb-badge hide-mobile" style={{ background: 'rgba(237,137,54,.1)', color: '#f6ad55', borderColor: 'rgba(237,137,54,.25)' }}>
-                  {cave.scrapCount} scrapov
-                </span>
-              )}
-
-              {/* TÉMY (Templates) */}
-              <div style={{ display: 'flex', gap: '0.4rem', background: 'rgba(255,255,255,0.05)', padding: '3px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', marginLeft: '1rem' }}>
-                <button 
-                  onClick={() => applyTheme('default')}
-                  title="Klasický tmavý mód (Loch/Aven)"
-                  style={{ 
-                    fontSize: '9px', padding: '3px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                    background: currentTheme === 'default' ? '#4299e1' : 'transparent',
-                    color: currentTheme === 'default' ? '#fff' : '#718096',
-                    fontWeight: 700, transition: 'all 0.2s', letterSpacing: '0.05em'
-                  }}>CLASSIC</button>
-                <button 
-                  onClick={() => applyTheme('subterranean')}
-                  title="Prémiová téma Subterranean Precision"
-                  style={{ 
-                    fontSize: '9px', padding: '3px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                    background: currentTheme === 'subterranean' ? '#9f7aea' : 'transparent',
-                    color: currentTheme === 'subterranean' ? '#fff' : '#718096',
-                    fontWeight: 700, transition: 'all 0.2s', letterSpacing: '0.05em'
-                  }}>PRECISION</button>
-                <button 
-                  onClick={() => applyTheme('light')}
-                  title="Svetlá téma pre denné svetlo"
-                  style={{ 
-                    fontSize: '9px', padding: '3px 8px', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                    background: currentTheme === 'light' ? '#fbbf24' : 'transparent',
-                    color: currentTheme === 'light' ? '#000' : '#718096',
-                    fontWeight: 700, transition: 'all 0.2s', letterSpacing: '0.05em'
-                  }}>LIGHT</button>
+              
+              <div style={{ display: 'flex', gap: '4px', background: '#0f172a', padding: '2px', borderRadius: '6px', border: '1px solid #1e293b' }}>
+                {(['classic', 'precision', 'light'] as const).map(th => (
+                  <button key={th} onClick={() => applyTheme(th as any)}
+                    style={{ flex: 1, padding: '4px 8px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer',
+                      background: currentTheme === th ? '#334155' : 'transparent',
+                      color: currentTheme === th ? '#f8fafc' : '#64748b' }}>
+                    {t(`themes.${th}`)}
+                  </button>
+                ))}
               </div>
 
               <div className="tb-space" />
+
               <button
-                type="button"
-                className="tb-badge btn-back"
+                className={`btn-back hide-mobile-flex${isMeasuringMode ? ' active' : ''}`}
                 style={{
-                  cursor: 'pointer',
-                  background: isMeasuringMode ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                  color: isMeasuringMode ? '#f87171' : '#94a3b8',
-                  borderColor: isMeasuringMode ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255, 255, 255, 0.15)',
-                  outline: 'none',
+                  background: isMeasuringMode ? '#6366f1' : 'rgba(99,179,237,0.1)',
+                  color: isMeasuringMode ? '#fff' : '#63b3ed',
+                  borderColor: isMeasuringMode ? '#818cf8' : 'rgba(99,179,237,0.3)',
+                  marginRight: '10px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 4
+                  gap: '6px'
                 }}
-                onClick={() => {
-                  setIsMeasuringMode(!isMeasuringMode)
-                  setSelectedStations([])
-                }}
-                title="Zapne logiku merania vzdialeností pre klikanie"
+                onClick={() => setIsMeasuringMode(!isMeasuringMode)}
               >
-                📏 <span className="hide-mobile">{isMeasuringMode ? 'Meranie zap.' : 'Meranie vyp.'}</span>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px', display: 'block' }}>straighten</span>
+                <span>{t('sidebar.measure')}</span>
               </button>
-              {isMeasuringMode && (
-                <div className="hide-mobile-flex" style={{ display: 'flex', gap: 6, alignItems: 'center', marginLeft: 6 }}>
-                  <input type="text" value={man1} onChange={e => setMan1(e.target.value)} placeholder="Bod A" style={{ width: 60, fontSize: 11, padding: '4px 6px', background: '#0f172a', border: '1px solid #334155', color: '#e2e8f0', borderRadius: 4, outline: 'none' }} />
-                  <input type="text" value={man2} onChange={e => setMan2(e.target.value)} placeholder="Bod B" style={{ width: 60, fontSize: 11, padding: '4px 6px', background: '#0f172a', border: '1px solid #334155', color: '#e2e8f0', borderRadius: 4, outline: 'none' }} />
-                  <button onClick={execManualMeasure} style={{ background: '#3b82f6', border: 'none', color: '#fff', fontSize: 11, padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }}>Spočítať</button>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '4px', background: 'rgba(30,41,59,0.5)', padding: '2px', borderRadius: '6px' }}>
+                  {(['sk', 'en', 'fr', 'de'] as Language[]).map(l => (
+                    <button key={l} onClick={() => setLang(l)}
+                      style={{ padding: '4px 6px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer',
+                        background: lang === l ? '#6366f1' : 'transparent',
+                        color: lang === l ? 'white' : '#94a3b8' }}>
+                      {l.toUpperCase()}
+                    </button>
+                  ))}
                 </div>
-              )}
-              <div className="tb-space" />
-              <button className="btn-back btn-fit" style={{ background: '#3b82f6', color: '#fff', border: 'none', marginLeft: 'auto' }} onClick={() => setFitTrigger(t => t + 1)} type="button">◎ <span className="hide-mobile">Celá jaskyňa</span></button>
-              <button className="btn-back" onClick={handleReset} type="button" style={{ marginLeft: 6 }}>✖ <span className="hide-mobile">Zavrieť</span></button>
+
+                <button 
+                  onClick={handleReset}
+                  style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: '#94a3b8', padding: '6px 12px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px', display: 'block' }}>close</span>
+                  <span>{t('ui.close')}</span>
+                </button>
+              </div>
             </div>
 
             <div className="viewer-body">
-              {/* 3D Canvas */}
               <div className="canvas-wrap">
                 <Suspense fallback={
                   <div className="loading-overlay">
-                    <span className="loading-3d">Inicializácia 3D…</span>
+                    <span className="loading-3d">{t('ui.init3d')}</span>
                   </div>
                 }>
                   <CaveViewer3D
@@ -1238,10 +1196,6 @@ export default function App() {
                     options={opts}
                     onStationClick={handleStationClick}
                     onSurfaceClick={isMeasuringMode ? handleSurfaceClick : undefined}
-                    onBackgroundClick={() => {
-                      setSelectedStations([])
-                      setShowStationCard(false)
-                    }}
                     onMoveStateChange={setIsModelMoving}
                     onCameraUpdate={setCameraData}
                     onProcessingStart={setProcessingInfo}
@@ -1259,38 +1213,6 @@ export default function App() {
                     }
                   />
                 </Suspense>
-                {/* Altitude Legend Overlay */}
-                {(legendCave || legendSurf) && (
-                  <div style={{ position: 'absolute', bottom: 120, right: 24, padding: '10px 14px', background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(6px)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)', color: '#fff', fontSize: 11, display: 'flex', gap: 16, alignItems: 'stretch', pointerEvents: 'none', zIndex: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
-                    {legendCave && (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                        <div style={{ fontSize: 9, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Jaskyňa</div>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between', height: 120, fontFamily: 'monospace' }}>
-                            <span>{legendCave.maxAlt.toFixed(0)}m</span>
-                            <span>{(legendCave.minAlt + (legendCave.maxAlt - legendCave.minAlt)/2).toFixed(0)}m</span>
-                            <span>{legendCave.minAlt.toFixed(0)}m</span>
-                          </div>
-                          <div style={{ width: 14, height: 120, borderRadius: 4, background: `linear-gradient(to top, rgb(20,45,165) 0%, rgb(25,122,216) 18%, rgb(30,198,183) 35%, rgb(45,221,96) 50%, rgb(204,239,25) 65%, rgb(247,153,12) 80%, rgb(224,25,25) 100%)` }} />
-                        </div>
-                      </div>
-                    )}
-                    {legendCave && legendSurf && <div style={{ width: 1, background: 'rgba(255,255,255,0.1)', margin: '0 2px' }} />}
-                    {legendSurf && (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                        <div style={{ fontSize: 9, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Povrch</div>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between', height: 120, fontFamily: 'monospace' }}>
-                            <span>{legendSurf.maxAlt.toFixed(0)}m</span>
-                            <span>{(legendSurf.minAlt + (legendSurf.maxAlt - legendSurf.minAlt)/2).toFixed(0)}m</span>
-                            <span>{legendSurf.minAlt.toFixed(0)}m</span>
-                          </div>
-                          <div style={{ width: 14, height: 120, borderRadius: 4, background: `linear-gradient(to top, rgb(20,45,165) 0%, rgb(25,122,216) 18%, rgb(30,198,183) 35%, rgb(45,221,96) 50%, rgb(204,239,25) 65%, rgb(247,153,12) 80%, rgb(224,25,25) 100%)` }} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
 
                 {/* Station detail card overlay */}
                 {selectedStations.length > 0 && showStationCard && (
@@ -1303,526 +1225,326 @@ export default function App() {
                       setOpts(p => ({ ...p, showProfileClipping: true, profileClipOffset: 0 }))
                       setShowStationCard(false)
                     }}
+                    t={t}
                   />
                 )}
               </div>
 
-              {/* Sidebar container (respektovaný na mobile) */}
+              {/* Sidebar container */}
               <div className={`sidebar-container ${isMobileMenuOpen ? 'open' : ''}`}>
                 <aside className="sidebar">
-                  {/* Zatváracie tlačidlo pre mobily */}
                   {isMobileMenuOpen && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                      <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#e2e8f0' }}>Ovládanie 3D scény</span>
-                      <button className="btn-back" style={{ background: '#ef4444', color: '#fff', border: 'none' }} onClick={() => setIsMobileMenuOpen(false)}>✖ Zatvoriť</button>
+                      <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#e2e8f0' }}>{t('sidebar.control')}</span>
+                      <button className="btn-back" style={{ background: '#ef4444', color: '#fff', border: 'none' }} onClick={() => setIsMobileMenuOpen(false)}>✖ {t('ui.close')}</button>
                     </div>
                   )}
 
-                  {/* Info */}
                 <div>
-                  <div className="s-label">Súbor</div>
-                  <div className="info-row"><span>Formát</span><span className="info-val">{loadedFile?.ext.replace('.', '').toUpperCase()}</span></div>
-                  <div className="info-row"><span>Merania</span><span className="info-val">{cave.segmentCount.toLocaleString()}</span></div>
-                  <div className="info-row"><span>Stanice</span><span className="info-val">{cave.stationCount.toLocaleString()}</span></div>
+                  <div className="s-label">{t('file.title')}</div>
+                  <div className="info-row"><span>{t('file.format')}</span><span className="info-val">{loadedFile?.ext.replace('.', '').toUpperCase()}</span></div>
+                  <div className="info-row"><span>{t('file.segments')}</span><span className="info-val">{cave.segmentCount.toLocaleString()}</span></div>
+                  <div className="info-row"><span>{t('file.stations')}</span><span className="info-val">{cave.stationCount.toLocaleString()}</span></div>
                   {cave.scrapCount > 0 && (
-                    <div className="info-row"><span>Scraps (steny)</span><span className="info-val">{cave.scrapCount.toLocaleString()}</span></div>
+                    <div className="info-row"><span>{t('file.scraps')}</span><span className="info-val">{cave.scrapCount.toLocaleString()}</span></div>
                   )}
-                  <div className="info-row"><span>Šírka (X)</span><span className="info-val">{cave.bounds.size.x.toFixed(0)} m</span></div>
-                  <div className="info-row"><span>Výška (Z)</span><span className="info-val">{cave.bounds.size.z.toFixed(0)} m</span></div>
-                  <div className="info-row"><span>Dĺžka (Y)</span><span className="info-val">{cave.bounds.size.y.toFixed(0)} m</span></div>
-                </div>
-
-                <div>
-                  <div className="s-label">Prostredie (Environment)</div>
-                  <div className="toggle-row">
-                    <label className="toggle-label">
-                      <div className="dot" style={{ background: opts.colorBackground, border: '1px solid rgba(255,255,255,.2)' }} />
-                      Farba pozadia
-                      <ColorPicker value={opts.colorBackground} onChange={(c) => setOpts(p => ({ ...p, colorBackground: c }))} />
-                    </label>
-                  </div>
                 </div>
 
                 {/* ── ANALÝZA PRIESTOROVÝCH REZOV ── */}
-                <div>
-                  <div className="s-label">Analýza priestorových rezov</div>
-                  
-                  {/* Horizontálny rez */}
-                  <div className="toggle-row">
-                    <label className="toggle-label">
-                      <span className="material-symbols-outlined text-sm" style={{ color: '#818cf8', marginRight: '4px' }}>content_cut</span>
-                      Horizontálny rez (Z)
-                    </label>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" checked={opts.showClipping} onChange={() => toggleOpt('showClipping')} className="sr-only peer" />
-                      <div className="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-indigo-500"></div>
-                    </label>
-                  </div>
-                  {opts.showClipping && (
-                    <div style={{ padding: '4px 0 12px 28px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', marginBottom: '6px' }}>
-                        <span>Výška rezu</span>
-                        <span style={{ color: '#818cf8', fontWeight: 'bold' }}>{opts.clippingHeight.toFixed(1)} m</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <button 
-                          onClick={() => setOpts(prev => ({ ...prev, clippingHeight: prev.clippingHeight - 0.1 }))}
-                          style={{ width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e293b', color: '#94a3b8', border: '1px solid #334155', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
-                        >−</button>
-                        <input 
-                          type="range"
-                          min={cave ? cave.bounds.min.z + cave.centerOffset.z - 10 : 0}
-                          max={cave ? cave.bounds.max.z + cave.centerOffset.z + 10 : 2000}
-                          step={0.1}
-                          value={opts.clippingHeight}
-                          onChange={(e) => setOpts(prev => ({ ...prev, clippingHeight: parseFloat(e.target.value) }))}
-                          className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-                          style={{ flex: 1 }}
-                        />
-                        <button 
-                          onClick={() => setOpts(prev => ({ ...prev, clippingHeight: prev.clippingHeight + 0.1 }))}
-                          style={{ width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e293b', color: '#94a3b8', border: '1px solid #334155', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
-                        >+</button>
-                      </div>
+                <div style={{ marginBottom: '20px' }}>
+                    <div className="s-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px', display: 'block' }}>content_cut</span>
+                      <span>{t('clipping.title')}</span>
                     </div>
-                  )}
+                    
+                    <div style={{ padding: '12px', background: 'rgba(30,41,59,0.5)', borderRadius: '8px', border: '1px solid rgba(51,65,85,0.5)' }}>
+                      <div className="toggle-row" style={{ marginBottom: '12px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#e2e8f0' }}>{t('clipping.horiz')}</span>
+                        <div className={`switch${opts.showClipping ? ' on' : ''}`}
+                          onClick={() => toggleOpt('showClipping')} role="switch"
+                          aria-checked={opts.showClipping} tabIndex={0}
+                        />
+                      </div>
 
-                  {/* Vertikálny rez */}
-                  <div className="toggle-row">
-                    <label className="toggle-label">
-                      <span className="material-symbols-outlined text-sm" style={{ color: '#22d3ee', marginRight: '4px' }}>linear_scale</span>
-                      Vertikálny profil (Línia)
-                    </label>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" checked={opts.showProfileClipping} onChange={() => toggleOpt('showProfileClipping')} className="sr-only peer" />
-                      <div className="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-500"></div>
-                    </label>
-                  </div>
-
-                  {opts.showProfileClipping && (
-                    <div style={{ padding: '4px 0 12px 28px' }}>
-                      {(!activeProfilePoints && selectedStations.length < 2) && (
-                        <p style={{ fontSize: '10px', color: '#64748b', fontStyle: 'italic', lineHeight: '1.3' }}>
-                          Pre aktiváciu profilu vyberte 2 body meraním (Ctrl+klik).
-                        </p>
-                      )}
-                      
-                      {selectedStations.length === 2 && (
-                        <button 
-                          onClick={() => setActiveProfilePoints([...selectedStations])}
-                          style={{ width: '100%', padding: '6px', background: 'rgba(79, 195, 247, 0.1)', color: '#4fc3f7', fontSize: '10px', fontWeight: 'bold', border: '1px solid rgba(79, 195, 247, 0.2)', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}
-                        >
-                          <span className="material-symbols-outlined text-xs">check_circle</span>
-                          Nastaviť rez z výberu
-                        </button>
-                      )}
-
-                      {activeProfilePoints && (
-                        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                      {opts.showClipping && (
+                        <div style={{ marginBottom: '16px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', marginBottom: '6px' }}>
-                            <span>Posun rezu (Offset)</span>
-                            <span style={{ color: '#22d3ee', fontWeight: 'bold' }}>{opts.profileClipOffset.toFixed(1)} m</span>
+                            <span>{t('clipping.height')}</span>
+                            <span style={{ color: '#818cf8', fontWeight: 'bold' }}>{opts.clippingHeight.toFixed(1)} m</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <button onClick={() => setOpts(p => ({ ...p, clippingHeight: p.clippingHeight - 1 }))}
+                              style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #334155', background: '#1e293b', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>-</button>
+                            <input type="range" className="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                              min={cave.bounds.min.z + cave.centerOffset.z - 10} max={cave.bounds.max.z + cave.centerOffset.z + 10}
+                              step={0.1} value={opts.clippingHeight} onChange={(e) => setOpts(p => ({ ...p, clippingHeight: parseFloat(e.target.value) }))} />
+                            <button onClick={() => setOpts(p => ({ ...p, clippingHeight: p.clippingHeight + 1 }))}
+                              style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #334155', background: '#1e293b', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>+</button>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="toggle-row">
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#e2e8f0' }}>{t('clipping.vert')}</span>
+                        <div className={`switch${opts.showProfileClipping ? ' on' : ''}`}
+                          onClick={() => toggleOpt('showProfileClipping')} role="switch"
+                          aria-checked={opts.showProfileClipping} tabIndex={0}
+                        />
+                      </div>
+                      
+                      {opts.showProfileClipping && activeProfilePoints && (
+                        <div style={{ marginTop: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', marginBottom: '6px' }}>
+                            <span>{t('clipping.offset')}</span>
+                            <span style={{ color: '#818cf8', fontWeight: 'bold' }}>{opts.profileClipOffset.toFixed(1)} m</span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                            <button 
-                              onClick={() => setOpts(prev => ({ ...prev, profileClipOffset: prev.profileClipOffset - 0.1 }))}
-                              style={{ width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e293b', color: '#94a3b8', border: '1px solid #334155', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
-                            >−</button>
-                            <input 
-                              type="range"
-                              min={-50}
-                              max={50}
-                              step={0.1}
-                              value={opts.profileClipOffset}
-                              onChange={(e) => setOpts(prev => ({ ...prev, profileClipOffset: parseFloat(e.target.value) }))}
-                              className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-                              style={{ flex: 1 }}
-                            />
-                            <button 
-                              onClick={() => setOpts(prev => ({ ...prev, profileClipOffset: prev.profileClipOffset + 0.1 }))}
-                              style={{ width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e293b', color: '#94a3b8', border: '1px solid #334155', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
-                            >+</button>
+                            <button onClick={() => setOpts(p => ({ ...p, profileClipOffset: p.profileClipOffset - 0.5 }))}
+                              style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #334155', background: '#1e293b', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>-</button>
+                            <input type="range" className="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                              min={-50} max={50} step={0.1} value={opts.profileClipOffset}
+                              onChange={(e) => setOpts(p => ({ ...p, profileClipOffset: parseFloat(e.target.value) }))} />
+                            <button onClick={() => setOpts(p => ({ ...p, profileClipOffset: p.profileClipOffset + 0.5 }))}
+                              style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #334155', background: '#1e293b', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>+</button>
                           </div>
 
-                          <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-                             <button 
-                              onClick={() => toggleOpt('profileClipFlip')}
-                              style={{ flex: 1, padding: '4px', background: '#1e293b', color: '#94a3b8', fontSize: '9px', border: '1px solid #334155', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
-                            >
-                              <span className="material-symbols-outlined text-xs">swap_horiz</span>
-                              Otočiť
-                            </button>
-                            <button 
-                              onClick={() => {
-                                setActiveProfilePoints(null)
-                                setOpts(p => ({ ...p, profileClipOffset: 0 }))
-                              }}
-                              style={{ padding: '4px 8px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', fontSize: '9px', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '4px', cursor: 'pointer' }}
-                              title="Zrušiť rez"
-                            >
-                              <span className="material-symbols-outlined text-xs">delete</span>
-                            </button>
-                          </div>
-                          <p style={{ fontSize: '9px', color: '#64748b', textAlign: 'center', fontFamily: 'monospace' }}>
-                            {activeProfilePoints[0].name} → {activeProfilePoints[1].name}
-                          </p>
+                          <button 
+                            onClick={() => toggleOpt('profileClipFlip')}
+                            style={{ width: '100%', padding: '6px', background: '#1e293b', color: '#94a3b8', fontSize: '10px', border: '1px solid #334155', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px', display: 'block' }}>swap_horiz</span>
+                            <span>{t('clipping.flip')}</span>
+                          </button>
                         </div>
                       )}
                     </div>
-                  )}
                 </div>
 
-              {/* ── VRSTVY (survey) ── */}
+                {/* ── VRSTVY (survey) ── */}
                 <div>
-                  <div className="s-label">Merania</div>
-                  {([
-                    { key: 'showSplay' as const, colorKey: 'colorSplay' as const, label: 'Splay merania' },
-                    { key: 'showGrid'  as const, colorKey: 'colorGrid' as const, label: 'Mriežka' },
-                  ]).map(({ key, colorKey, label }) => (
-                    <div className="toggle-row" key={key}>
+                  <div className="s-label">{t('survey.title')}</div>
+                    <div className="toggle-row">
                       <label className="toggle-label">
-                        <div className="dot" style={{ background: colorKey ? (opts[colorKey] as string) : '#1e3a6e', border: '1px solid rgba(255,255,255,.2)' }} />
-                        {label}
-                        {colorKey && <ColorPicker value={opts[colorKey] as string} onChange={(c) => setOpts(p => ({ ...p, [colorKey]: c }))} />}
+                        <div className="dot" style={{ background: opts.colorSplay }} />
+                        {t('survey.splay')}
+                        <ColorPicker value={opts.colorSplay} onChange={(c) => setOpts(p => ({ ...p, colorSplay: c }))} />
                       </label>
-                      <div className={`switch${opts[key] ? ' on' : ''}`}
-                        onClick={() => toggleOpt(key)} role="switch"
-                        aria-checked={opts[key] as boolean} tabIndex={0}
-                        onKeyDown={e => e.key === 'Enter' && toggleOpt(key)} />
+                      <div className={`switch${opts.showSplay ? ' on' : ''}`}
+                        onClick={() => toggleOpt('showSplay')} role="switch"
+                        aria-checked={opts.showSplay} tabIndex={0} />
                     </div>
-                  ))}
+                    <div className="toggle-row">
+                      <label className="toggle-label">
+                        <div className="dot" style={{ background: opts.colorGrid }} />
+                        {t('survey.grid')}
+                        <ColorPicker value={opts.colorGrid} onChange={(c) => setOpts(p => ({ ...p, colorGrid: c }))} />
+                      </label>
+                      <div className={`switch${opts.showGrid ? ' on' : ''}`}
+                        onClick={() => toggleOpt('showGrid')} role="switch"
+                        aria-checked={opts.showGrid} tabIndex={0} />
+                    </div>
+                    <div className="toggle-row">
+                      <label className="toggle-label">{t('survey.bbox')}</label>
+                      <div className={`switch${opts.showBoundingBox ? ' on' : ''}`}
+                        onClick={() => toggleOpt('showBoundingBox')} role="switch"
+                        aria-checked={opts.showBoundingBox} tabIndex={0} />
+                    </div>
+                    <div className="toggle-row">
+                      <label className="toggle-label">{t('survey.altitude')}</label>
+                      <div className={`switch${opts.traverseAltitude ? ' on' : ''}`}
+                        onClick={() => toggleOpt('traverseAltitude')} role="switch"
+                        aria-checked={opts.traverseAltitude} tabIndex={0} />
+                    </div>
+                    <div className="toggle-row">
+                      <label className="toggle-label">
+                        <div className="dot" style={{ background: opts.colorTraverse }} />
+                        {t('survey.tubes')}
+                        <ColorPicker value={opts.colorTraverse} onChange={(c) => setOpts(p => ({ ...p, colorTraverse: c }))} />
+                      </label>
+                      <div className={`switch${opts.showTraverse ? ' on' : ''}`}
+                        onClick={() => toggleOpt('showTraverse')} role="switch"
+                        aria-checked={opts.showTraverse} tabIndex={0} />
+                    </div>
 
-                  <div className="toggle-row">
-                    <label className="toggle-label">
-                      <div className="dot" style={{ background: opts.colorBoundingBox, border: '1px solid rgba(255,255,255,.2)' }} />
-                      Bounding Box
-                      <ColorPicker value={opts.colorBoundingBox} onChange={(c) => setOpts(p => ({ ...p, colorBoundingBox: c }))} />
-                    </label>
-                    <div className={`switch${opts.showBoundingBox ? ' on' : ''}`}
-                      onClick={() => toggleOpt('showBoundingBox')} role="switch"
-                      aria-checked={opts.showBoundingBox} tabIndex={0}
-                      onKeyDown={e => e.key === 'Enter' && toggleOpt('showBoundingBox')} />
-                  </div>
-
-                  {/* Farebné podľa výšky pre merania */}
-                  <div className="toggle-row">
-                    <label className="toggle-label">
-                      <div className="dot" style={{ background: 'linear-gradient(180deg,#e53935 0%,#f9a825 40%,#43a047 70%,#1565c0 100%)', border: 'none' }} />
-                      Farebné podľa výšky
-                    </label>
-                    <div className={`switch${opts.traverseAltitude ? ' on' : ''}`}
-                      onClick={() => toggleOpt('traverseAltitude')} role="switch"
-                      aria-checked={opts.traverseAltitude} tabIndex={0}
-                      onKeyDown={e => e.key === 'Enter' && toggleOpt('traverseAltitude')} />
-                  </div>
-
-                  {/* Polygonový ťah — 3D rúrky */}
-                  <div className="toggle-row">
-                    <label className="toggle-label">
-                      <div className="dot" style={{ background: opts.colorTraverse, borderRadius: '50%', border: '1px solid rgba(255,255,255,.2)' }} />
-                      Polygonový ťah (3D)
-                      <ColorPicker value={opts.colorTraverse} onChange={(c) => setOpts(p => ({ ...p, colorTraverse: c }))} />
-                    </label>
-                    <div className={`switch${opts.showTraverse ? ' on' : ''}`}
-                      onClick={() => toggleOpt('showTraverse')} role="switch"
-                      aria-checked={opts.showTraverse} tabIndex={0}
-                      onKeyDown={e => e.key === 'Enter' && toggleOpt('showTraverse')} />
-                  </div>
-                  {opts.showTraverse && (
-                    <div className="slider-row">
-                      <div className="slider-top">
-                        <span>Polomer rúrky</span>
-                        <span className="slider-val">{opts.traverseRadius.toFixed(1)} m</span>
+                    {opts.showTraverse && (
+                      <div style={{ marginTop: '8px', padding: '0 4px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
+                          <span>{t('survey.tubes')} - {t('terrain.wire').toLowerCase()}</span>
+                          <span style={{ color: '#4fc3f7' }}>{(opts.traverseRadius * 100).toFixed(0)} cm</span>
+                        </div>
+                        <input type="range" min={0.01} max={1.5} step={0.01}
+                          value={opts.traverseRadius}
+                          onChange={e => setOpts(p => ({ ...p, traverseRadius: Number(e.target.value) }))}
+                          className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
                       </div>
-                      <input type="range" min={1} max={30} step={1}
-                        value={Math.round(opts.traverseRadius * 10)}
-                        onChange={e => setOpts(p => ({ ...p, traverseRadius: Number(e.target.value) / 10 }))} />
-                    </div>
-                  )}
+                    )}
                 </div>
 
                 {/* ── STENY JASKYNE (scraps) ── */}
                 {cave.scrapCount > 0 && (
                   <div>
-                    <div className="s-label">Steny jaskyne</div>
-
-                    {/* Master toggle */}
+                    <div className="s-label">{t('cave.title')}</div>
                     <div className="toggle-row">
-                      <label className="toggle-label">
-                        <div className="dot" style={{ background: '#f6ad55' }} />
-                        Zobraziť steny
-                      </label>
+                      <label className="toggle-label">{t('cave.show')}</label>
                       <div className={`switch${opts.showScraps ? ' on' : ''}`}
                         onClick={() => toggleOpt('showScraps')} role="switch"
-                        aria-checked={opts.showScraps} tabIndex={0}
-                        onKeyDown={e => e.key === 'Enter' && toggleOpt('showScraps')} />
+                        aria-checked={opts.showScraps} tabIndex={0} />
                     </div>
 
                     {opts.showScraps && (
                       <>
-                        {/* Nový Smoothing Switch */}
                         <div className="toggle-row">
-                          <label className="toggle-label" style={{ color: '#fbbf24' }}>
-                            <div className="dot" style={{ background: '#fbbf24', boxShadow: '0 0 6px #fbbf24' }} />
-                            Organický / Vyhladený
-                          </label>
+                          <label className="toggle-label">{t('cave.organic')}</label>
                           <div className={`switch${opts.smoothScraps ? ' on' : ''}`}
                             onClick={() => toggleOpt('smoothScraps')} role="switch"
-                            aria-checked={opts.smoothScraps} tabIndex={0}
-                            style={opts.smoothScraps ? { background: '#fbbf24' } : {}}
-                            onKeyDown={e => e.key === 'Enter' && toggleOpt('smoothScraps')} />
+                            aria-checked={opts.smoothScraps} tabIndex={0} />
                         </div>
-
-                        {/* Render Mode 3D */}
                         <div className="toggle-row">
-                          <label className="toggle-label" style={{ color: '#63b3ed', fontWeight: 700 }}>
-                            <div className="dot" style={{ background: 'url(/assets/cave_rock.png)', backgroundSize: 'cover', border: '1px solid #63b3ed' }} />
-                            Render model 3D
-                          </label>
+                          <label className="toggle-label">{t('cave.render3d')}</label>
                           <div className={`switch${opts.showRenderCave ? ' on' : ''}`}
                             onClick={() => toggleOpt('showRenderCave')} role="switch"
-                            aria-checked={opts.showRenderCave} tabIndex={0}
-                            style={opts.showRenderCave ? { background: '#63b3ed' } : {}}
-                            onKeyDown={e => e.key === 'Enter' && toggleOpt('showRenderCave')} />
+                            aria-checked={opts.showRenderCave} tabIndex={0} />
                         </div>
-
-                        {opts.showRenderCave && (
-                          <div style={{ padding: '4px 0 12px 12px', borderLeft: '2px solid rgba(99,179,237,0.2)', marginBottom: 8 }}>
-                            <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 6, textTransform: 'uppercase' }}>Typ povrchu</div>
-                            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                              {[
-                                { id: 'rock', n: 'Základná', img: '/assets/cave_rock.png' },
-                                { id: 'limestone', n: 'Vápenec', img: '/assets/cave_limestone.png' },
-                                { id: 'granite', n: 'Granit', img: '/assets/cave_granite.png' },
-                              ].map(t => (
-                                <div key={t.id}
-                                  onClick={() => setOpts(p => ({ ...p, caveTexture: t.id as any }))}
-                                  style={{ 
-                                    width: 32, height: 32, borderRadius: 6, cursor: 'pointer',
-                                    backgroundImage: `url(${t.img})`, backgroundSize: 'cover',
-                                    border: opts.caveTexture === t.id ? '2px solid #63b3ed' : '1px solid rgba(255,255,255,0.1)',
-                                    boxShadow: opts.caveTexture === t.id ? '0 0 8px rgba(99,179,237,0.5)' : 'none'
-                                  }}
-                                  title={t.n} />
-                              ))}
-                            </div>
-                            <div className="slider-row" style={{ marginTop: 0 }}>
-                              <div className="slider-top">
-                                <span style={{ fontSize: 10 }}>Priehľadnosť textúry</span>
-                                <span className="slider-val" style={{ fontSize: 10 }}>{Math.round(opts.renderOpacity * 100)}%</span>
-                              </div>
-                              <input type="range" min={5} max={100} step={5}
-                                value={Math.round(opts.renderOpacity * 100)}
-                                onChange={e => setOpts(p => ({ ...p, renderOpacity: Number(e.target.value) / 100 }))} />
-                            </div>
+                        {([
+                          { key: 'scrapsSolid' as const, label: t('cave.mesh') },
+                          { key: 'scrapsWireframe' as const, label: t('cave.wire') },
+                          { key: 'scrapsAltitude' as const, label: t('cave.altitude') },
+                        ] as const).map(({ key, label }) => (
+                          <div className="toggle-row" key={key}>
+                            <label className="toggle-label">{label}</label>
+                            <div className={`switch${opts[key] ? ' on' : ''}`}
+                              onClick={() => toggleOpt(key)} role="switch"
+                              aria-checked={opts[key]} tabIndex={0} />
                           </div>
-                        )}
-
-                        {/* Solid tieňovaný mesh */}
-                        <div className="toggle-row">
-                          <label className="toggle-label">
-                            <div className="dot" style={{ background: opts.colorScraps }} />
-                            Trojuholník. mesh
-                            <ColorPicker value={opts.colorScraps} onChange={(c) => setOpts(p => ({ ...p, colorScraps: c }))} />
-                          </label>
-                          <div className={`switch${opts.scrapsSolid ? ' on' : ''}`}
-                            onClick={() => toggleOpt('scrapsSolid')} role="switch"
-                            aria-checked={opts.scrapsSolid} tabIndex={0}
-                            onKeyDown={e => e.key === 'Enter' && toggleOpt('scrapsSolid')} />
-                        </div>
-
-                        {/* Drôtený model */}
-                        <div className="toggle-row">
-                          <label className="toggle-label">
-                            <div className="dot" style={{ background: opts.colorScrapsWire, border: '1px solid #4a5568' }} />
-                            Drôtený model
-                            <ColorPicker value={opts.colorScrapsWire} onChange={(c) => setOpts(p => ({ ...p, colorScrapsWire: c }))} />
-                          </label>
-                          <div className={`switch${opts.scrapsWireframe ? ' on' : ''}`}
-                            onClick={() => toggleOpt('scrapsWireframe')} role="switch"
-                            aria-checked={opts.scrapsWireframe} tabIndex={0}
-                            onKeyDown={e => e.key === 'Enter' && toggleOpt('scrapsWireframe')} />
-                        </div>
-
-                        {/* Farebné podľa výšky */}
-                        <div className="toggle-row">
-                          <label className="toggle-label">
-                            <div className="dot" style={{ background: 'linear-gradient(180deg,#e53935 0%,#f9a825 40%,#43a047 70%,#1565c0 100%)', border: 'none' }} />
-                            Farebné podľa výšky
-                          </label>
-                          <div className={`switch${opts.scrapsAltitude ? ' on' : ''}`}
-                            onClick={() => toggleOpt('scrapsAltitude')} role="switch"
-                            aria-checked={opts.scrapsAltitude} tabIndex={0}
-                            onKeyDown={e => e.key === 'Enter' && toggleOpt('scrapsAltitude')} />
-                        </div>
-
-                        {/* Opacity slider */}
-                        {(opts.scrapsSolid || opts.scrapsAltitude) && (
-                          <div className="slider-row">
-                            <div className="slider-top">
-                              <span>Priehľadnosť</span>
-                              <span className="slider-val">{Math.round(opts.scrapsOpacity * 100)}%</span>
-                            </div>
-                            <input type="range" min={5} max={100} step={5}
-                              value={Math.round(opts.scrapsOpacity * 100)}
-                              onChange={e => setOpacity('scrapsOpacity', Number(e.target.value) / 100)} />
-                          </div>
-                        )}
+                        ))}
                       </>
                     )}
                   </div>
                 )}
 
-                {/* ── TERÉN (surface) — len LOX ── */}
+                {/* ── TERÉN (surface) ── */}
                 {cave.hasSurface && (
                   <div>
-                    <div className="s-label">Terén (povrch)</div>
-
-                    {/* Tieňovaný solid mesh */}
+                    <div className="s-label">{t('terrain.title')}</div>
                     <div className="toggle-row">
                       <label className="toggle-label">
                         <div className="dot" style={{ background: opts.surfaceColor }} />
-                        Tieňovaný model
+                        {t('terrain.shaded')}
                         <ColorPicker value={opts.surfaceColor} onChange={(c) => setOpts(p => ({ ...p, surfaceColor: c }))} />
                       </label>
                       <div className={`switch${opts.showSurfaceMesh ? ' on' : ''}`}
                         onClick={() => toggleOpt('showSurfaceMesh')} role="switch"
-                        aria-checked={opts.showSurfaceMesh} tabIndex={0}
-                        onKeyDown={e => e.key === 'Enter' && toggleOpt('showSurfaceMesh')} />
+                        aria-checked={opts.showSurfaceMesh} tabIndex={0} />
                     </div>
-
-
-                    {/* Drôtená sieť terénu */}
                     <div className="toggle-row">
                       <label className="toggle-label">
                         <div className="dot" style={{ background: opts.colorTerrainWire, border: '1px solid #4a7c3f' }} />
-                        Drôtená sieť
+                        {t('terrain.wire')}
                         <ColorPicker value={opts.colorTerrainWire} onChange={(c) => setOpts(p => ({ ...p, colorTerrainWire: c }))} />
                       </label>
                       <div className={`switch${opts.showSurfaceMeshWire ? ' on' : ''}`}
                         onClick={() => toggleOpt('showSurfaceMeshWire')} role="switch"
-                        aria-checked={opts.showSurfaceMeshWire} tabIndex={0}
-                        onKeyDown={e => e.key === 'Enter' && toggleOpt('showSurfaceMeshWire')} />
+                        aria-checked={opts.showSurfaceMeshWire} tabIndex={0} />
                     </div>
-
-                    {/* Sieťový model povrchu — farebná výška */}
                     <div className="toggle-row">
                       <label className="toggle-label">
                         <div className="dot" style={{ background: 'linear-gradient(180deg,#e53935 0%,#f9a825 33%,#43a047 66%,#1565c0 100%)', border: 'none' }} />
-                        Sieťový model (výšky)
+                        {t('terrain.network')}
                       </label>
                       <div className={`switch${opts.showSurfaceNetwork ? ' on' : ''}`}
                         onClick={() => toggleOpt('showSurfaceNetwork')} role="switch"
-                        aria-checked={opts.showSurfaceNetwork} tabIndex={0}
-                        onKeyDown={e => e.key === 'Enter' && toggleOpt('showSurfaceNetwork')} />
+                        aria-checked={opts.showSurfaceNetwork} tabIndex={0} />
                     </div>
-
-                    {/* Textura JPG */}
                     <div className="toggle-row">
                       <label className="toggle-label">
                         <div className="dot" style={{ background: '#8fbc8f', border: '1px solid #4a7c3f' }} />
-                        Textura (JPG/PNG)
+                        {t('terrain.texture')}
                       </label>
                       <div className={`switch${opts.showSurfaceTexture ? ' on' : ''}`}
                         onClick={() => toggleOpt('showSurfaceTexture')} role="switch"
-                        aria-checked={opts.showSurfaceTexture} tabIndex={0}
-                        onKeyDown={e => e.key === 'Enter' && toggleOpt('showSurfaceTexture')} />
+                        aria-checked={opts.showSurfaceTexture} tabIndex={0} />
                     </div>
-
-                    {/* Spoločný opacity slider */}
-                    {(opts.showSurfaceMesh || opts.showSurfaceMeshWire || opts.showSurfaceTexture || opts.showSurfaceNetwork) && (
-                      <div className="slider-row">
-                        <div className="slider-top">
-                          <span>Priehľadnosť</span>
-                          <span className="slider-val">{Math.round(opts.surfaceOpacity * 100)}%</span>
-                        </div>
-                        <input type="range" min={5} max={100} step={5}
-                          value={Math.round(opts.surfaceOpacity * 100)}
-                          onChange={e => setOpacity('surfaceOpacity', Number(e.target.value) / 100)} />
+                    
+                    <div style={{ marginTop: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', marginBottom: '6px' }}>
+                        <span>{t('terrain.opacity')}</span>
+                        <span style={{ color: '#818cf8', fontWeight: 'bold' }}>{(opts.surfaceOpacity * 100).toFixed(0)}%</span>
                       </div>
-                    )}
+                      <input type="range" min={5} max={100} step={5}
+                        value={Math.round(opts.surfaceOpacity * 100)}
+                        onChange={e => setOpacity('surfaceOpacity', Number(e.target.value) / 100)}
+                        className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+                    </div>
                   </div>
                 )}
 
-                {/* Stations section */}
                 <div>
-                  <div className="s-label">Stanice</div>
+                  <div className="s-label">{t('stations.title')}</div>
                   <div className="toggle-row">
                     <label className="toggle-label">
                       <div className="dot" style={{ background: opts.colorStations, border: '1px solid rgba(255,255,255,.2)' }} />
-                      Zobraziť body
+                      {t('stations.show')}
                       <ColorPicker value={opts.colorStations} onChange={(c) => setOpts(p => ({ ...p, colorStations: c }))} />
                     </label>
-                    <div
-                      className={`switch${opts.showStations ? ' on' : ''}`}
-                      onClick={() => toggleOpt('showStations')}
-                      role="switch" aria-checked={opts.showStations} tabIndex={0}
-                      onKeyDown={e => e.key === 'Enter' && toggleOpt('showStations')}
-                    />
+                    <div className={`switch${opts.showStations ? ' on' : ''}`}
+                      onClick={() => toggleOpt('showStations')} role="switch"
+                      aria-checked={opts.showStations} tabIndex={0} />
                   </div>
                   <div className="toggle-row">
                     <label className="toggle-label">
                       <div className="dot" style={{ background: opts.colorStationNames }} />
-                      Meno bodu
+                      {t('stations.names')}
                       <ColorPicker value={opts.colorStationNames} onChange={(c) => setOpts(p => ({ ...p, colorStationNames: c }))} />
                     </label>
-                    <div
-                      className={`switch${opts.showStationNames ? ' on' : ''}`}
-                      onClick={() => toggleOpt('showStationNames')}
-                      role="switch" aria-checked={opts.showStationNames} tabIndex={0}
-                      onKeyDown={e => e.key === 'Enter' && toggleOpt('showStationNames')}
-                    />
+                    <div className={`switch${opts.showStationNames ? ' on' : ''}`}
+                      onClick={() => toggleOpt('showStationNames')} role="switch"
+                      aria-checked={opts.showStationNames} tabIndex={0} />
                   </div>
                   <div className="toggle-row">
                     <label className="toggle-label">
                       <div className="dot" style={{ background: opts.colorStationAlt }} />
-                      Nadm. výška (m)
+                      {t('stations.altitude')}
                       <ColorPicker value={opts.colorStationAlt} onChange={(c) => setOpts(p => ({ ...p, colorStationAlt: c }))} />
                     </label>
-                    <div
-                      className={`switch${opts.showStationAlt ? ' on' : ''}`}
-                      onClick={() => toggleOpt('showStationAlt')}
-                      role="switch" aria-checked={opts.showStationAlt} tabIndex={0}
-                      onKeyDown={e => e.key === 'Enter' && toggleOpt('showStationAlt')}
-                    />
+                    <div className={`switch${opts.showStationAlt ? ' on' : ''}`}
+                      onClick={() => toggleOpt('showStationAlt')} role="switch"
+                      aria-checked={opts.showStationAlt} tabIndex={0} />
                   </div>
                 </div>
 
-                {/* Help */}
                 <div>
-                  <div className="s-label">Ovládanie</div>
-                  <div className="help-text">
-                    🖱️ ľavé tlačidlo — otáčanie<br />
-                    🖱️ pravé tlačidlo — posun<br />
-                    🖱️ koliesko — zoom<br />
-                    📱 dotykové gestá podporované
+                  <div className="s-label">{t('ui.help')}</div>
+                  <div className="help-text" style={{ fontSize: '10px', color: '#94a3b8', lineHeight: '1.6', background: 'rgba(30,41,59,0.3)', padding: '8px', borderRadius: '6px' }}>
+                    {t('ui.helpRotate')}<br />
+                    {t('ui.helpPan')}<br />
+                    {t('ui.helpZoom')}<br />
+                    {t('ui.helpTouch')}
                   </div>
                 </div>
 
-                {/* Legend */}
                 <div>
-                  <div className="s-label">Legenda</div>
+                  <div className="s-label">{t('legend.title')}</div>
                   {[
-                    { color: '#4fc3f7', label: 'Merania (cave)' },
-                    { color: '#78909c', label: 'Splaše' },
-                    { color: '#81c784', label: 'Povrch' },
+                    { color: '#4fc3f7', label: t('legend.cave') },
+                    { color: '#78909c', label: t('legend.splay') },
+                    { color: '#81c784', label: t('legend.surface') },
                   ].map(({ color, label }) => (
-                    <div className="toggle-row" key={label}>
+                    <div className="toggle-row" key={label} style={{ marginBottom: '4px' }}>
                       <div className="toggle-label">
                         <div className="dot" style={{ background: color }} />
-                        <span>{label}</span>
+                        <span style={{ fontSize: '11px' }}>{label}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               </aside>
-              </div>
-              <ScaleBar cameraData={cameraData} />
-              <ProcessingOverlay info={processingInfo} />
             </div>
+            <ScaleBar cameraData={cameraData} />
+            <ProcessingOverlay info={processingInfo} lang={lang} />
           </div>
-        )}
-      </div>
+        </div>
+      )}
+    </div>
     </>
   )
 }
