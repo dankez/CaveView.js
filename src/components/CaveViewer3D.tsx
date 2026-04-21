@@ -664,20 +664,32 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
   useEffect(() => {
     if (onProcessingStart) onProcessingStart('Generujem steny jaskyne...')
     
+    let currentSolid: THREE.BufferGeometry | null = null
+    let currentAlt: THREE.BufferGeometry | null = null
+
     const timer = setTimeout(() => {
-      const solid = buildScrapsGeo(cave, false, smooth)
-      const alt = buildScrapsGeo(cave, true, smooth)
-      setGeos({ solid, alt })
+      currentSolid = buildScrapsGeo(cave, false, smooth)
+      currentAlt = buildScrapsGeo(cave, true, smooth)
+      setGeos({ solid: currentSolid, alt: currentAlt })
       if (onProcessingEnd) onProcessingEnd()
     }, 50)
 
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      if (currentSolid) currentSolid.dispose()
+      if (currentAlt) currentAlt.dispose()
+      // Dispose state ones too if they changed
+      if (geos.solid) geos.solid.dispose()
+      if (geos.alt) geos.alt.dispose()
+    }
   }, [cave, smooth])
 
   const solidGeo = geos.solid
   const altGeo = geos.alt
  
-  const rockTex = useMemo(() => {
+  const [rockTex, setRockTex] = useState<THREE.Texture | null>(null)
+
+  useEffect(() => {
     let path = '/assets/cave_rock.png'
     if (caveTexture === 'limestone') path = '/assets/cave_limestone.png'
     if (caveTexture === 'granite')   path = '/assets/cave_granite.png'
@@ -685,7 +697,9 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
     const tex = new THREE.TextureLoader().load(path)
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping
     tex.repeat.set(10, 10)
-    return tex
+    setRockTex(tex)
+    
+    return () => tex.dispose()
   }, [caveTexture])
 
   return (
@@ -1129,10 +1143,10 @@ function EntranceMarkers({ cave, options }: { cave: ParsedCave, options: ViewerO
   )
 }
 
-export default function CaveViewer3D({ 
+const CaveViewer3D = ({ 
   cave, options: o, onStationClick, onSurfaceClick, onBackgroundClick, onMoveStateChange, onCameraUpdate, 
   onProcessingStart, onProcessingEnd, manualConnection, placedCaver, fitTrigger, selectedStations, activeProfilePoints 
-}: Props) {
+}: Props) => {
   const [isMoving, setIsMoving] = useState(false)
   const [camData, setCamData] = useState<{ dist: number, fov: number, height: number } | null>(null)
   const movingTimeout = useRef<any>(null)
@@ -1337,3 +1351,5 @@ export default function CaveViewer3D({
     </Canvas>
   )
 }
+
+export default React.memo(CaveViewer3D)
