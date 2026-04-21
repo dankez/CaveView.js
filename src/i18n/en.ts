@@ -99,9 +99,11 @@ export const en = {
     names: "Station names",
     altitude: "Altitude (m)",
     depth: "Depth below surface",
-    gps: "GPS Coordinates",
+    gps: "GPS coordinates",
     coordinates: "Coordinates",
     id: "Surface point ID",
+    entrances: "Show entrances",
+    entranceLabels: "Cave names (entrance)",
   },
   measuring: {
     title: "Measurement",

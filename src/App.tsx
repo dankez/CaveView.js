@@ -484,8 +484,10 @@ export default function App() {
   const [opts, setOpts] = useState<ViewerOptions>({
     showSplay:           false,
     showStations:        true,
-    showStationNames:    true,
+    showStationNames:    false,
     showStationAlt:      false,
+    showEntrances:       true,
+    showEntranceLabels:  true,
     showGrid:            true,
     colorGrid:           '#222222',
     colorBoundingBox:    '#990000',
@@ -538,6 +540,8 @@ export default function App() {
       colorStations:     '#fbbf24',
       colorStationNames: '#fbbf24',
       colorStationAlt:   '#a5f3fc',
+      showEntrances: true,
+      showEntranceLabels: true,
       colorGrid:         '#224422',
       colorScraps:       '#2a5585',
       colorScrapsWire:   '#6a9fd8',
@@ -552,6 +556,8 @@ export default function App() {
       colorStations:     '#fbbf24',
       colorStationNames: '#fbbf24',
       colorStationAlt:   '#a5f3fc',
+      showEntrances: true,
+      showEntranceLabels: true,
       colorGrid:         '#161e2b',
       colorScraps:       '#2a5585',
       colorScrapsWire:   '#a5f3fc',
@@ -566,6 +572,8 @@ export default function App() {
       colorStations:     '#fbbf24',
       colorStationNames: '#1e293b',
       colorStationAlt:   '#0891b2',
+      showEntrances: true,
+      showEntranceLabels: true,
       colorGrid:         '#cbd5e1',
       colorScraps:       '#94a3b8',
       colorScrapsWire:   '#475569',
@@ -679,7 +687,8 @@ export default function App() {
     }
   }, [selectedStations])
 
-  const findStationByName = useCallback((name: string): SelStation | null => {
+  const stationMeta = new Map<number, { name: string; z: number; isEntrance?: boolean }>()
+  const findStationByName = (name: string): SelStation | null => {
     if (!name) return null
     if (surfPointCache[name]) return surfPointCache[name]
     if (!cave) return null
@@ -703,7 +712,7 @@ export default function App() {
       screenX: window.innerWidth/2 - 140, screenY: window.innerHeight/2 - 150,
       centerX: cave.centerOffset.x, centerY: cave.centerOffset.y, centerZ: cave.centerOffset.z
     }
-  }, [cave, surfPointCache])
+  }
 
   const execManualMeasure = () => {
     const s1 = findStationByName(man1.trim())
@@ -1509,6 +1518,21 @@ export default function App() {
                     <div className={`switch${opts.showStationAlt ? ' on' : ''}`}
                       onClick={() => toggleOpt('showStationAlt')} role="switch"
                       aria-checked={opts.showStationAlt} tabIndex={0} />
+                  </div>
+                  <div className="toggle-row">
+                    <label className="toggle-label">
+                      <div className="dot" style={{ background: '#fb8c00', border: '1px solid white' }} />
+                      {t('stations.entrances')}
+                    </label>
+                    <div className={`switch${opts.showEntrances ? ' on' : ''}`}
+                      onClick={() => toggleOpt('showEntrances')} role="switch"
+                      aria-checked={opts.showEntrances} tabIndex={0} />
+                  </div>
+                  <div className="toggle-row">
+                    <label className="toggle-label">{t('stations.entranceLabels')}</label>
+                    <div className={`switch${opts.showEntranceLabels ? ' on' : ''}`}
+                      onClick={() => toggleOpt('showEntranceLabels')} role="switch"
+                      aria-checked={opts.showEntranceLabels} tabIndex={0} />
                   </div>
                 </div>
 

@@ -20,6 +20,8 @@ export interface StationLabel {
   pos: Vec3        // centered 3-D position (Three.js coords)
   name: string     // station name from file
   altitude: number // original Z (metres above sea level, before centering)
+  isEntrance?: boolean // true if identified as an entrance
+  fullLabel?: string   // more descriptive name (e.g. from comments)
 }
 
 /** Calibration matrix that maps DTM grid (col i, row j) → world X/Y */
@@ -61,7 +63,7 @@ export function parseLox(buffer: ArrayBuffer): ParsedCave {
   const utf8    = new TextDecoder('utf-8')
 
   const stationsById  = new Map<number, Vec3>()
-  const stationMeta   = new Map<number, { name: string; z: number }>()
+  const stationMeta   = new Map<number, { name: string; z: number; isEntrance?: boolean; fullLabel?: string }>()
   const segments:  Segment[]     = []
   const scraps:    Scrap[]       = []
   const surfaces:  CaveSurface[] = []
@@ -83,11 +85,12 @@ export function parseLox(buffer: ArrayBuffer): ParsedCave {
 
   while (pos < l) {
     const m_type     = readUint()
-    const m_recSize  = readUint()
-    const m_recCount = readUint()
-    const m_dataSize = readUint()
+    const m_totalRecSize = readUint()
+    const m_recCount     = readUint()
+    const m_dataSize     = readUint()
 
-    chunkDataStart = pos + m_recSize   // out-of-line area for this chunk
+    const m_recSize = m_recCount > 0 ? m_totalRecSize / m_recCount : 0
+    chunkDataStart = pos + m_totalRecSize   // out-of-line area for this chunk
 
     for (let i = 0; i < m_recCount; i++) {
       switch (m_type) {
@@ -133,25 +136,40 @@ export function parseLox(buffer: ArrayBuffer): ParsedCave {
     readUint()                   // m_surveyId
     const namePtr    = readDataPtr()
     const commentPtr = readDataPtr()
-    readUint()                   // m_flags
-    const coords     = readCoords()
+    const rawName    = readString(namePtr)
+    const rawComment = readString(commentPtr)
+    
+    const lowerText = (rawName + " " + rawComment).toLowerCase()
+    const m_flags = readUint()
+    // Flags v tomto modeli: 0x02 = entrance, 0x01 = surface/point?
+    const isEntrance = (m_flags & 0x02) !== 0 || 
+                       lowerText.includes('vchod') || 
+                       lowerText.includes('vstup') || 
+                       lowerText.includes('entrance') || 
+                       lowerText.includes('zavrt')
+    
+    const x = readFloat64()
+    const y = readFloat64()
+    const z = readFloat64()
+    const coords: Vec3 = { x, y, z }
 
     stationsById.set(m_id, coords)
-    const rawName = readString(namePtr)
+    
+    // Ak je meno len číslo a máme komentár, použi komentár ako plný label
+    const isNum = /^\d+$/.test(rawName)
+    const fullLabel = (isNum && rawComment) ? rawComment : rawName
+
     stationMeta.set(m_id, {
       name: rawName || `[${m_id}]`,
       z:    coords.z,   // original altitude before centering
-    })
+      isEntrance,
+      fullLabel: fullLabel || rawName
+    } as any)
   }
 
   function readCoords(): Vec3 {
-    let key = ''
-    for (let i = 0; i < 24; i++) key += String.fromCharCode(bytes[pos + i])
     const x = readFloat64(); const y = readFloat64(); const z = readFloat64()
-    if (shash[key] !== undefined) return shash[key]
-    const v: Vec3 = { x, y, z }
-    shash[key] = v
-    return v
+    return { x, y, z }
   }
 
   // ── type 3 ─ Shot ────────────────────────────────────────────────────────────
@@ -394,7 +412,7 @@ export function parsePlt(text: string): ParsedCave {
 function buildResult(
   segments:    Segment[],
   stations:    Vec3[],
-  stationMeta: Map<number, { name: string; z: number }>,
+  stationMeta: Map<number, { name: string; z: number; isEntrance?: boolean; fullLabel?: string }>,
   scraps:      Scrap[],
   surfaces:    CaveSurface[],
   stationIds?: number[]
@@ -440,6 +458,8 @@ function buildResult(
       pos,
       name:     n,
       altitude: meta?.z        ?? (pos.z + cz),   // original altitude in metres
+      isEntrance: meta?.isEntrance,
+      fullLabel:  meta?.fullLabel
     }
   })
 

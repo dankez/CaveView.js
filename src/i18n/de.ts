@@ -101,7 +101,9 @@ export const de = {
     depth: "Tiefe unter der Oberfläche",
     gps: "GPS-Koordinaten",
     coordinates: "Koordinaten",
-    id: "Oberflächenpunkt ID",
+    id: "Oberflächenpunkt-ID",
+    entrances: "Eingänge anzeigen",
+    entranceLabels: "Höhlennamen (Eingang)",
   },
   measuring: {
     title: "Messung",

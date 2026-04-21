@@ -23,6 +23,8 @@ export interface ViewerOptions {
   showStations:        boolean
   showStationNames:    boolean
   showStationAlt:      boolean
+  showEntrances:       boolean
+  showEntranceLabels:  boolean
   // Grid
   showGrid:            boolean
   colorGrid:           string
@@ -1020,6 +1022,65 @@ interface Props {
   activeProfilePoints?: SelStation[] | null
 }
 
+// ─── Entrance Markers ─────────────────────────────────────────────────────────
+function EntranceMarkers({ cave, options }: { cave: ParsedCave, options: ViewerOptions }) {
+  if (!options.showEntrances) return null
+  
+  const entrances = cave.stationLabels.filter(l => l.isEntrance)
+  if (entrances.length === 0) return null
+
+  return (
+    <group>
+      {entrances.map((ent, i) => (
+        <group key={ent.name + i} position={[ent.pos.x, ent.pos.z, -ent.pos.y]}>
+          {/* Symbol vchodu */}
+          <Html center distanceFactor={15} zIndexRange={[10, 0]}>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              pointerEvents: 'none',
+              userSelect: 'none'
+            }}>
+              <div style={{
+                background: 'rgba(255, 167, 38, 0.9)',
+                color: 'white',
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 0 10px rgba(255, 167, 38, 0.5)',
+                border: '2px solid white'
+              }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '16px', fontWeight: 'bold' }}>mountain_flag</span>
+              </div>
+              
+              {options.showEntranceLabels && (
+                <div style={{
+                  marginTop: '4px',
+                  background: 'rgba(15, 23, 42, 0.8)',
+                  color: '#fbbf24',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  whiteSpace: 'nowrap',
+                  border: '1px solid rgba(251, 191, 36, 0.3)',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                }}>
+                  {ent.fullLabel || ent.name}
+                </div>
+              )}
+            </div>
+          </Html>
+        </group>
+      ))}
+    </group>
+  )
+}
+
 export default function CaveViewer3D({ 
   cave, options: o, onStationClick, onSurfaceClick, onBackgroundClick, onMoveStateChange, onCameraUpdate, 
   onProcessingStart, onProcessingEnd, manualConnection, placedCaver, fitTrigger, selectedStations, activeProfilePoints 
@@ -1129,6 +1190,9 @@ export default function CaveViewer3D({
       />
       
       <directionalLight position={[0, -2, 0]}   intensity={0.05} />
+
+      {/* ── Entrances ── */}
+      <EntranceMarkers cave={cave} options={o} />
 
       {/* ── Terrain ── */}
       {(o.showSurfaceMesh || o.showSurfaceMeshWire || o.showSurfaceTexture || o.showSurfaceNetwork) && cave.surfaces?.map((surf, i) => (

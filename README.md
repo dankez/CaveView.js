@@ -11,6 +11,7 @@ Moderná webová aplikácia na 3D vizualizáciu jaskynných systémov, vybudovan
 - **Výškové farbenie (Altitude):** Automatický farebný gradient podľa nadmorskej výšky pre steny, polygonové ťahy aj 3D rúrky.
 - **Terén a Povrch:** Zobrazenie topografického povrchu s podporou tieňovania, sieťových modelov a satelitných textúr.
 - **Splay vizualizácia:** Voliteľné zobrazenie a filtrovanie slepých zamerov (splays).
+- **Vizualizácia vchodov:** Interaktívne symboly vchodov a názvy jaskýň v 3D scéne s nezávislým ovládaním viditeľnosti.
 
 ### 🛠️ Technické nástroje a Meranie
 - **Interaktívne stanice:** Kliknutím na bod získate podrobné informácie: hĺbka pod povrchom, nadmorská výška a presné GPS súradnice (WGS84) prepočítané z UTM.
@@ -46,6 +47,22 @@ Moderná webová aplikácia na 3D vizualizáciu jaskynných systémov, vybudovan
    ```bash
    npm run build
    ```
+
+## 🆕 Release Notes - 21.04.2026-02 (Entrance Visualization & Parser Fixes)
+
+Tento update pridáva kriticky dôležitú vrstvu vizualizácie vchodov a opravuje hĺbkovú logiku parsera pre modely s viacerými jaskynnými systémami.
+
+- **Interaktívna Vizualizácia Vchodov:**
+  - **Symboly a Labely:** Automatické generovanie oranžových ikon vchodov a popiskov s názvom jaskyne.
+  - **Nezávislé Ovládanie:** Nové prepínače v bočnom paneli umožňujú samostatne vypnúť symboly vchodov alebo ich názvy.
+  - **Inteligentné Popisky:** Ak je meno bodu len číslo, aplikácia prioritne zobrazí popis z komentára (napr. "Dvojzavrt" namiesto "1").
+  - **Upravená Heuristika:** Detekcia vchodov podľa kľúčových slov (vchod, vstup, entrance, zavrt) aj priamo z Therion flagov.
+- **Zásadné Opravy LOX Parsera:**
+  - **Oprava Chunk Logiky:** Opravený výpočet veľkosti záznamov (`m_recSize`), čo rieši problémy s načítaním metadát v komplexných súboroch s viacerými záznamami v jednom bloku.
+  - **Bitová Detekcia:** Implementovaná podpora pre identifikáciu vchodov pomocou bitových príznakov (`m_flags`), čo zaručuje stabilitu aj pri neštandardných názvoch bodov.
+- **UI a Lokalizácia:**
+  - Doplnené preklady pre vchody do všetkých jazykov (**SK, EN, FR, DE**).
+  - Opravené súradnicové zarovnanie vchodov v 3D scéne (zjednotenie osí X, Z, -Y).
 
 ## 🆕 Release Notes - 21.04.2026-01 (Internationalization & UI Polish)
 

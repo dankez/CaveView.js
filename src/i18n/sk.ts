@@ -102,6 +102,8 @@ export const sk = {
     gps: "GPS súradnice",
     coordinates: "Súradnice",
     id: "Bod povrchu ID",
+    entrances: "Zobraziť vchody",
+    entranceLabels: "Mená jaskýň (vchod)",
   },
   measuring: {
     title: "Meranie",

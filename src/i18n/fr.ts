@@ -101,7 +101,9 @@ export const fr = {
     depth: "Profondeur sous la surface",
     gps: "Coordonnées GPS",
     coordinates: "Coordonnées",
-    id: "ID du point de surface",
+    id: "ID point surface",
+    entrances: "Afficher les entrées",
+    entranceLabels: "Noms des grottes (entrée)",
   },
   measuring: {
     title: "Mesure",
