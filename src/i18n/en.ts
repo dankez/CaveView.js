@@ -84,6 +84,9 @@ export const en = {
     mesh: "Triangle mesh",
     wire: "Wireframe model",
     altitude: "Color by height",
+    floorMapUpload: 'Upload SVG/TH2/PDF map',
+    floorMapOpacity: 'Map opacity',
+    manualCalibrate: 'Calibration',
   },
   survey: {
     title: "Survey",

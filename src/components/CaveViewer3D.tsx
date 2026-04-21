@@ -69,6 +69,12 @@ export interface ViewerOptions {
   profileClipFlip:     boolean
   profileClipOffset:   number
   clippingPlanes?:     any[]
+
+  // Floor Map
+  floorMapSvg:         string | null
+  floorMapTh2:         any | null  // Parsed Th2Scrap[]
+  floorMapOpacity:     number
+  manualMatches:       { src: { x: number; y: number }; dst: { x: number; y: number } }[] | null
 }
 
 // ─── Clickable stations (neviditelné gule, raycasting) & Hover Highlight ───
@@ -661,6 +667,67 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
 }) => {
   const { onProcessingStart, onProcessingEnd } = props as any;
   const [geos, setGeos] = useState<{ solid: THREE.BufferGeometry | null, alt: THREE.BufferGeometry | null }>({ solid: null, alt: null })
+  const [floorTex, setFloorTex] = useState<THREE.Texture | null>(null)
+  const [floorAffine, setFloorAffine] = useState<{a:number,b:number,c:number,d:number,e:number,f:number} | null>(null)
+
+  useEffect(() => {
+    if (!options.floorMapSvg && !options.floorMapTh2) { setFloorTex(null); return }
+    
+    if (options.floorMapSvg) {
+      const isDataUrl = options.floorMapSvg.startsWith('data:image')
+      let processedSvg = options.floorMapSvg
+      
+      if (!isDataUrl) {
+        processedSvg = processedSvg.replace(/fill=["']#?ffffff["']/gi, 'fill="none" fill-opacity="0"')
+        processedSvg = processedSvg.replace(/fill=["']white["']/gi, 'fill="none" fill-opacity="0"')
+        processedSvg = processedSvg.replace(/fill=["']#?f2f4ea["']/gi, 'fill="none" fill-opacity="0"')
+        processedSvg = processedSvg.replace(/fill=["']#?f9f9f7["']/gi, 'fill="none" fill-opacity="0"')
+        processedSvg = processedSvg.replace(/stroke=["']#?ffffff["']/gi, 'stroke="none" stroke-opacity="0"')
+        const styleInjection = `<style>svg { background: transparent !important; } rect[fill="#f2f4ea"], path[fill="#f2f4ea"], rect[fill="#f9f9f7"] { display: none !important; } [fill="white"], [fill="#ffffff"] { fill: none !important; fill-opacity: 0 !important; }</style>`
+        processedSvg = processedSvg.replace(/(<svg[^>]*>)/i, `$1${styleInjection}`)
+      }
+
+      const img = new Image()
+      const url = isDataUrl ? options.floorMapSvg : URL.createObjectURL(new Blob([processedSvg], { type: 'image/svg+xml;charset=utf-8' }))
+      img.onload = () => {
+        const tex = new THREE.Texture(img); tex.needsUpdate = true; setFloorTex(tex)
+        if (!isDataUrl) URL.revokeObjectURL(url)
+      }
+      img.src = url
+
+      if (options.manualMatches && options.manualMatches.length >= 2) {
+        setFloorAffine(solveAffine(options.manualMatches))
+      } else {
+        const svgStations = parseSVGStations(options.floorMapSvg)
+        const matches: any[] = []
+        svgStations.forEach(ss => {
+          const caveS = cave.stationLabels.find(l => l.name === ss.name)
+          if (caveS) matches.push({ src: { x: caveS.pos.x, y: -caveS.pos.z }, dst: { x: ss.x, y: ss.y } })
+        })
+        if (matches.length >= 2) setFloorAffine(solveAffine(matches))
+      }
+    } else if (options.floorMapTh2) {
+      const scraps = options.floorMapTh2 as any[]
+      const canvas = document.createElement('canvas'); canvas.width = 2048; canvas.height = 2048
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+        scraps.forEach(s => {
+          s.lines.forEach((l: any) => l.points.forEach((p: any) => { minX = Math.min(minX, p.x); minY = Math.min(minY, p.y); maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y) }))
+          s.points.forEach((p: any) => { minX = Math.min(minX, p.x); minY = Math.min(minY, p.y); maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y) })
+        })
+        const w = maxX - minX, h = maxY - minY, pad = 20
+        const scale = Math.min((canvas.width-pad*2)/w, (canvas.height-pad*2)/h)
+        const ox = (canvas.width - w*scale)/2 - minX*scale, oy = (canvas.height - h*scale)/2 - minY*scale
+        ctx.clearRect(0,0,2048,2048); ctx.strokeStyle = 'white'; ctx.lineWidth = 2
+        scraps.forEach(s => s.lines.forEach((l: any) => { ctx.beginPath(); l.points.forEach((p: any, i: number) => { if (i===0) ctx.moveTo(p.x*scale+ox, p.y*scale+oy); else ctx.lineTo(p.x*scale+ox, p.y*scale+oy) }); ctx.stroke() }))
+        const tex = new THREE.CanvasTexture(canvas); setFloorTex(tex)
+        const matches: any[] = []
+        scraps.forEach(s => s.points.forEach((p: any) => { const caveS = cave.stationLabels.find(l => l.name === p.name); if (caveS) matches.push({ src: { x: caveS.pos.x, y: -caveS.pos.z }, dst: { x: p.x, y: p.y } }) }))
+        if (matches.length >= 2) setFloorAffine(solveAffine(matches))
+      }
+    }
+  }, [options.floorMapSvg, options.floorMapTh2, options.manualMatches, cave])
 
   useEffect(() => {
     if (onProcessingStart) onProcessingStart('Generujem steny jaskyne...')
@@ -740,6 +807,33 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
         <mesh geometry={solidGeo} renderOrder={10}>
           <meshBasicMaterial color={options.colorScrapsWire} wireframe depthWrite={false} transparent={true}
             opacity={isMoving ? 0.4 : (showSolid || showAltitude ? 0.28 : 0.65)} />
+        </mesh>
+      )}
+      {(options.floorMapSvg || options.floorMapTh2) && floorTex && floorAffine && solidGeo && (
+        <mesh geometry={solidGeo} renderOrder={2}>
+          <meshBasicMaterial 
+            map={floorTex} 
+            transparent={true} 
+            opacity={options.floorMapOpacity}
+            side={THREE.DoubleSide}
+            depthWrite={false}
+            polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-1}
+            onBeforeCompile={(shader) => {
+              shader.uniforms.uAffine = { value: [floorAffine.a, floorAffine.b, floorAffine.c, floorAffine.d, floorAffine.e, floorAffine.f] }
+              shader.vertexShader = `
+                uniform float uAffine[6];
+                ${shader.vertexShader}
+              `.replace(
+                '#include <uv_vertex>',
+                `
+                vUv = vec2(
+                  uAffine[0] * position.x + uAffine[1] * (-position.z) + uAffine[2],
+                  uAffine[3] * position.x + uAffine[4] * (-position.z) + uAffine[5]
+                );
+                `
+              )
+            }}
+          />
         </mesh>
       )}
     </>
@@ -1096,42 +1190,53 @@ function EntranceMarkers({ cave, options }: { cave: ParsedCave, options: ViewerO
     <group>
       {entrances.map((ent, i) => (
         <group key={ent.name + i} position={[ent.pos.x, ent.pos.z, -ent.pos.y]}>
-          {/* Symbol vchodu */}
-          <Html center distanceFactor={15} zIndexRange={[10, 0]}>
+          {/* Vertical pin line */}
+          <mesh position={[0, 2, 0]}>
+            <cylinderGeometry args={[0.05, 0.05, 4]} />
+            <meshBasicMaterial color="#fbbf24" />
+          </mesh>
+
+          {/* Entrance Symbol and Label */}
+          <Html center distanceFactor={20} zIndexRange={[100, 0]} position={[0, 4, 0]}>
             <div style={{
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               pointerEvents: 'none',
-              userSelect: 'none'
+              userSelect: 'none',
+              transform: 'translateY(-50%)'
             }}>
+              {/* SVG Mountain Icon */}
               <div style={{
-                background: 'rgba(255, 167, 38, 0.9)',
-                color: 'white',
-                width: '24px',
-                height: '24px',
+                background: 'linear-gradient(135deg, #f59e0b, #fbbf24)',
+                padding: '5px',
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 0 10px rgba(255, 167, 38, 0.5)',
-                border: '2px solid white'
+                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                border: '2px solid white',
+                width: '28px',
+                height: '28px'
               }}>
-                <span className="material-symbols-outlined" style={{ fontSize: '16px', fontWeight: 'bold' }}>mountain_flag</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1e293b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                   <path d="M8 3l4 8 5-5 5 15H2L8 3z" />
+                </svg>
               </div>
               
               {options.showEntranceLabels && (
                 <div style={{
-                  marginTop: '4px',
-                  background: 'rgba(15, 23, 42, 0.8)',
+                  marginTop: '6px',
+                  background: 'rgba(15, 23, 42, 0.9)',
                   color: '#fbbf24',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  fontSize: '10px',
-                  fontWeight: 700,
+                  padding: '3px 10px',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  fontWeight: 800,
                   whiteSpace: 'nowrap',
-                  border: '1px solid rgba(251, 191, 36, 0.3)',
-                  textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                  border: '1.5px solid rgba(251, 191, 36, 0.5)',
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.5)',
+                  backdropFilter: 'blur(4px)'
                 }}>
                   {ent.fullLabel || ent.name}
                 </div>
@@ -1354,3 +1459,47 @@ const CaveViewer3D = ({
 }
 
 export default React.memo(CaveViewer3D)
+
+// ─── Map Georeferencing Utilities ─────────────────────────────────────────────
+
+function solveAffine(matches: { src: {x:number, y:number}, dst: {x:number, y:number} }[]) {
+  if (matches.length < 2) return { a:1, b:0, c:0, d:0, e:1, f:0 }
+  
+  let srcX = 0, srcY = 0, dstX = 0, dstY = 0
+  matches.forEach(m => { srcX += m.src.x; srcY += m.src.y; dstX += m.dst.x; dstY += m.dst.y })
+  srcX /= matches.length; srcY /= matches.length; dstX /= matches.length; dstY /= matches.length
+  
+  let sxx=0, sxy=0, syy=0, sxdx=0, sxdy=0, sydx=0, sydy=0
+  matches.forEach(m => {
+    const dx = m.src.x - srcX, dy = m.src.y - srcY
+    const dDx = m.dst.x - dstX, dDy = m.dst.y - dstY
+    sxx += dx*dx; sxy += dx*dy; syy += dy*dy
+    sxdx += dx*dDx; sxdy += dx*dDy; sydx += dy*dDx; sydy += dy*dDy
+  })
+  
+  const det = sxx * syy - sxy * sxy
+  if (Math.abs(det) < 1e-10) return { a:1, b:0, c:0, d:0, e:1, f:0 }
+  
+  const a = (sxdx * syy - sydx * sxy) / det
+  const b = (sydx * sxx - sxdx * sxy) / det
+  const d = (sxdy * syy - sydy * sxy) / det
+  const e = (sydy * sxx - sxdy * sxy) / det
+  const c = dstX - a * srcX - b * srcY
+  const f = dstY - d * srcX - e * srcY
+  
+  return { a, b, c, d, e, f }
+}
+
+function parseSVGStations(svgText: string): { name: string, x: number, y: number }[] {
+  const stations: { name: string, x: number, y: number }[] = []
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(svgText, 'image/svg+xml')
+  const texts = doc.querySelectorAll('text')
+  texts.forEach(t => {
+    const name = t.textContent?.trim() || ''
+    const x = parseFloat(t.getAttribute('x') || '0')
+    const y = parseFloat(t.getAttribute('y') || '0')
+    if (name && !isNaN(x) && !isNaN(y)) stations.push({ name, x, y })
+  })
+  return stations
+}

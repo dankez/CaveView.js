@@ -84,6 +84,9 @@ export const sk = {
     mesh: "Trojuholník. mesh",
     wire: "Drôtený model",
     altitude: "Farebné podľa výšky",
+    floorMapUpload: 'Nahrať SVG/TH2/PDF mapu',
+    floorMapOpacity: 'Priehľadnosť mapy',
+    manualCalibrate: 'Kalibrácia',
   },
   survey: {
     title: "Merania",

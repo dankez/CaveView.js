@@ -84,6 +84,9 @@ export const de = {
     mesh: "Dreiecksnetz",
     wire: "Drahtgittermodell",
     altitude: "Farbe nach Höhe",
+    floorMapUpload: 'SVG/TH2/PDF Karte laden',
+    floorMapOpacity: 'Karten-Deckkraft',
+    manualCalibrate: 'Kalibrierung',
   },
   survey: {
     title: "Vermessung",

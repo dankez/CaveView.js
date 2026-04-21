@@ -84,6 +84,9 @@ export const fr = {
     mesh: "Maillage triangulaire",
     wire: "Modèle filaire",
     altitude: "Couleur par altitude",
+    floorMapUpload: 'Charger carte SVG/TH2/PDF',
+    floorMapOpacity: 'Opacité de la carte',
+    manualCalibrate: 'Calibration',
   },
   survey: {
     title: "Topographie",
