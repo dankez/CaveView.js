@@ -358,7 +358,7 @@ const MemoizedStatusBadge = React.memo(({ isMoving }: { isMoving: boolean }) => 
 ))
 
 // ─── Color Picker Component (Opravený — neblokuje UI) ─────────────────────────
-const ColorPicker = ({ value, onChange, label }: { value: string, onChange: (c: string) => void, label?: string }) => {
+const ColorPicker = ({ value, onChange, label, t }: { value: string, onChange: (c: string) => void, label?: string, t: (k: string) => string }) => {
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const palette = ['#fbbf24', '#ef4444', '#ffffff']
@@ -1336,7 +1336,7 @@ export default function App() {
                       <label className="toggle-label">
                         <div className="dot" style={{ background: opts.colorSplay }} />
                         {t('survey.splay')}
-                        <ColorPicker value={opts.colorSplay} onChange={(c) => setOpts(p => ({ ...p, colorSplay: c }))} />
+                        <ColorPicker t={t} value={opts.colorSplay} onChange={(c) => setOpts(p => ({ ...p, colorSplay: c }))} />
                       </label>
                       <div className={`switch${opts.showSplay ? ' on' : ''}`}
                         onClick={() => toggleOpt('showSplay')} role="switch"
@@ -1346,7 +1346,7 @@ export default function App() {
                       <label className="toggle-label">
                         <div className="dot" style={{ background: opts.colorGrid }} />
                         {t('survey.grid')}
-                        <ColorPicker value={opts.colorGrid} onChange={(c) => setOpts(p => ({ ...p, colorGrid: c }))} />
+                        <ColorPicker t={t} value={opts.colorGrid} onChange={(c) => setOpts(p => ({ ...p, colorGrid: c }))} />
                       </label>
                       <div className={`switch${opts.showGrid ? ' on' : ''}`}
                         onClick={() => toggleOpt('showGrid')} role="switch"
@@ -1368,7 +1368,7 @@ export default function App() {
                       <label className="toggle-label">
                         <div className="dot" style={{ background: opts.colorTraverse }} />
                         {t('survey.tubes')}
-                        <ColorPicker value={opts.colorTraverse} onChange={(c) => setOpts(p => ({ ...p, colorTraverse: c }))} />
+                        <ColorPicker t={t} value={opts.colorTraverse} onChange={(c) => setOpts(p => ({ ...p, colorTraverse: c }))} />
                       </label>
                       <div className={`switch${opts.showTraverse ? ' on' : ''}`}
                         onClick={() => toggleOpt('showTraverse')} role="switch"
@@ -1439,7 +1439,7 @@ export default function App() {
                       <label className="toggle-label">
                         <div className="dot" style={{ background: opts.surfaceColor }} />
                         {t('terrain.shaded')}
-                        <ColorPicker value={opts.surfaceColor} onChange={(c) => setOpts(p => ({ ...p, surfaceColor: c }))} />
+                        <ColorPicker t={t} value={opts.surfaceColor} onChange={(c) => setOpts(p => ({ ...p, surfaceColor: c }))} />
                       </label>
                       <div className={`switch${opts.showSurfaceMesh ? ' on' : ''}`}
                         onClick={() => toggleOpt('showSurfaceMesh')} role="switch"
@@ -1449,7 +1449,7 @@ export default function App() {
                       <label className="toggle-label">
                         <div className="dot" style={{ background: opts.colorTerrainWire, border: '1px solid #4a7c3f' }} />
                         {t('terrain.wire')}
-                        <ColorPicker value={opts.colorTerrainWire} onChange={(c) => setOpts(p => ({ ...p, colorTerrainWire: c }))} />
+                        <ColorPicker t={t} value={opts.colorTerrainWire} onChange={(c) => setOpts(p => ({ ...p, colorTerrainWire: c }))} />
                       </label>
                       <div className={`switch${opts.showSurfaceMeshWire ? ' on' : ''}`}
                         onClick={() => toggleOpt('showSurfaceMeshWire')} role="switch"
@@ -1493,7 +1493,7 @@ export default function App() {
                     <label className="toggle-label">
                       <div className="dot" style={{ background: opts.colorStations, border: '1px solid rgba(255,255,255,.2)' }} />
                       {t('stations.show')}
-                      <ColorPicker value={opts.colorStations} onChange={(c) => setOpts(p => ({ ...p, colorStations: c }))} />
+                      <ColorPicker t={t} value={opts.colorStations} onChange={(c) => setOpts(p => ({ ...p, colorStations: c }))} />
                     </label>
                     <div className={`switch${opts.showStations ? ' on' : ''}`}
                       onClick={() => toggleOpt('showStations')} role="switch"
@@ -1503,7 +1503,7 @@ export default function App() {
                     <label className="toggle-label">
                       <div className="dot" style={{ background: opts.colorStationNames }} />
                       {t('stations.names')}
-                      <ColorPicker value={opts.colorStationNames} onChange={(c) => setOpts(p => ({ ...p, colorStationNames: c }))} />
+                      <ColorPicker t={t} value={opts.colorStationNames} onChange={(c) => setOpts(p => ({ ...p, colorStationNames: c }))} />
                     </label>
                     <div className={`switch${opts.showStationNames ? ' on' : ''}`}
                       onClick={() => toggleOpt('showStationNames')} role="switch"
@@ -1513,7 +1513,7 @@ export default function App() {
                     <label className="toggle-label">
                       <div className="dot" style={{ background: opts.colorStationAlt }} />
                       {t('stations.altitude')}
-                      <ColorPicker value={opts.colorStationAlt} onChange={(c) => setOpts(p => ({ ...p, colorStationAlt: c }))} />
+                      <ColorPicker t={t} value={opts.colorStationAlt} onChange={(c) => setOpts(p => ({ ...p, colorStationAlt: c }))} />
                     </label>
                     <div className={`switch${opts.showStationAlt ? ' on' : ''}`}
                       onClick={() => toggleOpt('showStationAlt')} role="switch"

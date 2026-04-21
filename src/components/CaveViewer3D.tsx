@@ -374,6 +374,7 @@ const CaveTraverse = React.memo(({ cave, radius, showAltitude, isMoving, ...prop
     return [mn, mx] as [number, number]
   }, [caveLegs])
 
+  const cylGeo = useMemo(() => new THREE.CylinderGeometry(1, 1, 1, 8, 1, false), [])
   const [mesh, setMesh] = useState<THREE.InstancedMesh | null>(null)
 
   useEffect(() => {
