@@ -48,6 +48,20 @@ Moderná webová aplikácia na 3D vizualizáciu jaskynných systémov, vybudovan
    npm run build
    ```
 
+## 🆕 Release Notes - 21.04.2026-03 (Performance & Stability Audit)
+
+Tento update sa zameriava na technickú dokonalosť, stabilitu pri dlhodobom používaní a výraznú optimalizáciu vykresľovania.
+
+- **Eliminácia únikov pamäte (GPU Optimization):**
+  - **Dôsledná správa zdrojov:** Implementované automatické uvoľňovanie pamäte (`dispose()`) pre všetky Three.js geometrie, materiály a textúry. Aplikácia je teraz stabilná aj pri nahrávaní desiatok rôznych súborov po sebe.
+  - **Efektívna správa textúr:** Realistické textúry stien a terénu sa teraz po odstránení modelu okamžite uvoľňujú z grafickej karty.
+- **Optimalizácia rýchlosti (React Performance):**
+  - **Memoizácia hlavného viewera:** Implementovaný `React.memo` pre `CaveViewer3D`, čo zabraňuje zbytočnému prekresľovaniu 3D scény pri zmenách v používateľskom rozhraní (nahrávanie, progres-bar, zmena metadát).
+  - **Stabilita komponentov:** Interné komponenty ako `CaveTraverse` a `CaveLegs` boli optimalizované pre rýchlejšiu reakciu na zmeny parametrov.
+- **Opravy a Čistota Kódu:**
+  - **Lokalizácia:** Doplnená plná podpora prekladu pre všetky interaktívne prvky vrátane tooltipov výberu farieb.
+  - **Syntaktická korektnosť:** Opravené typové definície a zabezpečená plná kompatibilita s produkčným buildom.
+
 ## 🆕 Release Notes - 21.04.2026-02 (Entrance Visualization & Parser Fixes)
 
 Tento update pridáva kriticky dôležitú vrstvu vizualizácie vchodov a opravuje hĺbkovú logiku parsera pre modely s viacerými jaskynnými systémami.
