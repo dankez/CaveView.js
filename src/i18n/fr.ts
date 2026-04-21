@@ -24,6 +24,7 @@ export const fr = {
     helpZoom: "molette — zoom",
     helpTouch: "gestes tactiles supportés",
     parsing: "Analyse du fichier...",
+    changeColor: "Changer la couleur",
   },
   welcome: {
     sub: "Visualiseur de levés spéléo 3D",

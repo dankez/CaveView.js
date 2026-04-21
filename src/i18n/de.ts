@@ -24,6 +24,7 @@ export const de = {
     helpZoom: "Mausrad — Zoom",
     helpTouch: "Touch-Gesten unterstützt",
     parsing: "Datei wird analysiert...",
+    changeColor: "Farbe ändern",
   },
   welcome: {
     sub: "3D-Höhlenvermessungs-Viewer",

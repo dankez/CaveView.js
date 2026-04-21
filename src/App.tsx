@@ -376,7 +376,7 @@ const ColorPicker = ({ value, onChange, label }: { value: string, onChange: (c: 
     <div ref={containerRef} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', marginLeft: 8 }}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        title={label || 'Zmeniť farbu'}
+        title={label || t('ui.changeColor')}
         style={{ 
           width: 22, height: 16, borderRadius: 3, background: value, 
           border: '1px solid rgba(255,255,255,0.3)', cursor: 'pointer',

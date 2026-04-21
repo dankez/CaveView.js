@@ -265,7 +265,10 @@ function BoundingBox({ cave, show, options: o }: { cave: ParsedCave, show: boole
 
   return (
     <mesh position={center}>
-      <boxGeometry args={[size.x, size.y, size.z]} />
+      <boxGeometry args={[size.x, size.y, size.z]} onUpdate={(g) => {
+        // @ts-ignore
+        g._needsCleanup = true
+      }} />
       <meshBasicMaterial color={o.colorBoundingBox || "#990000"} wireframe transparent opacity={0.4} />
     </mesh>
   )
@@ -326,6 +329,14 @@ function CaveLegs({ cave, showSplay, showAltitude, options: o, ...props }: { cav
   const splayGeo    = useMemo(() => segsToGeo(splaySegs),   [splaySegs])
   const surfaceGeo  = useMemo(() => segsToGeo(surfaceSegs), [surfaceSegs])
 
+  useEffect(() => {
+    return () => {
+      caveGeo.dispose()
+      splayGeo.dispose()
+      surfaceGeo.dispose()
+    }
+  }, [caveGeo, splayGeo, surfaceGeo])
+
   return (
     <group renderOrder={10}>
       <lineSegments geometry={caveGeo}>
@@ -363,15 +374,17 @@ const CaveTraverse = React.memo(({ cave, radius, showAltitude, isMoving, ...prop
     return [mn, mx] as [number, number]
   }, [caveLegs])
 
-  const cylGeo = useMemo(() => new THREE.CylinderGeometry(1, 1, 1, 8, 1, false), [])
+  const [mesh, setMesh] = useState<THREE.InstancedMesh | null>(null)
 
-  const mesh = useMemo(() => {
+  useEffect(() => {
     const count = caveLegs.length
-    const mat   = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.45, metalness: 0.15 })
-    const im    = new THREE.InstancedMesh(cylGeo, mat, count)
+    if (count === 0) return
+
+    const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.45, metalness: 0.15 })
+    const im  = new THREE.InstancedMesh(cylGeo, mat, count)
     im.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3)
 
-    const dummy  = new THREE.Object3D()
+    const dummy = new THREE.Object3D()
     const [mnZ, mxZ] = zRange
 
     caveLegs.forEach((seg, i) => {
@@ -406,15 +419,26 @@ const CaveTraverse = React.memo(({ cave, radius, showAltitude, isMoving, ...prop
     mat.clippingPlanes = props.clippingPlanes
     im.instanceMatrix.needsUpdate = true
     if (im.instanceColor) im.instanceColor.needsUpdate = true
-    return im
+    
+    setMesh(im)
+
+    return () => {
+      im.dispose()
+      mat.dispose()
+    }
   }, [caveLegs, zRange, cylGeo, radius, showAltitude, props.clippingPlanes])
 
+  useEffect(() => {
+    return () => cylGeo.dispose()
+  }, [cylGeo])
+
+  if (!mesh) return null
   return <primitive object={mesh} renderOrder={10} />
 })
 
 // ─── Station dots ─────────────────────────────────────────────────────────────
 function Stations({ cave, options: o }: { cave: ParsedCave, options: ViewerOptions }) {
-  const { polyGeo, splayGeo } = useMemo(() => {
+  const geos = useMemo(() => {
     const pP: number[] = [], pS: number[] = []
     for (let i = 0; i < cave.stations.length; i++) {
       const s = cave.stations[i]
@@ -430,14 +454,21 @@ function Stations({ cave, options: o }: { cave: ParsedCave, options: ViewerOptio
     return { polyGeo: gP, splayGeo: gS }
   }, [cave])
 
+  useEffect(() => {
+    return () => {
+      geos.polyGeo.dispose()
+      geos.splayGeo.dispose()
+    }
+  }, [geos])
+
   return (
     <group renderOrder={12}>
       {/* Splay body */}
-      <points geometry={splayGeo}>
+      <points geometry={geos.splayGeo}>
         <pointsMaterial color={o.colorStations} size={2} sizeAttenuation={false} depthTest={true} />
       </points>
       {/* Polygonové body */}
-      <points geometry={polyGeo}>
+      <points geometry={geos.polyGeo}>
         <pointsMaterial color={o.colorStations} size={5} sizeAttenuation={false} depthTest={true} />
       </points>
     </group>
@@ -844,14 +875,27 @@ const TerrainMesh = React.memo(({ surface, ...props }: any) => {
     return t;
   }, [samples, lines]);
 
-  const texture = useMemo(() => {
-    if (!surface.bitmapUrl) return null
+  const [texture, setTexture] = useState<THREE.Texture | null>(null)
+
+  useEffect(() => {
+    if (!surface.bitmapUrl) {
+      setTexture(null)
+      return
+    }
     const tex = new THREE.TextureLoader().load(surface.bitmapUrl)
-    return tex
+    setTexture(tex)
+    return () => tex.dispose()
   }, [surface.bitmapUrl])
 
   const hoverGeo = useMemo(() => new THREE.SphereGeometry(0.25, 8, 8), [])
   const hoverMat = useMemo(() => new THREE.MeshBasicMaterial({ color: "#ef4444", depthTest: false }), [])
+
+  useEffect(() => {
+    return () => {
+      hoverGeo.dispose()
+      hoverMat.dispose()
+    }
+  }, [hoverGeo, hoverMat])
   const [hoveredSurf, setHoveredSurf] = useState<[number, number, number] | null>(null)
 
   if (!props.showMesh && !props.showMeshWire && !props.showTexture && !props.showNetwork) return null
@@ -901,6 +945,10 @@ function ManualConnection({ p1, p2 }: { p1: {x:number, y:number, z:number}, p2: 
     line.computeLineDistances()
     return g
   }, [p1, p2])
+
+  useEffect(() => {
+    return () => geo.dispose()
+  }, [geo])
 
   return (
     // @ts-ignore R3F line extends correctly but conflicts with SVG line locally 

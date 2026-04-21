@@ -24,6 +24,7 @@ export const sk = {
     helpZoom: "koliesko — zoom",
     helpTouch: "dotykové gestá podporované",
     parsing: "Parsovanie súboru...",
+    changeColor: "Zmeniť farbu",
   },
   welcome: {
     sub: "3D Prehliadač jaskynných prieskumov",

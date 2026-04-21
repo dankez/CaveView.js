@@ -24,6 +24,7 @@ export const en = {
     helpZoom: "wheel — zoom",
     helpTouch: "touch gestures supported",
     parsing: "Parsing file...",
+    changeColor: "Change color",
   },
   welcome: {
     sub: "3D Cave Survey Viewer",
