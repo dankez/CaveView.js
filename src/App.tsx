@@ -536,6 +536,10 @@ export default function App() {
     floorMapTh2:         null,
     floorMapOpacity:     0.8,
     manualMatches:       null,
+    // Cinematic / Presentation
+    autoRotate:          false,
+    autoRotateSpeed:     2.0,
+    cinematicMode:       false,
   })
 
   // ─── DEFINÍCIA ŠABLÓN ────────────────────────────────────────────────────────
@@ -1585,6 +1589,65 @@ export default function App() {
                     {t('ui.helpZoom')}<br />
                     {t('ui.helpTouch')}
                   </div>
+                </div>
+
+                <div>
+                  <div className="s-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
+                    {lang === 'sk' ? 'Prezentácia' : 'Presentation'}
+                  </div>
+                  <div className="toggle-row">
+                    <label className="toggle-label">{lang === 'sk' ? 'Auto-rotácia' : 'Auto-rotate'}</label>
+                    <div className={`switch${opts.autoRotate ? ' on' : ''}`}
+                      onClick={() => toggleOpt('autoRotate')} role="switch"
+                      aria-checked={opts.autoRotate} tabIndex={0} />
+                  </div>
+                  {opts.autoRotate && (
+                    <div style={{ marginTop: '8px', padding: '0 4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
+                        <span>{lang === 'sk' ? 'Rýchlosť' : 'Speed'}</span>
+                        <span style={{ color: '#4fc3f7' }}>{opts.autoRotateSpeed.toFixed(1)}x</span>
+                      </div>
+                      <input type="range" min={0.1} max={10} step={0.1}
+                        value={opts.autoRotateSpeed}
+                        onChange={e => setOpts(p => ({ ...p, autoRotateSpeed: Number(e.target.value) }))}
+                        className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                    </div>
+                  )}
+                  <button 
+                    className="btn-secondary" 
+                    style={{ width: '100%', marginTop: '12px', fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)' }}
+                    onClick={() => {
+                      // Trigger video recording
+                      const canvas = document.querySelector('canvas')
+                      if (!canvas) return
+                      
+                      const stream = canvas.captureStream(60) // 60 FPS
+                      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' })
+                      const chunks: Blob[] = []
+                      
+                      recorder.ondataavailable = e => chunks.push(e.data)
+                      recorder.onstop = () => {
+                        const blob = new Blob(chunks, { type: 'video/webm' })
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url; a.download = `cave_presentation_${new Date().getTime()}.webm`
+                        a.click()
+                      }
+                      
+                      setProcessingInfo(lang === 'sk' ? 'NAHRÁVAM VIDEO (10s)...' : 'RECORDING VIDEO (10s)...')
+                      recorder.start()
+                      
+                      // Auto-stop after 10s or 360 degree rotation
+                      setTimeout(() => {
+                        recorder.stop()
+                        setProcessingInfo(null)
+                      }, 10000)
+                    }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="#ef4444" stroke="none"><circle cx="12" cy="12" r="10"></circle></svg>
+                    {lang === 'sk' ? 'Nahrať video (10s)' : 'Record Video (10s)'}
+                  </button>
                 </div>
 
                 <div>

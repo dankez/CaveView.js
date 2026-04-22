@@ -76,6 +76,11 @@ export interface ViewerOptions {
   floorMapTh2:         any | null  // Parsed Th2Scrap[]
   floorMapOpacity:     number
   manualMatches:       { src: { x: number; y: number }; dst: { x: number; y: number } }[] | null
+  
+  // Cinematic
+  autoRotate:          boolean
+  autoRotateSpeed:     number
+  cinematicMode:       boolean
 }
 
 // ─── Clickable stations (neviditelné gule, raycasting) & Hover Highlight ───
@@ -1453,11 +1458,14 @@ const CaveViewer3D = ({
 
       <OrbitControls
         makeDefault
-        enableDamping={false}
+        enableDamping={true}
+        dampingFactor={0.05}
         onStart={() => setIsMoving(true)}
         onChange={handleCameraChange}
         rotateSpeed={0.6} zoomSpeed={0.8} panSpeed={0.8}
         minDistance={1} maxDistance={Math.max(diag * 25, 10000)}
+        autoRotate={o.autoRotate}
+        autoRotateSpeed={o.autoRotateSpeed}
       />
 
       <CameraMonitor onUpdate={(data) => {
