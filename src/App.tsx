@@ -1619,8 +1619,11 @@ export default function App() {
                     style={{ width: '100%', marginTop: '12px', fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)' }}
                     onClick={() => {
                       // Trigger video recording
-                      const canvas = document.querySelector('canvas')
-                      if (!canvas) return
+                      const canvas = document.getElementById('main-cave-canvas') as HTMLCanvasElement
+                      if (!canvas) {
+                        alert('Canvas not found!')
+                        return
+                      }
                       
                       const stream = canvas.captureStream(60) // 60 FPS
                       const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' })

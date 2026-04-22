@@ -1343,10 +1343,11 @@ const CaveViewer3D = ({
 
   return (
     <Canvas
+      id="main-cave-canvas"
       gl={{ 
         antialias: true, 
         alpha: false, 
-        preserveDrawingBuffer: false, 
+        preserveDrawingBuffer: true, 
         powerPreference: 'high-performance',
         localClippingEnabled: true // Aktivácia rezov
       }}
