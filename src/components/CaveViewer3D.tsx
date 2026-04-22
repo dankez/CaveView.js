@@ -30,7 +30,6 @@ export interface ViewerOptions {
   colorGrid:           string
   colorBoundingBox:    string
   showBoundingBox:     boolean
-  colorBackground:     string
   // Cave scraps (walls)
   showScraps:          boolean
   scrapsOpacity:       number
@@ -54,6 +53,8 @@ export interface ViewerOptions {
   surfaceColor:        string
   placedCaver:         { pos: [number, number, number], pose: 'standing' | 'crawling' } | null
   // Colors
+  colorBackground:   string
+  colorBackground2?:  string
   colorSplay:          string
   colorTraverse:       string
   colorScraps:         string
@@ -1295,8 +1296,25 @@ const CaveViewer3D = ({
       window.removeEventListener('touchend', onEnd, { capture: true })
     }
   }, [isMoving, handleCameraChange, startStopTimeout])
+
   const diag     = Math.sqrt(cave.bounds.size.x ** 2 + cave.bounds.size.y ** 2 + cave.bounds.size.z ** 2)
   const gridSize = Math.max(diag * 1.5, 200)
+
+  // ─── Gradient background creation (CATIA style) ──────────────────────────────
+  const bgTexture = useMemo(() => {
+    if (!o.colorBackground2) return null
+    const canvas = document.createElement('canvas')
+    canvas.width = 2; canvas.height = 512
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+    const grad = ctx.createLinearGradient(0, 0, 0, 512)
+    grad.addColorStop(0, o.colorBackground)
+    grad.addColorStop(1, o.colorBackground2)
+    ctx.fillStyle = grad
+    ctx.fillRect(0, 0, 2, 512)
+    const tex = new THREE.CanvasTexture(canvas)
+    return tex
+  }, [o.colorBackground, o.colorBackground2])
 
   // ─── Clipping Planes ───
   const compositeClippingPlanes = useMemo(() => {
@@ -1336,9 +1354,12 @@ const CaveViewer3D = ({
         localClippingEnabled: true // Aktivácia rezov
       }}
       camera={{ fov: 55, near: 0.1, far: Math.max(diag * 20, 10000) }}
-      onCreated={({ gl }) => {
+      onCreated={({ gl, scene }) => {
         // Optimalizácia pre veľké modely – ak GPU nestíha
         gl.debug.checkShaderErrors = false 
+        if (bgTexture) {
+          scene.background = bgTexture
+        }
       }}
       onPointerMissed={() => onBackgroundClick?.()}
       onPointerDown={() => setIsMoving(true)}

@@ -494,7 +494,8 @@ export default function App() {
     colorGrid:           '#222222',
     colorBoundingBox:    '#990000',
     showBoundingBox:     false,
-    colorBackground:     '#0a0f1a',
+    colorBackground:     '#0a1a3a',
+    colorBackground2:    '#4a6a9a',
     // Cave scraps
     showScraps:          true,
     scrapsOpacity:       0.75,
@@ -542,6 +543,7 @@ export default function App() {
   const THEMES = {
     classic: {
       colorBackground:   '#050505',
+      colorBackground2:  undefined,
       colorTraverse:     '#ffffff',
       colorSplay:        '#78909c',
       colorStations:     '#fbbf24',
@@ -557,7 +559,8 @@ export default function App() {
       surfaceColor:      '#e2e8f0',
     },
     precision: {
-      colorBackground:   '#0a0f1a',
+      colorBackground:   '#0a1a3a', // Dark top (CATIA style)
+      colorBackground2:  '#4a6a9a', // Lighter bottom
       colorTraverse:     '#ffffff',
       colorSplay:        '#a5f3fc',
       colorStations:     '#fbbf24',
@@ -574,6 +577,7 @@ export default function App() {
     },
     light: {
       colorBackground:   '#f8fafc',
+      colorBackground2:  undefined,
       colorTraverse:     '#2a5585',
       colorSplay:        '#64748b',
       colorStations:     '#fbbf24',
