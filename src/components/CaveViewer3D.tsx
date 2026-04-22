@@ -800,7 +800,8 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
             transparent={renderOpacity < 1} opacity={renderOpacity}
             roughness={0.6} 
             metalness={0.0}
-            polygonOffset polygonOffsetFactor={0.5} polygonOffsetUnits={0.5} />
+            polygonOffset polygonOffsetFactor={0.5} polygonOffsetUnits={0.5}
+            clippingPlanes={props.clippingPlanes} />
         </mesh>
       )}
 
@@ -1399,7 +1400,7 @@ const CaveViewer3D = ({
           onSurfaceClick={onSurfaceClick}
           isMoving={isMoving}
           options={o}
-          clippingPlanes={caveClippingPlanes}
+          clippingPlanes={compositeClippingPlanes}
         />
       ))}
 
