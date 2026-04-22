@@ -1125,6 +1125,20 @@ function Character3D({ pos, pose }: { pos: [number, number, number], pose: 'stan
   )
 }
 
+function SceneBackground({ texture, color }: { texture: THREE.Texture | null, color: string }) {
+  const { scene } = useThree()
+  
+  useEffect(() => {
+    if (texture) {
+      scene.background = texture
+    } else {
+      scene.background = new THREE.Color(color)
+    }
+  }, [scene, texture, color])
+  
+  return null
+}
+
 function CameraMonitor({ onUpdate }: { onUpdate: (data: { dist: number, fov: number, height: number }) => void }) {
   const { camera, size } = useThree()
   
@@ -1354,19 +1368,16 @@ const CaveViewer3D = ({
         localClippingEnabled: true // Aktivácia rezov
       }}
       camera={{ fov: 55, near: 0.1, far: Math.max(diag * 20, 10000) }}
-      onCreated={({ gl, scene }) => {
+      onCreated={({ gl }) => {
         // Optimalizácia pre veľké modely – ak GPU nestíha
         gl.debug.checkShaderErrors = false 
-        if (bgTexture) {
-          scene.background = bgTexture
-        }
       }}
       onPointerMissed={() => onBackgroundClick?.()}
       onPointerDown={() => setIsMoving(true)}
       onPointerMove={(e) => { if (e.buttons > 0) handleCameraChange() }}
       onWheel={() => handleCameraChange()}
     >
-      <color attach="background" args={[o.colorBackground]} />
+      <SceneBackground texture={bgTexture} color={o.colorBackground} />
       <ambientLight intensity={0.25} /> {/* Znížené pre lepší kontrast tieňov */}
       <directionalLight position={[1, 3, 1]}    intensity={0.6} />
       <directionalLight position={[-2, 1, -2]} intensity={0.3} />
