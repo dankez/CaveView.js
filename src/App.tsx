@@ -1661,14 +1661,21 @@ export default function App() {
                     className={`btn-record ${isRecording ? 'recording' : ''}`}
                     disabled={isRecording}
                     onClick={() => {
-                      const canvas = document.getElementById('main-cave-canvas') as HTMLCanvasElement
+                      const container = document.getElementById('main-cave-canvas')
+                      const canvas = container?.querySelector('canvas') as HTMLCanvasElement
                       if (!canvas) {
                         alert('Canvas not found!')
                         return
                       }
                       
                       try {
-                        const stream = canvas.captureStream(60) // 60 FPS
+                        // Support for Safari/prefix
+                        const captureStream = (canvas as any).captureStream || (canvas as any).webkitCaptureStream
+                        if (!captureStream) {
+                          throw new Error('Prehliadač nepodporuje nahrávanie canvasu (captureStream).')
+                        }
+                        
+                        const stream = captureStream.call(canvas, 60) // 60 FPS
                         const mimeTypes = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4']
                         const mimeType = mimeTypes.find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm'
                         
