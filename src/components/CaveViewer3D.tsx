@@ -38,7 +38,7 @@ export interface ViewerOptions {
   scrapsAltitude:      boolean
   smoothScraps:        boolean
   showRenderCave:      boolean
-  caveTexture:         'rock' | 'limestone' | 'granite'
+  caveTexture:         'limestone' | 'dolomite' | 'grey_limestone'
   renderOpacity:       number
   // Cave traverse
   showTraverse:        boolean
@@ -658,7 +658,7 @@ function buildScrapsGeo(cave: ParsedCave, withColors: boolean, smooth: boolean):
 const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitude, smooth, showRender, caveTexture, renderOpacity, isMoving, options, ...props }: {
   cave: ParsedCave; opacity: number
   showSolid: boolean; showWire: boolean; showAltitude: boolean; smooth: boolean; showRender: boolean
-  caveTexture: 'rock' | 'limestone' | 'granite'
+  caveTexture: 'limestone' | 'dolomite' | 'grey_limestone'
   renderOpacity: number
   isMoving: boolean
   options: ViewerOptions
@@ -759,9 +759,9 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
   const [rockTex, setRockTex] = useState<THREE.Texture | null>(null)
 
   useEffect(() => {
-    let path = '/assets/cave_rock.png'
-    if (caveTexture === 'limestone') path = '/assets/cave_limestone.png'
-    if (caveTexture === 'granite')   path = '/assets/cave_granite.png'
+    let path = '/assets/cave_limestone.png'
+    if (caveTexture === 'dolomite') path = '/assets/cave_rock.png'
+    if (caveTexture === 'grey_limestone') path = '/assets/cave_granite.png'
     
     const tex = new THREE.TextureLoader().load(path)
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping
@@ -788,11 +788,11 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
         <mesh geometry={solidGeo} renderOrder={4}>
           <meshStandardMaterial 
             map={rockTex} 
-            color={caveTexture === 'granite' ? '#999999' : (caveTexture === 'rock' ? '#efefef' : '#ffffff')} 
+            color={caveTexture === 'grey_limestone' ? '#d1d5db' : (caveTexture === 'dolomite' ? '#f1f5f9' : '#ffffff')} 
             side={THREE.DoubleSide} 
             transparent={renderOpacity < 1} opacity={renderOpacity}
-            roughness={0.9} 
-            metalness={0.1}
+            roughness={0.8} 
+            metalness={0.05}
             polygonOffset polygonOffsetFactor={0.5} polygonOffsetUnits={0.5} />
         </mesh>
       )}

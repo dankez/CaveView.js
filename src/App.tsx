@@ -503,7 +503,7 @@ export default function App() {
     scrapsAltitude:      true,   // farebné podľa výšky
     smoothScraps:        false,
     showRenderCave:      false,
-    caveTexture:         'rock',
+    caveTexture:         'limestone',
     renderOpacity:       1.0,
     placedCaver:         null,
     // Cave traverse
@@ -1430,9 +1430,9 @@ export default function App() {
                           <div style={{ padding: '4px', background: 'rgba(30,41,59,0.5)', borderRadius: '6px', marginTop: '4px', marginBottom: '8px' }}>
                             <div style={{ display: 'flex', gap: '4px' }}>
                               {[
-                                { id: 'limestone', label: 'Limestone' },
-                                { id: 'rock',      label: 'Rock' },
-                                { id: 'granite',   label: 'Granite' },
+                                { id: 'limestone',      label: lang === 'sk' ? 'Vápenec' : 'Limestone' },
+                                { id: 'dolomite',       label: lang === 'sk' ? 'Dolomit' : 'Dolomite' },
+                                { id: 'grey_limestone', label: lang === 'sk' ? 'Sivý váp.' : 'Grey L.' },
                               ].map(tex => (
                                 <button
                                   key={tex.id}
