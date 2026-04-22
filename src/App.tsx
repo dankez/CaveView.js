@@ -541,6 +541,7 @@ export default function App() {
     autoRotate:          false,
     autoRotateSpeed:     2.0,
     cinematicMode:       false,
+    recordingDuration:   10, // 0 = manual
   })
 
   // ─── DEFINÍCIA ŠABLÓN ────────────────────────────────────────────────────────
@@ -1213,6 +1214,24 @@ export default function App() {
 
               <div className="tb-space" />
 
+              {isRecording && (
+                <div className="recording-status hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(239, 68, 68, 0.15)', padding: '4px 12px', borderRadius: '20px', border: '1px solid rgba(239, 68, 68, 0.3)', marginRight: '10px' }}>
+                  <div className="record-dot" />
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: '#fca5a5' }}>
+                    {lang === 'sk' ? 'NAHRÁVA SA...' : 'RECORDING...'}
+                  </span>
+                  <button 
+                    onClick={() => (window as any)._activeRecorder?.stop()}
+                    style={{ 
+                      background: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', 
+                      padding: '2px 8px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' 
+                    }}
+                  >
+                    STOP
+                  </button>
+                </div>
+              )}
+
               <button
                 className={`btn-back hide-mobile-flex${isMeasuringMode ? ' active' : ''}`}
                 style={{
@@ -1657,6 +1676,18 @@ export default function App() {
                         className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
                     </div>
                   )}
+                  <div className="toggle-row" style={{ borderBottom: 'none' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
+                        <span>{lang === 'sk' ? 'Dĺžka (sekundy)' : 'Duration (sec)'}</span>
+                        <span style={{ color: '#818cf8' }}>{opts.recordingDuration === 0 ? (lang === 'sk' ? 'Manuálne' : 'Manual') : `${opts.recordingDuration}s`}</span>
+                      </div>
+                      <input type="range" min={0} max={60} step={5}
+                        value={opts.recordingDuration}
+                        onChange={e => setOpts(p => ({ ...p, recordingDuration: Number(e.target.value) }))}
+                        className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+                    </div>
+                  </div>
                   <button 
                     className={`btn-record ${isRecording ? 'recording' : ''}`}
                     disabled={isRecording}
@@ -1669,14 +1700,11 @@ export default function App() {
                       }
                       
                       try {
-                        // Support for Safari/prefix
                         const captureStream = (canvas as any).captureStream || (canvas as any).webkitCaptureStream
-                        if (!captureStream) {
-                          throw new Error('Prehliadač nepodporuje nahrávanie canvasu (captureStream).')
-                        }
+                        if (!captureStream) throw new Error('CaptureStream not supported')
                         
-                        const stream = captureStream.call(canvas, 60) // 60 FPS
-                        const mimeTypes = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4']
+                        const stream = captureStream.call(canvas, 60)
+                        const mimeTypes = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
                         const mimeType = mimeTypes.find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm'
                         
                         const recorder = new MediaRecorder(stream, { mimeType })
@@ -1690,22 +1718,22 @@ export default function App() {
                           a.href = url; a.download = `cave_presentation_${new Date().getTime()}.webm`
                           a.click()
                           setIsRecording(false)
-                          setProcessingInfo(null)
+                          delete (window as any)._activeRecorder
                         }
                         
+                        (window as any)._activeRecorder = recorder
                         setIsRecording(true)
-                        setProcessingInfo(lang === 'sk' ? 'NAHRÁVAM (10s)...' : 'RECORDING (10s)...')
                         recorder.start()
                         
-                        // Capture can continue even if user interacts
-                        setTimeout(() => {
-                          if (recorder.state === 'recording') recorder.stop()
-                        }, 10000)
+                        if (opts.recordingDuration > 0) {
+                          setTimeout(() => {
+                            if (recorder.state === 'recording') recorder.stop()
+                          }, opts.recordingDuration * 1000)
+                        }
                       } catch (err) {
                         console.error('Recording error:', err)
-                        alert('Chyba pri nahrávaní: ' + err)
+                        alert('Error starting recording')
                         setIsRecording(false)
-                        setProcessingInfo(null)
                       }
                     }}
                   >

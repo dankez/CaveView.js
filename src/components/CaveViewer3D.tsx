@@ -81,6 +81,7 @@ export interface ViewerOptions {
   autoRotate:          boolean
   autoRotateSpeed:     number
   cinematicMode:       boolean
+  recordingDuration:   number
 }
 
 // ─── Clickable stations (neviditelné gule, raycasting) & Hover Highlight ───
