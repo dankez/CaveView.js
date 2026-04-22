@@ -82,6 +82,7 @@ export interface ViewerOptions {
   autoRotateSpeed:     number
   cinematicMode:       boolean
   recordingDuration:   number
+  excludeModelFromClipping: boolean
 }
 
 // ─── Clickable stations (neviditelné gule, raycasting) & Hover Highlight ───
@@ -1342,6 +1343,11 @@ const CaveViewer3D = ({
     return planes
   }, [o.showClipping, o.clippingHeight, o.showProfileClipping, o.profileClipFlip, o.profileClipOffset, activeProfilePoints, cave.centerOffset.z])
 
+  const caveClippingPlanes = useMemo(() => {
+    if (o.excludeModelFromClipping) return []
+    return compositeClippingPlanes
+  }, [o.excludeModelFromClipping, compositeClippingPlanes])
+
   return (
     <Canvas
       id="main-cave-canvas"
@@ -1393,7 +1399,7 @@ const CaveViewer3D = ({
           onSurfaceClick={onSurfaceClick}
           isMoving={isMoving}
           options={o}
-          clippingPlanes={compositeClippingPlanes}
+          clippingPlanes={caveClippingPlanes}
         />
       ))}
 
@@ -1410,7 +1416,7 @@ const CaveViewer3D = ({
           renderOpacity={o.renderOpacity}
           isMoving={isMoving}
           options={o}
-          clippingPlanes={compositeClippingPlanes}
+          clippingPlanes={caveClippingPlanes}
         />
       )}
 
@@ -1421,7 +1427,7 @@ const CaveViewer3D = ({
           radius={o.traverseRadius} 
           showAltitude={o.traverseAltitude} 
           isMoving={isMoving} 
-          clippingPlanes={compositeClippingPlanes}
+          clippingPlanes={caveClippingPlanes}
         />
       )}
 

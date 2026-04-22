@@ -542,6 +542,7 @@ export default function App() {
     autoRotateSpeed:     2.0,
     cinematicMode:       false,
     recordingDuration:   10, // 0 = manual
+    excludeModelFromClipping: false,
   })
 
   // ─── DEFINÍCIA ŠABLÓN ────────────────────────────────────────────────────────
@@ -1404,6 +1405,18 @@ export default function App() {
                           </button>
                         </div>
                       )}
+
+                      {(opts.showClipping || opts.showProfileClipping) && (
+                        <div className="toggle-row" style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                          <label className="toggle-label" style={{ fontSize: '10px', color: '#94a3b8' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>visibility_off</span>
+                            {lang === 'sk' ? 'Vynechať jaskyňu z rezu' : 'Exclude cave from clip'}
+                          </label>
+                          <div className={`switch${opts.excludeModelFromClipping ? ' on' : ''}`}
+                            onClick={() => toggleOpt('excludeModelFromClipping')} role="switch"
+                            aria-checked={opts.excludeModelFromClipping} tabIndex={0} />
+                        </div>
+                      )}
                     </div>
                 </div>
 
@@ -1755,6 +1768,15 @@ export default function App() {
                       <div className="toggle-label">
                         <div className="dot" style={{ background: color }} />
                         <span style={{ fontSize: '11px' }}>{label}</span>
+                      </div>
+
+                      <div className="toggle-row" style={{ marginTop: '8px' }}>
+                        <label className="toggle-label" style={{ fontSize: '10px' }}>
+                          {lang === 'sk' ? 'Vynechať jaskyňu z rezu' : 'Exclude cave from clip'}
+                        </label>
+                        <div className={`switch${opts.excludeModelFromClipping ? ' on' : ''}`}
+                          onClick={() => toggleOpt('excludeModelFromClipping')} role="switch"
+                          aria-checked={opts.excludeModelFromClipping} tabIndex={0} />
                       </div>
                     </div>
                   ))}
