@@ -788,11 +788,11 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
         <mesh geometry={solidGeo} renderOrder={4}>
           <meshStandardMaterial 
             map={rockTex} 
-            color={caveTexture === 'grey_limestone' ? '#d1d5db' : (caveTexture === 'dolomite' ? '#f1f5f9' : '#ffffff')} 
+            color={caveTexture === 'grey_limestone' ? '#f3f4f6' : (caveTexture === 'dolomite' ? '#ffffff' : '#ffffff')} 
             side={THREE.DoubleSide} 
             transparent={renderOpacity < 1} opacity={renderOpacity}
-            roughness={0.8} 
-            metalness={0.05}
+            roughness={0.6} 
+            metalness={0.0}
             polygonOffset polygonOffsetFactor={0.5} polygonOffsetUnits={0.5} />
         </mesh>
       )}
