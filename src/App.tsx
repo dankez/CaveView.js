@@ -473,7 +473,8 @@ export default function App() {
   const [fitTrigger, setFitTrigger] = useState(0)
   const [lang, setLang] = useState<Language>(getBrowserLanguage())
   const [isCalibrating, setIsCalibrating] = useState(false)
-  const [manualMatches, setManualMatches] = useState<any[] | null>(null)
+  const [isRecording, setIsRecording] = useState(false)
+  const [manualMatches, setManualMatches] = useState<{ src: { x: number; y: number }; dst: { x: number; y: number } }[] | null>(null)
 
   const t = useCallback((key: string) => getTranslation(lang, key), [lang])
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -1034,8 +1035,50 @@ export default function App() {
         .btn-demo:hover{background:rgba(99,179,237,.18);border-color:rgba(99,179,237,.5);transform:translateY(-1px)}
 
         .help-text{font-size:.72rem;color:#2d3748;line-height:1.6}
-        .loading-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
         .loading-3d{font-size:.85rem;color:#4a5568}
+        
+        .btn-record {
+          width: 100%;
+          margin-top: 12px;
+          padding: 10px;
+          border-radius: 10px;
+          border: 1px solid rgba(239, 68, 68, 0.2);
+          background: rgba(239, 68, 68, 0.1);
+          color: #fca5a5;
+          font-size: 11px;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-record:hover:not(:disabled) {
+          background: rgba(239, 68, 68, 0.2);
+          border-color: rgba(239, 68, 68, 0.4);
+          transform: translateY(-1px);
+        }
+        .btn-record.recording {
+          background: rgba(239, 68, 68, 0.25);
+          border-color: #ef4444;
+          color: #fff;
+        }
+        .record-dot {
+          width: 8px;
+          height: 8px;
+          background: #ef4444;
+          border-radius: 50%;
+          box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        }
+        .recording .record-dot {
+          animation: pulse-red 1s infinite;
+        }
+        @keyframes pulse-red {
+          0% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.4); opacity: 0.5; }
+          100% { transform: scale(1); opacity: 1; }
+        }
 
         @media (max-width: 1023px) {
           .sidebar-container { display: none; }
@@ -1615,41 +1658,54 @@ export default function App() {
                     </div>
                   )}
                   <button 
-                    className="btn-secondary" 
-                    style={{ width: '100%', marginTop: '12px', fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)' }}
+                    className={`btn-record ${isRecording ? 'recording' : ''}`}
+                    disabled={isRecording}
                     onClick={() => {
-                      // Trigger video recording
                       const canvas = document.getElementById('main-cave-canvas') as HTMLCanvasElement
                       if (!canvas) {
                         alert('Canvas not found!')
                         return
                       }
                       
-                      const stream = canvas.captureStream(60) // 60 FPS
-                      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' })
-                      const chunks: Blob[] = []
-                      
-                      recorder.ondataavailable = e => chunks.push(e.data)
-                      recorder.onstop = () => {
-                        const blob = new Blob(chunks, { type: 'video/webm' })
-                        const url = URL.createObjectURL(blob)
-                        const a = document.createElement('a')
-                        a.href = url; a.download = `cave_presentation_${new Date().getTime()}.webm`
-                        a.click()
-                      }
-                      
-                      setProcessingInfo(lang === 'sk' ? 'NAHRÁVAM VIDEO (10s)...' : 'RECORDING VIDEO (10s)...')
-                      recorder.start()
-                      
-                      // Auto-stop after 10s or 360 degree rotation
-                      setTimeout(() => {
-                        recorder.stop()
+                      try {
+                        const stream = canvas.captureStream(60) // 60 FPS
+                        const mimeTypes = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4']
+                        const mimeType = mimeTypes.find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm'
+                        
+                        const recorder = new MediaRecorder(stream, { mimeType })
+                        const chunks: Blob[] = []
+                        
+                        recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data) }
+                        recorder.onstop = () => {
+                          const blob = new Blob(chunks, { type: mimeType.split(';')[0] })
+                          const url = URL.createObjectURL(blob)
+                          const a = document.createElement('a')
+                          a.href = url; a.download = `cave_presentation_${new Date().getTime()}.webm`
+                          a.click()
+                          setIsRecording(false)
+                          setProcessingInfo(null)
+                        }
+                        
+                        setIsRecording(true)
+                        setProcessingInfo(lang === 'sk' ? 'NAHRÁVAM (10s)...' : 'RECORDING (10s)...')
+                        recorder.start()
+                        
+                        // Capture can continue even if user interacts
+                        setTimeout(() => {
+                          if (recorder.state === 'recording') recorder.stop()
+                        }, 10000)
+                      } catch (err) {
+                        console.error('Recording error:', err)
+                        alert('Chyba pri nahrávaní: ' + err)
+                        setIsRecording(false)
                         setProcessingInfo(null)
-                      }, 10000)
+                      }
                     }}
                   >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="#ef4444" stroke="none"><circle cx="12" cy="12" r="10"></circle></svg>
-                    {lang === 'sk' ? 'Nahrať video (10s)' : 'Record Video (10s)'}
+                    <div className="record-dot" />
+                    {isRecording 
+                      ? (lang === 'sk' ? 'Nahráva sa...' : 'Recording...') 
+                      : (lang === 'sk' ? 'Nahrať prezentáciu' : 'Record Presentation')}
                   </button>
                 </div>
 
