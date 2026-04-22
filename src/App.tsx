@@ -3,7 +3,6 @@ import proj4 from 'proj4'
 import { parseLox, parseSvx, parsePlt } from './parsers/caveParser'
 import type { ParsedCave, CaveSurface } from './parsers/caveParser'
 import CaveViewer3D, { ViewerOptions } from './components/CaveViewer3D'
-import { CalibrationModal } from './components/CalibrationModal'
 import { getBrowserLanguage, getTranslation, Language, languages } from './i18n'
 
 type AppState = 'welcome' | 'loading' | 'viewer' | 'error'
@@ -835,42 +834,6 @@ export default function App() {
     }
   }, [])
 
-  const handleSvgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const name = file.name.toLowerCase()
-    const ext = name.split('.').pop()
-    
-    if (ext === 'th2') {
-      const text = await file.text()
-      const { parseTh2 } = await import('./parsers/th2Parser')
-      const parsed = parseTh2(text)
-      setManualMatches(null)
-      setOpts(prev => ({ ...prev, floorMapTh2: parsed, floorMapSvg: null, showFloorMap: true, manualMatches: null }))
-    } else if (ext === 'pdf') {
-      try {
-        const pdfjs = await import('pdfjs-dist');
-        // @ts-ignore
-        pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-        const page = await pdf.getPage(1);
-        const viewport = page.getViewport({ scale: 2.0 });
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        canvas.height = viewport.height; canvas.width = viewport.width;
-        await (page as any).render({ canvasContext: context!, viewport, canvas: canvas }).promise;
-        const dataUrl = canvas.toDataURL('image/png');
-        setManualMatches(null);
-        setOpts(prev => ({ ...prev, floorMapSvg: dataUrl, floorMapTh2: null, showFloorMap: true, manualMatches: null }));
-        setIsCalibrating(true);
-      } catch (err) { alert('Chyba pri spracovaní PDF'); }
-    } else {
-      const text = await file.text()
-      setManualMatches(null)
-      setOpts(prev => ({ ...prev, floorMapSvg: text, floorMapTh2: null, showFloorMap: true, manualMatches: null }))
-    }
-  }
 
   // Load from URL (for demo/test models served from public/)
   const loadFromUrl = useCallback(async (url: string, label: string) => {
@@ -1463,6 +1426,35 @@ export default function App() {
                             onClick={() => toggleOpt('showRenderCave')} role="switch"
                             aria-checked={opts.showRenderCave} tabIndex={0} />
                         </div>
+                        {opts.showRenderCave && (
+                          <div style={{ padding: '4px', background: 'rgba(30,41,59,0.5)', borderRadius: '6px', marginTop: '4px', marginBottom: '8px' }}>
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              {[
+                                { id: 'limestone', label: 'Limestone' },
+                                { id: 'rock',      label: 'Rock' },
+                                { id: 'granite',   label: 'Granite' },
+                              ].map(tex => (
+                                <button
+                                  key={tex.id}
+                                  onClick={() => setOpts(p => ({ ...p, caveTexture: tex.id as any }))}
+                                  style={{
+                                    flex: 1,
+                                    fontSize: '9px',
+                                    padding: '4px',
+                                    borderRadius: '4px',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    background: opts.caveTexture === tex.id ? '#3b82f6' : '#1e293b',
+                                    color: 'white',
+                                    transition: 'all 0.2s'
+                                  }}
+                                >
+                                  {tex.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         {([
                           { key: 'scrapsSolid' as const, label: t('cave.mesh') },
                           { key: 'scrapsWireframe' as const, label: t('cave.wire') },
@@ -1479,33 +1471,6 @@ export default function App() {
                     )}
                   </div>
                 )}
-
-                <div>
-                  <div className="s-label">{t('cave.title')} (Mapy)</div>
-                  <div className="file-input-row" style={{ margin: '0.8rem 0', display: 'flex', gap: '0.5rem' }}>
-                    <label className="btn-secondary" style={{ flex: 1, textAlign: 'center', cursor: 'pointer', fontSize: '11px', padding: '8px' }}>
-                      {t('cave.floorMapUpload')}
-                      <input type="file" accept=".svg,.th2,.pdf" onChange={handleSvgUpload} style={{ display: 'none' }} />
-                    </label>
-                    {(opts.floorMapSvg || opts.floorMapTh2) && (
-                      <button className="btn-secondary" style={{ flex: 1, fontSize: '11px', padding: '8px' }} onClick={() => setIsCalibrating(true)}>
-                        {t('cave.manualCalibrate')}
-                      </button>
-                    )}
-                  </div>
-                  {(opts.floorMapSvg || opts.floorMapTh2) && (
-                    <div style={{ marginTop: '8px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', marginBottom: '6px' }}>
-                        <span>{t('cave.floorMapOpacity')}</span>
-                        <span style={{ color: '#818cf8', fontWeight: 'bold' }}>{(opts.floorMapOpacity * 100).toFixed(0)}%</span>
-                      </div>
-                      <input type="range" min={0} max={100} step={5}
-                        value={Math.round(opts.floorMapOpacity * 100)}
-                        onChange={e => setOpacity('floorMapOpacity', Number(e.target.value) / 100)}
-                        className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
-                    </div>
-                  )}
-                </div>
 
                 {/* ── TERÉN (surface) ── */}
                 {cave.hasSurface && (
@@ -1643,19 +1608,6 @@ export default function App() {
             <ProcessingOverlay info={processingInfo} lang={lang} />
           </div>
         </div>
-      )}
-      {/* ── MANUÁLNA KALIBRÁCIA ── */}
-      {isCalibrating && opts.floorMapSvg && cave && (
-        <CalibrationModal 
-          svgText={opts.floorMapSvg} 
-          cave={cave}
-          onCalibrate={(matches) => {
-            setManualMatches(matches)
-            setOpts(prev => ({ ...prev, manualMatches: matches }))
-            setIsCalibrating(false)
-          }}
-          onClose={() => setIsCalibrating(false)}
-        />
       )}
     </div>
     </>

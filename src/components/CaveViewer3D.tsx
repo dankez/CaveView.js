@@ -786,7 +786,10 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
       {/* ── Realistický Render Mode (Textúra) ── */}
       {showRender && !isMoving && solidGeo && (
         <mesh geometry={solidGeo} renderOrder={4}>
-          <meshStandardMaterial map={rockTex} color="#ffffff" side={THREE.DoubleSide} 
+          <meshStandardMaterial 
+            map={rockTex} 
+            color={caveTexture === 'granite' ? '#999999' : (caveTexture === 'rock' ? '#efefef' : '#ffffff')} 
+            side={THREE.DoubleSide} 
             transparent={renderOpacity < 1} opacity={renderOpacity}
             roughness={0.9} 
             metalness={0.1}
@@ -799,7 +802,8 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
         <mesh geometry={altGeo} renderOrder={3}>
           <meshStandardMaterial vertexColors side={THREE.DoubleSide} transparent={opacity < 1} opacity={opacity}
             roughness={0.65} metalness={0.05}
-            polygonOffset polygonOffsetFactor={0} polygonOffsetUnits={0} />
+            polygonOffset polygonOffsetFactor={0} polygonOffsetUnits={0} 
+            clippingPlanes={props.clippingPlanes} />
         </mesh>
       )}
 
@@ -807,34 +811,8 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
       {(showWire || isMoving) && solidGeo && (
         <mesh geometry={solidGeo} renderOrder={10}>
           <meshBasicMaterial color={options.colorScrapsWire} wireframe depthWrite={false} transparent={true}
-            opacity={isMoving ? 0.4 : (showSolid || showAltitude ? 0.28 : 0.65)} />
-        </mesh>
-      )}
-      {(options.floorMapSvg || options.floorMapTh2) && floorTex && floorAffine && solidGeo && (
-        <mesh geometry={solidGeo} renderOrder={2}>
-          <meshBasicMaterial 
-            map={floorTex} 
-            transparent={true} 
-            opacity={options.floorMapOpacity}
-            side={THREE.DoubleSide}
-            depthWrite={false}
-            polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-1}
-            onBeforeCompile={(shader) => {
-              shader.uniforms.uAffine = { value: [floorAffine.a, floorAffine.b, floorAffine.c, floorAffine.d, floorAffine.e, floorAffine.f] }
-              shader.vertexShader = `
-                uniform float uAffine[6];
-                ${shader.vertexShader}
-              `.replace(
-                '#include <uv_vertex>',
-                `
-                vUv = vec2(
-                  uAffine[0] * position.x + uAffine[1] * (-position.z) + uAffine[2],
-                  uAffine[3] * position.x + uAffine[4] * (-position.z) + uAffine[5]
-                );
-                `
-              )
-            }}
-          />
+            opacity={isMoving ? 0.4 : (showSolid || showAltitude ? 0.28 : 0.65)} 
+            clippingPlanes={props.clippingPlanes} />
         </mesh>
       )}
     </>
