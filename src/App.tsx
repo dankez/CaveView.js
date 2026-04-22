@@ -494,8 +494,8 @@ export default function App() {
     colorGrid:           '#222222',
     colorBoundingBox:    '#990000',
     showBoundingBox:     false,
-    colorBackground:     '#0a1a3a',
-    colorBackground2:    '#4a6a9a',
+    colorBackground:     '#020617',
+    colorBackground2:    '#1e40af',
     // Cave scraps
     showScraps:          true,
     scrapsOpacity:       0.75,
@@ -559,8 +559,8 @@ export default function App() {
       surfaceColor:      '#e2e8f0',
     },
     precision: {
-      colorBackground:   '#0a1a3a', // Dark top (CATIA style)
-      colorBackground2:  '#4a6a9a', // Lighter bottom
+      colorBackground:   '#020617', // Deep blue/black top
+      colorBackground2:  '#1e40af', // Vibrant blue bottom
       colorTraverse:     '#ffffff',
       colorSplay:        '#a5f3fc',
       colorStations:     '#fbbf24',
