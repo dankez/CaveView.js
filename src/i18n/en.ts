@@ -25,6 +25,14 @@ export const en = {
     helpTouch: "touch gestures supported",
     parsing: "Parsing file...",
     changeColor: "Change color",
+    loading_file: "Loading file...",
+    parsing_stations: "Processing stations...",
+    parsing_shots: "Processing survey legs...",
+    generating_scraps: "Generating cave walls...",
+    generating_surface: "Generating surface terrain...",
+    finalizing: "Finalizing model...",
+    parsing_model: "Parsing model...",
+    done: "Done",
   },
   welcome: {
     sub: "3D Cave Survey Viewer",
@@ -33,7 +41,7 @@ export const en = {
     selectFile: "Select file",
     demoTitle: "Test models",
     stressTitle: "Stress test (Big Model)",
-    bigModel: "Big model (32MB)",
+    bigModel: "Big model (50MB - Zlomiskovo)",
   },
   legend: {
     title: "Legend",

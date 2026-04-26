@@ -1,28 +1,28 @@
 # CaveView 3D - Modernized Speleological Viewer
-**Release 2026-04-22-02 (Stable)**
+**Release 2026-04-26 (Stable)**
 
 Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémov, postavená na technológiách React, Three.js a React-Three-Fiber.
 
-## 🚀 Kľúčové funkcie (Release 2.4.0)
+## 🚀 Novinky v Release 2026-04-26
+
+### 🏔️ Masívne modely & Výkon
+*   **Optimalizácia pre LIDAR**: Plná podpora pre veľké modely (testované na 50MB+ .lox súboroch).
+*   **Memory Efficiency**: Prechod na `Float32Array` v parseroch a generátoroch geometrie, čo eliminuje pády prehliadača pri miliónoch vrcholov.
+*   **Smart Decimation**: Automatické vypnutie náročných funkcií (ako vyhladzovanie stien) pri extrémne veľkých modeloch pre zachovanie plynulosti 60 FPS.
+
+### 🗺️ Povrch & Textúry
+*   **Auto-Texture Loading**: Inteligentná extrakcia a automatické nanášanie textúr priamo z LOX súborov. 
+*   **CPU Calibration**: Prepočet UV súradníc prebieha na CPU pomocou afínnych transformácií, čo zaručuje milimetrovú presnosť prekrytia satelitných snímok na terén.
+*   **Custom Overlays**: Možnosť manuálneho nahrania vlastných JPG/PNG textúr pre akýkoľvek terénny model.
+
+### ⛏️ Progres & Feedback
+*   **Real-time Progress Bar**: Detailné informácie o priebehu načítavania (parsovanie staníc, meraní, generovanie stien, generovanie terénu).
+*   **Status Panel**: Vizuálna informácia o stave modelu (DRAFT / STABLE) a detekcia chýb v reálnom čase.
 
 ### 🎬 Prezentačný modul (Cinematic Mode)
 *   **Auto-rotácia**: Plynulé otáčanie modelu s nastaviteľnou rýchlosťou.
 *   **Video Recording**: Priame nahrávanie 3D scény v 60 FPS s podporou kodekov VP9/VP8.
-*   **Flexible Duration**: Možnosť nastavenia časovaného nahrávania (5-60s) alebo manuálneho režimu s tlačidlom STOP v hornej lište.
-*   **Non-blocking UI**: Nahrávanie prebieha na pozadí, čo umožňuje manuálnu prácu s modelom počas zachytávania videa.
-
-### 💎 Vizuálna identita & Rendering
-*   **CATIA Gradient**: Dynamické pozadie s modrým gradientom pre profesionálnu inžiniersku estetiku (téma Precision).
-*   **Geological Texture Suite**: Tri realistické vápencové textúry optimalizované pre speleológiu:
-    *   *Vápenec (Limestone)* - Jasná biela
-    *   *Dolomit (Dolomite)* - Svetlosivá
-    *   *Sivý vápenec (Grey Limestone)* - Neutrálna sivá
-*   **High-Visibility Materials**: Vylepšený jas a odrazivosť pre lepšiu orientáciu v spleti chodieb.
-
-### 📐 Analýza & Meranie
-*   **Profilové Rezy**: Pokročilé orezávanie modelu podľa osí alebo vlastných profilov.
-*   **Interaktívne Meranie**: Presné meranie vzdialeností medzi bodmi v 3D priestore.
-*   **Station Details**: Detailné informácie o meračských bodoch (súradnice, hĺbka, prepojenia).
+*   **Non-blocking UI**: Nahrávanie prebieha na pozadí bez prerušenia interaktivity.
 
 ## 🛠 Inštalácia a spustenie
 
@@ -44,9 +44,9 @@ Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémo
     npm run build
     ```
 
-## 📂 Štruktúra dát
-Aplikácia podporuje speleologické formáty:
-*   `.lox` (Loch data)
+## 📂 Podporované formáty
+Aplikácia podporuje kľúčové speleologické formáty:
+*   `.lox` (Therion / Loch data - vrátane textúr a DTM)
 *   `.3d` (Survex data)
 *   `.plt` (Compass data)
 

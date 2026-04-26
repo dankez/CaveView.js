@@ -1,3 +1,11 @@
 node_modules/
 build/
 dist/
+playwright-report/
+test-results/
+.tempmediaStorage/
+*.lox
+!public/test_simple.lox
+!public/test_model2.lox
+!public/zadiel.lox
+!public/zlomiskovo.lox

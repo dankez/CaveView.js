@@ -464,6 +464,7 @@ export default function App() {
   const [cave, setCave] = useState<ParsedCave | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [loadingStatus, setLoadingStatus] = useState<string>('')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [selectedStations, setSelectedStations] = useState<SelStation[]>([])
   const [isMeasuringMode, setIsMeasuringMode] = useState(false)
@@ -543,6 +544,7 @@ export default function App() {
     cinematicMode:       false,
     recordingDuration:   10, // 0 = manual
     excludeModelFromClipping: false,
+    surfaceTextureUrl:   null,
   })
 
   // ─── DEFINÍCIA ŠABLÓN ────────────────────────────────────────────────────────
@@ -778,23 +780,43 @@ export default function App() {
 
   const getExt = (name: string) => '.' + name.split('.').pop()!.toLowerCase()
 
-  const runParserWorker = useCallback((buffer: ArrayBuffer): Promise<ParsedCave> => {
+  const runParserWorker = useCallback((buffer: ArrayBuffer, onProgress: (msg: string) => void): Promise<ParsedCave> => {
     return new Promise((resolve, reject) => {
-      // Vite 4/5 syntax pre worker
       const worker = new Worker(new URL('./parsers/parser.worker.ts', import.meta.url), { type: 'module' });
       worker.onmessage = (e) => {
         if (e.data.type === 'done') resolve(e.data.cave);
+        else if (e.data.type === 'progress') onProgress(e.data.message);
         else reject(new Error(e.data.error || 'Worker parsing failed'));
-        worker.terminate();
+        if (e.data.type === 'done' || e.data.type === 'error') worker.terminate();
       };
       worker.onerror = (err) => {
         reject(err);
         worker.terminate();
       };
-      // Transferable ArrayBuffer pre nulové oneskorenie pri kopírovaní dát
       worker.postMessage({ buffer }, [buffer]);
     });
   }, []);
+
+  const processCaveData = useCallback((parsed: ParsedCave) => {
+    let hasBitmap = false
+    if (parsed.surfaces) {
+      parsed.surfaces.forEach(s => {
+        if (s.bitmapData && s.bitmapMimeType) {
+          const blob = new Blob([s.bitmapData], { type: s.bitmapMimeType })
+          s.bitmapUrl = URL.createObjectURL(blob)
+          hasBitmap = true
+        }
+      })
+    }
+
+    setCave(parsed)
+    setOpts(prev => ({ 
+      ...prev, 
+      clippingHeight: parsed.bounds.max.z + parsed.centerOffset.z,
+      showSurfaceTexture: hasBitmap ? true : prev.showSurfaceTexture,
+      surfaceTextureUrl: null // Reset custom texture on new model
+    }))
+  }, [])
 
   const handleFile = useCallback(async (file: File) => {
     const ext = getExt(file.name)
@@ -809,30 +831,30 @@ export default function App() {
 
     try {
       let parsed: ParsedCave
+      setLoadingStatus('loading_file')
 
       if (ext === '.plt') {
         const text = await file.text()
         setProgress(50)
-        parsed = parsePlt(text)
+        parsed = parsePlt(text, setLoadingStatus)
       } else {
         const buf = await file.arrayBuffer()
         setProgress(50)
         if (ext === '.lox') {
-          parsed = await runParserWorker(buf)
+          parsed = await runParserWorker(buf, setLoadingStatus)
         } else {
-          parsed = parseSvx(buf)
+          parsed = parseSvx(buf, setLoadingStatus)
         }
       }
 
+      setLoadingStatus('finalizing')
       setProgress(95)
 
       if (parsed.segments.length === 0 && parsed.stations.length === 0) {
         throw new Error('Súbor neobsahuje žiadne merania alebo stanice.')
       }
 
-      setCave(parsed)
-      // Inicializovať výšku rezu na vrchol modelu
-      setOpts(prev => ({ ...prev, clippingHeight: parsed.bounds.max.z + parsed.centerOffset.z }))
+      processCaveData(parsed)
       setTimeout(() => { setProgress(100); setTimeout(() => setAppState('viewer'), 200) }, 100)
     } catch (e: any) {
       console.error(e)
@@ -857,11 +879,11 @@ export default function App() {
       if (ext === '.plt') {
         const text = await resp.text()
         setProgress(60)
-        const parsed = parsePlt(text)
+        const parsed = parsePlt(text, setLoadingStatus)
         setLoadedFile({ name: label, size: text.length, ext })
         if (parsed.segments.length === 0 && parsed.stations.length === 0)
           throw new Error('Súbor neobsahuje žiadne dáta.')
-        setCave(parsed)
+        processCaveData(parsed)
       } else {
         const buf = await resp.arrayBuffer()
         setProgress(60)
@@ -869,15 +891,16 @@ export default function App() {
         
         let parsed: ParsedCave
         if (ext === '.lox') {
-          parsed = await runParserWorker(buf)
+          parsed = await runParserWorker(buf, setLoadingStatus)
         } else {
-          parsed = parseSvx(buf)
+          parsed = parseSvx(buf, setLoadingStatus)
         }
 
         if (parsed.segments.length === 0 && parsed.stations.length === 0)
           throw new Error('Súbor neobsahuje žiadne dáta.')
-        setCave(parsed)
+        processCaveData(parsed)
       }
+      setLoadingStatus('done')
       setProgress(100)
       setTimeout(() => setAppState('viewer'), 150)
     } catch (e: any) {
@@ -1101,7 +1124,9 @@ export default function App() {
           .hide-mobile { display: none !important; }
           .hide-mobile-flex { display: none !important; }
           .btn-fit { display: none !important; }
+          .show-mobile-flex { display: flex !important; }
         }
+        .show-mobile-flex { display: none; }
       `}</style>
 
       <canvas ref={canvasRef} className="bg-canvas" style={{ background: opts.colorBackground }} />
@@ -1163,7 +1188,7 @@ export default function App() {
                 <div style={{ fontSize: '.62rem', fontWeight: 700, color: '#f56565', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '.5rem', textAlign: 'center' }}>{t('welcome.stressTitle')}</div>
                 <div style={{ display: 'flex', gap: '.6rem', justifyContent: 'center' }}>
                   <button className="btn-demo" style={{ borderColor: 'rgba(245,101,101,0.4)', color: '#feb2b2', background: 'rgba(245,101,101,0.05)' }} 
-                    onClick={() => loadFromUrl('/zadiel.lox', 'zadiel.lox')} type="button">
+                    onClick={() => loadFromUrl('/zlomiskovo.lox', 'zlomiskovo-lid2022.lox')} type="button">
                     🏔️ {t('welcome.bigModel')}
                   </button>
                 </div>
@@ -1177,7 +1202,9 @@ export default function App() {
           <div className="loading-screen">
             <div className="load-icon">⛏️</div>
             <div>
-              <div className="load-title">{t('ui.parsing')}</div>
+              <div className="load-title">
+                {loadingStatus ? t(`ui.${loadingStatus}` as any) : t('ui.parsing')}
+              </div>
               <div className="load-file">{loadedFile?.name}</div>
             </div>
             <div className="prog-wrap">
@@ -1202,7 +1229,7 @@ export default function App() {
               <MemoizedStatusBadge isMoving={isModelMoving} />
               <span className="tb-badge hide-mobile">{loadedFile?.ext?.replace('.', '')?.toUpperCase()}</span>
               
-              <div style={{ display: 'flex', gap: '4px', background: '#0f172a', padding: '2px', borderRadius: '6px', border: '1px solid #1e293b' }}>
+              <div className="hide-mobile-flex" style={{ display: 'flex', gap: '4px', background: '#0f172a', padding: '2px', borderRadius: '6px', border: '1px solid #1e293b' }}>
                 {(['classic', 'precision', 'light'] as const).map(th => (
                   <button key={th} onClick={() => applyTheme(th as any)}
                     style={{ flex: 1, padding: '4px 8px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer',
@@ -1251,7 +1278,7 @@ export default function App() {
               </button>
               
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ display: 'flex', gap: '4px', background: 'rgba(30,41,59,0.5)', padding: '2px', borderRadius: '6px' }}>
+                <div className="hide-mobile-flex" style={{ display: 'flex', gap: '4px', background: 'rgba(30,41,59,0.5)', padding: '2px', borderRadius: '6px' }}>
                   {(['sk', 'en', 'fr', 'de'] as Language[]).map(l => (
                     <button key={l} onClick={() => setLang(l)}
                       style={{ padding: '4px 6px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer',
@@ -1261,6 +1288,15 @@ export default function App() {
                     </button>
                   ))}
                 </div>
+
+                <button 
+                  className="show-mobile-flex"
+                  onClick={() => setFitTrigger(prev => prev + 1)}
+                  style={{ background: '#3b82f6', border: '1px solid #2563eb', borderRadius: '6px', color: '#fff', padding: '6px', cursor: 'pointer', alignItems: 'center', justifyContent: 'center' }}
+                  title="Fit to screen"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px', display: 'block' }}>fit_screen</span>
+                </button>
 
                 <button 
                   onClick={handleReset}
@@ -1322,12 +1358,42 @@ export default function App() {
               <div className={`sidebar-container ${isMobileMenuOpen ? 'open' : ''}`}>
                 <aside className="sidebar">
                   {isMobileMenuOpen && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                      <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#e2e8f0' }}>{t('sidebar.control')}</span>
-                      <button className="btn-back" style={{ background: '#ef4444', color: '#fff', border: 'none' }} onClick={() => setIsMobileMenuOpen(false)}>✖ {t('ui.close')}</button>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                        <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#e2e8f0' }}>{t('sidebar.control')}</span>
+                        <button className="btn-back" style={{ background: '#ef4444', color: '#fff', border: 'none' }} onClick={() => setIsMobileMenuOpen(false)}>✖ {t('ui.close')}</button>
+                      </div>
+                      
+                      <div className="s-label" style={{ marginBottom: '8px' }}>Rýchle nastavenia (Mobil)</div>
+                      
+                      <button
+                        className={`btn-back${isMeasuringMode ? ' active' : ''}`}
+                        style={{ width: '100%', marginBottom: '10px', background: isMeasuringMode ? '#6366f1' : 'rgba(99,179,237,0.1)', color: isMeasuringMode ? '#fff' : '#63b3ed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px' }}
+                        onClick={() => { setIsMeasuringMode(!isMeasuringMode); setIsMobileMenuOpen(false); }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>straighten</span>
+                        <span>{t('sidebar.measure')}</span>
+                      </button>
+
+                      <div style={{ display: 'flex', gap: '4px', background: '#0f172a', padding: '4px', borderRadius: '8px', marginBottom: '10px' }}>
+                        {(['classic', 'precision', 'light'] as const).map(th => (
+                          <button key={th} onClick={() => applyTheme(th as any)}
+                            style={{ flex: 1, padding: '8px', fontSize: '11px', fontWeight: 'bold', borderRadius: '6px', border: 'none', cursor: 'pointer', background: currentTheme === th ? '#334155' : 'transparent', color: currentTheme === th ? '#f8fafc' : '#64748b' }}>
+                            {t(`themes.${th}`)}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '4px', background: 'rgba(30,41,59,0.5)', padding: '4px', borderRadius: '8px', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
+                        {(['sk', 'en', 'fr', 'de'] as Language[]).map(l => (
+                          <button key={l} onClick={() => setLang(l)}
+                            style={{ flex: 1, padding: '8px', fontSize: '11px', fontWeight: 'bold', borderRadius: '6px', border: 'none', cursor: 'pointer', background: lang === l ? '#6366f1' : 'transparent', color: lang === l ? 'white' : '#94a3b8' }}>
+                            {l.toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
-
                 <div>
                   <div className="s-label">{t('file.title')}</div>
                   <div className="info-row"><span>{t('file.format')}</span><span className="info-val">{loadedFile?.ext.replace('.', '').toUpperCase()}</span></div>
@@ -1589,9 +1655,43 @@ export default function App() {
                         <div className="dot" style={{ background: '#8fbc8f', border: '1px solid #4a7c3f' }} />
                         {t('terrain.texture')}
                       </label>
-                      <div className={`switch${opts.showSurfaceTexture ? ' on' : ''}`}
-                        onClick={() => toggleOpt('showSurfaceTexture')} role="switch"
-                        aria-checked={opts.showSurfaceTexture} tabIndex={0} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button 
+                          onClick={() => {
+                            const inp = document.createElement('input');
+                            inp.type = 'file';
+                            inp.accept = 'image/jpeg,image/png';
+                            inp.onchange = (e: any) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const url = URL.createObjectURL(file);
+                                setOpts(p => ({ ...p, surfaceTextureUrl: url, showSurfaceTexture: true }));
+                              }
+                            };
+                            inp.click();
+                          }}
+                          style={{
+                            background: 'rgba(79,195,247,0.15)',
+                            border: '1px solid rgba(79,195,247,0.3)',
+                            borderRadius: '4px',
+                            color: '#4fc3f7',
+                            fontSize: '9px',
+                            padding: '2px 6px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {lang === 'sk' ? 'Nahrať' : 'Upload'}
+                        </button>
+                        {opts.surfaceTextureUrl && (
+                          <button 
+                            onClick={() => setOpts(p => ({ ...p, surfaceTextureUrl: null }))}
+                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '10px', padding: '0 4px' }}
+                          >✕</button>
+                        )}
+                        <div className={`switch${opts.showSurfaceTexture ? ' on' : ''}`}
+                          onClick={() => toggleOpt('showSurfaceTexture')} role="switch"
+                          aria-checked={opts.showSurfaceTexture} tabIndex={0} />
+                      </div>
                     </div>
                     
                     <div style={{ marginTop: '12px' }}>
@@ -1768,15 +1868,6 @@ export default function App() {
                       <div className="toggle-label">
                         <div className="dot" style={{ background: color }} />
                         <span style={{ fontSize: '11px' }}>{label}</span>
-                      </div>
-
-                      <div className="toggle-row" style={{ marginTop: '8px' }}>
-                        <label className="toggle-label" style={{ fontSize: '10px' }}>
-                          {lang === 'sk' ? 'Vynechať jaskyňu z rezu' : 'Exclude cave from clip'}
-                        </label>
-                        <div className={`switch${opts.excludeModelFromClipping ? ' on' : ''}`}
-                          onClick={() => toggleOpt('excludeModelFromClipping')} role="switch"
-                          aria-checked={opts.excludeModelFromClipping} tabIndex={0} />
                       </div>
                     </div>
                   ))}

@@ -5,7 +5,9 @@ self.onmessage = async (e: MessageEvent) => {
   if (!buffer) return;
 
   try {
-    const cave = parseLox(buffer);
+    const cave = parseLox(buffer, (msg) => {
+      self.postMessage({ type: 'progress', message: msg });
+    });
     // Vrátime výsledok hlavnému vláknu
     self.postMessage({ type: 'done', cave });
   } catch (err: any) {

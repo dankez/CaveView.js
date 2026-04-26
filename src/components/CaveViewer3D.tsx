@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useState, useCallback, useRef } from 'react'
-import { Canvas, useThree } from '@react-three/fiber'
+import { Canvas, useThree, useFrame } from '@react-three/fiber'
 import { OrbitControls, Grid, Html, GizmoHelper, GizmoViewport } from '@react-three/drei'
 import * as THREE from 'three'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
@@ -48,6 +48,7 @@ export interface ViewerOptions {
   showSurfaceMesh:     boolean
   showSurfaceMeshWire: boolean
   showSurfaceTexture:  boolean
+  surfaceTextureUrl?:  string | null
   showSurfaceNetwork:  boolean
   surfaceOpacity:      number
   surfaceColor:        string
@@ -290,29 +291,35 @@ function BoundingBox({ cave, show, options: o }: { cave: ParsedCave, show: boole
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function segsToGeo(segs: { from: { x: number; y: number; z: number }; to: { x: number; y: number; z: number } }[]) {
-  const p: number[] = []
+  const p = new Float32Array(segs.length * 6)
+  let i = 0
   for (const s of segs) {
-    p.push(s.from.x, s.from.z, -s.from.y)
-    p.push(s.to.x,   s.to.z,   -s.to.y)
+    p[i++] = s.from.x; p[i++] = s.from.z; p[i++] = -s.from.y;
+    p[i++] = s.to.x;   p[i++] = s.to.z;   p[i++] = -s.to.y;
   }
   const g = new THREE.BufferGeometry()
-  g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3))
+  g.setAttribute('position', new THREE.BufferAttribute(p, 3))
   return g
 }
 
 function segsToGeoWithColors(segs: Segment[], mnZ: number, mxZ: number) {
-  const p: number[] = []
-  const colors: number[] = []
+  const p = new Float32Array(segs.length * 6)
+  const colors = new Float32Array(segs.length * 6)
+  let i = 0
   for (const s of segs) {
-    p.push(s.from.x, s.from.z, -s.from.y)
-    p.push(s.to.x,   s.to.z,   -s.to.y)
+    p[i] = s.from.x; p[i+1] = s.from.z; p[i+2] = -s.from.y;
+    p[i+3] = s.to.x; p[i+4] = s.to.z;   p[i+5] = -s.to.y;
+    
     const c1 = elevColor(normZ(s.from.z, mnZ, mxZ))
     const c2 = elevColor(normZ(s.to.z,   mnZ, mxZ))
-    colors.push(c1.r, c1.g, c1.b, c2.r, c2.g, c2.b)
+    
+    colors[i] = c1.r; colors[i+1] = c1.g; colors[i+2] = c1.b;
+    colors[i+3] = c2.r; colors[i+4] = c2.g; colors[i+5] = c2.b;
+    i += 6
   }
   const g = new THREE.BufferGeometry()
-  g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3))
-  g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  g.setAttribute('position', new THREE.BufferAttribute(p, 3))
+  g.setAttribute('color', new THREE.BufferAttribute(colors, 3))
   return g
 }
 
@@ -454,18 +461,30 @@ const CaveTraverse = React.memo(({ cave, radius, showAltitude, isMoving, ...prop
 // ─── Station dots ─────────────────────────────────────────────────────────────
 function Stations({ cave, options: o }: { cave: ParsedCave, options: ViewerOptions }) {
   const geos = useMemo(() => {
-    const pP: number[] = [], pS: number[] = []
+    let numPoly = 0, numSplay = 0
+    for (let i = 0; i < cave.stations.length; i++) {
+      const lbl = cave.stationLabels?.[i]
+      if (lbl && lbl.name !== '') numPoly++
+      else numSplay++
+    }
+
+    const pP = new Float32Array(numPoly * 3)
+    const pS = new Float32Array(numSplay * 3)
+    let idxP = 0, idxS = 0
+
     for (let i = 0; i < cave.stations.length; i++) {
       const s = cave.stations[i]
       const lbl = cave.stationLabels?.[i]
-      const isPolygon = lbl && lbl.name !== ''
-      if (isPolygon) pP.push(s.x, s.z, -s.y)
-      else           pS.push(s.x, s.z, -s.y)
+      if (lbl && lbl.name !== '') {
+        pP[idxP++] = s.x; pP[idxP++] = s.z; pP[idxP++] = -s.y;
+      } else {
+        pS[idxS++] = s.x; pS[idxS++] = s.z; pS[idxS++] = -s.y;
+      }
     }
     const gP = new THREE.BufferGeometry()
-    gP.setAttribute('position', new THREE.Float32BufferAttribute(pP, 3))
+    gP.setAttribute('position', new THREE.BufferAttribute(pP, 3))
     const gS = new THREE.BufferGeometry()
-    gS.setAttribute('position', new THREE.Float32BufferAttribute(pS, 3))
+    gS.setAttribute('position', new THREE.BufferAttribute(pS, 3))
     return { polyGeo: gP, splayGeo: gS }
   }, [cave])
 
@@ -608,41 +627,76 @@ function buildScrapsGeo(cave: ParsedCave, withColors: boolean, smooth: boolean):
   if (!cave.scraps?.length) return null
 
   let minZ = Infinity, maxZ = -Infinity
-  if (withColors)
-    for (const sc of cave.scraps)
+  let numVertices = 0
+  let numFaces = 0
+
+  for (const sc of cave.scraps) {
+    numVertices += sc.vertices.length
+    numFaces += sc.faces.length
+    if (withColors) {
       for (const v of sc.vertices) {
         if (v.z < minZ) minZ = v.z
         if (v.z > maxZ) maxZ = v.z
       }
+    }
+  }
 
-  const positions: number[] = [], colors: number[] = [], uvs: number[] = [], indices: number[] = []
+  if (numVertices === 0 || numFaces === 0) return null
+  const positions = new Float32Array(numVertices * 3)
+  const uvs = new Float32Array(numVertices * 2)
+  const colors = withColors ? new Float32Array(numVertices * 3) : null
+  const indices = new Uint32Array(numFaces * 3)
+
+  const isHuge = numVertices > 1000000
+  if (isHuge) console.warn('Model is huge, disabling advanced smoothing to prevent crash');
+
   let base = 0
+  let vIdx = 0
+  let uvIdx = 0
+  let cIdx = 0
+  let iIdx = 0
 
   for (const sc of cave.scraps) {
     for (const v of sc.vertices) {
-      positions.push(v.x, v.z, -v.y)
-      // Generovať UV (jednoduchá projekcia pre jaskynné steny)
-      uvs.push(v.x * 0.2, (v.z + v.y) * 0.2)
-      if (withColors) {
+      positions[vIdx++] = v.x
+      positions[vIdx++] = v.z
+      positions[vIdx++] = -v.y
+
+      uvs[uvIdx++] = v.x * 0.2
+      uvs[uvIdx++] = (v.z + v.y) * 0.2
+
+      if (withColors && colors) {
         const c = elevColor(normZ(v.z, minZ, maxZ))
-        colors.push(c.r, c.g, c.b)
+        colors[cIdx++] = c.r
+        colors[cIdx++] = c.g
+        colors[cIdx++] = c.b
       }
     }
-    for (const [a, b, c] of sc.faces)
-      if (a < sc.vertices.length && b < sc.vertices.length && c < sc.vertices.length)
-        indices.push(base + a, base + b, base + c)
+
+    for (const [a, b, c] of sc.faces) {
+      if (a < sc.vertices.length && b < sc.vertices.length && c < sc.vertices.length) {
+        indices[iIdx++] = base + a
+        indices[iIdx++] = base + b
+        indices[iIdx++] = base + c
+      }
+    }
     base += sc.vertices.length
   }
 
-  if (!positions.length || !indices.length) return null
-  if (!positions.length || !indices.length) return null
+  // Ak by boli nejaké neplatné faxy (orezané), upravíme reálnu dĺžku indexov
   let g = new THREE.BufferGeometry()
-  g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-  g.setAttribute('uv',       new THREE.Float32BufferAttribute(uvs, 2))
-  if (withColors) g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-  g.setIndex(indices)
+  g.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  g.setAttribute('uv',       new THREE.BufferAttribute(uvs, 2))
+  if (withColors && colors) g.setAttribute('color', new THREE.BufferAttribute(colors, 3))
   
-  if (smooth) {
+  // Use subarray to trim unused indices if some faces were invalid
+  if (iIdx < indices.length) {
+    g.setIndex(new THREE.BufferAttribute(indices.subarray(0, iIdx), 1))
+  } else {
+    g.setIndex(new THREE.BufferAttribute(indices, 1))
+  }
+  
+  if (smooth && !isHuge) {
     // 1. Zvariť vrcholy aby sa plochy "dotkli" a zdieľali normály (a vyhladenie prešlo celou sieťou)
     g = mergeVertices(g, 1e-3)
     // 2. Taubin Smoothing pre odstránenie ostrých zubcov a zlých hrán (šetrnejší k objemu, pinned borders)
@@ -655,8 +709,10 @@ function buildScrapsGeo(cave: ParsedCave, withColors: boolean, smooth: boolean):
   }
   
   // Vypočítať BVH strom pre bleskový raycasting
-  // @ts-ignore
-  g.computeBoundsTree()
+  if (!isHuge) {
+    // @ts-ignore
+    g.computeBoundsTree()
+  }
   
   return g
 }
@@ -781,7 +837,7 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
   return (
     <>
       {/* ── Tieňovaný solid mesh ── */}
-      {showSolid && !showRender && !isMoving && solidGeo && (
+      {showSolid && !showRender && solidGeo && (
         <mesh geometry={solidGeo} renderOrder={5}>
           <meshStandardMaterial color={options.colorScraps} side={THREE.DoubleSide} transparent={opacity < 1} opacity={opacity}
             roughness={0.7} metalness={0.1}
@@ -791,7 +847,7 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
       )}
 
       {/* ── Realistický Render Mode (Textúra) ── */}
-      {showRender && !isMoving && solidGeo && (
+      {showRender && solidGeo && (
         <mesh geometry={solidGeo} renderOrder={4}>
           <meshStandardMaterial 
             map={rockTex} 
@@ -815,11 +871,68 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
         </mesh>
       )}
 
+      {/* ── Pôdorysná Mapa (Projektovaná) ── */}
+      {floorTex && floorAffine && solidGeo && (
+        <mesh geometry={solidGeo} renderOrder={6}>
+          <meshBasicMaterial 
+            map={floorTex} 
+            transparent 
+            opacity={options.floorMapOpacity} 
+            side={THREE.DoubleSide}
+            depthWrite={false}
+            polygonOffset polygonOffsetFactor={-2} polygonOffsetUnits={-2}
+            clippingPlanes={props.clippingPlanes}
+            onBeforeCompile={(shader) => {
+              // Injikovať výpočet UV z affine transformácie priamo do shaderu
+              shader.uniforms.uAffine = { value: [
+                floorAffine.a, floorAffine.b, floorAffine.c,
+                floorAffine.d, floorAffine.e, floorAffine.f
+              ] };
+              shader.vertexShader = `
+                uniform float uAffine[6];
+                varying vec2 vFloorUv;
+                ${shader.vertexShader}
+              `.replace(
+                '#include <begin_vertex>',
+                `#include <begin_vertex>
+                 // x = caveX, -z = caveY
+                 float vx = position.x + ${cave.centerOffset.x};
+                 float vy = -position.z + ${cave.centerOffset.y};
+                 float svgX = uAffine[0] * vx + uAffine[1] * vy + uAffine[2];
+                 float svgY = uAffine[3] * vx + uAffine[4] * vy + uAffine[5];
+                 // Normalizácia na 0..1 (predpokladáme 2048x2048 canvas pre TH2 alebo natural size pre SVG)
+                 // Ale lepšie je použiť premenné z texture.image
+                 vFloorUv = vec2(svgX, svgY);
+                `
+              );
+              shader.fragmentShader = `
+                varying vec2 vFloorUv;
+                ${shader.fragmentShader}
+              `.replace(
+                '#include <map_fragment>',
+                `
+                #ifdef USE_MAP
+                  // Získaj rozmery textúry pre normalizáciu UV
+                  vec2 texSize = vec2(textureSize(map, 0));
+                  vec2 normUv = vFloorUv / texSize;
+                  if (normUv.x < 0.0 || normUv.x > 1.0 || normUv.y < 0.0 || normUv.y > 1.0) {
+                    diffuseColor.a = 0.0;
+                  } else {
+                    diffuseColor *= texture2D(map, normUv);
+                  }
+                #endif
+                `
+              );
+            }}
+          />
+        </mesh>
+      )}
+
       {/* ── Drôtený model ── */}
       {(showWire || isMoving) && solidGeo && (
         <mesh geometry={solidGeo} renderOrder={10}>
           <meshBasicMaterial color={options.colorScrapsWire} wireframe depthWrite={false} transparent={true}
-            opacity={isMoving ? 0.4 : (showSolid || showAltitude ? 0.28 : 0.65)} 
+            opacity={isMoving ? 0.3 : (showSolid || showAltitude ? 0.28 : 0.65)} 
             clippingPlanes={props.clippingPlanes} />
         </mesh>
       )}
@@ -828,10 +941,13 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
 })
 
 // ─── Terrain geometry builder ────────────────────────────────────────────────
-function buildTerrainGeo({ positions, uvs, colors, indices }: { positions: Float32Array, uvs: Float32Array, colors: Float32Array, indices: number[] }) {
+function buildTerrainGeo({ positions, uvs, bitmapUvs, colors, indices }: { positions: Float32Array, uvs: Float32Array, bitmapUvs?: Float32Array, colors: Float32Array, indices: number[] }) {
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   g.setAttribute('uv',       new THREE.BufferAttribute(uvs, 2));
+  if (bitmapUvs) {
+    g.setAttribute('uv2', new THREE.BufferAttribute(bitmapUvs, 2));
+  }
   g.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
   g.setIndex(indices);
   g.computeVertexNormals();
@@ -843,29 +959,40 @@ function buildTerrainGeo({ positions, uvs, colors, indices }: { positions: Float
   return g;
 }
 
-function buildTerrainTileData(surface: CaveSurface, colStart: number, rowStart: number, colCount: number, rowCount: number, subsample = 1) {
-  const { dtm, centerOffset: { x: cx, y: cy, z: cz } } = surface;
+function buildTerrainTileData(surface: CaveSurface, colStart: number, rowStart: number, colCount: number, rowCount: number, imgSize?: [number, number], subsample = 1) {
+  const { dtm, bitmapCalib, centerOffset: { x: cx, y: cy, z: cz } } = surface;
   const { data, samples: origSamples, lines: origLines, calib } = dtm;
 
   const samples = colCount;
   const lines = rowCount;
 
-  // Lokálny výškový rozsah pre tento tile (kvôli farbám)
-  // Poznámka: pre konzistentné farby cez celú jaskyňu by sme mali použiť globálny min/max
-  // Alebo aspoň odovzdať globálne minZ/maxZ
   let globalMinZ = Infinity, globalMaxZ = -Infinity;
   for (let i = 0; i < data.length; i++) {
     if (data[i] < globalMinZ) globalMinZ = data[i];
     if (data[i] > globalMaxZ) globalMaxZ = data[i];
   }
-
   const positions = new Float32Array(lines * samples * 3);
   const uvs = new Float32Array(lines * samples * 2);
   const colors = new Float32Array(lines * samples * 3);
   const indices: number[] = [];
 
+  // Pre LOX bitmap: vypočítame kalibrované UV priamo na CPU
+  // Použijeme bitmapCalib ak existuje, inak DTM calib (pre custom upload)
+  const texCalib = bitmapCalib || null;
+  const bitmapUvs = texCalib ? new Float32Array(lines * samples * 2) : undefined;
+
+  // Inverzná matica bitmapCalib pre prevod world → bitmap pixel
+  let bDetInv = 0, bxx = 0, bxy = 0, byx = 0, byy = 0, bOx = 0, bOy = 0;
+  if (texCalib) {
+    const bDet = texCalib.xx * texCalib.yy - texCalib.xy * texCalib.yx;
+    bDetInv = bDet !== 0 ? 1.0 / bDet : 0;
+    bxx = texCalib.xx; bxy = texCalib.xy;
+    byx = texCalib.yx; byy = texCalib.yy;
+    bOx = texCalib.xOrigin; bOy = texCalib.yOrigin;
+  }
+
   const det = calib.xx * calib.yy - calib.xy * calib.yx;
-  let vIdx = 0, uIdx = 0, cIdx = 0;
+  let vIdx = 0, uIdx = 0, cIdx = 0, buIdx = 0;
 
   for (let r = 0; r < lines; r++) {
     const row = rowStart + r;
@@ -881,8 +1008,26 @@ function buildTerrainTileData(surface: CaveSurface, colStart: number, rowStart: 
       positions[vIdx++] = wz - cz;
       positions[vIdx++] = -(wy - cy);
 
+      // Štandardné UV normalizované podľa DTM mriežky (pre custom textúru)
       uvs[uIdx++] = col / (origSamples - 1);
       uvs[uIdx++] = row / (origLines - 1);
+
+      // Kalibrované UV pre LOX bitmap: world → bitmap pixel → normalizované 0-1
+      if (bitmapUvs && texCalib) {
+        const dx = wx - bOx;
+        const dy = wy - bOy;
+        const px = (dx * byy - dy * bxy) * bDetInv;
+        const py = (dy * bxx - dx * byx) * bDetInv;
+        // Normalizujeme priamo ak poznáme rozmery obrázka, inak raw pixel coords
+        if (imgSize && imgSize[0] > 1 && imgSize[1] > 1) {
+          bitmapUvs[buIdx++] = px / imgSize[0];
+          bitmapUvs[buIdx++] = py / imgSize[1];
+        } else {
+          // imgSize ešte neznáme — uložíme raw, shader fallback normalizuje
+          bitmapUvs[buIdx++] = px;
+          bitmapUvs[buIdx++] = py;
+        }
+      }
 
       const colorVal = elevColor(normZ(wz, globalMinZ, globalMaxZ));
       colors[cIdx++] = colorVal.r; colors[cIdx++] = colorVal.g; colors[cIdx++] = colorVal.b;
@@ -900,21 +1045,21 @@ function buildTerrainTileData(surface: CaveSurface, colStart: number, rowStart: 
     }
   }
   
-  return { positions, uvs, colors, indices };
+  return { positions, uvs, bitmapUvs, colors, indices };
 }
 
 // ─── Terrain surface mesh (všetky módy) ──────────────────────────────────────
 const TILE_SIZE = 128; // Počet vrcholov na hranu dlaždice
 
-const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCount, ...props }: any) => {
+const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCount, imgSize, ...props }: any) => {
   const [geo, setGeo] = useState<THREE.BufferGeometry | null>(null);
 
   useEffect(() => {
-    const data = buildTerrainTileData(surface, colStart, rowStart, colCount, rowCount, 1);
+    const data = buildTerrainTileData(surface, colStart, rowStart, colCount, rowCount, imgSize, 1);
     const g = buildTerrainGeo(data);
     setGeo(g);
     return () => g.dispose();
-  }, [surface, colStart, rowStart, colCount, rowCount]);
+  }, [surface, colStart, rowStart, colCount, rowCount, imgSize]);
 
   if (!geo) return null;
 
@@ -941,10 +1086,67 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
       )}
       {props.showTexture && props.texture && (
         <mesh geometry={geo}>
-          <meshStandardMaterial map={props.texture} side={THREE.DoubleSide} transparent={props.opacity < 1} opacity={props.opacity}
-            roughness={0.85} depthWrite={props.opacity === 1}
-            polygonOffset polygonOffsetFactor={2} polygonOffsetUnits={2}
-            clippingPlanes={props.clippingPlanes} />
+          {/* Pre LOX bitmap: UV sú v uv2 ako raw pixelové súradnice, normalizujeme v shaderi pomocou imgSize */}
+          {/* Pre custom upload: UV sú štandardné 0-1 v uv, žiadny shader hack */}
+          <meshStandardMaterial
+            map={props.texture}
+            side={THREE.DoubleSide}
+            transparent={props.opacity < 1}
+            opacity={props.opacity}
+            roughness={0.85}
+            depthWrite={true}
+            polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-1}
+            clippingPlanes={props.clippingPlanes}
+            onBeforeCompile={(shader) => {
+              const isCustom = !!props.surfaceTextureUrl;
+              const hasBitmapCalib = !!surface.bitmapCalib;
+              const isNormalized = imgSize && imgSize[0] > 1;
+
+              // uIsLoxBitmap: 1 = LOX bitmap s kalibrovanými UV v uv2 (normalizované)
+              // 0 = custom upload s DTM UV v uv
+              shader.uniforms.uIsLoxBitmap = { value: (hasBitmapCalib && !isCustom) ? 1.0 : 0.0 };
+              // Fallback imgSize pre prípad že UV sú ešte raw (imgSize=[1,1])
+              shader.uniforms.uImgSize = { value: (imgSize && imgSize[0] > 1) ? imgSize : [1.0, 1.0] };
+
+              shader.vertexShader = `
+                attribute vec2 uv2;
+                uniform float uIsLoxBitmap;
+                varying vec2 vTexUv;
+                ${shader.vertexShader}
+              `.replace(
+                '#include <uv_vertex>',
+                `#include <uv_vertex>
+                 vTexUv = (uIsLoxBitmap > 0.5) ? uv2 : uv;
+                `
+              );
+
+              shader.fragmentShader = `
+                varying vec2 vTexUv;
+                uniform float uIsLoxBitmap;
+                uniform vec2 uImgSize;
+                ${shader.fragmentShader}
+              `.replace(
+                '#include <map_fragment>',
+                `
+                #ifdef USE_MAP
+                  vec2 finalUv;
+                  if (uIsLoxBitmap > 0.5) {
+                    // uv2 je normalizované 0-1 (ak imgSize bolo known pri buildu)
+                    // alebo raw pixely delíme uImgSize ako fallback
+                    finalUv = (uImgSize.x > 1.5) ? vTexUv / uImgSize : vTexUv;
+                    if (finalUv.x < -0.001 || finalUv.x > 1.001 || finalUv.y < -0.001 || finalUv.y > 1.001) {
+                      discard;
+                    } else {
+                      diffuseColor *= texture2D(map, finalUv);
+                    }
+                  } else {
+                    diffuseColor *= texture2D(map, vTexUv);
+                  }
+                #endif
+                `
+              );
+            }}
+          />
         </mesh>
       )}
       {props.showMeshWire && (
@@ -972,16 +1174,35 @@ const TerrainMesh = React.memo(({ surface, ...props }: any) => {
   }, [samples, lines]);
 
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
+  const [imgSize, setImgSize] = useState<[number, number]>([1, 1])
+  // Ref na shader uniforms pre dynamickú aktualizáciu bez rekompilácie
+  const imgSizeUniformRef = useRef<{ value: [number, number] }[]>([])
 
   useEffect(() => {
-    if (!surface.bitmapUrl) {
+    const url = props.surfaceTextureUrl || surface.bitmapUrl
+    if (!url) {
       setTexture(null)
       return
     }
-    const tex = new THREE.TextureLoader().load(surface.bitmapUrl)
-    setTexture(tex)
-    return () => tex.dispose()
-  }, [surface.bitmapUrl])
+    const loader = new THREE.TextureLoader()
+    loader.load(url, (t) => {
+      t.colorSpace = THREE.SRGBColorSpace
+      t.flipY = true 
+      t.needsUpdate = true
+      if (t.image && t.image.width && t.image.height) {
+        const newSize: [number, number] = [t.image.width, t.image.height]
+        setImgSize(newSize)
+        // Aktualizuj všetky registrované uniforms priamo — bez rekompilácie shadera
+        for (const u of imgSizeUniformRef.current) {
+          u.value = newSize
+        }
+      }
+      setTexture(t)
+    })
+    return () => {
+      if (texture) texture.dispose()
+    }
+  }, [surface.bitmapUrl, props.surfaceTextureUrl])
 
   const hoverGeo = useMemo(() => new THREE.SphereGeometry(0.25, 8, 8), [])
   const hoverMat = useMemo(() => new THREE.MeshBasicMaterial({ color: "#ef4444", depthTest: false }), [])
@@ -1018,7 +1239,7 @@ const TerrainMesh = React.memo(({ surface, ...props }: any) => {
       onPointerOut={() => setHoveredSurf(null)}
     >
       {tiles.map((tile, i) => (
-        <TerrainTile key={`${tile.colStart}-${tile.rowStart}`} surface={surface} {...tile} {...props} texture={texture} />
+        <TerrainTile key={`${tile.colStart}-${tile.rowStart}-${imgSize[0]}x${imgSize[1]}`} surface={surface} {...tile} {...props} texture={texture} imgSize={imgSize} />
       ))}
       
       {hoveredSurf && props.onSurfaceClick && (
@@ -1180,7 +1401,79 @@ interface Props {
   activeProfilePoints?: SelStation[] | null
 }
 
-// ─── Entrance Markers ─────────────────────────────────────────────────────────
+function EntranceMarkerItem({ ent, options }: { ent: any, options: ViewerOptions }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const vec = useMemo(() => new THREE.Vector3(ent.pos.x, ent.pos.z, -ent.pos.y), [ent])
+
+  useFrame(({ camera }) => {
+    if (ref.current) {
+      const dist = camera.position.distanceTo(vec)
+      // Dynamické škálovanie podľa vzdialenosti kamery, ale s limitmi pre ideálnu čitateľnosť
+      const scale = Math.max(0.5, Math.min(2.5, 40 / dist))
+      ref.current.style.transform = `translateY(-50%) scale(${scale})`
+    }
+  })
+
+  return (
+    <group position={[ent.pos.x, ent.pos.z, -ent.pos.y]}>
+      {/* Vertical pin line */}
+      <mesh position={[0, 2, 0]}>
+        <cylinderGeometry args={[0.05, 0.05, 4]} />
+        <meshBasicMaterial color="#fbbf24" />
+      </mesh>
+
+      {/* Entrance Symbol and Label */}
+      <Html center zIndexRange={[100, 0]} position={[0, 4, 0]}>
+        <div ref={ref} style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          pointerEvents: 'none',
+          userSelect: 'none',
+          transformOrigin: 'bottom center',
+          transition: 'transform 0.1s ease-out'
+        }}>
+          {/* SVG Mountain Icon */}
+          <div style={{
+            background: 'linear-gradient(135deg, #f59e0b, #fbbf24)',
+            padding: '5px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+            border: '2px solid white',
+            width: '28px',
+            height: '28px'
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1e293b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+               <path d="M8 3l4 8 5-5 5 15H2L8 3z" />
+            </svg>
+          </div>
+          
+          {options.showEntranceLabels && (
+            <div style={{
+              marginTop: '6px',
+              background: 'rgba(15, 23, 42, 0.9)',
+              color: '#fbbf24',
+              padding: '3px 10px',
+              borderRadius: '6px',
+              fontSize: '12px',
+              fontWeight: 800,
+              whiteSpace: 'nowrap',
+              border: '1.5px solid rgba(251, 191, 36, 0.5)',
+              boxShadow: '0 4px 10px rgba(0,0,0,0.5)',
+              backdropFilter: 'blur(4px)'
+            }}>
+              {ent.fullLabel || ent.name}
+            </div>
+          )}
+        </div>
+      </Html>
+    </group>
+  )
+}
+
 function EntranceMarkers({ cave, options }: { cave: ParsedCave, options: ViewerOptions }) {
   if (!options.showEntrances) return null
   
@@ -1190,61 +1483,7 @@ function EntranceMarkers({ cave, options }: { cave: ParsedCave, options: ViewerO
   return (
     <group>
       {entrances.map((ent, i) => (
-        <group key={ent.name + i} position={[ent.pos.x, ent.pos.z, -ent.pos.y]}>
-          {/* Vertical pin line */}
-          <mesh position={[0, 2, 0]}>
-            <cylinderGeometry args={[0.05, 0.05, 4]} />
-            <meshBasicMaterial color="#fbbf24" />
-          </mesh>
-
-          {/* Entrance Symbol and Label */}
-          <Html center distanceFactor={20} zIndexRange={[100, 0]} position={[0, 4, 0]}>
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              pointerEvents: 'none',
-              userSelect: 'none',
-              transform: 'translateY(-50%)'
-            }}>
-              {/* SVG Mountain Icon */}
-              <div style={{
-                background: 'linear-gradient(135deg, #f59e0b, #fbbf24)',
-                padding: '5px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-                border: '2px solid white',
-                width: '28px',
-                height: '28px'
-              }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1e293b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                   <path d="M8 3l4 8 5-5 5 15H2L8 3z" />
-                </svg>
-              </div>
-              
-              {options.showEntranceLabels && (
-                <div style={{
-                  marginTop: '6px',
-                  background: 'rgba(15, 23, 42, 0.9)',
-                  color: '#fbbf24',
-                  padding: '3px 10px',
-                  borderRadius: '6px',
-                  fontSize: '11px',
-                  fontWeight: 800,
-                  whiteSpace: 'nowrap',
-                  border: '1.5px solid rgba(251, 191, 36, 0.5)',
-                  boxShadow: '0 4px 10px rgba(0,0,0,0.5)',
-                  backdropFilter: 'blur(4px)'
-                }}>
-                  {ent.fullLabel || ent.name}
-                </div>
-              )}
-            </div>
-          </Html>
-        </group>
+        <EntranceMarkerItem key={ent.name + i} ent={ent} options={options} />
       ))}
     </group>
   )
@@ -1393,6 +1632,7 @@ const CaveViewer3D = ({
           showMesh={o.showSurfaceMesh}
           showMeshWire={o.showSurfaceMeshWire}
           showTexture={o.showSurfaceTexture}
+          surfaceTextureUrl={o.surfaceTextureUrl}
           showNetwork={o.showSurfaceNetwork}
           opacity={o.surfaceOpacity}
           surfaceColor={o.surfaceColor}

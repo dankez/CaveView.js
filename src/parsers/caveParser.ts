@@ -34,8 +34,14 @@ export interface Calibration {
 export interface CaveSurface {
   /** Width × Height elevation grid in metres (Float64, row-major) */
   dtm: { data: Float64Array; samples: number; lines: number; calib: Calibration }
-  /** JPEG or PNG data-URL for the overlay texture, or null */
+  /** Raw bitmap data if extracted from file */
+  bitmapData?: Uint8Array | null
+  /** MIME type of bitmapData */
+  bitmapMimeType?: string | null
+  /** JPEG or PNG data-URL for the overlay texture (created in main thread), or null */
   bitmapUrl: string | null
+  /** Optional calibration for the bitmap, if different from DTM */
+  bitmapCalib?: Calibration | null
   /** Same centering offset as applied to all cave coords */
   centerOffset: Vec3
 }
@@ -56,7 +62,7 @@ export interface ParsedCave {
 
 // ─── LOX Parser ────────────────────────────────────────────────────────────────
 
-export function parseLox(buffer: ArrayBuffer): ParsedCave {
+export function parseLox(buffer: ArrayBuffer, onProgress?: (msg: string) => void): ParsedCave {
   const f       = new DataView(buffer)
   const bytes   = new Uint8Array(buffer)
   const l       = buffer.byteLength
@@ -89,6 +95,11 @@ export function parseLox(buffer: ArrayBuffer): ParsedCave {
     const m_recCount     = readUint()
     const m_dataSize     = readUint()
 
+    if (m_type === 2 && onProgress) onProgress('parsing_stations');
+    if (m_type === 3 && onProgress) onProgress('parsing_shots');
+    if (m_type === 4 && onProgress) onProgress('generating_scraps');
+    if (m_type === 5 && onProgress) onProgress('generating_surface');
+
     const m_recSize = m_recCount > 0 ? m_totalRecSize / m_recCount : 0
     chunkDataStart = pos + m_totalRecSize   // out-of-line area for this chunk
 
@@ -109,12 +120,17 @@ export function parseLox(buffer: ArrayBuffer): ParsedCave {
     pos += m_dataSize
   }
 
+  if (onProgress) onProgress('finalizing');
+
   // Commit terrain if we collected DTM data
   if (terrain.dtm) {
     surfaces.push({
-      dtm:         terrain.dtm!,
-      bitmapUrl:   terrain.bitmapUrl ?? null,
-      centerOffset: { x: 0, y: 0, z: 0 }, // filled by buildResult
+      dtm:            terrain.dtm!,
+      bitmapData:     terrain.bitmapData ?? null,
+      bitmapMimeType: terrain.bitmapMimeType ?? null,
+      bitmapUrl:      null, // will be populated in main thread
+      bitmapCalib:    terrain.bitmapCalib ?? null,
+      centerOffset:   { x: 0, y: 0, z: 0 },
     })
   }
 
@@ -252,12 +268,12 @@ export function parseLox(buffer: ArrayBuffer): ParsedCave {
     terrain.dtm = { data: dtm, samples: m_width, lines: m_height, calib }
   }
 
-  // ── type 6 ─ Surface bitmap (JPEG/PNG overlay) ───────────────────────────
   function readSurfaceBMP() {
-    readUint()   // m_type
+    readUint()   // m_type (texture type)
     readUint()   // m_surfaceId
     const imagePtr = readDataPtr()
-    readCalibration()   // (calib already from type 5 — ignore duplicate here)
+    const calib = readCalibration()
+    terrain.bitmapCalib = calib
 
     const imgData = new Uint8Array(buffer, chunkDataStart + imagePtr.position, imagePtr.size)
     const b0 = imgData[0]; const b1 = imgData[1]
@@ -266,8 +282,9 @@ export function parseLox(buffer: ArrayBuffer): ParsedCave {
     else if (b0 === 0x89 && b1 === 0x50) mimeType = 'image/png'
     if (!mimeType) return
 
-    const blob = new Blob([imgData], { type: mimeType })
-    terrain.bitmapUrl = URL.createObjectURL(blob)
+    // We store raw data to avoid Blob URL revocation in Worker
+    terrain.bitmapData     = new Uint8Array(imgData) // Clone it so it's not tied to original buffer
+    terrain.bitmapMimeType = mimeType
   }
 
   function readCalibration(): Calibration {
@@ -281,7 +298,7 @@ export function parseLox(buffer: ArrayBuffer): ParsedCave {
 
 // ─── SVX .3d parser (v3–v8) ────────────────────────────────────────────────────
 
-export function parseSvx(buffer: ArrayBuffer): ParsedCave {
+export function parseSvx(buffer: ArrayBuffer, onProgress?: (msg: string) => void): ParsedCave {
   const data    = new Uint8Array(buffer)
   const dv      = new DataView(buffer)
   const decoder = new TextDecoder()
@@ -307,6 +324,7 @@ export function parseSvx(buffer: ArrayBuffer): ParsedCave {
 
   let label = ''; let prevPos: Vec3 | null = null; let stIdx = 0
 
+  if (onProgress) onProgress('parsing_model');
   while (pos < data.length) {
     const cmd = data[pos++]
     if (cmd === 0x00) { label = ''; continue }
@@ -381,13 +399,14 @@ export function parseSvx(buffer: ArrayBuffer): ParsedCave {
 
 // ─── PLT parser (Compass) ──────────────────────────────────────────────────────
 
-export function parsePlt(text: string): ParsedCave {
+export function parsePlt(text: string, onProgress?: (msg: string) => void): ParsedCave {
   const lines    = text.split('\n')
   const segments: Segment[]  = []
   const stations: Vec3[]     = []
   const meta     = new Map<number, { name: string; z: number }>()
   let prevPos: Vec3 | null   = null; let idx = 0
 
+  if (onProgress) onProgress('parsing_model');
   for (const rawLine of lines) {
     const line = rawLine.trim(); const cmd = line.charAt(0)
     if (cmd !== 'M' && cmd !== 'D') { prevPos = null; continue }

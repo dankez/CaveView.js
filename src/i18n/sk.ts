@@ -25,6 +25,14 @@ export const sk = {
     helpTouch: "dotykové gestá podporované",
     parsing: "Parsovanie súboru...",
     changeColor: "Zmeniť farbu",
+    loading_file: "Načítavam súbor...",
+    parsing_stations: "Spracovávam stanice...",
+    parsing_shots: "Spracovávam merania...",
+    generating_scraps: "Generujem steny jaskyne...",
+    generating_surface: "Generujem povrchový terén...",
+    finalizing: "Finalizujem model...",
+    parsing_model: "Parsovanie modelu...",
+    done: "Hotovo",
   },
   welcome: {
     sub: "3D Prehliadač jaskynných prieskumov",
@@ -33,7 +41,7 @@ export const sk = {
     selectFile: "Vybrať súbor",
     demoTitle: "Testovacie modely",
     stressTitle: "Záťažový test (Big Model)",
-    bigModel: "Veľký model (32MB)",
+    bigModel: "Veľký model (50MB - Zlomiskovo)",
   },
   legend: {
     title: "Legenda",
