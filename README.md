@@ -1,5 +1,5 @@
 # CaveView 3D - Modernized Speleological Viewer
-**Release 2026-04-26 (Stable)**
+**Release 2026-04-26-02 (Stable)**
 
 Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémov, postavená na technológiách React, Three.js a React-Three-Fiber.
 
@@ -9,6 +9,7 @@ Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémo
 *   **Optimalizácia pre LIDAR**: Plná podpora pre veľké modely (testované na 50MB+ .lox súboroch).
 *   **Memory Efficiency**: Prechod na `Float32Array` v parseroch a generátoroch geometrie, čo eliminuje pády prehliadača pri miliónoch vrcholov.
 *   **Smart Decimation**: Automatické vypnutie náročných funkcií (ako vyhladzovanie stien) pri extrémne veľkých modeloch pre zachovanie plynulosti 60 FPS.
+*   **Exclusive Terrain Modes**: Nová logika prepínania povrchov (Shaded / Network / Texture) v štýle prepínačov (radio buttons), ktorá zabraňuje vizuálnym artefaktom pri prekrývaní viacerých módov.
 
 ### 🗺️ Povrch & Textúry
 *   **Auto-Texture Loading**: Inteligentná extrakcia a automatické nanášanie textúr priamo z LOX súborov. 

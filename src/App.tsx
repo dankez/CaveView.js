@@ -515,7 +515,7 @@ export default function App() {
     // Terrain surface
     showSurfaceMesh:     true,
     showSurfaceMeshWire: false,
-    showSurfaceTexture:  true,
+    showSurfaceTexture:  false,
     showSurfaceNetwork:  false,
     surfaceOpacity:      0.8,
     surfaceColor:        '#e2e8f0',
@@ -810,12 +810,18 @@ export default function App() {
     }
 
     setCave(parsed)
-    setOpts(prev => ({ 
-      ...prev, 
-      clippingHeight: parsed.bounds.max.z + parsed.centerOffset.z,
-      showSurfaceTexture: hasBitmap ? true : prev.showSurfaceTexture,
-      surfaceTextureUrl: null // Reset custom texture on new model
-    }))
+    setOpts(prev => {
+      const hasBit = !!(hasBitmap)
+      return { 
+        ...prev, 
+        clippingHeight: parsed.bounds.max.z + parsed.centerOffset.z,
+        // Ak má model bitmapu, zapneme textúru, inak shaded. Ostatné vypneme.
+        showSurfaceMesh: !hasBit,
+        showSurfaceTexture: hasBit,
+        showSurfaceNetwork: false,
+        surfaceTextureUrl: null 
+      }
+    })
   }, [])
 
   const handleFile = useCallback(async (file: File) => {
@@ -1628,7 +1634,12 @@ export default function App() {
                         <ColorPicker t={t} value={opts.surfaceColor} onChange={(c) => setOpts(p => ({ ...p, surfaceColor: c }))} />
                       </label>
                       <div className={`switch${opts.showSurfaceMesh ? ' on' : ''}`}
-                        onClick={() => toggleOpt('showSurfaceMesh')} role="switch"
+                        onClick={() => setOpts(p => ({ 
+                          ...p, 
+                          showSurfaceMesh: !p.showSurfaceMesh, 
+                          showSurfaceNetwork: false, 
+                          showSurfaceTexture: false 
+                        }))} role="switch"
                         aria-checked={opts.showSurfaceMesh} tabIndex={0} />
                     </div>
                     <div className="toggle-row">
@@ -1647,7 +1658,12 @@ export default function App() {
                         {t('terrain.network')}
                       </label>
                       <div className={`switch${opts.showSurfaceNetwork ? ' on' : ''}`}
-                        onClick={() => toggleOpt('showSurfaceNetwork')} role="switch"
+                        onClick={() => setOpts(p => ({ 
+                          ...p, 
+                          showSurfaceMesh: false, 
+                          showSurfaceNetwork: !p.showSurfaceNetwork, 
+                          showSurfaceTexture: false 
+                        }))} role="switch"
                         aria-checked={opts.showSurfaceNetwork} tabIndex={0} />
                     </div>
                     <div className="toggle-row">
@@ -1665,7 +1681,13 @@ export default function App() {
                               const file = e.target.files?.[0];
                               if (file) {
                                 const url = URL.createObjectURL(file);
-                                setOpts(p => ({ ...p, surfaceTextureUrl: url, showSurfaceTexture: true }));
+                                setOpts(p => ({ 
+                                  ...p, 
+                                  surfaceTextureUrl: url, 
+                                  showSurfaceTexture: true,
+                                  showSurfaceMesh: false,
+                                  showSurfaceNetwork: false
+                                }));
                               }
                             };
                             inp.click();
@@ -1689,7 +1711,12 @@ export default function App() {
                           >✕</button>
                         )}
                         <div className={`switch${opts.showSurfaceTexture ? ' on' : ''}`}
-                          onClick={() => toggleOpt('showSurfaceTexture')} role="switch"
+                          onClick={() => setOpts(p => ({ 
+                            ...p, 
+                            showSurfaceMesh: false, 
+                            showSurfaceNetwork: false, 
+                            showSurfaceTexture: !p.showSurfaceTexture 
+                          }))} role="switch"
                           aria-checked={opts.showSurfaceTexture} tabIndex={0} />
                       </div>
                     </div>
