@@ -802,7 +802,7 @@ export default function App() {
     if (parsed.surfaces) {
       parsed.surfaces.forEach(s => {
         if (s.bitmapData && s.bitmapMimeType) {
-          const blob = new Blob([s.bitmapData], { type: s.bitmapMimeType })
+          const blob = new Blob([s.bitmapData as any], { type: s.bitmapMimeType })
           s.bitmapUrl = URL.createObjectURL(blob)
           hasBitmap = true
         }
