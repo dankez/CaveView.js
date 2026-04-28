@@ -1,4 +1,4 @@
-# 🔗 CaveView 3D - Systém zdieľania a vkladania (Embed)
+# 🔗 LochViewer - Systém zdieľania a vkladania (Embed)
 
 Tento modul umožňuje vkladať 3D modely jaskýň priamo do vašich webstránok alebo blogov pomocou `<iframe>`, podobne ako Mapy Google.
 
@@ -40,6 +40,6 @@ Aplikácia podporuje širokú škálu parametrov pre konfiguráciu zobrazenia be
 
 ## ⚠️ Dôležité upozornenie (CORS)
 
-Ak hostujete `.lox` súbory na vlastnom serveri, musíte povoliť **CORS** (Cross-Origin Resource Sharing), aby ich webová aplikácia CaveView mohla stiahnuť.
+Ak hostujete `.lox` súbory na vlastnom serveri, musíte povoliť **CORS** (Cross-Origin Resource Sharing), aby ich webová aplikácia LochViewer mohla stiahnuť.
 V konfigurácii servera (napr. `.htaccess` pre Apache) pridajte:
 `Header set Access-Control-Allow-Origin "*"`

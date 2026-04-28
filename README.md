@@ -1,9 +1,20 @@
-# CaveView 3D - Modernized Speleological Viewer
-**Release 1.1.0 (2026-04-28) - "The Sharing Update"**
+# LochViewer - Modernized Speleological Viewer
+**Release 1.1.1 (2026-04-28-02) - "LochViewer Rebranding"**
 
 Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémov, postavená na technológiách React, Three.js a React-Three-Fiber.
 
-## 🚀 Novinky v Release 2026-04-28 (v1.1.0)
+## 🚀 Novinky v Release 2026-04-28-02 (v1.1.1)
+
+### 🏷️ Rebranding na LochViewer
+*   **Oficiálne premenovanie**: Projekt bol premenovaný z CaveView na **LochViewer** (skratka **LV**) pre lepšiu identitu v rámci platformy `loch.sss.sk`.
+*   **UI Update**: Nové logo a názov v úvodnej obrazovke aj embed móde.
+
+### 📐 Analytické nástroje (Meranie)
+*   **Meranie vzdialeností**: Pridaná podpora pre presné meranie medzi bodmi v 3D priestore.
+*   **Hrúbka nadložia**: Automatický výpočet vertikálnej vzdialenosti medzi jaskynným bodom a povrchom terénu.
+*   **Blog Draft**: Pripravený podrobný článok pre verejnosť s vysvetlením všetkých funkcií.
+
+## 🚀 Novinky v Release 2026-04-28-01 (v1.1.0)
 
 ### 🔗 Revolúcia v zdieľaní (Share & Embed)
 *   **Google Maps Style Embed**: Možnosť vkladať 3D modely do ľubovoľných webových stránok pomocou `<iframe>`.
@@ -50,4 +61,4 @@ Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémo
 *   `.plt` (Compass data)
 
 ---
-© 2026 CaveView Modernization Project. Vyvinuté pre profesionálne speleologické prezentácie a výskum.
+© 2026 LochViewer Project. Vyvinuté pre profesionálne speleologické prezentácie a výskum.

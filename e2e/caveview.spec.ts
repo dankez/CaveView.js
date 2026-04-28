@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('CaveView Robust E2E Test', () => {
+test.describe('LochViewer Robust E2E Test', () => {
   test('should load application and interact with all main features in Desktop and Mobile', async ({ page, isMobile }) => {
     // 1. Ošetrenie chýb v konzole
     const errors: string[] = [];
@@ -15,7 +15,7 @@ test.describe('CaveView Robust E2E Test', () => {
     await page.goto('/');
 
     // 3. Kontrola načítania úvodnej obrazovky
-    await expect(page).toHaveTitle(/3D Cave Viewer|CaveView 3D/i);
+    await expect(page).toHaveTitle(/LochViewer/i);
     await expect(page.locator('.app, .welcome').first()).toBeVisible({ timeout: 10000 });
 
     // 4. Načítanie testovacích dát (Simple LOX)

@@ -1120,7 +1120,7 @@ export default function App() {
 
   const getIframeCode = () => {
     const url = getShareUrl(true)
-    return `<iframe src="${url}" width="${iframeWidth}" height="${iframeHeight}" style="border:0;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.4);" allowfullscreen loading="lazy" title="CaveView 3D - ${loadedFile?.name ?? 'Cave Model'}"></iframe>`
+    return `<iframe src="${url}" width="${iframeWidth}" height="${iframeHeight}" style="border:0;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.4);" allowfullscreen loading="lazy" title="LochViewer - ${loadedFile?.name ?? 'Cave Model'}"></iframe>`
   }
 
   const handleCopyShare = () => {
@@ -1411,7 +1411,7 @@ export default function App() {
           <div className="welcome">
             <div style={{ textAlign: 'center' }}>
               <div className="logo-icon">🏔️</div>
-              <h1 className="logo-title">CaveView 3D</h1>
+              <h1 className="logo-title">LochViewer</h1>
               <p className="logo-sub">{t('welcome.sub')}</p>
             </div>
 
@@ -2297,7 +2297,7 @@ export default function App() {
               <span className="material-symbols-outlined" style={{ fontSize: 18, display: 'block' }}>open_in_full</span>
             </a>
             <a href={fullUrl} target="_blank" rel="noopener noreferrer" className="embed-btn">
-              CV3D
+              LV
             </a>
           </div>
         )
