@@ -1,6 +1,6 @@
-# CaveView 3D: Modernizácia webového prehliadača jaskýň
+# LochViewer: Modernizácia webového prehliadača jaskýň
 
-Objavovanie a mapovanie jaskýň vyžaduje spracovanie veľkého množstva priestorových dát. Prezentácia týchto dát odbornej aj laickej verejnosti je dôležitou súčasťou našej práce. Pôvodný program CaveView dlho slúžil ako šikovný nástroj na zobrazovanie 3D modelov, no rozhodol som sa ho s pomocou AI prepísať a zmodernizovať, aby lepšie vyhovoval dnešným požiadavkám.
+Objavovanie a mapovanie jaskýň vyžaduje spracovanie veľkého množstva priestorových dát. Prezentácia týchto dát odbornej aj laickej verejnosti je dôležitou súčasťou našej práce. Pôvodný program CaveView dlho slúžil ako šikovný nástroj na zobrazovanie 3D modelov, no rozhodol som sa ho s pomocou AI prepísať a zmodernizovať pod novým názvom **LochViewer**, aby lepšie vyhovoval dnešným požiadavkám.
 
 [Sem vložte screenshot: Celkový pohľad na 3D model jaskyne s terénom a textúrou]
 
@@ -47,7 +47,10 @@ Tento nástroj robí z obyčajného 3D prehliadača skutočnú pracovnú a analy
 ### 4. Možnosť nahrávania videa
 Pre potreby prednášok alebo prezentácií je výhodné mať k dispozícii video záznam preletu jaskyňou. Do aplikácie som integroval nástroj na záznam obrazovky. Model sa môže začať sám plynulo otáčať a vy si pomocou jedného tlačidla nahráte video priamo do počítača. Záznam prebieha na pozadí, takže nijako neobmedzuje plynulosť prezerania.
 
-### 5. Informácie o načítavaní a prehľadné menu
+### 5. Plná podpora pre mobilné zariadenia
+Jaskyniari sú často v teréne, kde majú k dispozícii len smartfón alebo tablet. LochViewer som preto navrhol tak, aby bol plne responzívny. Ovládanie 3D modelu je optimalizované pre dotykové obrazovky (otáčanie, približovanie prstami). Celé menu sa na mobile skryje do prehľadného "hamburger" menu, aby ste mali na displeji čo najviac miesta pre samotnú jaskyňu. Vďaka optimalizácii výkonu navyše aplikácia beží plynulo aj na bežných mobilných telefónoch bez sekania.
+
+### 6. Informácie o načítavaní a prehľadné menu
 Keď nahrávate naozaj veľký súbor, aplikácia vám teraz ukazuje presný priebeh (ako postupuje načítavanie bodov, generovanie stien, či počítanie terénu). Prostredie som tiež preložil do viacerých jazykov a vizuálne ho upratal, aby bolo menu intuitívnejšie.
 
 ## Zdieľanie a vloženie modelu do webstránky (Embed)
@@ -71,7 +74,7 @@ TOTO JE MIESTO, KDE V REDAKČNOM SYSTÉME VLOŽÍTE IFRAME KÓD.
 -->
 
 ```html
-<iframe src="https://loch.sss.sk/?model=https://vasadomena.sk/zadiel.lox&embed=true&theme=precision&terrain=texture&clip=1&cliph=450" width="100%" height="600" style="border:0;border-radius:8px;box-shadow:0 4px 15px rgba(0,0,0,0.1);" allowfullscreen loading="lazy" title="CaveView 3D Zádiel"></iframe>
+<iframe src="https://loch.sss.sk/?model=https://vasadomena.sk/zadiel.lox&embed=true&theme=precision&terrain=texture&clip=1&cliph=450" width="100%" height="600" style="border:0;border-radius:8px;box-shadow:0 4px 15px rgba(0,0,0,0.1);" allowfullscreen loading="lazy" title="LochViewer Zádiel"></iframe>
 ```
 
 ---

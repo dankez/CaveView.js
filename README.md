@@ -1,7 +1,18 @@
 # LochViewer - Modernized Speleological Viewer
-**Release 1.1.1 (2026-04-28-02) - "LochViewer Rebranding"**
+**Release 1.1.2 (2026-04-28-03) - "Legend Fix & Blog Expansion"**
 
 Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémov, postavená na technológiách React, Three.js a React-Three-Fiber.
+
+## 🚀 Novinky v Release 2026-04-28-03 (v1.1.2)
+
+### 📊 Oprava a vylepšenie legendy
+*   **Fix: Dynamická legenda výšok**: Opravená chyba, kedy sa nezobrazovala výšková legenda pri farbení podľa nadmorskej výšky.
+*   **Čitateľnosť**: Popisky "Jaskyňa" a "Povrch" v legende dostali výrazný tieň a tučné písmo pre perfektnú čitateľnosť na akomkoľvek pozadí.
+*   **Inteligentné podmienky**: Legenda sa teraz automaticky zobrazí pri všetkých relevantných režimoch (walls altitude, traverse altitude, terrain network).
+
+### ✍️ Rozšírenie dokumentácie (Blog)
+*   **Mobile First**: Do draftu blogu pribudol odsek o mobilnom rozhraní a dotykovom ovládaní.
+*   **Rebranding**: Dokončené premenovanie na LochViewer vo všetkých lokalizačných súboroch a uvítacích správach.
 
 ## 🚀 Novinky v Release 2026-04-28-02 (v1.1.1)
 

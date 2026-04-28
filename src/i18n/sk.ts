@@ -1,10 +1,10 @@
 export const sk = {
   app: {
-    title: "CaveView 3D",
+    title: "LochViewer",
     tagline: "Moderná 3D vizualizácia jaskýň",
   },
   ui: {
-    welcome: "Vitajte v CaveViewer3D",
+    welcome: "Vitajte v LochViewer",
     selectFile: "Vyberte súbor jaskyne",
     dropFiles: "Presuňte súbory sem alebo kliknite pre výber",
     loading: "Načítavam model...",

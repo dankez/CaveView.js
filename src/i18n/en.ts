@@ -1,10 +1,10 @@
 export const en = {
   app: {
-    title: "CaveView 3D",
+    title: "LochViewer",
     tagline: "Modern 3D Cave Visualization",
   },
   ui: {
-    welcome: "Welcome to CaveViewer3D",
+    welcome: "Welcome to LochViewer",
     selectFile: "Select cave file",
     dropFiles: "Drop files here or click to select",
     loading: "Loading model...",

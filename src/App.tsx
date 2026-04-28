@@ -426,6 +426,50 @@ const ScaleBar = ({ cameraData }: { cameraData: { dist: number, fov: number, hei
   )
 }
 
+// ─── Color Scale Legend (Zobrazenie výšok pre farby) ─────────────────────────
+const ColorScaleLegend = ({ caveLegend, surfLegend, lang }: { 
+  caveLegend: { minAlt: number, maxAlt: number } | null, 
+  surfLegend: { minAlt: number, maxAlt: number } | null,
+  lang: string
+}) => {
+  if (!caveLegend && !surfLegend) return null
+  
+  const gradient = 'linear-gradient(to top, #142ea6 0%, #197ad9 18%, #1fc7b8 35%, #2ede61 50%, #ccf01a 65%, #f7990d 80%, #e01a1a 100%)'
+
+  return (
+    <div style={{
+      position: 'fixed', bottom: 12, left: 12, 
+      display: 'flex', gap: 16, alignItems: 'flex-end',
+      pointerEvents: 'none', zIndex: 100
+    }}>
+      {caveLegend && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ fontSize: 9, color: '#fff', textShadow: '0 1px 2px #000', marginBottom: 4, fontWeight: 600 }}>
+             {Math.round(caveLegend.maxAlt)} m
+          </div>
+          <div style={{ width: 12, height: 100, background: gradient, borderRadius: 2, border: '1px solid rgba(255,255,255,0.3)' }} />
+          <div style={{ fontSize: 9, color: '#fff', textShadow: '0 1px 2px #000', marginTop: 4, fontWeight: 600 }}>
+             {Math.round(caveLegend.minAlt)} m
+          </div>
+          <div style={{ fontSize: 8, color: '#fff', textShadow: '0 1px 2px #000', marginTop: 2, fontWeight: 700, letterSpacing: '0.02em' }}>{lang === 'sk' ? 'Jaskyňa' : 'Cave'}</div>
+        </div>
+      )}
+      {surfLegend && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ fontSize: 9, color: '#fff', textShadow: '0 1px 2px #000', marginBottom: 4, fontWeight: 600 }}>
+             {Math.round(surfLegend.maxAlt)} m
+          </div>
+          <div style={{ width: 12, height: 100, background: gradient, borderRadius: 2, border: '1px solid rgba(255,255,255,0.3)' }} />
+          <div style={{ fontSize: 9, color: '#fff', textShadow: '0 1px 2px #000', marginTop: 4, fontWeight: 600 }}>
+             {Math.round(surfLegend.minAlt)} m
+          </div>
+          <div style={{ fontSize: 8, color: '#fff', textShadow: '0 1px 2px #000', marginTop: 2, fontWeight: 700, letterSpacing: '0.02em' }}>{lang === 'sk' ? 'Povrch' : 'Surface'}</div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Processing Overlay (Zobrazí sa len ak operácia trvá > 0.5s) ────────────────
 const ProcessingOverlay = ({ info, lang }: { info: string | null, lang: string }) => {
   if (!info) return null
@@ -1172,7 +1216,7 @@ export default function App() {
   }, [cave, opts.scrapsAltitude, opts.traverseAltitude])
 
   const legendSurf = useMemo(() => {
-    if (!cave || !opts.showSurfaceNetwork) return null
+    if (!cave || (!opts.showSurfaceNetwork && !(opts.showSurfaceMesh && !opts.showSurfaceTexture))) return null
     let minZ = Infinity, maxZ = -Infinity
     if (cave.surfaces?.length > 0) {
       const d = cave.surfaces[0].dtm.data
@@ -2184,6 +2228,7 @@ export default function App() {
               </aside>
               </div>}
             <ScaleBar cameraData={cameraData} />
+            <ColorScaleLegend caveLegend={legendCave} surfLegend={legendSurf} lang={lang} />
             <ProcessingOverlay info={processingInfo} lang={lang} />
           </div>
         </div>
