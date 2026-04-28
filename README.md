@@ -1,29 +1,37 @@
 # CaveView 3D - Modernized Speleological Viewer
-**Release 2026-04-26-02 (Stable)**
+**Release 1.1.0 (2026-04-28) - "The Sharing Update"**
 
 Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémov, postavená na technológiách React, Three.js a React-Three-Fiber.
 
-## 🚀 Novinky v Release 2026-04-26
+## 🚀 Novinky v Release 2026-04-28 (v1.1.0)
+
+### 🔗 Revolúcia v zdieľaní (Share & Embed)
+*   **Google Maps Style Embed**: Možnosť vkladať 3D modely do ľubovoľných webových stránok pomocou `<iframe>`.
+*   **URL State Persistence**: Všetky nastavenia sidebaru (témy, farby, rezy, terén, zapnuté vrstvy) sa automaticky ukladajú do URL. Keď niekomu pošlete odkaz, uvidí presne to isté, čo vy.
+*   **Headless Embed Mode**: Špeciálne minimalistické zobrazenie bez menu a bočných panelov, ideálne pre blogy a vedecké články.
+-   **Smart Share Dialog**: Integrovaný nástroj na generovanie iframe kódu s možnosťou:
+    - Nastavenia rozmerov okna (iframe width/height).
+    - Povolenia sidebaru pre návštevníkov.
+    - Overenia dostupnosti modelu na verejnej URL (CORS check).
+*   **Fullscreen via Embed**: Tlačidlo v embed lište pre okamžité otvorenie modelu na celú obrazovku v novom okne.
+
+### 🏔️ Analýza & Rezy (Clipping)
+*   **Deep State Sync**: Opravená serializácia rezov (clipping planes). Rezy sa teraz prenášajú aj cez zdieľané odkazy.
+*   **Wireframe Color Sync**: Opravená synchronizácia farieb pre Wireframe mesh terénu v zdieľaných odkazoch.
+
+## 🚀 Predchádzajúce novinky (2026-04-26)
 
 ### 🏔️ Masívne modely & Výkon
 *   **Optimalizácia pre LIDAR**: Plná podpora pre veľké modely (testované na 50MB+ .lox súboroch).
-*   **Memory Efficiency**: Prechod na `Float32Array` v parseroch a generátoroch geometrie, čo eliminuje pády prehliadača pri miliónoch vrcholov.
-*   **Smart Decimation**: Automatické vypnutie náročných funkcií (ako vyhladzovanie stien) pri extrémne veľkých modeloch pre zachovanie plynulosti 60 FPS.
-*   **Exclusive Terrain Modes**: Nová logika prepínania povrchov (Shaded / Network / Texture) v štýle prepínačov (radio buttons), ktorá zabraňuje vizuálnym artefaktom pri prekrývaní viacerých módov.
+*   **Exclusive Terrain Modes**: Logika prepínania povrchov (Shaded / Network / Texture), ktorá zabraňuje vizuálnym artefaktom.
 
 ### 🗺️ Povrch & Textúry
-*   **Auto-Texture Loading**: Inteligentná extrakcia a automatické nanášanie textúr priamo z LOX súborov. 
-*   **CPU Calibration**: Prepočet UV súradníc prebieha na CPU pomocou afínnych transformácií, čo zaručuje milimetrovú presnosť prekrytia satelitných snímok na terén.
-*   **Custom Overlays**: Možnosť manuálneho nahrania vlastných JPG/PNG textúr pre akýkoľvek terénny model.
+*   **Auto-Texture Loading**: Inteligentná extrakcia textúr priamo z LOX súborov (Typ 6).
+*   **CPU Calibration**: Milimetrová presnosť prekrytia textúr vďaka afínnym transformáciám na CPU.
 
-### ⛏️ Progres & Feedback
-*   **Real-time Progress Bar**: Detailné informácie o priebehu načítavania (parsovanie staníc, meraní, generovanie stien, generovanie terénu).
-*   **Status Panel**: Vizuálna informácia o stave modelu (DRAFT / STABLE) a detekcia chýb v reálnom čase.
-
-### 🎬 Prezentačný modul (Cinematic Mode)
-*   **Auto-rotácia**: Plynulé otáčanie modelu s nastaviteľnou rýchlosťou.
-*   **Video Recording**: Priame nahrávanie 3D scény v 60 FPS s podporou kodekov VP9/VP8.
-*   **Non-blocking UI**: Nahrávanie prebieha na pozadí bez prerušenia interaktivity.
+### 🎬 Prezentačný modul
+*   **Video Recording**: Priame nahrávanie 3D scény v 60 FPS (VP9/VP8).
+*   **Cinematic Auto-rotate**: Plynulé otáčanie s nastaviteľnou rýchlosťou.
 
 ## 🛠 Inštalácia a spustenie
 
@@ -32,21 +40,11 @@ Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémo
     git clone https://github.com/dankez/CaveView.js.git
     cd CaveView-modernized
     ```
-2.  **Inštalácia závislostí**:
-    ```bash
-    npm install
-    ```
-3.  **Vývojový režim**:
-    ```bash
-    npm run dev
-    ```
-4.  **Produkčný Build**:
-    ```bash
-    npm run build
-    ```
+2.  **Inštalácia závislostí**: `npm install`
+3.  **Vývojový režim**: `npm run dev`
+4.  **Produkčný Build**: `npm run build`
 
 ## 📂 Podporované formáty
-Aplikácia podporuje kľúčové speleologické formáty:
 *   `.lox` (Therion / Loch data - vrátane textúr a DTM)
 *   `.3d` (Survex data)
 *   `.plt` (Compass data)

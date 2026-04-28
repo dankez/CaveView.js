@@ -468,6 +468,17 @@ export default function App() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [selectedStations, setSelectedStations] = useState<SelStation[]>([])
   const [isMeasuringMode, setIsMeasuringMode] = useState(false)
+  // Embed / Share
+  const [isEmbedMode] = useState(() => new URLSearchParams(window.location.search).get('embed') === 'true')
+  const [embedAllowSidebar] = useState(() => new URLSearchParams(window.location.search).get('sidebar') === '1')
+  const [shareDialogOpen, setShareDialogOpen] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
+  const [customShareUrl, setCustomShareUrl] = useState('')
+  const [urlValidationStatus, setUrlValidationStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle')
+  const [urlValidationError, setUrlValidationError] = useState<string | null>(null)
+  const [iframeWidth, setIframeWidth] = useState(800)
+  const [iframeHeight, setIframeHeight] = useState(500)
+  const [allowSidebarInEmbed, setAllowSidebarInEmbed] = useState(false)
   const [man1, setMan1] = useState('')
   const [man2, setMan2] = useState('')
   const [surfPointCache, setSurfPointCache] = useState<Record<string, SelStation>>({})
@@ -719,7 +730,7 @@ export default function App() {
     const origY = sl.pos.y + cave.centerOffset.y
     const altitude = sl.altitude
 
-    let gps = tryUtmToWgs84(origX, origY) || tryJtskToWgs84(origX, origY) || null
+    const gps = tryUtmToWgs84(origX, origY) || tryJtskToWgs84(origX, origY) || null
 
     let distToSurf: number | null = null
     if (cave.surfaces?.length > 0) {
@@ -871,7 +882,11 @@ export default function App() {
 
 
   // Load from URL (for demo/test models served from public/)
-  const loadFromUrl = useCallback(async (url: string, label: string) => {
+  const loadFromUrl = useCallback(async (rawUrl: string, label: string) => {
+    // Ak URL začína na /http, odrežeme úvodnú lomku (stáva sa pri zlom kódovaní parametrov)
+    let url = rawUrl
+    if (url.startsWith('/http')) url = url.substring(1)
+    
     const ext = '.' + url.split('.').pop()!.toLowerCase()
     setErrorMsg(null)
     setLoadedFile({ name: label, size: 0, ext })
@@ -925,6 +940,210 @@ export default function App() {
   const handleReset = () => {
     setAppState('welcome'); setLoadedFile(null); setCave(null)
     setProgress(0); setErrorMsg(null)
+  }
+
+  // ── Auto-load model from URL params (embed & share links) ──────────────────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const modelUrl = params.get('model')
+    if (modelUrl) {
+      const label = modelUrl.split('/').pop() || modelUrl
+      loadFromUrl(modelUrl, label)
+    }
+  }, [])
+
+  // ── Apply URL state after model loads ────────────────────────────────────────
+  useEffect(() => {
+    if (appState !== 'viewer') return
+    const p = new URLSearchParams(window.location.search)
+    if (!p.has('terrain') && !p.has('theme')) return // no state encoded, skip
+
+    const terrain = p.get('terrain')
+    setOpts(prev => ({
+      ...prev,
+      // Theme
+      ...(p.get('theme') ? (() => { const th = p.get('theme') as keyof typeof THEMES; return THEMES[th] ?? {} })() : {}),
+      // Terrain surface
+      showSurfaceMesh:     terrain === 'shaded',
+      showSurfaceNetwork:  terrain === 'network',
+      showSurfaceTexture:  terrain === 'texture',
+      showSurfaceMeshWire: p.get('wire') === '1',
+      surfaceOpacity:      p.has('surfop') ? parseFloat(p.get('surfop')!) : prev.surfaceOpacity,
+      surfaceColor:        p.get('surfcol') ? '#' + p.get('surfcol') : prev.surfaceColor,
+      colorTerrainWire:    p.get('twire') ? '#' + p.get('twire') : prev.colorTerrainWire,
+      // Cave walls
+      showScraps:          p.get('scraps') !== '0',
+      smoothScraps:        p.get('smooth') === '1',
+      scrapsSolid:         p.get('solid') !== '0',
+      scrapsWireframe:     p.get('swire') === '1',
+      scrapsAltitude:      p.get('salt') === '1',
+      showRenderCave:      p.get('cave3d') === '1',
+      caveTexture:         (p.get('ctex') as any) ?? prev.caveTexture,
+      scrapsOpacity:       p.has('scrop') ? parseFloat(p.get('scrop')!) : prev.scrapsOpacity,
+      renderOpacity:       p.has('rop') ? parseFloat(p.get('rop')!) : prev.renderOpacity,
+      colorScraps:         p.get('cscraps') ? '#' + p.get('cscraps') : prev.colorScraps,
+      colorScrapsWire:     p.get('cswire') ? '#' + p.get('cswire') : prev.colorScrapsWire,
+      // Survey
+      showTraverse:        p.get('trvrs') !== '0',
+      traverseAltitude:    p.get('talt') === '1',
+      traverseRadius:      p.has('tradius') ? parseFloat(p.get('tradius')!) : prev.traverseRadius,
+      showSplay:           p.get('splay') === '1',
+      colorTraverse:       p.get('ctrvrs') ? '#' + p.get('ctrvrs') : prev.colorTraverse,
+      colorSplay:          p.get('csplay') ? '#' + p.get('csplay') : prev.colorSplay,
+      // Stations
+      showStations:        p.get('stations') !== '0',
+      showStationNames:    p.get('snames') === '1',
+      showStationAlt:      p.get('salta') === '1',
+      showEntrances:       p.get('entrances') !== '0',
+      showEntranceLabels:  p.get('elabels') === '1',
+      colorStations:       p.get('cst') ? '#' + p.get('cst') : prev.colorStations,
+      colorStationNames:   p.get('cstn') ? '#' + p.get('cstn') : prev.colorStationNames,
+      colorStationAlt:     p.get('csta') ? '#' + p.get('csta') : prev.colorStationAlt,
+      // Grid / BBox
+      showGrid:            p.get('grid') !== '0',
+      showBoundingBox:     p.get('bbox') === '1',
+      colorGrid:           p.get('cgrid') ? '#' + p.get('cgrid') : prev.colorGrid,
+      // Colors
+      colorBackground:     p.get('bg') ? '#' + p.get('bg') : prev.colorBackground,
+      // Clipping / Rezy
+      showClipping:        p.get('clip') === '1',
+      clippingHeight:      p.has('cliph') ? parseFloat(p.get('cliph')!) : prev.clippingHeight,
+      showProfileClipping: p.get('pclip') === '1',
+      profileClipFlip:     p.get('pflip') === '1',
+      profileClipOffset:   p.has('poff') ? parseFloat(p.get('poff')!) : prev.profileClipOffset,
+      excludeModelFromClipping: p.get('excl') === '1',
+      // Auto-rotate
+      autoRotate:          p.get('rot') === '1',
+      autoRotateSpeed:     p.has('rotspd') ? parseFloat(p.get('rotspd')!) : prev.autoRotateSpeed,
+    }))
+  }, [appState])
+
+  // ── State → URL encoder ──────────────────────────────────────────────────────
+  const encodeState = (o: ViewerOptions, modelParam: string): URLSearchParams => {
+    const p = new URLSearchParams()
+    p.set('model', modelParam)
+    p.set('embed', 'true')
+    // Theme
+    p.set('theme', currentTheme)
+    // Terrain
+    const terrain = o.showSurfaceTexture ? 'texture' : o.showSurfaceNetwork ? 'network' : 'shaded'
+    p.set('terrain', terrain)
+    if (o.showSurfaceMeshWire) p.set('wire', '1')
+    if (o.surfaceOpacity !== 0.8) p.set('surfop', String(o.surfaceOpacity))
+    const defSurfCol = '#e2e8f0'
+    if (o.surfaceColor !== defSurfCol) p.set('surfcol', o.surfaceColor.replace('#', ''))
+    if (o.colorTerrainWire !== '#6ab04c') p.set('twire', o.colorTerrainWire.replace('#', ''))
+    // Cave walls
+    if (!o.showScraps) p.set('scraps', '0')
+    if (o.smoothScraps) p.set('smooth', '1')
+    if (!o.scrapsSolid) p.set('solid', '0')
+    if (o.scrapsWireframe) p.set('swire', '1')
+    if (o.scrapsAltitude) p.set('salt', '1')
+    if (o.showRenderCave) p.set('cave3d', '1')
+    if (o.caveTexture !== 'limestone') p.set('ctex', o.caveTexture)
+    if (o.scrapsOpacity !== 0.85) p.set('scrop', String(o.scrapsOpacity))
+    if (o.renderOpacity !== 1.0) p.set('rop', String(o.renderOpacity))
+    if (o.colorScraps !== '#2a5585') p.set('cscraps', o.colorScraps.replace('#', ''))
+    if (o.colorScrapsWire !== '#6a9fd8') p.set('cswire', o.colorScrapsWire.replace('#', ''))
+    // Survey
+    if (!o.showTraverse) p.set('trvrs', '0')
+    if (o.traverseAltitude) p.set('talt', '1')
+    if (o.traverseRadius !== 0.3) p.set('tradius', String(o.traverseRadius))
+    if (o.showSplay) p.set('splay', '1')
+    if (o.colorTraverse !== '#ffffff') p.set('ctrvrs', o.colorTraverse.replace('#', ''))
+    if (o.colorSplay !== '#78909c') p.set('csplay', o.colorSplay.replace('#', ''))
+    // Stations
+    if (!o.showStations) p.set('stations', '0')
+    if (o.showStationNames) p.set('snames', '1')
+    if (o.showStationAlt) p.set('salta', '1')
+    if (!o.showEntrances) p.set('entrances', '0')
+    if (o.showEntranceLabels) p.set('elabels', '1')
+    if (o.colorStations !== '#fbbf24') p.set('cst', o.colorStations.replace('#', ''))
+    if (o.colorStationNames !== '#fbbf24') p.set('cstn', o.colorStationNames.replace('#', ''))
+    if (o.colorStationAlt !== '#a5f3fc') p.set('csta', o.colorStationAlt.replace('#', ''))
+    // Grid
+    if (!o.showGrid) p.set('grid', '0')
+    if (o.showBoundingBox) p.set('bbox', '1')
+    if (o.colorGrid !== '#224422') p.set('cgrid', o.colorGrid.replace('#', ''))
+    // Colors
+    if (o.colorBackground !== '#020617') p.set('bg', o.colorBackground.replace('#', ''))
+    // Clipping / Rezy
+    if (o.showClipping) p.set('clip', '1')
+    if (o.showClipping) p.set('cliph', String(o.clippingHeight))
+    if (o.showProfileClipping) p.set('pclip', '1')
+    if (o.profileClipFlip) p.set('pflip', '1')
+    if (o.profileClipOffset !== 0) p.set('poff', String(o.profileClipOffset))
+    if (o.excludeModelFromClipping) p.set('excl', '1')
+    // Auto-rotate
+    if (o.autoRotate) p.set('rot', '1')
+    if (o.autoRotateSpeed !== 2.0) p.set('rotspd', String(o.autoRotateSpeed))
+    // Sidebar access for embed visitors
+    if (allowSidebarInEmbed) p.set('sidebar', '1')
+    return p
+  }
+
+  // ── Share iframe generator ────────────────────────────────────────────────────
+  const validateUrl = async (url: string) => {
+    if (!url) return
+    setUrlValidationStatus('checking')
+    setUrlValidationError(null)
+    try {
+      // Skúsime HEAD request (rýchlejší, len hlavičky)
+      const resp = await fetch(url, { method: 'HEAD' })
+      if (resp.ok) {
+        setUrlValidationStatus('valid')
+      } else {
+        setUrlValidationStatus('invalid')
+        setUrlValidationError(`Chyba: Server vrátil status ${resp.status}`)
+      }
+    } catch (err: any) {
+      setUrlValidationStatus('invalid')
+      setUrlValidationError(lang === 'sk' 
+        ? 'Súbor nie je prístupný. Skontroluj adresu alebo CORS nastavenia servera.' 
+        : 'File not accessible. Check URL or CORS settings.')
+    }
+  }
+
+  const getShareUrl = (withEmbed = true) => {
+    const base = window.location.origin + window.location.pathname
+    const params = new URLSearchParams(window.location.search)
+    
+    // Použijeme buď custom zadanú URL, alebo pôvodnú z parametrov/názvu
+    const modelParam = customShareUrl || params.get('model') || `/${loadedFile?.name ?? ''}`
+    
+    if (!withEmbed) {
+      return `${base}?model=${encodeURIComponent(modelParam)}`
+    }
+    const encoded = encodeState(opts, modelParam)
+    return `${base}?${encoded.toString()}`
+  }
+
+  const getIframeCode = () => {
+    const url = getShareUrl(true)
+    return `<iframe src="${url}" width="${iframeWidth}" height="${iframeHeight}" style="border:0;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.4);" allowfullscreen loading="lazy" title="CaveView 3D - ${loadedFile?.name ?? 'Cave Model'}"></iframe>`
+  }
+
+  const handleCopyShare = () => {
+    if (urlValidationStatus === 'invalid') {
+      if (!confirm(lang === 'sk' 
+        ? 'Varovanie: URL adresa modelu nebola overená alebo je chybná. Chceš napriek tomu skopírovať kód?' 
+        : 'Warning: Model URL was not verified or is invalid. Copy anyway?')) {
+        return
+      }
+    }
+    navigator.clipboard.writeText(getIframeCode()).then(() => {
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 2500)
+    })
+  }
+
+  const openShareDialog = () => {
+    const params = new URLSearchParams(window.location.search)
+    const currentModel = params.get('model') || `/${loadedFile?.name ?? ''}`
+    setCustomShareUrl(currentModel)
+    setUrlValidationStatus('idle')
+    setUrlValidationError(null)
+    setShareDialogOpen(true)
   }
 
   const toggleOpt = (key: keyof ViewerOptions) =>
@@ -1111,6 +1330,54 @@ export default function App() {
           100% { transform: scale(1); opacity: 1; }
         }
 
+        /* ── EMBED MODE ── */
+        .embed-topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 999; display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: rgba(8,12,24,0.85); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .embed-logo { font-size: 12px; font-weight: 800; color: #63b3ed; letter-spacing: .05em; }
+        .embed-name { font-size: 11px; color: #94a3b8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+        .embed-spacer { flex: 1; }
+        .embed-btn { background: rgba(99,179,237,0.12); border: 1px solid rgba(99,179,237,0.25); border-radius: 6px; color: #63b3ed; font-size: 10px; font-weight: 600; padding: 4px 8px; cursor: pointer; text-decoration: none; display: flex; align-items: center; gap: 4px; }
+        .embed-btn:hover { background: rgba(99,179,237,0.22); }
+
+        /* ── SHARE DIALOG ── */
+        .share-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.75); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 1rem; }
+        .share-dialog { background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 1.5rem; max-width: 560px; width: 100%; box-shadow: 0 24px 80px rgba(0,0,0,0.7); }
+        .share-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.25rem; color: #f1f5f9; }
+        .share-sub { font-size: 0.8rem; color: #64748b; margin-bottom: 1.2rem; }
+        .share-code { background: #020617; border: 1px solid #1e293b; border-radius: 8px; padding: 0.85rem; font-family: monospace; font-size: 11px; color: #7dd3fc; word-break: break-all; line-height: 1.6; margin-bottom: 0.75rem; max-height: 120px; overflow-y: auto; }
+        .share-preview-label { font-size: 10px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 0.5rem; }
+        .share-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+        .share-copy-btn { flex: 1; background: linear-gradient(135deg,#4299e1,#6366f1); color: #fff; border: none; border-radius: 8px; padding: 0.6rem 1rem; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity .2s; }
+        .share-copy-btn:hover { opacity: 0.9; }
+        .share-close-btn { background: #1e293b; border: 1px solid #334155; color: #94a3b8; border-radius: 8px; padding: 0.6rem 1rem; font-size: 13px; cursor: pointer; }
+        .share-close-btn:hover { background: #334155; }
+        .share-open-link { display: block; font-size: 10px; color: #6366f1; text-align: center; margin-top: 0.75rem; text-decoration: none; }
+        .share-open-link:hover { text-decoration: underline; }
+
+        .share-input-row { display: flex; gap: 8px; margin-bottom: 1.2rem; }
+        .share-url-input { flex: 1; background: #020617; border: 1px solid #1e293b; border-radius: 8px; padding: 0.6rem 0.8rem; font-size: 13px; color: #f1f5f9; outline: none; }
+        .share-url-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+        .btn-verify { background: #1e293b; border: 1px solid #334155; color: #94a3b8; border-radius: 8px; padding: 0.6rem 1rem; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+        .btn-verify:hover:not(:disabled) { background: #334155; color: #fff; }
+        .btn-verify:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-verify.valid { border-color: #10b981; color: #10b981; }
+        .btn-verify.invalid { border-color: #ef4444; color: #ef4444; }
+
+        .validation-msg { font-size: 11px; margin-top: -0.8rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 4px; }
+        .validation-msg.valid { color: #10b981; }
+        .validation-msg.invalid { color: #ef4444; }
+        .validation-msg.checking { color: #63b3ed; }
+
+        .share-size-row { display: flex; align-items: center; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+        .share-size-preset { background: #1e293b; border: 1px solid #334155; border-radius: 6px; color: #94a3b8; font-size: 10px; font-weight: 600; padding: 4px 8px; cursor: pointer; transition: all 0.15s; }
+        .share-size-preset:hover, .share-size-preset.active { background: #334155; color: #f1f5f9; border-color: #6366f1; }
+        .share-size-input { width: 60px; background: #020617; border: 1px solid #1e293b; border-radius: 6px; padding: 4px 6px; font-size: 12px; color: #f1f5f9; outline: none; text-align: center; }
+        .share-size-input:focus { border-color: #3b82f6; }
+        .share-toggle-row { display: flex; align-items: center; gap: 10px; padding: 0.6rem 0.8rem; background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.15); border-radius: 8px; margin-bottom: 0.9rem; }
+        .share-toggle-label { flex: 1; font-size: 12px; color: #c7d2fe; }
+        .share-toggle-label small { display: block; font-size: 10px; color: #64748b; margin-top: 2px; }
+        .embed-fullscreen-btn { background: rgba(99,179,237,0.12); border: 1px solid rgba(99,179,237,0.25); border-radius: 6px; color: #63b3ed; font-size: 14px; padding: 4px 8px; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+        .embed-fullscreen-btn:hover { background: rgba(99,179,237,0.25); }
+
         @media (max-width: 1023px) {
           .sidebar-container { display: none; }
           .sidebar-container.open { 
@@ -1223,7 +1490,8 @@ export default function App() {
         {/* ── VIEWER ── */}
         {appState === 'viewer' && cave && (
           <div className="viewer-shell">
-            {/* Top bar */}
+            {/* Top bar — hidden in embed mode */}
+            {!isEmbedMode && (
             <div className="topbar">
               {/* Menu Button pre Mobily (prvá položka) */}
               <button className="btn-menu btn-back" style={{ display: 'none', marginRight: 8, background: 'rgba(255,255,255,0.15)', borderWidth: 0, padding: '0.4rem 0.7rem' }} onClick={() => setIsMobileMenuOpen(true)}>
@@ -1311,11 +1579,25 @@ export default function App() {
                   <span className="material-symbols-outlined" style={{ fontSize: '16px', display: 'block' }}>close</span>
                   <span>{t('ui.close')}</span>
                 </button>
+
+                {/* Share button - only when model is loaded from a public URL */}
+                {!isEmbedMode && (
+                  <button
+                    onClick={openShareDialog}
+                    className="hide-mobile-flex"
+                    style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '6px', color: '#818cf8', padding: '6px 12px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    title={lang === 'sk' ? 'Zdieľať ako iframe' : 'Share as iframe'}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '16px', display: 'block' }}>share</span>
+                    <span>{lang === 'sk' ? 'Zdieľať' : 'Share'}</span>
+                  </button>
+                )}
               </div>
             </div>
+            )}
 
             <div className="viewer-body">
-              <div className="canvas-wrap">
+              <div className="canvas-wrap" style={isEmbedMode ? { paddingTop: 36 } : undefined}>
                 <Suspense fallback={
                   <div className="loading-overlay">
                     <span className="loading-3d">{t('ui.init3d')}</span>
@@ -1360,8 +1642,8 @@ export default function App() {
                 )}
               </div>
 
-              {/* Sidebar container */}
-              <div className={`sidebar-container ${isMobileMenuOpen ? 'open' : ''}`}>
+              {/* Sidebar container — hidden in embed mode unless sidebar=1 is in URL */}
+              {(!isEmbedMode || embedAllowSidebar) && <div className={`sidebar-container ${isMobileMenuOpen ? 'open' : ''}`}>
                 <aside className="sidebar">
                   {isMobileMenuOpen && (
                     <div style={{ marginBottom: '1rem' }}>
@@ -1900,13 +2182,126 @@ export default function App() {
                   ))}
                 </div>
               </aside>
-            </div>
+              </div>}
             <ScaleBar cameraData={cameraData} />
             <ProcessingOverlay info={processingInfo} lang={lang} />
           </div>
         </div>
       )}
     </div>
+
+      {/* ── SHARE DIALOG ── */}
+      {shareDialogOpen && (
+        <div className="share-overlay" onClick={() => setShareDialogOpen(false)}>
+          <div className="share-dialog" onClick={e => e.stopPropagation()}>
+            <div className="share-title">🔗 {lang === 'sk' ? 'Zdieľať model' : 'Share model'}</div>
+            <div className="share-sub">
+              {lang === 'sk'
+                ? 'Nastav si vzhľad modelu v sidebari, potom klikni Share — všetky nastavenia sa uložia do odkazu rovnako ako Google Maps.'
+                : 'Configure the model look in the sidebar, then click Share — all settings are saved into the link, just like Google Maps.'}
+            </div>
+            <div className="share-preview-label">🌐 {lang === 'sk' ? 'Verejná URL adresa modelu' : 'Public Model URL'}</div>
+            <div className="share-input-row">
+              <input 
+                type="text" 
+                className="share-url-input"
+                placeholder="https://vasadomena.sk/model.lox"
+                value={customShareUrl}
+                onChange={e => {
+                  setCustomShareUrl(e.target.value)
+                  setUrlValidationStatus('idle')
+                  setUrlValidationError(null)
+                }}
+              />
+              <button 
+                className={`btn-verify ${urlValidationStatus}`}
+                onClick={() => validateUrl(customShareUrl)}
+                disabled={urlValidationStatus === 'checking' || !customShareUrl}
+              >
+                {urlValidationStatus === 'checking' ? '...' : (lang === 'sk' ? 'Overiť' : 'Verify')}
+              </button>
+            </div>
+            {urlValidationStatus === 'checking' && <div className="validation-msg checking">⌛ {lang === 'sk' ? 'Kontrolujem dostupnosť...' : 'Checking accessibility...'}</div>}
+            {urlValidationStatus === 'valid' && <div className="validation-msg valid">✅ {lang === 'sk' ? 'Súbor je dostupný' : 'File is accessible'}</div>}
+            {urlValidationStatus === 'invalid' && <div className="validation-msg invalid">❌ {urlValidationError}</div>}
+
+            {/* ── Rozmery iframu ── */}
+            <div className="share-preview-label">📐 {lang === 'sk' ? 'Veľkosť okna' : 'Window size'}</div>
+            <div className="share-size-row">
+              {([{w:400,h:300},{w:600,h:400},{w:800,h:500},{w:1200,h:700}] as const).map(({w,h}) => (
+                <button key={w}
+                  className={`share-size-preset${iframeWidth===w && iframeHeight===h ? ' active' : ''}`}
+                  onClick={() => { setIframeWidth(w); setIframeHeight(h) }}
+                >{w}×{h}</button>
+              ))}
+              <span style={{ color: '#475569', fontSize: 10, margin: '0 4px' }}>|</span>
+              <input type="number" className="share-size-input" value={iframeWidth} min={200} max={3840}
+                onChange={e => setIframeWidth(+e.target.value)} title="width" />
+              <span style={{ color: '#475569', fontSize: 11 }}>×</span>
+              <input type="number" className="share-size-input" value={iframeHeight} min={150} max={2160}
+                onChange={e => setIframeHeight(+e.target.value)} title="height" />
+              <span style={{ color: '#475569', fontSize: 10 }}>px</span>
+            </div>
+
+            {/* ── Sidebar povolenie pre návštevníkov ── */}
+            <div className="share-toggle-row">
+              <div className="share-toggle-label">
+                {lang === 'sk' ? 'Zobraziť sidebar návštevníkom' : 'Show sidebar to visitors'}
+                <small>{lang === 'sk' ? 'Návštevník bude môcť meniť nastavenia modelu' : 'Visitor can change model settings'}</small>
+              </div>
+              <div className={`switch${allowSidebarInEmbed ? ' on' : ''}`}
+                onClick={() => setAllowSidebarInEmbed(p => !p)} role="switch"
+                aria-checked={allowSidebarInEmbed} tabIndex={0} />
+            </div>
+
+            <div className="share-preview-label">📋 iframe kód (s aktuálnymi nastaveniami)</div>
+            <div className="share-code">{getIframeCode()}</div>
+            
+            <div style={{ fontSize: '10px', color: '#475569', marginBottom: '0.8rem', lineHeight: 1.5 }}>
+              💡 {lang === 'sk'
+                ? 'Tip: Ak model hostuješ na vlastnom serveri, nezabudni povoliť CORS.'
+                : 'Tip: If hosting the model on your own server, remember to enable CORS.'}
+            </div>
+            <div className="share-actions">
+              <button className="share-copy-btn" onClick={handleCopyShare}>
+                {shareCopied ? '✓ Skopírované!' : '📋 Kopírovať iframe kód'}
+              </button>
+              <button
+                className="share-copy-btn"
+                style={{ background: '#334155', flex: 0, padding: '0.6rem 0.8rem' }}
+                onClick={() => navigator.clipboard.writeText(getShareUrl(true)).then(() => { setShareCopied(true); setTimeout(() => setShareCopied(false), 2500) })}
+                title={lang === 'sk' ? 'Kopírovať priamy odkaz' : 'Copy direct link'}
+              >🔗</button>
+              <button className="share-close-btn" onClick={() => setShareDialogOpen(false)}>✕</button>
+            </div>
+            <a href={getShareUrl(true)} target="_blank" rel="noopener noreferrer" className="share-open-link">
+              ↗ {lang === 'sk' ? 'Otvoriť v novom okne (embed náhľad)' : 'Open in new window (embed preview)'}
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* ── EMBED MODE TOP BAR (minimal branding) ── */}
+      {isEmbedMode && appState === 'viewer' && (() => {
+        const fullUrl = `${window.location.origin}${window.location.pathname}?model=${encodeURIComponent(new URLSearchParams(window.location.search).get('model') ?? '')}`
+        return (
+          <div className="embed-topbar">
+            <span className="embed-logo">🏔️</span>
+            <span className="embed-name">{loadedFile?.name}</span>
+            <span className="embed-spacer" />
+            {/* Fullscreen — otvoriť v novom okne */}
+            <a href={fullUrl} target="_blank" rel="noopener noreferrer"
+              className="embed-fullscreen-btn"
+              title={lang === 'sk' ? 'Otvoriť na celej obrazovke' : 'Open fullscreen'}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 18, display: 'block' }}>open_in_full</span>
+            </a>
+            <a href={fullUrl} target="_blank" rel="noopener noreferrer" className="embed-btn">
+              CV3D
+            </a>
+          </div>
+        )
+      })()}
     </>
   )
 }
