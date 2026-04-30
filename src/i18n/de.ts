@@ -83,6 +83,8 @@ export const de = {
     network: "Netzmodell (Höhen)",
     texture: "Textur (JPG/PNG)",
     contours: "Höhenlinien",
+    contourBase: "Grundfarbe",
+    contourMajor: "Hauptfarbe",
     opacity: "Deckkraft",
   },
   cave: {

@@ -83,6 +83,8 @@ export const fr = {
     network: "Modèle de réseau (altitudes)",
     texture: "Texture (JPG/PNG)",
     contours: "Courbes de niveau",
+    contourBase: "Couleur de base",
+    contourMajor: "Couleur majeure",
     opacity: "Opacité",
   },
   cave: {

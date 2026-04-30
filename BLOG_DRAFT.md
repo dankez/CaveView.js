@@ -1,83 +1,61 @@
-# LochViewer: Modernizácia webového prehliadača jaskýň
+# LochViewer: Keď jaskyne v prehliadači konečne nesekajú (ani po treťom pive) 🏔️🔦
 
-Objavovanie a mapovanie jaskýň vyžaduje spracovanie veľkého množstva priestorových dát. Prezentácia týchto dát odbornej aj laickej verejnosti je dôležitou súčasťou našej práce. Pôvodný program CaveView dlho slúžil ako šikovný nástroj na zobrazovanie 3D modelov, no rozhodol som sa ho s pomocou AI prepísať a zmodernizovať pod novým názvom **LochViewer**, aby lepšie vyhovoval dnešným požiadavkám.
+Čaute bando! Všetci vieme, že kresliť jaskyne je drina, ale ukazovať ich ľuďom tak, aby si z toho nesedli na zadok len kvôli "modrej smrti" na obrazovke, je ešte väčšia výzva. Pôvodný CaveView bol fajn, ale ruku na srdce – občas mrzol častejšie ako pivo v bivaku v zime. 
 
-[Sem vložte screenshot: Celkový pohľad na 3D model jaskyne s terénom a textúrou]
+Rozhodol som sa mu teda dať poriadny facelift a pod kapotu mu namontoval poriadne turbo s pomocou AI (môj nový kamoš, čo nikdy nespí). Výsledok sa volá **LochViewer (LV)** a tu je prehľad toho, prečo by ste ho mali začať používať hneď po tom, čo vyjdete z diery.
 
-## Prečo bola potrebná modernizácia?
+[Sem vložte screenshot: Celkový pohľad na 3D model jaskyne, kde všetko svieti a hýbe sa plynulo]
 
-Pôvodný CaveView vznikol na vizualizáciu dát z bežných jaskyniarskych programov ako Therion (súbory `.lox`), Survex (`.3d`) či Compass (`.plt`). V súčasnosti sa však čoraz viac využívajú podrobné a veľmi veľké digitálne modely terénu a presné zamerania (napríklad LIDAR). 
+## Prečo sme to prekopali? (Okrem toho, že ma to baví)
 
-Tieto nové modely obsahujú obrovské množstvo bodov a polygónov. Staršia verzia aplikácie mala pri takomto objeme dát problémy – prehliadač spotreboval priveľa operačnej pamäte (RAM), čo často viedlo k sekaniu, spomaleniu celého počítača, alebo k úplnému zamrznutiu aplikácie.
+Starý CaveView vznikol v dobe, kedy sme boli radi, že máme aspoň nejaké `.lox` súbory. Dnes tu máme mračná bodov z LIDAR-u a digitálne modely terénu, ktoré majú toľko polygónov, že priemerný notebook pri ich načítaní začal simulovať štart raketoplánu. 
 
-Z tohto dôvodu som sa rozhodol pôvodný kód aplikácie zásadne upraviť. Zobral som pôvodnú myšlienku programu a aplikáciu som vo vnútri prepísal do moderných technológií, čo prinieslo lepšiu stabilitu a vyšší výkon.
+Nová verzia je postavená na moderných technológiách, ktoré rozumejú pamäti lepšie ako my mapovacím denníkom. Výsledok? Modely, ktoré predtým prehliadač odpísali do minúty, teraz behajú plynulo aj na mobile.
 
-## Zmeny "pod kapotou" (Technické vylepšenia laicky)
+## Čo je nové a prečo je to "pecka"?
 
-Aby aplikácia zvládla detailné modely plynulo, použil som súčasné technológie na tvorbu webových aplikácií (React a knižnicu Three.js, ktorá slúži na 3D grafiku priamo v prehliadači). 
+### 🏔️ 1. Vrstevnice, ktoré vám konečne niečo povedia
+Doteraz boli vrstevnice len také čiary "aby sa nepovedalo". V novom release sme im dali rozum:
+*   **Čísla všade, kde ich treba**: Pri hlavných vrstevniciach konečne uvidíte nadmorskú výšku. Algoritmus je taký šikovný, že vám tam vždy aspoň 1-3 čísla hodí do zorného poľa, aby ste nemuseli pátrať, či ste v 400-vke alebo 500-vke.
+*   **Vykuknú nad terén**: Čísla a čiary sú technicky "nad" mapou, takže žiadne "duchárske" prekrývanie s textúrou sa nekoná.
+*   **Dynamický zoom**: Čísla sa menia podľa toho, ako ďaleko ste. Keď ste blízko, sú veľké a čitateľné, keď odletíte k oblakom, nezmiznú, ale zmenšia sa tak akurát, aby ste mali prehľad.
 
-V praxi to prinieslo dve hlavné výhody:
-*   **Lepšia správa pamäte:** Dáta sa v programe ukladajú oveľa úspornejšie (prechodom na prísnejšie formáty dát v pamäti). Vďaka tomu dokáže prehliadač načítať modely, ktoré by ho predtým zahltili.
-*   **Inteligentné zjednodušovanie:** Ak do programu nahráte extrémne veľký a náročný model, systém automaticky dočasne vypne niektoré "okrasné" vizuálne vylepšenia (napríklad plynulé zaguľatenie stien jaskyne). Zabezpečí sa tak, že modelom sa bude dať aj naďalej plynulo otáčať a preliadať si ho.
+### 🗺️ 2. Mapy a povrchy bez deformácií
+Už žiadne od oka "natiahnuté" satelitky. Ak máte v súbore fotomapu, LochViewer ju na terén napasuje s matematickou presnosťou na metre. A ak ju nemáte? Jednoducho si tam hoďte hocijaký JPG z dronu a aplikácia sa postará o zvyšok. Terén si môžete prepínať medzi tieňovaným modelom, "drôtenou" sieťou alebo fotomapou jedným klikom v sidebare.
 
-[Sem vložte screenshot: Ukážka používateľského rozhrania – bočný panel s nastaveniami]
+### 📐 3. Merania (pre tých, čo chcú mať všetko pod kontrolou)
+Chcete vedieť, koľko metrov nad hlavou máte ten prekliaty kopec? Stačí kliknúť.
+*   **Hĺbka pod povrchom**: Jedno kliknutie v jaskyni a LV vám povie: "Kámo, nad tebou je 45 metrov vápenca."
+*   **GPS pre každého**: Kliknite na ľubovoľný bod a hneď máte WGS84 súradnice. Ideálne, keď hľadáte vchod v lese a máte len mobil.
+*   **Pravítko v 3D**: Meranie medzi bodmi je teraz také intuitívne, že by to zvládol aj netopier.
 
-## Čo pribudlo z používateľského pohľadu?
+### 🎥 4. Filmové štúdio priamo v prehliadači
+Chcete ukázať model na schôdzi klubu? Zapnite si auto-rotáciu, nastavte rýchlosť a rovno v appke stlačte **Nahrať**. Vypluje vám to WebM video, ktoré môžete hodiť na sociálne siete alebo do prezentácie. Žiadne externé nahrávače obrazovky už netreba!
 
-### 1. Práca s povrchom a satelitnými mapami
-Pri modeloch jaskýň je kľúčové vidieť aj topografiu povrchu. Aplikácia po novom dokáže na digitálny model terénu automaticky "natiahnuť" textúru (napríklad satelitnú snímku), pokiaľ je uložená priamo v zdrojovom súbore. Výpočty súradníc som upravil tak, aby mapa na povrch matematicky sedela na metre presne. Ak váš súbor textúru neobsahuje, pridal som možnosť manuálne si ju do nahraného modelu priložiť ako bežný obrázok (JPG/PNG). 
+### 📱 5. Mobilná verzia (pre jaskynných nomádov)
+Celý LochViewer je responzívny. Na mobile sa menu skryje pod hamburger, aby ste mali celú plochu na model. Ovládanie prstami je vyladené tak, aby ste jaskyňou mohli točiť aj so zablatenými rukami (ale radšej si ich utrite do gatí).
 
-Terén sa dá v bočnom paneli pohodlne prepínať medzi plným tieňovaným zobrazením, "drôtenou" sieťou, alebo zobrazením so satelitnou mapou bez toho, aby sa tieto vrstvy vizuálne prekrývali a robili vizuálne chyby.
+### 🔗 6. Zdieľanie ako u profíkov (Embed)
+Toto je moja najobľúbenejšia fičúra. Chcete dať model na klubovú stránku? 
+1. Nastavte si v sidebare presne to, čo chcete ukázať (uhol pohľadu, farby, rezy).
+2. Kliknite na **Share**.
+3. LV vám vygeneruje link, ktorý si všetko pamätá. Keď ho kamoš otvorí, uvidí **presne to isté**, čo vy. Žiadne vysvetľovanie "stlač tamten gombík a pohni posuvníkom".
+4. Máme tam aj generátor **iframe kódu** pre weby. Stačí skopírovať a vložiť. Čisté, elegantné, bez zbytočných panelov (ak ich nechcete).
 
-Najnovšie vylepšenia pridali aj inteligentnú prácu s vrstevnicami. Tie sú teraz vždy technicky nadradené terénu aj fotomape, takže zostávajú perfektne čitateľné aj pri nižšej priehľadnosti modelu. Navyše pribudla možnosť farebne odlíšiť hlavné vrstevnice od vedľajších, čo dramaticky zlepšuje orientáciu v členitom teréne.
+[Sem vložte screenshot: Ukážka nového Share dialógu – vyzerá to fakt svetovo!]
 
-[Sem vložte screenshot: Detailný pohľad na povrchový terén s aplikovanou satelitnou textúrou]
+## Farebné legendy a "vizuálne žrádlo"
+Pridali sme aj prehľadné farebné legendy, takže hneď vidíte, ktorá farba v jaskyni znamená akú hĺbku. Celý dizajn sme "vypucovali" do tmavej témy so sklenenými efektmi (`glassmorphism`), aby to vyzeralo ako z roku 2026 a nie 1996.
 
-### 2. Tvorba rezov (Clipping) v jaskyni aj v teréne
-Jedným z najužitočnejších nástrojov pri skúmaní jaskýň v 3D priestore je tvorba rezov. Často potrebujete "odrezať" kus kopca, aby ste videli, ako hlboko pod povrchom sa chodba nachádza, alebo si jaskyňu rozrezať na výškové poschodia a pozrieť sa dnu zhora. 
+## Živá ukážka na záver (Vyskúšaj si to!)
 
-Pridal som preto funkciu horizontálneho rezu terénu aj profilového (zvislého) rezu. Pomocou posuvníka si presne určíte, v akej nadmorskej výške (alebo na akej osi) sa má model zrezať a nahliadnuť pod povrch.
-
-### 3. Presné merania vzdialeností a hĺbky
-Pri prezeraní 3D modelu nestačí len vizuálny odhad. Do aplikácie som zapracoval analytický nástroj na meranie. Jednoduchým klikaním priamo v 3D priestore si môžete:
-* Zmerať priamu vzdialenosť medzi akýmikolvek dvoma bodmi v jaskyni.
-* Vypočítať presnú hĺbku konkrétneho bodu v jaskyni voči povrchu priamo nad ním (dozviete sa tak hrúbku nadložia).
-* Zistiť presné GPS súradnice (WGS84) pre akýkoľvek geodetický bod priamo z modelu.
-
-Tento nástroj robí z obyčajného 3D prehliadača skutočnú pracovnú a analytickú pomôcku.
-
-### 4. Možnosť nahrávania videa
-Pre potreby prednášok alebo prezentácií je výhodné mať k dispozícii video záznam preletu jaskyňou. Do aplikácie som integroval nástroj na záznam obrazovky. Model sa môže začať sám plynulo otáčať a vy si pomocou jedného tlačidla nahráte video priamo do počítača. Záznam prebieha na pozadí, takže nijako neobmedzuje plynulosť prezerania.
-
-### 5. Plná podpora pre mobilné zariadenia
-Jaskyniari sú často v teréne, kde majú k dispozícii len smartfón alebo tablet. LochViewer som preto navrhol tak, aby bol plne responzívny. Ovládanie 3D modelu je optimalizované pre dotykové obrazovky (otáčanie, približovanie prstami). Celé menu sa na mobile skryje do prehľadného "hamburger" menu, aby ste mali na displeji čo najviac miesta pre samotnú jaskyňu. Vďaka optimalizácii výkonu navyše aplikácia beží plynulo aj na bežných mobilných telefónoch bez sekania.
-
-### 6. Informácie o načítavaní a prehľadné menu
-Keď nahrávate naozaj veľký súbor, aplikácia vám teraz ukazuje presný priebeh (ako postupuje načítavanie bodov, generovanie stien, či počítanie terénu). Prostredie som tiež preložil do viacerých jazykov a vizuálne ho upratal, aby bolo menu intuitívnejšie.
-
-## Zdieľanie a vloženie modelu do webstránky (Embed)
-
-Najzásadnejšou novinkou z pohľadu bežného využitia je kompletne prerobený systém zdieľania modelov. Doteraz ste mohli niekomu poslať len odkaz na model, no on si ho musel sám v paneli správne nastaviť, aby videl to, čo ste chceli.
-
-Dnes tento nástroj funguje podobne ako vkladanie máp od Google:
-*   **Zachovanie nastavení:** Všetko, čo si v programe na bočnom paneli nastavíte (farba jaskyne, typ terénu, aktuálna výška rezu, viditeľnosť zameriavacích bodov), sa automaticky zakóduje priamo do URL adresy (odkazu). Keď tento odkaz niekomu pošlete, otvorí sa mu model presne v takom stave, v akom ste mu ho pripravili.
-*   **Vloženie do vlastného webu (Iframe):** Vytvoril som jednoduchý generátor (tlačidlo Share). Tam si naklikáte požadované rozmery okna a program vám vygeneruje krátky HTML kód. Ten stačí skopírovať a vložiť na váš blog alebo stránku jaskyniarskeho klubu. Priamo v programe si dokonca môžete overiť, či je verejná adresa súboru funkčná a prístupná.
-*   **Čistý vzhľad:** Model vložený do vašej stránky nemá rušivé bočné panely. Vyzerá veľmi čisto a slúži iba na prezeranie. Ak však uznáte za vhodné, pri generovaní kódu môžete zaškrtnúť možnosť, aby si návštevníci vášho webu mohli bočný panel rozbaliť a model si sami ďalej upravovať.
-
-[Sem vložte screenshot: Ukážka okna na zdieľanie s generátorom kódu]
-
-## Živá ukážka na záver
-
-Aby ste mali jasnú predstavu, ako vyzerá model vložený priamo do článku, vyskúšajte si interaktívnu ukážku nižšie. S modelom môžete bežne manipulovať myšou alebo prstom na obrazovke smartfónu:
-
-<!-- 
-TOTO JE MIESTO, KDE V REDAKČNOM SYSTÉME VLOŽÍTE IFRAME KÓD.
-(Nezabudnite skopírovať a použiť vlastný kód z aplikácie)
--->
+Skúste si zatočiť s modelom Zádielskej tiesňavy nižšie. Funguje to aj na mobile!
 
 ```html
-<iframe src="https://loch.sss.sk/?model=https://vasadomena.sk/zadiel.lox&embed=true&theme=precision&terrain=texture&clip=1&cliph=450" width="100%" height="600" style="border:0;border-radius:8px;box-shadow:0 4px 15px rgba(0,0,0,0.1);" allowfullscreen loading="lazy" title="LochViewer Zádiel"></iframe>
+<iframe src="https://loch.sss.sk/?model=https://vasadomena.sk/zadiel.lox&embed=true&theme=precision&terrain=texture&clip=1&cliph=450" width="100%" height="600" style="border:0;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.3);" allowfullscreen loading="lazy" title="LochViewer Zádiel"></iframe>
 ```
 
 ---
-*Aplikácia je voľne dostupná ako open-source na GitHube, kde ju priebežne ďalej vylepšujem pre potreby našej jaskyniarskej komunity.*
+*LochViewer je open-source a robím na ňom vo voľnom čase (a občas aj v práci, pšššt). Ak máte nápady na vylepšenia, píšte, volajte alebo ma nájdite niekde v podzemí!*
+
+**Jaskyniarčeniu zdar!** 🔦🏔️
