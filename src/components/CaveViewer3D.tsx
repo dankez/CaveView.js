@@ -56,6 +56,12 @@ export interface ViewerOptions {
   contourColor10:      string
   surfaceOpacity:      number
   surfaceColor:        string
+  surfaceTextureOffset: { x: number, y: number }
+  surfaceTextureScale:  { x: number, y: number }
+  surfaceTextureCalibration?: {
+    p1: { x: number, y: number, lat: number, lon: number },
+    p2: { x: number, y: number, lat: number, lon: number }
+  } | null
   placedCaver:         { pos: [number, number, number], pose: 'standing' | 'crawling' } | null
   // Colors
   colorBackground:   string
@@ -1133,21 +1139,15 @@ function buildTerrainTileData(surface: CaveSurface, colStart: number, rowStart: 
       uvs[uIdx++] = col / (origSamples - 1);
       uvs[uIdx++] = row / (origLines - 1);
 
-      // Kalibrované UV pre LOX bitmap: world → bitmap pixel → normalizované 0-1
+      // Kalibrované UV pre LOX bitmap: world → bitmap pixel
+      // Vždy ukladáme surové pixelové súradnice, normalizáciu urobí shader podľa uImgSize
       if (bitmapUvs && texCalib) {
         const dx = wx - bOx;
         const dy = wy - bOy;
         const px = (dx * byy - dy * bxy) * bDetInv;
         const py = (dy * bxx - dx * byx) * bDetInv;
-        // Normalizujeme priamo ak poznáme rozmery obrázka, inak raw pixel coords
-        if (imgSize && imgSize[0] > 1 && imgSize[1] > 1) {
-          bitmapUvs[buIdx++] = px / imgSize[0];
-          bitmapUvs[buIdx++] = py / imgSize[1];
-        } else {
-          // imgSize ešte neznáme — uložíme raw, shader fallback normalizuje
-          bitmapUvs[buIdx++] = px;
-          bitmapUvs[buIdx++] = py;
-        }
+        bitmapUvs[buIdx++] = px;
+        bitmapUvs[buIdx++] = py;
       }
 
       const colorVal = elevColor(normZ(wz, globalMinZ, globalMaxZ));
@@ -1274,6 +1274,36 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
     contourMat.clippingPlanes = props.clippingPlanes;
   }, [contourMat, props.opacity, props.clippingPlanes]);
 
+  const textureUniforms = useMemo(() => ({
+    uIsLoxBitmap: { value: 0.0 },
+    uHasCalib:    { value: 0.0 },
+    uImgSize:     { value: (imgSize && imgSize[0] > 1) ? imgSize : [1.0, 1.0] },
+    uTexOffset:   { value: [props.options.surfaceTextureOffset.x, props.options.surfaceTextureOffset.y] },
+    uDtmDim:      { value: [1.0, 1.0] },
+    uCalib0:      { value: new THREE.Vector4(0,0,0,0) },
+    uCalib1:      { value: new THREE.Vector4(0,0,0,0) },
+    uCenterOffset: { value: [surface.centerOffset.x, surface.centerOffset.y] }
+  }), []);
+
+  useEffect(() => {
+    const isCustom = !!props.surfaceTextureUrl;
+    const hasBitmapCalib = !!surface.bitmapCalib;
+    const calib = props.options.surfaceTextureCalibration;
+    const dtmWidth = (surface.dtm.samples - 1) * Math.abs(surface.dtm.calib.xx || 1);
+    const dtmHeight = (surface.dtm.lines - 1) * Math.abs(surface.dtm.calib.yy || 1);
+
+    textureUniforms.uIsLoxBitmap.value = (hasBitmapCalib && !isCustom) ? 1.0 : 0.0;
+    textureUniforms.uHasCalib.value    = (isCustom && calib) ? 1.0 : 0.0;
+    textureUniforms.uImgSize.value     = (imgSize && imgSize[0] > 1) ? imgSize : [1.0, 1.0];
+    textureUniforms.uTexOffset.value   = [props.options.surfaceTextureOffset.x, props.options.surfaceTextureOffset.y];
+    textureUniforms.uDtmDim.value      = [dtmWidth, dtmHeight];
+    
+    if (calib) {
+      textureUniforms.uCalib0.value.set(calib.p1.mx, calib.p1.my, calib.p2.mx, calib.p2.my);
+      textureUniforms.uCalib1.value.set(calib.p1.x, calib.p1.y, calib.p2.x, calib.p2.y);
+    }
+  }, [textureUniforms, surface, imgSize, props.options.surfaceTextureOffset, props.options.surfaceTextureCalibration, props.surfaceTextureUrl]);
+
   if (!geo) return null;
 
   return (
@@ -1309,46 +1339,81 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
             polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-1}
             clippingPlanes={props.clippingPlanes}
             onBeforeCompile={(shader) => {
-              const isCustom = !!props.surfaceTextureUrl;
-              const hasBitmapCalib = !!surface.bitmapCalib;
-              shader.uniforms.uIsLoxBitmap = { value: (hasBitmapCalib && !isCustom) ? 1.0 : 0.0 };
-              shader.uniforms.uImgSize = { value: (imgSize && imgSize[0] > 1) ? imgSize : [1.0, 1.0] };
+              shader.uniforms.uIsLoxBitmap = textureUniforms.uIsLoxBitmap;
+              shader.uniforms.uHasCalib = textureUniforms.uHasCalib;
+              shader.uniforms.uImgSize = textureUniforms.uImgSize;
+              shader.uniforms.uTexOffset = textureUniforms.uTexOffset;
+              shader.uniforms.uDtmDim = textureUniforms.uDtmDim;
+              shader.uniforms.uCalib0 = textureUniforms.uCalib0;
+              shader.uniforms.uCalib1 = textureUniforms.uCalib1;
+              shader.uniforms.uCenterOffset = textureUniforms.uCenterOffset;
               
               if (imgSizeUniformRef) {
                 imgSizeUniformRef.current.push(shader.uniforms.uImgSize);
+                imgSizeUniformRef.current.push(shader.uniforms.uTexOffset);
               }
 
               shader.vertexShader = `
                 attribute vec2 uv2;
                 uniform float uIsLoxBitmap;
+                uniform float uHasCalib;
+                uniform vec4 uCalib0; // mx1, my1, mx2, my2
+                uniform vec4 uCalib1; // px1, py1, px2, py2
+                uniform vec2 uImgSize;
+                uniform vec2 uCenterOffset;
                 varying vec2 vTexUv;
+                varying vec2 vWorldPosXZ;
                 ${shader.vertexShader}
               `.replace(
-                '#include <uv_vertex>',
-                `#include <uv_vertex>
-                 vTexUv = (uIsLoxBitmap > 0.5) ? uv2 : uv;
+                '#include <project_vertex>',
+                `#include <project_vertex>
+                 vWorldPosXZ = (modelMatrix * vec4(transformed, 1.0)).xz;
+                 if (uIsLoxBitmap > 0.5) {
+                   vTexUv = uv2;
+                 } else if (uHasCalib > 0.5) {
+                   float wx = vWorldPosXZ.x + uCenterOffset.x;
+                   float wy = -(vWorldPosXZ.y - uCenterOffset.y); 
+                   float u_px = uCalib1.x + (wx - uCalib0.x) * (uCalib1.z - uCalib1.x) / (uCalib0.z - uCalib0.x);
+                   float v_py = uCalib1.y + (wy - uCalib0.y) * (uCalib1.w - uCalib1.y) / (uCalib0.w - uCalib0.y);
+                   vTexUv = vec2(u_px, v_py);
+                 } else {
+                   vTexUv = uv;
+                 }
                 `
               );
 
               shader.fragmentShader = `
                 varying vec2 vTexUv;
+                varying vec2 vWorldPosXZ;
                 uniform float uIsLoxBitmap;
                 uniform vec2 uImgSize;
+                uniform vec2 uTexOffset;
+                uniform vec2 uDtmDim;
+                uniform float uHasCalib;
                 ${shader.fragmentShader}
               `.replace(
                 '#include <map_fragment>',
                 `
                 #ifdef USE_MAP
-                  vec2 finalUv;
-                  if (uIsLoxBitmap > 0.5) {
-                    finalUv = (uImgSize.x > 1.5) ? vTexUv / uImgSize : vTexUv;
-                    if (finalUv.x < -0.001 || finalUv.x > 1.001 || finalUv.y < -0.001 || finalUv.y > 1.001) {
-                      discard;
-                    } else {
-                      diffuseColor *= texture2D(map, finalUv);
-                    }
+                  vec2 finalUv = vTexUv;
+                  if (uIsLoxBitmap > 0.5 || uHasCalib > 0.5) {
+                    finalUv = vTexUv / uImgSize;
                   } else {
-                    diffuseColor *= texture2D(map, vTexUv);
+                    finalUv = vTexUv + uTexOffset / uDtmDim;
+                  }
+                  
+                  bool outOfBounds = false;
+                  if (uIsLoxBitmap > 0.5 || uHasCalib > 0.5) {
+                    if (finalUv.x < 0.0 || finalUv.x > 1.0 || finalUv.y < 0.0 || finalUv.y > 1.0) {
+                      outOfBounds = true;
+                    }
+                  }
+                  
+                  if (outOfBounds) {
+                    // Mimo orezania textúry — necháme pôvodnú diffuse farbu
+                  } else {
+                    vec4 texelColor = texture2D( map, finalUv );
+                    diffuseColor *= texelColor;
                   }
                 #endif
                 `

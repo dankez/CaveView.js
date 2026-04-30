@@ -1,7 +1,15 @@
 # LochViewer - Modernized Speleological Viewer
-**Release 1.1.4 (2026-04-30-02) - "Smart Contour Labels & UI Integration"**
+**Release 1.1.5 (2026-04-30-03) - "Advanced Texture Calibration & Fixes"**
 
 Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémov, postavená na technológiách React, Three.js a React-Three-Fiber.
+
+## 🚀 Novinky v Release 2026-04-30-03 (v1.1.5)
+
+### 🗺️ Pokročilá kalibrácia textúr
+*   **Manuálny posun**: Pridaná možnosť jemného doladenia polohy textúry priamo v sidebare (kroky po 0.5m). Ideálne pre rýchlu vizuálnu korekciu JPG/PNG máp.
+*   **Therion Calibration Support**: Podpora pre externé kalibračné súbory `.txt` vo formáte Therion (`[x1 y1 lat1 lon1 x2 y2 lat2 lon2]`). Stačí nahrať obrázok a k nemu prislúchajúcu kalibráciu.
+*   **Shader Fixes**: Kompletné prepracovanie vykresľovania textúr na GPU. Opravené predtým "neviditeľné" bitmapy v LOX súboroch aj pri manuálnom uploade JPG.
+*   **Smart Visibility**: Terén zostáva viditeľný (shaded model) aj počas načítavania veľkých textúr, čo zlepšuje odozvu aplikácie pri pomalom pripojení.
 
 ## 🚀 Novinky v Release 2026-04-30-02 (v1.1.4)
 

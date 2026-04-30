@@ -1,7 +1,7 @@
 # Graph Report - CaveView-modernized  (2026-04-30)
 
 ## Corpus Check
-- 184 files · ~245,219 words
+- 184 files · ~244,899 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -68,12 +68,12 @@
 10. `Cfg` - 14 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `buildModels()` --calls--> `hydrateGeometry()`  [INFERRED]
-  legacy/js/viewer/walls/buildModels.js → legacy/js/core/lib.js
-- `buildWallsSync()` --calls--> `buildModels()`  [INFERRED]
-  legacy/js/viewer/walls/WallBuilders.js → legacy/js/viewer/walls/buildModels.js
-- `buildWallsSync()` --calls--> `buildCrossSections()`  [INFERRED]
-  legacy/js/viewer/walls/WallBuilders.js → legacy/js/viewer/walls/buildCrossSections.js
+- `hydrateGeometry()` --calls--> `buildModels()`  [INFERRED]
+  legacy/js/core/lib.js → legacy/js/viewer/walls/buildModels.js
+- `buildModels()` --calls--> `buildWallsSync()`  [INFERRED]
+  legacy/js/viewer/walls/buildModels.js → legacy/js/viewer/walls/WallBuilders.js
+- `buildCrossSections()` --calls--> `buildWallsSync()`  [INFERRED]
+  legacy/js/viewer/walls/buildCrossSections.js → legacy/js/viewer/walls/WallBuilders.js
 - `buildWallsSync()` --calls--> `buildScraps()`  [INFERRED]
   legacy/js/viewer/walls/WallBuilders.js → legacy/js/viewer/walls/buildScraps.js
 

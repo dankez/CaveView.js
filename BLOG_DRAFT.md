@@ -20,8 +20,12 @@ Doteraz boli vrstevnice len také čiary "aby sa nepovedalo". V novom release sm
 *   **Vykuknú nad terén**: Čísla a čiary sú technicky "nad" mapou, takže žiadne "duchárske" prekrývanie s textúrou sa nekoná.
 *   **Dynamický zoom**: Čísla sa menia podľa toho, ako ďaleko ste. Keď ste blízko, sú veľké a čitateľné, keď odletíte k oblakom, nezmiznú, ale zmenšia sa tak akurát, aby ste mali prehľad.
 
-### 🗺️ 2. Mapy a povrchy bez deformácií
-Už žiadne od oka "natiahnuté" satelitky. Ak máte v súbore fotomapu, LochViewer ju na terén napasuje s matematickou presnosťou na metre. A ak ju nemáte? Jednoducho si tam hoďte hocijaký JPG z dronu a aplikácia sa postará o zvyšok. Terén si môžete prepínať medzi tieňovaným modelom, "drôtenou" sieťou alebo fotomapou jedným klikom v sidebare.
+### 🗺️ 2. Mapy a povrchy s profesionálnou presnosťou
+Už žiadne od oka "natiahnuté" satelitky. Ak máte v súbore fotomapu, LochViewer ju na terén napasuje s matematickou presnosťou na metre. 
+*   **Nová kalibrácia**: Ak textúra nesedí úplne presne, môžete ju v sidebare posúvať po pol metroch šípkami, kým neklikne na miesto.
+*   **Podpora Therionu**: LV teraz rozumie aj externým `.txt` kalibračným súborom. Stačí nahrať fotku z drona a k nej Therion kalibráciu a mapa sa sama "prilepí" na GPS súradnice.
+*   **Oprava neviditeľných textúr**: Prekopali sme grafický motor (shader), takže textúry sú teraz ostrejšie a zobrazujú sa spoľahlivo aj pri obrovských modeloch. 
+Terén si môžete prepínať medzi tieňovaným modelom, "drôtenou" sieťou alebo fotomapou jedným klikom v sidebare.
 
 ### 📐 3. Merania (pre tých, čo chcú mať všetko pod kontrolou)
 Chcete vedieť, koľko metrov nad hlavou máte ten prekliaty kopec? Stačí kliknúť.

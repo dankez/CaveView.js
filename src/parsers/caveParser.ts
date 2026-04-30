@@ -22,6 +22,7 @@ export interface StationLabel {
   altitude: number // original Z (metres above sea level, before centering)
   isEntrance?: boolean // true if identified as an entrance
   fullLabel?: string   // more descriptive name (e.g. from comments)
+  gps?: { lat: number; lon: number; zone?: number; epsg?: string } | null
 }
 
 /** Calibration matrix that maps DTM grid (col i, row j) → world X/Y */

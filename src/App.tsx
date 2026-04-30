@@ -611,7 +611,10 @@ export default function App() {
     contourColor:        '#e1bba2',
     contourColor10:      '#f29d62',
     surfaceOpacity:      0.8,
-    surfaceColor:        '#e2e8f0',
+    surfaceColor:        '#ffffff',
+    surfaceTextureOffset: { x: 0, y: 0 },
+    surfaceTextureScale:  { x: 1, y: 1 },
+    surfaceTextureCalibration: null,
     colorSplay:          '#78909c',
     colorTraverse:       '#4fc3f7',
     colorScraps:         '#2a5585',
@@ -701,6 +704,53 @@ export default function App() {
   }
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const textureFileInputRef = useRef<HTMLInputElement>(null)
+  const calibFileInputRef = useRef<HTMLInputElement>(null)
+
+  const getProjectProjection = useCallback(() => {
+    if (!cave) return null
+    for (const label of cave.stationLabels) {
+      if (label.gps?.epsg === 'S-JTSK Křovák') return "+proj=krovak +lat_0=49.5 +lon_0=24.83333333333333 +alpha=30.28813972222222 +k=0.9999 +x_0=0 +y_0=0 +ellps=bessel +towgs84=589,76,480,0,0,0,0 +units=m +no_defs"
+      if (label.gps?.zone) {
+        return `+proj=utm +zone=${label.gps.zone} +ellps=WGS84 +datum=WGS84 +units=m +no_defs`
+      }
+    }
+    return null
+  }, [cave])
+
+  const shiftTexture = (dx: number, dy: number) => {
+    setOpts(p => ({
+      ...p,
+      surfaceTextureOffset: { x: p.surfaceTextureOffset.x + dx, y: p.surfaceTextureOffset.y + dy }
+    }))
+  }
+
+  const handleCalibFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !cave) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string
+      // Match [x1 y1 lat1 lon1 x2 y2 lat2 lon2]
+      const match = text.match(/\[\s*([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)\s*\]/)
+      if (match) {
+        const [_, x1, y1, lat1, lon1, x2, y2, lat2, lon2] = match.map(Number)
+        const proj = getProjectProjection()
+        if (proj) {
+          const m1 = proj4("WGS84", proj, [lon1, lat1])
+          const m2 = proj4("WGS84", proj, [lon2, lat2])
+          setOpts(p => ({
+            ...p,
+            surfaceTextureCalibration: {
+              p1: { x: x1, y: y1, lat: lat1, lon: lon1, mx: m1[0] - cave.centerOffset.x, my: m1[1] - cave.centerOffset.y },
+              p2: { x: x2, y: y2, lat: lat2, lon: lon2, mx: m2[0] - cave.centerOffset.x, my: m2[1] - cave.centerOffset.y }
+            } as any
+          }))
+        }
+      }
+    }
+    reader.readAsText(file)
+  }
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const lastClickRef = useRef<{time: number, idx: number}>({time: 0, idx: -1})
 
@@ -902,17 +952,26 @@ export default function App() {
       })
     }
 
+    // Doplníme GPS pre všetky labely, aby sme vedeli detegovať projekciu projektu
+    parsed.stationLabels.forEach(sl => {
+      const origX = sl.pos.x + parsed.centerOffset.x
+      const origY = sl.pos.y + parsed.centerOffset.y
+      sl.gps = tryUtmToWgs84(origX, origY) || tryJtskToWgs84(origX, origY) || null
+    })
+
     setCave(parsed)
     setOpts(prev => {
       const hasBit = !!(hasBitmap)
       return { 
         ...prev, 
         clippingHeight: parsed.bounds.max.z + parsed.centerOffset.z,
-        // Ak má model bitmapu, zapneme textúru, inak shaded. Ostatné vypneme.
-        showSurfaceMesh: !hasBit,
+        // Necháme zapnutý mesh (tieňovaný model) ako podklad, kým sa načíta textúra
+        showSurfaceMesh: true,
         showSurfaceTexture: hasBit,
         showSurfaceNetwork: false,
-        surfaceTextureUrl: null 
+        surfaceTextureUrl: null,
+        surfaceTextureCalibration: null,
+        surfaceTextureOffset: { x: 0, y: 0 }
       }
     })
   }, [])
@@ -1764,6 +1823,36 @@ export default function App() {
                           </button>
                         ))}
                       </div>
+
+                      <div style={{ background: 'rgba(30,41,59,0.5)', padding: '10px', borderRadius: '8px', marginBottom: '1rem' }}>
+                        <div className="toggle-row" style={{ marginBottom: '8px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 600, color: '#e2e8f0' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px', verticalAlign: 'middle', marginRight: '6px' }}>label</span>
+                            {lang === 'sk' ? 'Výšky vrstevníc' : 'Contour labels'}
+                          </span>
+                          <div className={`switch${opts.showContourLabels ? ' on' : ''}`}
+                            onClick={() => toggleOpt('showContourLabels')} role="switch"
+                            aria-checked={opts.showContourLabels} tabIndex={0} />
+                        </div>
+                        <div className="toggle-row" style={{ marginBottom: '8px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 600, color: '#e2e8f0' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px', verticalAlign: 'middle', marginRight: '6px' }}>tag</span>
+                            {t('stations.names')}
+                          </span>
+                          <div className={`switch${opts.showStationNames ? ' on' : ''}`}
+                            onClick={() => toggleOpt('showStationNames')} role="switch"
+                            aria-checked={opts.showStationNames} tabIndex={0} />
+                        </div>
+                        <div className="toggle-row">
+                          <span style={{ fontSize: '11px', fontWeight: 600, color: '#e2e8f0' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px', verticalAlign: 'middle', marginRight: '6px' }}>height</span>
+                            {t('stations.altitude')}
+                          </span>
+                          <div className={`switch${opts.showStationAlt ? ' on' : ''}`}
+                            onClick={() => toggleOpt('showStationAlt')} role="switch"
+                            aria-checked={opts.showStationAlt} tabIndex={0} />
+                        </div>
+                      </div>
                     </div>
                   )}
                 <div>
@@ -2110,6 +2199,40 @@ export default function App() {
                           aria-checked={opts.showSurfaceTexture} tabIndex={0} />
                       </div>
                     </div>
+
+                    {opts.showSurfaceTexture && opts.surfaceTextureUrl && (
+                      <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(15,23,42,0.5)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '8px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>tune</span>
+                          {lang === 'sk' ? 'KALIBRÁCIA TEXTÚRY' : 'TEXTURE CALIBRATION'}
+                        </div>
+                        
+                        <div style={{ display: 'flex', gap: '4px', marginBottom: '10px', alignItems: 'center' }}>
+                          <button onClick={() => shiftTexture(-0.5, 0)} className="btn-mini" title="Vľavo">←</button>
+                          <div style={{ flex: 1, textAlign: 'center', fontSize: '10px', color: '#e2e8f0', fontFamily: 'monospace' }}>
+                            {opts.surfaceTextureOffset.x > 0 ? '+' : ''}{opts.surfaceTextureOffset.x.toFixed(1)} / {opts.surfaceTextureOffset.y > 0 ? '+' : ''}{opts.surfaceTextureOffset.y.toFixed(1)}m
+                          </div>
+                          <button onClick={() => shiftTexture(0.5, 0)} className="btn-mini" title="Vpravo">→</button>
+                          <button onClick={() => shiftTexture(0, 0.5)} className="btn-mini" title="Hore">↑</button>
+                          <button onClick={() => shiftTexture(0, -0.5)} className="btn-mini" title="Dole">↓</button>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '10px', color: '#94a3b8' }}>{lang === 'sk' ? 'Súbor .txt (Therion)' : 'Therion .txt calib'}</span>
+                          <button onClick={() => calibFileInputRef.current?.click()} className="btn-mini" style={{ color: '#fbbf24', borderColor: 'rgba(251,191,36,0.3)', padding: '2px 8px' }}>
+                            {lang === 'sk' ? 'Nahrať' : 'Load'}
+                          </button>
+                        </div>
+                        {opts.surfaceTextureCalibration && (
+                          <div style={{ fontSize: '9px', color: '#10b981', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>check_circle</span>
+                            {lang === 'sk' ? 'Kalibrácia aktívna' : 'Calibration active'}
+                            <button onClick={() => setOpts(p => ({ ...p, surfaceTextureCalibration: null }))} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#f87171', padding: 0 }}>✕</button>
+                          </div>
+                        )}
+                        <input type="file" ref={calibFileInputRef} onChange={handleCalibFile} accept=".txt" style={{ display: 'none' }} />
+                      </div>
+                    )}
                     
                     <div style={{ marginTop: '12px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', marginBottom: '6px' }}>
