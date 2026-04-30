@@ -1,7 +1,14 @@
 # LochViewer - Modernized Speleological Viewer
-**Release 1.1.5 (2026-04-30-03) - "Advanced Texture Calibration & Fixes"**
+**Release 1.1.6 (2026-04-30-04) - "Cave-to-Surface Calibration"**
 
 Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémov, postavená na technológiách React, Three.js a React-Three-Fiber.
+
+## 🚀 Novinky v Release 2026-04-30-04 (v1.1.6)
+
+### 📐 Kalibrácia polohy jaskyne
+*   **Interaktívny posun modelu**: Možnosť manuálne posúvať jaskynný model (polygonový ťah, stanice, steny) voči fixnému povrchu v osiach X, Y a Z.
+*   **Jemné doladenie (0.5m)**: Kalibrácia prebieha v krokoch po 0.5 metra pre maximálnu presnosť pri pasovaní jaskyne pod terén.
+*   **Plná integrácia**: Všetky analytické nástroje (meranie hĺbky nadložia, súradnice staníc) automaticky započítavajú kalibračný posun.
 
 ## 🚀 Novinky v Release 2026-04-30-03 (v1.1.5)
 

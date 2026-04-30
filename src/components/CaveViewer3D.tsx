@@ -94,6 +94,7 @@ export interface ViewerOptions {
   cinematicMode:       boolean
   recordingDuration:   number
   excludeModelFromClipping: boolean
+  caveCalibrationOffset: { x: number, y: number, z: number }
 }
 
 // ─── Clickable stations (neviditelné gule, raycasting) & Hover Highlight ───
@@ -1914,11 +1915,8 @@ const CaveViewer3D = ({
       />
       
       <directionalLight position={[0, -2, 0]}   intensity={0.05} />
-
-      {/* ── Entrances ── */}
-      <EntranceMarkers cave={cave} options={o} />
-
-      {/* ── Terrain ── */}
+ 
+      {/* ── Terrain (Fixed in world space) ── */}
       {(o.showSurfaceMesh || o.showSurfaceMeshWire || o.showSurfaceTexture || o.showSurfaceNetwork || o.showContours) && cave.surfaces?.map((surf, i) => (
         <TerrainMesh
           key={i} surface={surf}
@@ -1942,59 +1940,67 @@ const CaveViewer3D = ({
         />
       ))}
 
-      {/* ── Cave scraps ── */}
-      {o.showScraps && cave.scraps?.length > 0 && (
-        <CaveScraps
-          cave={cave} opacity={o.scrapsOpacity}
-          showSolid={o.scrapsSolid}
-          showWire={o.scrapsWireframe}
-          showAltitude={o.scrapsAltitude}
-          smooth={o.smoothScraps}
-          showRender={o.showRenderCave}
-          caveTexture={o.caveTexture}
-          renderOpacity={o.renderOpacity}
-          isMoving={isMoving}
-          options={o}
-          clippingPlanes={caveClippingPlanes}
-        />
-      )}
+      {/* ─── CAVE MODEL (Movable for calibration) ─── */}
+      <group position={[o.caveCalibrationOffset.x, o.caveCalibrationOffset.z, -o.caveCalibrationOffset.y]}>
+        {/* ── Entrances ── */}
+        <EntranceMarkers cave={cave} options={o} />
 
-      {/* ── Cave traverse (3D rúrky) ── */}
-      {o.showTraverse && cave.segments?.length > 0 && (
-        <CaveTraverse 
+        {/* ── Cave scraps ── */}
+        {o.showScraps && cave.scraps?.length > 0 && (
+          <CaveScraps
+            cave={cave} opacity={o.scrapsOpacity}
+            showSolid={o.scrapsSolid}
+            showWire={o.scrapsWireframe}
+            showAltitude={o.scrapsAltitude}
+            smooth={o.smoothScraps}
+            showRender={o.showRenderCave}
+            caveTexture={o.caveTexture}
+            renderOpacity={o.renderOpacity}
+            isMoving={isMoving}
+            options={o}
+            clippingPlanes={caveClippingPlanes}
+          />
+        )}
+
+        {/* ── Cave traverse (3D rúrky) ── */}
+        {o.showTraverse && cave.segments?.length > 0 && (
+          <CaveTraverse 
+            cave={cave} 
+            radius={o.traverseRadius} 
+            showAltitude={o.traverseAltitude} 
+            isMoving={isMoving} 
+            clippingPlanes={caveClippingPlanes}
+          />
+        )}
+
+        {/* ── Survey legs ── */}
+        <CaveLegs 
           cave={cave} 
-          radius={o.traverseRadius} 
+          showSplay={o.showSplay} 
           showAltitude={o.traverseAltitude} 
-          isMoving={isMoving} 
-          clippingPlanes={caveClippingPlanes}
+          options={o} 
+          clippingPlanes={compositeClippingPlanes}
         />
-      )}
 
+        {/* ── Station dots & labels & clickable targets ── */}
+        {o.showStations && <Stations cave={cave} options={o} />}
+        <ClickableStations cave={cave} onStationClick={onStationClick} />
+        <group visible={!isMoving}>
+          {(o.showStationNames || o.showStationAlt) && (
+            <StationLabels cave={cave} showNames={o.showStationNames} showAltitudes={o.showStationAlt} options={o} />
+          )}
+        </group>
+
+        {manualConnection && <ManualConnection p1={manualConnection.p1} p2={manualConnection.p2} />}
+      </group>
+ 
       {/* ── Auto-fit pri zmene jaskyne alebo aktivácii triggera ── */}
       <AutoFit cave={cave} trigger={fitTrigger} />
-
+ 
       {/* ── Kompas / Gizmo v rohu ── */}
       <GizmoHelper alignment="bottom-right" margin={[60, 60]}>
         <GizmoViewport axisColors={['#ef4444', '#84cc16', '#3b82f6']} labelColor="white" labels={['V', 'H', 'J']} />
       </GizmoHelper>
-
-      {/* ── Survey legs ── */}
-      <CaveLegs 
-        cave={cave} 
-        showSplay={o.showSplay} 
-        showAltitude={o.traverseAltitude} 
-        options={o} 
-        clippingPlanes={compositeClippingPlanes}
-      />
-
-      {/* ── Station dots & labels & clickable targets ── */}
-      {o.showStations && <Stations cave={cave} options={o} />}
-      <ClickableStations cave={cave} onStationClick={onStationClick} />
-      <group visible={!isMoving}>
-        {(o.showStationNames || o.showStationAlt) && (
-          <StationLabels cave={cave} showNames={o.showStationNames} showAltitudes={o.showStationAlt} options={o} />
-        )}
-      </group>
 
       {/* ── Ground grid ── */}
       {manualConnection && <ManualConnection p1={manualConnection.p1} p2={manualConnection.p2} />}

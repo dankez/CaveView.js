@@ -641,6 +641,7 @@ export default function App() {
     recordingDuration:   10, // 0 = manual
     excludeModelFromClipping: false,
     surfaceTextureUrl:   null,
+    caveCalibrationOffset: { x: 0, y: 0, z: 0 }
   })
 
   // ─── DEFINÍCIA ŠABLÓN ────────────────────────────────────────────────────────
@@ -722,6 +723,17 @@ export default function App() {
     setOpts(p => ({
       ...p,
       surfaceTextureOffset: { x: p.surfaceTextureOffset.x + dx, y: p.surfaceTextureOffset.y + dy }
+    }))
+  }
+
+  const shiftCave = (dx: number, dy: number, dz: number) => {
+    setOpts(p => ({
+      ...p,
+      caveCalibrationOffset: { 
+        x: p.caveCalibrationOffset.x + dx, 
+        y: p.caveCalibrationOffset.y + dy,
+        z: p.caveCalibrationOffset.z + dz 
+      }
     }))
   }
 
@@ -2234,6 +2246,49 @@ export default function App() {
                       </div>
                     )}
                     
+                    {/* Kalibrácia modelu voči povrchu */}
+                    <div style={{ marginTop: '16px', padding: '10px', background: 'rgba(30,41,59,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '8px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>location_on</span>
+                        {lang === 'sk' ? 'KALIBRÁCIA MODELU (X, Y, Z)' : 'CAVE CALIBRATION (X, Y, Z)'}
+                      </div>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div style={{ fontSize: '9px', color: '#64748b', textAlign: 'center' }}>X</div>
+                          <div style={{ display: 'flex', gap: '2px' }}>
+                            <button onClick={() => shiftCave(-0.5, 0, 0)} className="btn-mini" title="-0.5m">-</button>
+                            <button onClick={() => shiftCave(0.5, 0, 0)} className="btn-mini" title="+0.5m">+</button>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div style={{ fontSize: '9px', color: '#64748b', textAlign: 'center' }}>Y</div>
+                          <div style={{ display: 'flex', gap: '2px' }}>
+                            <button onClick={() => shiftCave(0, -0.5, 0)} className="btn-mini" title="-0.5m">-</button>
+                            <button onClick={() => shiftCave(0, 0.5, 0)} className="btn-mini" title="+0.5m">+</button>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div style={{ fontSize: '9px', color: '#64748b', textAlign: 'center' }}>Z (alt)</div>
+                          <div style={{ display: 'flex', gap: '2px' }}>
+                            <button onClick={() => shiftCave(0, 0, -0.5)} className="btn-mini" title="-0.5m">-</button>
+                            <button onClick={() => shiftCave(0, 0, 0.5)} className="btn-mini" title="+0.5m">+</button>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ marginTop: '6px', textAlign: 'center', fontSize: '10px', color: '#e2e8f0', fontFamily: 'monospace' }}>
+                         [{opts.caveCalibrationOffset.x > 0 ? '+' : ''}{opts.caveCalibrationOffset.x.toFixed(1)}, 
+                          {opts.caveCalibrationOffset.y > 0 ? '+' : ''}{opts.caveCalibrationOffset.y.toFixed(1)}, 
+                          {opts.caveCalibrationOffset.z > 0 ? '+' : ''}{opts.caveCalibrationOffset.z.toFixed(1)}] m
+                      </div>
+                      <button 
+                        onClick={() => setOpts(p => ({ ...p, caveCalibrationOffset: { x: 0, y: 0, z: 0 } }))}
+                        style={{ width: '100%', marginTop: '6px', background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: '#94a3b8', fontSize: '9px', padding: '2px 0', cursor: 'pointer' }}
+                      >
+                        {lang === 'sk' ? 'Resetovať polohu' : 'Reset position'}
+                      </button>
+                    </div>
+
                     <div style={{ marginTop: '12px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', marginBottom: '6px' }}>
                         <span>{t('terrain.opacity')}</span>
