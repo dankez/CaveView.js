@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect, Suspense, useMemo } from 'react'
 import proj4 from 'proj4'
 import { parseLox, parseSvx, parsePlt } from './parsers/caveParser'
-import type { ParsedCave, CaveSurface } from './parsers/caveParser'
+import type { ParsedCave, CaveSurface, Vec3 } from './parsers/caveParser'
 import CaveViewer3D, { ViewerOptions } from './components/CaveViewer3D'
 import { getBrowserLanguage, getTranslation, Language, languages } from './i18n'
 
@@ -133,6 +133,7 @@ export interface SelStation {
   origX:        number
   origY:        number
   altitude:     number    // m n.m.
+  pos:          Vec3      // Pridané súradnice pre 3D
   gps:          { lat: number; lon: number; zone?: number; epsg?: string } | null
   distToSurf:   number | null   // m, kladné = jaskyňa je pod povrchom
   screenX:      number
@@ -142,12 +143,13 @@ export interface SelStation {
   centerZ?:     number
 }
 
-function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, t }: { 
+function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, t, lang }: { 
   stations: SelStation[]; 
   onClose: () => void;
-  onPlaceCaver: (pos: [number, number, number], pose: 'standing' | 'crawling') => void;
+  onPlaceCaver: (pos: [number, number, number] | null, pose: 'standing' | 'crawling') => void;
   onSetProfile: (sts: SelStation[]) => void;
   t: (key: string) => string;
+  lang: string;
 }) {
   const [posOffset, setPosOffset] = useState({ x: 0, y: 0 })
   const dragRef = useRef<{ startX: number; startY: number; isDragging: boolean }>({ startX: 0, startY: 0, isDragging: false })
@@ -299,20 +301,28 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, t }:
 
       {/* Mierka - Jaskyniar */}
       {stations.length === 1 && (
-        <div style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button 
+              onClick={() => onPlaceCaver([st1.pos.x, st1.pos.y, st1.pos.z], 'standing')}
+              style={{ flex: 1, minWidth: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 12px', background: 'rgba(79,195,247,.1)', border: '1px solid rgba(79,195,247,.3)', borderRadius: 8, color: '#4fc3f7', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 18, display: 'block' }}>accessibility_new</span>
+              <span>{t('caver.standing')}</span>
+            </button>
+            <button 
+              onClick={() => onPlaceCaver([st1.pos.x, st1.pos.y, st1.pos.z], 'crawling')}
+              style={{ flex: 1, minWidth: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 12px', background: 'rgba(79,195,247,.1)', border: '1px solid rgba(79,195,247,.3)', borderRadius: 8, color: '#4fc3f7', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 18, display: 'block' }}>child_care</span>
+              <span>{t('caver.crawling')}</span>
+            </button>
+          </div>
           <button 
-            onClick={() => onPlaceCaver([st1.origX - (stations[0].centerX || 0), st1.altitude - (stations[0].centerZ || 0), -st1.origY + (stations[0].centerY || 0)], 'standing')}
-            style={{ flex: 1, minWidth: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 12px', background: 'rgba(79,195,247,.1)', border: '1px solid rgba(79,195,247,.3)', borderRadius: 8, color: '#4fc3f7', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
+            onClick={() => onPlaceCaver(null, 'standing')}
+            style={{ width: '100%', padding: '6px', background: 'none', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 6, color: '#f87171', cursor: 'pointer', fontSize: 10, fontWeight: 700 }}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: 18, display: 'block' }}>accessibility_new</span>
-            <span>{t('caver.standing')}</span>
-          </button>
-          <button 
-            onClick={() => onPlaceCaver([st1.origX - (stations[0].centerX || 0), st1.altitude - (stations[0].centerZ || 0), -st1.origY + (stations[0].centerY || 0)], 'crawling')}
-            style={{ flex: 1, minWidth: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 12px', background: 'rgba(79,195,247,.1)', border: '1px solid rgba(79,195,247,.3)', borderRadius: 8, color: '#4fc3f7', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 18, display: 'block' }}>child_care</span>
-            <span>{t('caver.crawling')}</span>
+            {lang === 'sk' ? 'ODSTRÁNIŤ JASKYNIARA' : 'REMOVE CAVER'}
           </button>
         </div>
       )}
@@ -796,6 +806,7 @@ export default function App() {
 
     const newSt: SelStation = { 
       idx, name: sl.name, origX, origY, altitude, gps, distToSurf, screenX, screenY,
+      pos: sl.pos,
       centerX: cave.centerOffset.x, centerY: cave.centerOffset.y, centerZ: cave.centerOffset.z
     }
     
@@ -834,6 +845,11 @@ export default function App() {
       origX, origY, altitude,
       gps, distToSurf: 0,
       screenX, screenY,
+      pos: {
+        x: origX - cave.centerOffset.x,
+        y: altitude - cave.centerOffset.z,
+        z: -(origY - cave.centerOffset.y)
+      },
       centerX: cave.centerOffset.x, centerY: cave.centerOffset.y, centerZ: cave.centerOffset.z
     }
     
@@ -884,6 +900,7 @@ export default function App() {
     return { 
       idx, name: sl.name, origX, origY, altitude, gps, distToSurf, 
       screenX: window.innerWidth/2 - 140, screenY: window.innerHeight/2 - 150,
+      pos: sl.pos,
       centerX: cave.centerOffset.x, centerY: cave.centerOffset.y, centerZ: cave.centerOffset.z
     }
   }
@@ -1786,13 +1803,14 @@ export default function App() {
                   <StationDetailCard
                     stations={selectedStations}
                     onClose={() => setShowStationCard(false)}
-                    onPlaceCaver={(pos, pose) => setOpts(p => ({ ...p, placedCaver: { pos, pose } }))}
+                    onPlaceCaver={(pos, pose) => setOpts(p => ({ ...p, placedCaver: pos ? { pos, pose } : null }))}
                     onSetProfile={(sts) => {
                       setActiveProfilePoints([...sts])
                       setOpts(p => ({ ...p, showProfileClipping: true, profileClipOffset: 0 }))
                       setShowStationCard(false)
                     }}
                     t={t}
+                    lang={lang}
                   />
                 )}
               </div>
@@ -2349,6 +2367,36 @@ export default function App() {
                       onClick={() => toggleOpt('showEntranceLabels')} role="switch"
                       aria-checked={opts.showEntranceLabels} tabIndex={0} />
                   </div>
+                </div>
+
+                <div>
+                  <div className="s-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>accessibility_new</span>
+                    {lang === 'sk' ? 'Mierka (Jaskyniar)' : 'Scale (Caver)'}
+                  </div>
+                  {opts.placedCaver ? (
+                    <div style={{ padding: '8px', background: 'rgba(30,41,59,0.3)', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '10px', color: '#94a3b8' }}>
+                          {opts.placedCaver.pose === 'standing' ? (lang === 'sk' ? 'Stojaci' : 'Standing') : (lang === 'sk' ? 'Ležiaci' : 'Crawling')}
+                        </span>
+                        <button 
+                          onClick={() => setOpts(p => ({ ...p, placedCaver: null }))}
+                          style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
+                        >
+                          {lang === 'sk' ? 'ODSTRÁNIŤ' : 'REMOVE'}
+                        </button>
+                      </div>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                         <button onClick={() => setOpts(p => ({ ...p, placedCaver: { ...p.placedCaver!, pose: 'standing' } }))} className={`btn-mini ${opts.placedCaver.pose === 'standing' ? 'active' : ''}`} style={{ flex: 1 }}>{lang === 'sk' ? 'Stojaci' : 'Stand'}</button>
+                         <button onClick={() => setOpts(p => ({ ...p, placedCaver: { ...p.placedCaver!, pose: 'crawling' } }))} className={`btn-mini ${opts.placedCaver.pose === 'crawling' ? 'active' : ''}`} style={{ flex: 1 }}>{lang === 'sk' ? 'Ležiaci' : 'Crawl'}</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="help-text" style={{ fontSize: '9px', opacity: 0.7, padding: '4px 0' }}>
+                      {lang === 'sk' ? 'Klikni na ľubovoľný bod jaskyne pre pridanie postavy.' : 'Click on any cave point to add a caver.'}
+                    </div>
+                  )}
                 </div>
 
                 <div>

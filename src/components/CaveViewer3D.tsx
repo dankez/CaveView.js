@@ -1567,58 +1567,55 @@ function ManualConnection({ p1, p2 }: { p1: {x:number, y:number, z:number}, p2: 
 }
 
 // ─── 3D Jaskyniar (Mierka presne 1.8m) ──────────────────────────────────────
-function Character3D({ pos, pose }: { pos: [number, number, number], pose: 'standing' | 'crawling' }) {
+function Character3D({ pos, pose, clippingPlanes }: { pos: [number, number, number], pose: 'standing' | 'crawling', clippingPlanes?: THREE.Plane[] }) {
   const isStanding = pose === 'standing'
   
   return (
     <group position={pos}>
-      {/* Telo / Kombinéza (červená) */}
+      {/* Svetlo jaskyniara - aby bol viditeľný v tme */}
+      <pointLight position={isStanding ? [0, 1.6, 0.2] : [0, 0.4, 0.4]} intensity={0.6} distance={10} color="#fffec8" />
+      
+      {/* Telo / Kombinéza */}
       <mesh position={isStanding ? [0, 1.2, 0] : [0, 0.15, -0.4]}>
         <boxGeometry args={isStanding ? [0.38, 0.6, 0.2] : [0.35, 0.3, 1.1]} />
-        <meshStandardMaterial color="#ef4444" />
+        <meshStandardMaterial color="#ef4444" emissive="#220000" clippingPlanes={clippingPlanes} />
       </mesh>
       
-      {/* Nohy (červená) */}
+      {/* Nohy */}
       {isStanding && (
         <mesh position={[0, 0.45, 0]}>
           <boxGeometry args={[0.3, 0.9, 0.18]} />
-          <meshStandardMaterial color="#ef4444" />
+          <meshStandardMaterial color="#ef4444" emissive="#220000" clippingPlanes={clippingPlanes} />
         </mesh>
       )}
 
-      {/* Hlava (pleťová / ružová) */}
+      {/* Hlava */}
       <mesh position={isStanding ? [0, 1.65, 0] : [0, 0.45, 0]}>
         <sphereGeometry args={[0.1, 12, 12]} />
-        <meshStandardMaterial color="#ffdbac" />
+        <meshStandardMaterial color="#ffdbac" clippingPlanes={clippingPlanes} />
       </mesh>
       
-      {/* Prilba (červená) */}
+      {/* Prilba */}
       <mesh position={isStanding ? [0, 1.7, 0] : [0, 0.5, 0]}>
         <sphereGeometry args={[0.12, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color="#ef4444" side={THREE.DoubleSide} />
+        <meshStandardMaterial color="#f59e0b" side={THREE.DoubleSide} clippingPlanes={clippingPlanes} />
       </mesh>
       
-      {/* Čelovka (čierna/biela) */}
+      {/* Čelovka */}
       <mesh position={isStanding ? [0, 1.68, 0.1] : [0, 0.48, 0.1]}>
         <boxGeometry args={[0.06, 0.04, 0.04]} />
-        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={2} />
+        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={2} clippingPlanes={clippingPlanes} />
       </mesh>
       
-      {/* Topánky (čierne) */}
+      {/* Topánky */}
       {isStanding ? (
         <>
-          <mesh position={[-0.08, 0.05, 0.02]}><boxGeometry args={[0.12, 0.1, 0.22]} /><meshStandardMaterial color="#111111" /></mesh>
-          <mesh position={[0.08, 0.05, 0.02]}><boxGeometry args={[0.12, 0.1, 0.22]} /><meshStandardMaterial color="#111111" /></mesh>
+          <mesh position={[-0.08, 0.05, 0.02]}><boxGeometry args={[0.12, 0.1, 0.22]} /><meshStandardMaterial color="#111111" clippingPlanes={clippingPlanes} /></mesh>
+          <mesh position={[0.08, 0.05, 0.02]}><boxGeometry args={[0.12, 0.1, 0.22]} /><meshStandardMaterial color="#111111" clippingPlanes={clippingPlanes} /></mesh>
         </>
       ) : (
-        <mesh position={[0, 0.05, -0.9]}><boxGeometry args={[0.3, 0.1, 0.15]} /><meshStandardMaterial color="#111111" /></mesh>
+        <mesh position={[0, 0.05, -0.9]}><boxGeometry args={[0.3, 0.1, 0.15]} /><meshStandardMaterial color="#111111" clippingPlanes={clippingPlanes} /></mesh>
       )}
-
-      {/* Svetelný kužeľ z čelovky */}
-      <mesh position={isStanding ? [0, 1.68, 0.3] : [0, 0.48, 0.3]} rotation={[Math.PI / 2, 0, 0]}>
-        <coneGeometry args={[0.3, 1.5, 12]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.15} />
-      </mesh>
     </group>
   )
 }
@@ -1941,9 +1938,22 @@ const CaveViewer3D = ({
       ))}
 
       {/* ─── CAVE MODEL (Movable for calibration) ─── */}
-      <group position={[o.caveCalibrationOffset.x, o.caveCalibrationOffset.z, -o.caveCalibrationOffset.y]}>
+      <group position={[
+        o.caveCalibrationOffset?.x || 0, 
+        o.caveCalibrationOffset?.z || 0, 
+        -(o.caveCalibrationOffset?.y || 0)
+      ]}>
         {/* ── Entrances ── */}
         <EntranceMarkers cave={cave} options={o} />
+        
+        {/* ── Jaskyniar (Mierka) ── */}
+        {o.placedCaver && (
+          <Character3D 
+            pos={o.placedCaver.pos} 
+            pose={o.placedCaver.pose} 
+            clippingPlanes={compositeClippingPlanes}
+          />
+        )}
 
         {/* ── Cave scraps ── */}
         {o.showScraps && cave.scraps?.length > 0 && (

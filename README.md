@@ -1,7 +1,15 @@
 # LochViewer - Modernized Speleological Viewer
-**Release 1.1.6 (2026-04-30-04) - "Cave-to-Surface Calibration"**
+**Release 1.1.7 (2026-04-30-05) - "Caver Visibility & Stability"**
 
 Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémov, postavená na technológiách React, Three.js a React-Three-Fiber.
+
+## 🚀 Novinky v Release 2026-04-30-05 (v1.1.7)
+
+### 👤 Vylepšený jaskyniar (Scale)
+*   **Vlastné osvetlenie**: Postava jaskyniara má teraz integrovaný `pointLight` a svietiacu čelovku. Je jasne viditeľná aj v najtmavších častiach jaskyne.
+*   **Podpora pre rezy (Clipping)**: Jaskyniar je plne integrovaný do systému orezávania. Pri použití rezov (profilov) sa postava správne oreže spolu s okolím.
+*   **Opravy stability**: Vyriešené kritické pády aplikácie pri klikaní na stanice. Opravené prepojenia súradníc a preklady v UI.
+*   **Dynamická kalibrácia**: Jaskyniar sa pohybuje synchrónne s jaskyňou pri nastavovaní X, Y, Z kalibrácie.
 
 ## 🚀 Novinky v Release 2026-04-30-04 (v1.1.6)
 
