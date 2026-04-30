@@ -2,7 +2,7 @@ import { EventDispatcher, FogExp2, Raycaster, Scene, Vector2, Vector3, WebGLRend
 import {
 	FACE_SCRAPS, FACE_WALLS, FACE_MODEL, FEATURE_BOX, FEATURE_ENTRANCES, FEATURE_ENTRANCE_DOTS, FEATURE_GRID, FEATURE_STATIONS, FEATURE_TERRAIN, FEATURE_TRACES,
 	LABEL_STATION, LABEL_STATION_COMMENT, LEG_CAVE, LEG_SPLAY, LEG_DUPLICATE, LEG_SURFACE, LM_NONE, LM_SINGLE, MOUSE_MODE_TRACE_EDIT, SURVEY_WARNINGS,
-	VERSION, VIEW_ELEVATION_E, VIEW_ELEVATION_N, VIEW_ELEVATION_S, VIEW_ELEVATION_W,  VIEW_NONE, VIEW_PLAN,
+	VERSION, VIEW_ELEVATION_E, VIEW_ELEVATION_N, VIEW_ELEVATION_S, VIEW_ELEVATION_W,  VIEW_NONE, VIEW_PLAN, SHADING_CONTOURS
 } from '../core/constants';
 
 import { CameraManager } from './CameraManager';
@@ -615,6 +615,8 @@ class CaveViewer extends EventDispatcher {
 
 			if ( terrain.isTiled ) terrain.zoomCheck( cameraManager );
 
+			onCameraMoved();
+
 		}
 
 
@@ -663,7 +665,36 @@ class CaveViewer extends EventDispatcher {
 
 			}
 
+			if ( terrain !== null && terrain.shadingMode === SHADING_CONTOURS ) {
+
+				const dist = cameraManager.activeCamera.position.distanceTo( controls.target );
+				updateContourInterval( dist );
+
+			}
+
 			renderView( true );
+
+		}
+
+		function updateContourInterval ( dist ) {
+
+			let interval;
+
+			if ( dist > 2000 ) {
+				interval = 100;
+			} else if ( dist > 1000 ) {
+				interval = 50;
+			} else if ( dist > 400 ) {
+				interval = 10;
+			} else if ( dist > 150 ) {
+				interval = 5;
+			} else if ( dist > 50 ) {
+				interval = 1;
+			} else {
+				interval = 0.5;
+			}
+
+			ctx.materials.uniforms.commonTerrain.contourInterval.value = interval;
 
 		}
 

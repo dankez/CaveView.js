@@ -1,0 +1,68 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "label": "LochViewer",
+      "file_type": "document",
+      "source_file": "README.md",
+      "id": "readme_lochviewer",
+      "community": 0,
+      "norm_label": "lochviewer"
+    },
+    {
+      "label": "Release 1.1.3",
+      "file_type": "document",
+      "source_file": "README.md",
+      "id": "readme_v1_1_3",
+      "community": 0,
+      "norm_label": "release 1.1.3"
+    },
+    {
+      "label": "S-JTSK K\u0159ov\u00e1k",
+      "file_type": "code",
+      "source_file": "src/App.tsx",
+      "id": "app_jtsk",
+      "community": 2,
+      "norm_label": "s-jtsk krovak"
+    },
+    {
+      "label": "CaveViewer3D Component",
+      "file_type": "code",
+      "source_file": "src/components/CaveViewer3D.tsx",
+      "id": "caveviewer3d_component",
+      "community": 1,
+      "norm_label": "caveviewer3d component"
+    },
+    {
+      "label": "High-Contrast Contours",
+      "file_type": "code",
+      "source_file": "src/components/CaveViewer3D.tsx",
+      "id": "feature_high_contrast_contours",
+      "community": 1,
+      "norm_label": "high-contrast contours"
+    }
+  ],
+  "links": [
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_src": "readme_lochviewer",
+      "_tgt": "readme_v1_1_3",
+      "source": "readme_lochviewer",
+      "target": "readme_v1_1_3"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "_src": "caveviewer3d_component",
+      "_tgt": "feature_high_contrast_contours",
+      "source": "caveviewer3d_component",
+      "target": "feature_high_contrast_contours"
+    }
+  ],
+  "hyperedges": []
+}

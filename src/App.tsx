@@ -607,6 +607,7 @@ export default function App() {
     showSurfaceTexture:  false,
     showSurfaceNetwork:  false,
     showContours:        true,
+    showContourLabels:  true,
     contourColor:        '#e1bba2',
     contourColor10:      '#f29d62',
     surfaceOpacity:      0.8,
@@ -2044,6 +2045,17 @@ export default function App() {
                         onClick={() => toggleOpt('showContours')} role="switch"
                         aria-checked={opts.showContours} tabIndex={0} />
                     </div>
+                    {opts.showContours && (
+                      <div className="toggle-row" style={{ paddingLeft: '20px', borderTop: 'none', marginTop: '-8px', opacity: 0.8 }}>
+                        <label className="toggle-label" style={{ fontSize: '10px', color: '#94a3b8' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>label</span>
+                          {lang === 'sk' ? 'Zobraziť výšky' : 'Show altitudes'}
+                        </label>
+                        <div className={`switch${opts.showContourLabels ? ' on' : ''}`}
+                          onClick={() => toggleOpt('showContourLabels')} role="switch"
+                          aria-checked={opts.showContourLabels} tabIndex={0} />
+                      </div>
+                    )}
                     <div className="toggle-row">
                       <label className="toggle-label">
                         <div className="dot" style={{ background: '#8fbc8f', border: '1px solid #4a7c3f' }} />

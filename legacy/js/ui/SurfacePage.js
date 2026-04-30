@@ -44,6 +44,9 @@ class SurfacePage extends Page {
 
 			controls.push( this.addSelect( 'terrain.shading.caption', viewer.terrainShadingModes, viewer, 'terrainShading' ) );
 
+			this.addColor( 'terrain.shading.contour_color', 'shading.contours.line' );
+			this.addColor( 'terrain.shading.contour_color10', 'shading.contours.line10' );
+
 			controls.push( this.addRange( 'terrain.opacity', viewer, 'terrainOpacity' ) );
 
 			controls.push( this.addSelect( 'terrain.lightingmode', lightingModes, viewer, 'terrainLightingMode' ) );

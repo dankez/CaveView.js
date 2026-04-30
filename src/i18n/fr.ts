@@ -82,6 +82,7 @@ export const fr = {
     wire: "Maillage filaire",
     network: "Modèle de réseau (altitudes)",
     texture: "Texture (JPG/PNG)",
+    contours: "Courbes de niveau",
     opacity: "Opacité",
   },
   cave: {

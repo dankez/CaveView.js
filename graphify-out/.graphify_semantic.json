@@ -1,0 +1,53 @@
+{
+  "nodes": [
+    {
+      "id": "readme_lochviewer",
+      "label": "LochViewer",
+      "file_type": "document",
+      "source_file": "README.md"
+    },
+    {
+      "id": "readme_v1_1_3",
+      "label": "Release 1.1.3",
+      "file_type": "document",
+      "source_file": "README.md"
+    },
+    {
+      "id": "app_jtsk",
+      "label": "S-JTSK K\u0159ov\u00e1k",
+      "file_type": "code",
+      "source_file": "src/App.tsx"
+    },
+    {
+      "id": "caveviewer3d_component",
+      "label": "CaveViewer3D Component",
+      "file_type": "code",
+      "source_file": "src/components/CaveViewer3D.tsx"
+    },
+    {
+      "id": "feature_high_contrast_contours",
+      "label": "High-Contrast Contours",
+      "file_type": "code",
+      "source_file": "src/components/CaveViewer3D.tsx"
+    }
+  ],
+  "edges": [
+    {
+      "source": "readme_lochviewer",
+      "target": "readme_v1_1_3",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0
+    },
+    {
+      "source": "caveviewer3d_component",
+      "target": "feature_high_contrast_contours",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 5000,
+  "output_tokens": 1600
+}

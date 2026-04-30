@@ -76,10 +76,15 @@ function Materials ( viewer ) {
 			accuracy: { value: -1.0 },
 			target: { value: new Vector2() },
 			ringColor: { value: new Color( 0xff0000 ) },
+		},
+
+		commonTerrain: {
+			contourInterval: { value: 10.0 }
 		}
 
 	};
 
+	this.commonTerrainUniforms = this.uniforms.commonTerrain;
 	this.terrainOpacity = 0.5;
 
 	Object.defineProperties( this, {

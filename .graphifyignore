@@ -1,0 +1,25 @@
+# .graphifyignore
+node_modules/
+dist/
+build/
+coverage/
+.git/
+.github/
+.vscode/
+playwright-report/
+test-results/
+
+# Dokumentácia (staré demá a manuály)
+docs/
+
+# Artefakty testov a screenshoty
+screenshots/
+public/screenshots/
+
+# Kompilované pracovníky (workers)
+legacy/js/workers/
+docs/CaveView/js/workers/
+
+# Zálohy a temporary súbory
+*.log
+.DS_Store

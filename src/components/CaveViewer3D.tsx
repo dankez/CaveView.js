@@ -51,6 +51,7 @@ export interface ViewerOptions {
   surfaceTextureUrl?:  string | null
   showSurfaceNetwork:  boolean
   showContours:        boolean
+  showContourLabels:  boolean
   contourColor:        string
   contourColor10:      string
   surfaceOpacity:      number
@@ -540,6 +541,123 @@ function StationLabels({ cave, showNames, showAltitudes, options: o }: { cave: P
     </>
   )
 }
+
+// ─── Contour Label Item (with dynamic scaling) ──────────────────────────────
+const ContourLabelItem = ({ pos, val, color, opacity }: any) => {
+  const ref = useRef<HTMLDivElement>(null)
+  const vec = useMemo(() => new THREE.Vector3(pos[0], pos[1], pos[2]), [pos])
+
+  useFrame(({ camera }) => {
+    if (ref.current) {
+      const dist = camera.position.distanceTo(vec)
+      // Slightly larger when far away (min 0.7x), base distance 90m
+      const scale = Math.max(0.7, Math.min(1.8, 90 / dist))
+      ref.current.style.transform = `scale(${scale})`
+    }
+  })
+
+  return (
+    <Html position={pos} center occlude={false} style={{ pointerEvents: 'none' }}>
+      <div ref={ref} style={{
+        fontSize: '10px',
+        fontFamily: 'Inter, monospace',
+        color: color || '#ffffff',
+        fontWeight: 800,
+        textShadow: '0 0 3px #000, 0 0 5px #000',
+        opacity: opacity || 0.9,
+        whiteSpace: 'nowrap',
+        userSelect: 'none',
+        padding: '1px 3px',
+        borderRadius: '4px',
+        background: 'rgba(0,0,0,0.2)',
+        backdropFilter: 'blur(2px)',
+        transformOrigin: 'center center',
+        transition: 'transform 0.1s ease-out'
+      }}>
+        {val}
+      </div>
+    </Html>
+  )
+}
+
+// ─── Contour Labels (Altitude markers for major contours) ────────────────────
+const ContourLabels = React.memo(({ surface, majorInterval, color, opacity }: any) => {
+  const { dtm, centerOffset } = surface;
+  const { data, samples, lines, calib } = dtm;
+
+  const labelPoints = useMemo(() => {
+    const pts: { x: number; y: number; z: number; val: number }[] = [];
+    if (!majorInterval || majorInterval <= 0) return pts;
+
+    // Grid-based crossing edge detection for precision
+    const stepR = Math.max(4, Math.floor(lines / 16));
+    const stepC = Math.max(4, Math.floor(samples / 16));
+
+    for (let r = 0; r < lines - stepR; r += stepR) {
+      for (let c = 0; c < samples - stepC; c += stepC) {
+        const idx = r * samples + c;
+        const z = data[idx];
+        const targetAlt = Math.round(z / majorInterval) * majorInterval;
+        
+        // Check horizontal edge crossing
+        const idxRight = r * samples + (c + stepC);
+        const zRight = data[idxRight];
+        
+        if ((z <= targetAlt && zRight >= targetAlt) || (z >= targetAlt && zRight <= targetAlt)) {
+          if (Math.abs(zRight - z) > 0.001) {
+            const t = (targetAlt - z) / (zRight - z);
+            const col = c + t * stepC;
+            const wx = calib.xOrigin + col * calib.xx + r * calib.xy;
+            const wy = calib.yOrigin + col * calib.yx + r * calib.yy;
+            
+            pts.push({ 
+              x: wx - centerOffset.x, 
+              y: targetAlt - centerOffset.z, 
+              z: -(wy - centerOffset.y), 
+              val: targetAlt 
+            });
+          }
+        }
+      }
+    }
+
+    // Group by altitude and ensure at least 3 labels per level for visibility
+    const grouped = new Map<number, typeof pts>();
+    pts.forEach(p => {
+      if (!grouped.has(p.val)) grouped.set(p.val, []);
+      grouped.get(p.val)!.push(p);
+    });
+
+    const finalPts: typeof pts = [];
+    grouped.forEach((levelPts) => {
+      const count = Math.min(levelPts.length, 3);
+      // Pick points spread out by X coordinate
+      const sorted = levelPts.sort((a, b) => a.x - b.x);
+      for (let i = 0; i < count; i++) {
+        const idx = Math.floor(i * sorted.length / count);
+        if (sorted[idx]) finalPts.push(sorted[idx]);
+      }
+    });
+
+    return finalPts;
+  }, [data, samples, lines, calib, majorInterval, centerOffset]);
+
+  if (labelPoints.length === 0) return null;
+
+  return (
+    <group>
+      {labelPoints.map((p, i) => (
+        <ContourLabelItem 
+          key={i} 
+          pos={[p.x, p.y + 0.3, p.z]} 
+          val={p.val} 
+          color={color} 
+          opacity={opacity} 
+        />
+      ))}
+    </group>
+  );
+});
 
 // --- Pokročilé Vyhladzovacie Algoritmy (Taubin Smoothing & Angle-Weighted Normals) ---
 
@@ -1342,6 +1460,15 @@ const TerrainMesh = React.memo(({ surface, ...props }: any) => {
       
       {hoveredSurf && props.onSurfaceClick && (
         <mesh position={hoveredSurf} renderOrder={100} geometry={hoverGeo} material={hoverMat} />
+      )}
+
+      {props.showContours && props.options.showContourLabels && (
+        <ContourLabels 
+          surface={surface} 
+          majorInterval={props.contourInterval || 10.0} 
+          color={props.contourColor10 || props.contourColor}
+          opacity={props.opacity}
+        />
       )}
     </group>
   )

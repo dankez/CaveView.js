@@ -114,7 +114,9 @@
 				"relief": "relief shading",
 				"height": "by height",
 				"overlay": "map overlay",
-				"contours": "contours"
+				"contours": "contours",
+				"contour_color": "contour color",
+				"contour_color10": "major contour color"
 			},
 			"overlay": {
 				"caption": "Overlay"

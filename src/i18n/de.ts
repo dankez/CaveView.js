@@ -82,6 +82,7 @@ export const de = {
     wire: "Drahtgittermodell",
     network: "Netzmodell (Höhen)",
     texture: "Textur (JPG/PNG)",
+    contours: "Höhenlinien",
     opacity: "Deckkraft",
   },
   cave: {
