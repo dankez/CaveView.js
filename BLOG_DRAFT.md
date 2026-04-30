@@ -46,6 +46,12 @@ Toto je moja najobľúbenejšia fičúra. Chcete dať model na klubovú stránku
 3. LV vám vygeneruje link, ktorý si všetko pamätá. Keď ho kamoš otvorí, uvidí **presne to isté**, čo vy. Žiadne vysvetľovanie "stlač tamten gombík a pohni posuvníkom".
 4. Máme tam aj generátor **iframe kódu** pre weby. Stačí skopírovať a vložiť. Čisté, elegantné, bez zbytočných panelov (ak ich nechcete).
 
+### 👤 7. Jaskyniar so svetlom a orezávaním
+Keď sme pridali postavu jaskyniara kvôli mierke, zistili sme, že v hlbokých chodbách je bez čelovky stratený. Tak sme mu jednu dali!
+*   **Vlastný pointLight**: Každý jaskyniar, ktorého umiestnite do modelu, má teraz svoje vlastné svetlo. Krásne osvetľuje okolité steny jaskyne a jaskyniar je viditeľný aj v tej najčernejšej tme.
+*   **Podpora rezov (Clipping)**: Ak robíte rezy jaskyňou pomocou profilov, jaskyniar sa už "netvári", že je duch. Správne zmizne spolu s časťou jaskyne, ktorú ste orezali. 
+*   **Stojí aj lezie**: Môžete mu prepínať pózy, aby ste vedeli, či sa do tej plazivky v modeli naozaj zmestíte (aspoň virtuálne).
+
 [Sem vložte screenshot: Ukážka nového Share dialógu – vyzerá to fakt svetovo!]
 
 ## Farebné legendy a "vizuálne žrádlo"
