@@ -1,7 +1,14 @@
 # LochViewer - Modernized Speleological Viewer
-**Release 1.1.2 (2026-04-28-03) - "Legend Fix & Blog Expansion"**
+**Release 1.1.3 (2026-04-30) - "High-Contrast Contours & Terrain Depth Fix"**
 
 Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémov, postavená na technológiách React, Three.js a React-Three-Fiber.
+
+## 🚀 Novinky v Release 2026-04-30 (v1.1.3)
+
+### 🏔️ Pokročilá vizualizácia terénu
+*   **Vrstevnice s vysokým kontrastom**: Implementovaná podpora pre dve nezávislé farby vrstevníc. Hlavné vrstevnice (napr. každých 10m) môžu mať teraz výraznejšiu farbu pre lepšiu orientáciu v strmom teréne.
+*   **Fix: Vizuálna hierarchia (Depth Overlap)**: Vrstevnice sú teraz technicky nadradené tieňovanému modelu aj satelitným textúram. Už nedochádza k ich prekrývaniu alebo "zanikaniu" pri nižšej priehľadnosti modelu.
+*   **Lokalizácia**: Kompletný slovenský a anglický preklad pre nové ovládacie prvky vrstevníc.
 
 ## 🚀 Novinky v Release 2026-04-28-03 (v1.1.2)
 

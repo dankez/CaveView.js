@@ -50,6 +50,9 @@ export interface ViewerOptions {
   showSurfaceTexture:  boolean
   surfaceTextureUrl?:  string | null
   showSurfaceNetwork:  boolean
+  showContours:        boolean
+  contourColor:        string
+  contourColor10:      string
   surfaceOpacity:      number
   surfaceColor:        string
   placedCaver:         { pos: [number, number, number], pose: 'standing' | 'crawling' } | null
@@ -1051,7 +1054,7 @@ function buildTerrainTileData(surface: CaveSurface, colStart: number, rowStart: 
 // ─── Terrain surface mesh (všetky módy) ──────────────────────────────────────
 const TILE_SIZE = 128; // Počet vrcholov na hranu dlaždice
 
-const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCount, imgSize, ...props }: any) => {
+const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCount, imgSize, imgSizeUniformRef, ...props }: any) => {
   const [geo, setGeo] = useState<THREE.BufferGeometry | null>(null);
 
   useEffect(() => {
@@ -1060,6 +1063,98 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
     setGeo(g);
     return () => g.dispose();
   }, [surface, colStart, rowStart, colCount, rowCount, imgSize]);
+
+  const contourUniforms = useMemo(() => ({
+    uMajorInterval: { value: props.contourInterval || 10.0 },
+    uMinorInterval: { value: props.minorInterval || 2.5 },
+    uContourColor: { value: new THREE.Color(props.contourColor) },
+    uContourColorMajor: { value: new THREE.Color(props.contourColor10 || props.contourColor) },
+    uOpacity: { value: props.opacity || 0.8 },
+    uCenterZ: { value: surface.centerOffset.z }
+  }), [surface.centerOffset.z]);
+
+  useEffect(() => {
+    contourUniforms.uMajorInterval.value = props.contourInterval || 10.0;
+    contourUniforms.uMinorInterval.value = props.minorInterval || 2.5;
+    contourUniforms.uContourColor.value.set(props.contourColor);
+    contourUniforms.uContourColorMajor.value.set(props.contourColor10 || props.contourColor);
+    contourUniforms.uOpacity.value = props.opacity;
+  }, [contourUniforms, props.contourInterval, props.minorInterval, props.contourColor, props.contourColor10, props.opacity]);
+
+  const contourMat = useMemo(() => {
+    return new THREE.MeshStandardMaterial({
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: props.opacity,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -10,
+      polygonOffsetUnits: -10,
+      clippingPlanes: props.clippingPlanes,
+      onBeforeCompile: (shader: any) => {
+        shader.uniforms.uMajorInterval = contourUniforms.uMajorInterval;
+        shader.uniforms.uMinorInterval = contourUniforms.uMinorInterval;
+        shader.uniforms.uContourColor = contourUniforms.uContourColor;
+        shader.uniforms.uContourColorMajor = contourUniforms.uContourColorMajor;
+        shader.uniforms.uOpacity = contourUniforms.uOpacity;
+        shader.uniforms.uCenterZ = contourUniforms.uCenterZ;
+
+        shader.vertexShader = `
+          varying float vWorldZ;
+          uniform float uCenterZ;
+          ${shader.vertexShader}
+        `.replace(
+          '#include <worldpos_vertex>',
+          `#include <worldpos_vertex>
+           vWorldZ = (modelMatrix * vec4(transformed, 1.0)).y + uCenterZ;
+          `
+        );
+
+        shader.fragmentShader = `
+          varying float vWorldZ;
+          uniform float uMajorInterval;
+          uniform float uMinorInterval;
+          uniform vec3 uContourColor;
+          uniform vec3 uContourColorMajor;
+          uniform float uOpacity;
+          ${shader.fragmentShader}
+        `.replace(
+          '#include <dithering_fragment>',
+          `#include <dithering_fragment>
+          
+          float zMaj = vWorldZ / uMajorInterval;
+          float zMin = vWorldZ / uMinorInterval;
+          
+          float fMaj = fract(zMaj + 0.5) - 0.5;
+          float fMin = fract(zMin + 0.5) - 0.5;
+          
+          float dfMaj = fwidth(zMaj);
+          float dfMin = fwidth(zMin);
+
+          // Výrazne hrubšie čiary pre lepšiu viditeľnosť
+          // Major ~ 2.2 (celková šírka cca 4.5px), Minor ~ 1.0 (celková šírka cca 2px)
+          float wMaj = 2.2 * dfMaj; 
+          float wMin = 1.0 * dfMin;
+
+          // smoothstep s rozsahom df pre maximálnu ostrosť bez aliasingu
+          float lineMaj = smoothstep(wMaj, wMaj - dfMaj, abs(fMaj));
+          float lineMin = smoothstep(wMin, wMin - dfMin, abs(fMin));
+
+          float finalLine = max(lineMaj, lineMin);
+          if (finalLine < 0.1) discard;
+
+          vec3 finalColor = mix(uContourColor, uContourColorMajor, lineMaj);
+          gl_FragColor = vec4(finalColor, finalLine * uOpacity);
+          `
+        );
+      }
+    } as any);
+  }, [surface.centerOffset.z, contourUniforms]);
+
+  useEffect(() => {
+    contourMat.opacity = props.opacity;
+    contourMat.clippingPlanes = props.clippingPlanes;
+  }, [contourMat, props.opacity, props.clippingPlanes]);
 
   if (!geo) return null;
 
@@ -1086,8 +1181,6 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
       )}
       {props.showTexture && props.texture && (
         <mesh geometry={geo}>
-          {/* Pre LOX bitmap: UV sú v uv2 ako raw pixelové súradnice, normalizujeme v shaderi pomocou imgSize */}
-          {/* Pre custom upload: UV sú štandardné 0-1 v uv, žiadny shader hack */}
           <meshStandardMaterial
             map={props.texture}
             side={THREE.DoubleSide}
@@ -1100,13 +1193,12 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
             onBeforeCompile={(shader) => {
               const isCustom = !!props.surfaceTextureUrl;
               const hasBitmapCalib = !!surface.bitmapCalib;
-              const isNormalized = imgSize && imgSize[0] > 1;
-
-              // uIsLoxBitmap: 1 = LOX bitmap s kalibrovanými UV v uv2 (normalizované)
-              // 0 = custom upload s DTM UV v uv
               shader.uniforms.uIsLoxBitmap = { value: (hasBitmapCalib && !isCustom) ? 1.0 : 0.0 };
-              // Fallback imgSize pre prípad že UV sú ešte raw (imgSize=[1,1])
               shader.uniforms.uImgSize = { value: (imgSize && imgSize[0] > 1) ? imgSize : [1.0, 1.0] };
+              
+              if (imgSizeUniformRef) {
+                imgSizeUniformRef.current.push(shader.uniforms.uImgSize);
+              }
 
               shader.vertexShader = `
                 attribute vec2 uv2;
@@ -1131,8 +1223,6 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
                 #ifdef USE_MAP
                   vec2 finalUv;
                   if (uIsLoxBitmap > 0.5) {
-                    // uv2 je normalizované 0-1 (ak imgSize bolo known pri buildu)
-                    // alebo raw pixely delíme uImgSize ako fallback
                     finalUv = (uImgSize.x > 1.5) ? vTexUv / uImgSize : vTexUv;
                     if (finalUv.x < -0.001 || finalUv.x > 1.001 || finalUv.y < -0.001 || finalUv.y > 1.001) {
                       discard;
@@ -1148,6 +1238,9 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
             }}
           />
         </mesh>
+      )}
+      {props.showContours && (
+        <mesh geometry={geo} material={contourMat} renderOrder={2} />
       )}
       {props.showMeshWire && (
         <mesh geometry={geo}>
@@ -1215,7 +1308,7 @@ const TerrainMesh = React.memo(({ surface, ...props }: any) => {
   }, [hoverGeo, hoverMat])
   const [hoveredSurf, setHoveredSurf] = useState<[number, number, number] | null>(null)
 
-  if (!props.showMesh && !props.showMeshWire && !props.showTexture && !props.showNetwork) return null
+  if (!props.showMesh && !props.showMeshWire && !props.showTexture && !props.showNetwork && !props.showContours) return null
 
   return (
     <group
@@ -1239,7 +1332,12 @@ const TerrainMesh = React.memo(({ surface, ...props }: any) => {
       onPointerOut={() => setHoveredSurf(null)}
     >
       {tiles.map((tile, i) => (
-        <TerrainTile key={`${tile.colStart}-${tile.rowStart}-${imgSize[0]}x${imgSize[1]}`} surface={surface} {...tile} {...props} texture={texture} imgSize={imgSize} />
+        <TerrainTile 
+          key={`${tile.colStart}-${tile.rowStart}-${imgSize[0]}x${imgSize[1]}`} 
+          surface={surface} {...tile} {...props} 
+          texture={texture} imgSize={imgSize} 
+          imgSizeUniformRef={imgSizeUniformRef}
+        />
       ))}
       
       {hoveredSurf && props.onSurfaceClick && (
@@ -1397,6 +1495,8 @@ interface Props {
   manualConnection?: { p1: {x:number, y:number, z:number}, p2: {x:number, y:number, z:number} } | null
   placedCaver?: { pos: [number, number, number], pose: 'standing' | 'crawling' } | null
   fitTrigger?: number
+  contourInterval?: number
+  minorInterval?: number
   selectedStations?: SelStation[]
   activeProfilePoints?: SelStation[] | null
 }
@@ -1491,7 +1591,8 @@ function EntranceMarkers({ cave, options }: { cave: ParsedCave, options: ViewerO
 
 const CaveViewer3D = ({ 
   cave, options: o, onStationClick, onSurfaceClick, onBackgroundClick, onMoveStateChange, onCameraUpdate, 
-  onProcessingStart, onProcessingEnd, manualConnection, placedCaver, fitTrigger, selectedStations, activeProfilePoints 
+  onProcessingStart, onProcessingEnd, manualConnection, placedCaver, fitTrigger, selectedStations, activeProfilePoints,
+  contourInterval, minorInterval
 }: Props) => {
   const [isMoving, setIsMoving] = useState(false)
   const [camData, setCamData] = useState<{ dist: number, fov: number, height: number } | null>(null)
@@ -1626,7 +1727,7 @@ const CaveViewer3D = ({
       <EntranceMarkers cave={cave} options={o} />
 
       {/* ── Terrain ── */}
-      {(o.showSurfaceMesh || o.showSurfaceMeshWire || o.showSurfaceTexture || o.showSurfaceNetwork) && cave.surfaces?.map((surf, i) => (
+      {(o.showSurfaceMesh || o.showSurfaceMeshWire || o.showSurfaceTexture || o.showSurfaceNetwork || o.showContours) && cave.surfaces?.map((surf, i) => (
         <TerrainMesh
           key={i} surface={surf}
           showMesh={o.showSurfaceMesh}
@@ -1634,6 +1735,11 @@ const CaveViewer3D = ({
           showTexture={o.showSurfaceTexture}
           surfaceTextureUrl={o.surfaceTextureUrl}
           showNetwork={o.showSurfaceNetwork}
+          showContours={o.showContours}
+          contourColor={o.contourColor}
+          contourColor10={o.contourColor10}
+          contourInterval={contourInterval}
+          minorInterval={minorInterval}
           opacity={o.surfaceOpacity}
           surfaceColor={o.surfaceColor}
           colorTerrainWire={o.colorTerrainWire}

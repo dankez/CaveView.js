@@ -29,6 +29,8 @@ Pri modeloch jaskýň je kľúčové vidieť aj topografiu povrchu. Aplikácia p
 
 Terén sa dá v bočnom paneli pohodlne prepínať medzi plným tieňovaným zobrazením, "drôtenou" sieťou, alebo zobrazením so satelitnou mapou bez toho, aby sa tieto vrstvy vizuálne prekrývali a robili vizuálne chyby.
 
+Najnovšie vylepšenia pridali aj inteligentnú prácu s vrstevnicami. Tie sú teraz vždy technicky nadradené terénu aj fotomape, takže zostávajú perfektne čitateľné aj pri nižšej priehľadnosti modelu. Navyše pribudla možnosť farebne odlíšiť hlavné vrstevnice od vedľajších, čo dramaticky zlepšuje orientáciu v členitom teréne.
+
 [Sem vložte screenshot: Detailný pohľad na povrchový terén s aplikovanou satelitnou textúrou]
 
 ### 2. Tvorba rezov (Clipping) v jaskyni aj v teréne

@@ -82,6 +82,9 @@ export const sk = {
     wire: "Drôtená sieť",
     network: "Sieťový model (výšky)",
     texture: "Textúra (JPG/PNG)",
+    contours: "Vrstevnice",
+    contourBase: "Základná farba",
+    contourMajor: "Hlavná farba",
     opacity: "Priehľadnosť",
   },
   cave: {

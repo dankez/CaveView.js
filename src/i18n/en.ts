@@ -82,6 +82,9 @@ export const en = {
     wire: "Wireframe mesh",
     network: "Network model (heights)",
     texture: "Texture (JPG/PNG)",
+    contours: "Contours",
+    contourBase: "Base color",
+    contourMajor: "Major color",
     opacity: "Opacity",
   },
   cave: {

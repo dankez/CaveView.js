@@ -532,6 +532,27 @@ export default function App() {
   const [isRecording, setIsRecording] = useState(false)
   const [manualMatches, setManualMatches] = useState<{ src: { x: number; y: number }; dst: { x: number; y: number } }[] | null>(null)
 
+  useEffect(() => {
+    const savedLang = localStorage.getItem('cv-language');
+    if (savedLang) return; 
+
+    fetch('https://ipapi.co/json/')
+      .then(res => res.json())
+      .then(data => {
+        const country = data.country_code;
+        let detected: Language = 'en';
+        if (country === 'SK') detected = 'sk';
+        else if (country === 'FR') detected = 'fr';
+        else if (['DE', 'AT', 'CH'].includes(country)) detected = 'de';
+        
+        if (detected !== lang) {
+          console.log('IP language detection:', detected, 'from', country);
+          setLang(detected);
+        }
+      })
+      .catch(err => console.warn('IP detection failed:', err));
+  }, []);
+
   const t = useCallback((key: string) => getTranslation(lang, key), [lang])
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isModelMoving, setIsModelMoving] = useState(false)
@@ -539,6 +560,19 @@ export default function App() {
   const [processingInfo, setProcessingInfo] = useState<string | null>(null)
   const [currentTheme, setCurrentTheme] = useState<string>('precision')
   const surfNextId = useRef(1)
+
+  const contourLevels = useMemo(() => {
+    if (!cameraData) return { major: 10, minor: 2.5 };
+    const dist = cameraData.dist;
+    if (dist < 25)   return { major: 0.5, minor: 0.1 };
+    if (dist < 60)   return { major: 1,   minor: 0.25 };
+    if (dist < 120)  return { major: 2.5, minor: 0.5 };
+    if (dist < 300)  return { major: 5,   minor: 1 };
+    if (dist < 600)  return { major: 10,  minor: 2.5 };
+    if (dist < 1200) return { major: 25,  minor: 5 };
+    if (dist < 3000) return { major: 50,  minor: 10 };
+    return { major: 100, minor: 25 };
+  }, [cameraData])
   const [opts, setOpts] = useState<ViewerOptions>({
     showSplay:           false,
     showStations:        true,
@@ -572,6 +606,9 @@ export default function App() {
     showSurfaceMeshWire: false,
     showSurfaceTexture:  false,
     showSurfaceNetwork:  false,
+    showContours:        true,
+    contourColor:        '#e1bba2',
+    contourColor10:      '#f29d62',
     surfaceOpacity:      0.8,
     surfaceColor:        '#e2e8f0',
     colorSplay:          '#78909c',
@@ -1654,6 +1691,8 @@ export default function App() {
                     onSurfaceClick={isMeasuringMode ? handleSurfaceClick : undefined}
                     onMoveStateChange={setIsModelMoving}
                     onCameraUpdate={setCameraData}
+                    contourInterval={contourLevels.major}
+                    minorInterval={contourLevels.minor}
                     onProcessingStart={setProcessingInfo}
                     onProcessingEnd={() => setProcessingInfo(null)}
                     fitTrigger={fitTrigger}
@@ -1991,6 +2030,19 @@ export default function App() {
                           showSurfaceTexture: false 
                         }))} role="switch"
                         aria-checked={opts.showSurfaceNetwork} tabIndex={0} />
+                    </div>
+                    <div className="toggle-row">
+                      <label className="toggle-label">
+                        <div className="dot" style={{ background: opts.contourColor, border: '1px solid #4a7c3f' }} />
+                        {t('terrain.contours')} ({contourLevels.major}m)
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <ColorPicker t={t} label={t('terrain.contourBase')} value={opts.contourColor} onChange={(c) => setOpts(p => ({ ...p, contourColor: c }))} />
+                          <ColorPicker t={t} label={t('terrain.contourMajor')} value={opts.contourColor10} onChange={(c) => setOpts(p => ({ ...p, contourColor10: c }))} />
+                        </div>
+                      </label>
+                      <div className={`switch${opts.showContours ? ' on' : ''}`}
+                        onClick={() => toggleOpt('showContours')} role="switch"
+                        aria-checked={opts.showContours} tabIndex={0} />
                     </div>
                     <div className="toggle-row">
                       <label className="toggle-label">
