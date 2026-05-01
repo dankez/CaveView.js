@@ -9,3 +9,7 @@ test-results/
 !public/test_model2.lox
 !public/zadiel.lox
 !public/zlomiskovo.lox
+
+.env
+.env.local
+.env.*.local

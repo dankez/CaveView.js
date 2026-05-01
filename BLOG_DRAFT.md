@@ -52,6 +52,15 @@ Keď sme pridali postavu jaskyniara kvôli mierke, zistili sme, že v hlbokých 
 *   **Podpora rezov (Clipping)**: Ak robíte rezy jaskyňou pomocou profilov, jaskyniar sa už "netvári", že je duch. Správne zmizne spolu s časťou jaskyne, ktorú ste orezali. 
 *   **Stojí aj lezie**: Môžete mu prepínať pózy, aby ste vedeli, či sa do tej plazivky v modeli naozaj zmestíte (aspoň virtuálne).
 
+### ✂️ 8. Rezy jaskyňou (Clipping) – Vidieť dovnútra nikdy nebolo jednoduchšie
+Toto je absolútna vychytávka pre prieskumníkov. Chcete vidieť profil chodby alebo presný rez kopcom? 
+*   **Ako na to?**: Stačí zapnúť režim merania a kliknúť na dva body. Môže to byť stanica v jaskyni, bod na povrchu, alebo kombinácia oboch (napr. vchod a bod hlboko v jaskyni).
+*   **Vertikálne aj horizontálne**: Po výbere bodov sa vám vytvorí rovina rezu. V sidebare potom môžete jednoducho posúvať "orez" a pozerať sa do vnútra masívu.
+*   **Kombinácia jaskyňa + povrch**: Chcete vidieť, ako blízko k povrchu ide tá nová chodba? Urobte rez medzi nimi a hneď uvidíte presnú vzdialenosť a profil terénu nad jaskyňou.
+*   **Interaktívne ovládanie**: Rez nie je statický. Môžete s ním hýbať hore-dole (horizontálne) alebo ho posúvať v smere vášho profilu.
+
+[Sem vložte screenshot: Ukážka vertikálneho rezu kopcom, kde vidno postavu jaskyniara v chodbe]
+
 [Sem vložte screenshot: Ukážka nového Share dialógu – vyzerá to fakt svetovo!]
 
 ## Farebné legendy a "vizuálne žrádlo"

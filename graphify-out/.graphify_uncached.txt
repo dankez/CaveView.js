@@ -1,4 +1,3 @@
-/home/dankez/cave3d/CaveView-modernized/scratch_zadiel.ts
 /home/dankez/cave3d/CaveView-modernized/rollup.config.mjs
 /home/dankez/cave3d/CaveView-modernized/test-merge.mjs
 /home/dankez/cave3d/CaveView-modernized/rollup.graph.mjs

@@ -5,6 +5,10 @@ import type { ParsedCave, CaveSurface, Vec3 } from './parsers/caveParser'
 import CaveViewer3D, { ViewerOptions } from './components/CaveViewer3D'
 import { getBrowserLanguage, getTranslation, Language, languages } from './i18n'
 
+// ── Google Drive Config (Vymeň za tvoje reálne kľúče v .env súbore) ──
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || ''
+
 type AppState = 'welcome' | 'loading' | 'viewer' | 'error'
 
 interface LoadedFile {
@@ -525,7 +529,7 @@ export default function App() {
   // Embed / Share
   const [isEmbedMode] = useState(() => new URLSearchParams(window.location.search).get('embed') === 'true')
   const [embedAllowSidebar] = useState(() => new URLSearchParams(window.location.search).get('sidebar') === '1')
-  const [shareDialogOpen, setShareDialogOpen] = useState(false)
+  // const [shareDialogOpen, setShareDialogOpen] = useState(false) // moved up
   const [shareCopied, setShareCopied] = useState(false)
   const [customShareUrl, setCustomShareUrl] = useState('')
   const [urlValidationStatus, setUrlValidationStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle')
@@ -541,6 +545,11 @@ export default function App() {
   const [isCalibrating, setIsCalibrating] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const [manualMatches, setManualMatches] = useState<{ src: { x: number; y: number }; dst: { x: number; y: number } }[] | null>(null)
+
+  // GDrive states
+  const [lastLoadedBuffer, setLastLoadedBuffer] = useState<ArrayBuffer | null>(null)
+  const [gdriveStatus, setGdriveStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle')
+  const [shareDialogOpen, setShareDialogOpen] = useState(false)
 
   useEffect(() => {
     const savedLang = localStorage.getItem('cv-language');
@@ -1020,13 +1029,14 @@ export default function App() {
       let parsed: ParsedCave
       setLoadingStatus('loading_file')
 
+      const buf = await file.arrayBuffer()
+      setLastLoadedBuffer(buf.slice(0))
+      setProgress(50)
+
       if (ext === '.plt') {
-        const text = await file.text()
-        setProgress(50)
+        const text = new TextDecoder().decode(buf)
         parsed = parsePlt(text, setLoadingStatus)
       } else {
-        const buf = await file.arrayBuffer()
-        setProgress(50)
         if (ext === '.lox') {
           parsed = await runParserWorker(buf, setLoadingStatus)
         } else {
@@ -1057,7 +1067,16 @@ export default function App() {
     let url = rawUrl
     if (url.startsWith('/http')) url = url.substring(1)
     
-    const ext = '.' + url.split('.').pop()!.toLowerCase()
+    // Extrakcia prípony (.lox, .3d, .plt)
+    let extString = url
+    try {
+      const u = new URL(url, window.location.href)
+      if (u.searchParams.has('name')) extString = u.searchParams.get('name')!
+      else extString = u.pathname
+    } catch(e) {}
+    
+    const ext = '.' + extString.split('.').pop()!.toLowerCase()
+    
     setErrorMsg(null)
     setLoadedFile({ name: label, size: 0, ext })
     setAppState('loading')
@@ -1067,30 +1086,25 @@ export default function App() {
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
       setProgress(40)
       const contentLength = Number(resp.headers.get('content-length') || 0)
+      const buf = await resp.arrayBuffer()
+      setLastLoadedBuffer(buf.slice(0)) // Slice creates a copy, preventing detachment by worker transfer
+      setProgress(60)
+      setLoadedFile({ name: label, size: buf.byteLength, ext })
+      
+      let parsed: ParsedCave
       if (ext === '.plt') {
-        const text = await resp.text()
-        setProgress(60)
-        const parsed = parsePlt(text, setLoadingStatus)
-        setLoadedFile({ name: label, size: text.length, ext })
-        if (parsed.segments.length === 0 && parsed.stations.length === 0)
-          throw new Error('Súbor neobsahuje žiadne dáta.')
-        processCaveData(parsed)
+        const text = new TextDecoder().decode(buf)
+        parsed = parsePlt(text, setLoadingStatus)
+      } else if (ext === '.lox') {
+        parsed = await runParserWorker(buf, setLoadingStatus)
       } else {
-        const buf = await resp.arrayBuffer()
-        setProgress(60)
-        setLoadedFile({ name: label, size: buf.byteLength, ext })
-        
-        let parsed: ParsedCave
-        if (ext === '.lox') {
-          parsed = await runParserWorker(buf, setLoadingStatus)
-        } else {
-          parsed = parseSvx(buf, setLoadingStatus)
-        }
-
-        if (parsed.segments.length === 0 && parsed.stations.length === 0)
-          throw new Error('Súbor neobsahuje žiadne dáta.')
-        processCaveData(parsed)
+        parsed = parseSvx(buf, setLoadingStatus)
       }
+
+      if (parsed.segments.length === 0 && parsed.stations.length === 0)
+        throw new Error('Súbor neobsahuje žiadne dáta.')
+      
+      processCaveData(parsed)
       setLoadingStatus('done')
       setProgress(100)
       setTimeout(() => setAppState('viewer'), 150)
@@ -1117,7 +1131,11 @@ export default function App() {
     const params = new URLSearchParams(window.location.search)
     const modelUrl = params.get('model')
     if (modelUrl) {
-      const label = modelUrl.split('/').pop() || modelUrl
+      let label = modelUrl.split('/').pop() || modelUrl
+      try {
+        const u = new URL(modelUrl, window.location.href)
+        if (u.searchParams.has('name')) label = u.searchParams.get('name')!
+      } catch (e) { /* ignore */ }
       loadFromUrl(modelUrl, label)
     }
   }, [])
@@ -1305,6 +1323,76 @@ export default function App() {
       setShareCopied(true)
       setTimeout(() => setShareCopied(false), 2500)
     })
+  }
+
+  const handleGDriveUpload = async () => {
+    if (!lastLoadedBuffer || !loadedFile) return
+    setGdriveStatus('uploading')
+    
+    try {
+      const client = (window as any).google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/drive.file',
+        callback: async (response: any) => {
+          if (response.error) {
+            setGdriveStatus('error')
+            return
+          }
+          
+          const accessToken = response.access_token
+          
+          const metadata = {
+            name: loadedFile.name,
+            mimeType: 'application/octet-stream'
+          }
+          
+          const boundary = '-------314159265358979323846'
+          const delimiter = "\r\n--" + boundary + "\r\n"
+          const close_delim = "\r\n--" + boundary + "--"
+
+          const metadataPart = delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(metadata)
+          const mediaPart = delimiter + 'Content-Type: application/octet-stream\r\n\r\n'
+          
+          const body = new Blob([
+            metadataPart,
+            mediaPart,
+            lastLoadedBuffer,
+            close_delim
+          ], { type: `multipart/related; boundary=${boundary}` })
+
+          const uploadResp = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${accessToken}` },
+            body: body
+          })
+          
+          if (!uploadResp.ok) {
+            const errText = await uploadResp.text()
+            throw new Error(`Upload failed: ${uploadResp.status} ${errText}`)
+          }
+          
+          const fileData = await uploadResp.json()
+          const fileId = fileData.id
+
+          // 2. Set permissions to public
+          await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role: 'reader', type: 'anyone' })
+          })
+          
+          // 3. Construct URL that works with CORS (requires API key)
+          const gdriveUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${GOOGLE_API_KEY}&name=${encodeURIComponent(loadedFile.name)}`
+          setCustomShareUrl(gdriveUrl)
+          setGdriveStatus('success')
+          setUrlValidationStatus('valid')
+        }
+      })
+      client.requestAccessToken()
+    } catch (err) {
+      console.error('GDrive error:', err)
+      setGdriveStatus('error')
+    }
   }
 
   const openShareDialog = () => {
@@ -2560,6 +2648,50 @@ export default function App() {
             {urlValidationStatus === 'valid' && <div className="validation-msg valid">✅ {lang === 'sk' ? 'Súbor je dostupný' : 'File is accessible'}</div>}
             {urlValidationStatus === 'invalid' && <div className="validation-msg invalid">❌ {urlValidationError}</div>}
 
+            {/* ── GDrive Upload ── */}
+            {!isEmbedMode && lastLoadedBuffer && (
+              <div style={{ marginBottom: '1.2rem', padding: '1rem', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#60a5fa', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add_to_drive</span>
+                    {lang === 'sk' ? 'Automatický upload na tvoj Disk' : 'Auto upload to your Drive'}
+                  </div>
+                  {gdriveStatus === 'success' && <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 'bold' }}>HOTOVO! ✅</span>}
+                </div>
+                <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '0.8rem' }}>
+                  {lang === 'sk' 
+                    ? 'Súbor sa nahrá na tvoj Google Disk a nastaví sa ako verejný. Získaš odkaz, ktorý funguje všade.' 
+                    : 'File will be uploaded to your Google Drive and set to public. You get a link that works everywhere.'}
+                </div>
+                <button 
+                  onClick={handleGDriveUpload}
+                  disabled={gdriveStatus === 'uploading'}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    background: gdriveStatus === 'uploading' ? '#1e293b' : '#2563eb',
+                    color: 'white',
+                    border: 'none',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: gdriveStatus === 'uploading' ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  {gdriveStatus === 'uploading' ? '...' : (lang === 'sk' ? 'Nahrať a vygenerovať odkaz' : 'Upload and generate link')}
+                </button>
+                {gdriveStatus === 'error' && (
+                  <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '6px', textAlign: 'center' }}>
+                    {lang === 'sk' ? 'Chyba pri nahrávaní. Skús to znova.' : 'Upload error. Try again.'}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* ── Rozmery iframu ── */}
             <div className="share-preview-label">📐 {lang === 'sk' ? 'Veľkosť okna' : 'Window size'}</div>
             <div className="share-size-row">
@@ -2637,6 +2769,11 @@ export default function App() {
           </div>
         )
       })()}
+      {!isEmbedMode && (
+        <div style={{ position: 'fixed', bottom: '10px', right: '12px', fontSize: '10px', opacity: 0.4, zIndex: 1000, pointerEvents: 'auto' }}>
+          <a href="/privacy.html" style={{ color: 'white', textDecoration: 'none' }}>Privacy Policy</a>
+        </div>
+      )}
     </>
   )
 }

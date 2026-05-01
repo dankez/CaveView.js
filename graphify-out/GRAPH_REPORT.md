@@ -1,11 +1,11 @@
-# Graph Report - CaveView-modernized  (2026-04-30)
+# Graph Report - .  (2026-04-30)
 
 ## Corpus Check
-- 183 files · ~246,754 words
+- 197 files · ~247,005 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 970 nodes · 1609 edges · 45 communities detected
+- 968 nodes · 1608 edges · 44 communities detected
 - Extraction: 66% EXTRACTED · 34% INFERRED · 0% AMBIGUOUS · INFERRED: 552 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
@@ -26,7 +26,7 @@
 - [[_COMMUNITY_Community 13|Community 13]]
 - [[_COMMUNITY_Community 14|Community 14]]
 - [[_COMMUNITY_Community 15|Community 15]]
-- [[_COMMUNITY_Community 17|Community 17]]
+- [[_COMMUNITY_Community 16|Community 16]]
 - [[_COMMUNITY_Community 18|Community 18]]
 - [[_COMMUNITY_Community 19|Community 19]]
 - [[_COMMUNITY_Community 21|Community 21]]
@@ -54,7 +54,6 @@
 - [[_COMMUNITY_Community 45|Community 45]]
 - [[_COMMUNITY_Community 46|Community 46]]
 - [[_COMMUNITY_Community 48|Community 48]]
-- [[_COMMUNITY_Community 52|Community 52]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `Survey` - 49 edges
@@ -69,84 +68,84 @@
 10. `Cfg` - 14 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `hydrateGeometry()` --calls--> `buildModels()`  [INFERRED]
-  legacy/js/core/lib.js → legacy/js/viewer/walls/buildModels.js
-- `buildModels()` --calls--> `buildWallsSync()`  [INFERRED]
-  legacy/js/viewer/walls/buildModels.js → legacy/js/viewer/walls/WallBuilders.js
-- `buildCrossSections()` --calls--> `buildWallsSync()`  [INFERRED]
-  legacy/js/viewer/walls/buildCrossSections.js → legacy/js/viewer/walls/WallBuilders.js
+- `buildModels()` --calls--> `hydrateGeometry()`  [INFERRED]
+  legacy/js/viewer/walls/buildModels.js → legacy/js/core/lib.js
+- `buildWallsSync()` --calls--> `buildModels()`  [INFERRED]
+  legacy/js/viewer/walls/WallBuilders.js → legacy/js/viewer/walls/buildModels.js
+- `buildWallsSync()` --calls--> `buildCrossSections()`  [INFERRED]
+  legacy/js/viewer/walls/WallBuilders.js → legacy/js/viewer/walls/buildCrossSections.js
 - `buildWallsSync()` --calls--> `buildScraps()`  [INFERRED]
   legacy/js/viewer/walls/WallBuilders.js → legacy/js/viewer/walls/buildScraps.js
 
 ## Communities
 
 ### Community 0 - "Community 0"
-Cohesion: 0.03
-Nodes (13): dataURL(), hydrateGeometry(), replaceExtension(), WorkerPool, WorkerPoolCache, DistanceFieldFilterPass, FileLoader, EPSG3857TileSet (+5 more)
-
-### Community 1 - "Community 1"
-Cohesion: 0.05
-Nodes (8): HUD(), WallMaterial, StationMarkers, Survey, buildCrossSections(), buildModels(), buildScraps(), buildWallsSync()
-
-### Community 2 - "Community 2"
-Cohesion: 0.05
-Nodes (22): equalArray(), getCanvas(), getMinMax(), getPaddedArrayBuffer(), getPaddedBufferSize(), GLTFExporter, GLTFLightExtension, GLTFMaterialsClearcoatExtension (+14 more)
-
-### Community 3 - "Community 3"
 Cohesion: 0.07
 Nodes (13): _getId(), EditPage, ExportPage, Frame, HelpPage, InfoPage, Page, RoutePanel (+5 more)
 
+### Community 1 - "Community 1"
+Cohesion: 0.05
+Nodes (22): equalArray(), getCanvas(), getMinMax(), getPaddedArrayBuffer(), getPaddedBufferSize(), GLTFExporter, GLTFLightExtension, GLTFMaterialsClearcoatExtension (+14 more)
+
+### Community 2 - "Community 2"
+Cohesion: 0.04
+Nodes (10): WorkerPool, WorkerPoolCache, DistanceFieldFilterPass, CaveLoader, FileLoader, LoxTerrain, Panel, Entrances (+2 more)
+
+### Community 3 - "Community 3"
+Cohesion: 0.06
+Nodes (7): HUD(), StationMarkers, Survey, buildCrossSections(), buildModels(), buildScraps(), buildWallsSync()
+
 ### Community 4 - "Community 4"
-Cohesion: 0.03
-Nodes (15): Cfg, ModelSource, TextureCache, CaveLoader, loxLoader, DepthMaterial, HeightMaterial, SurveyLineMaterial (+7 more)
+Cohesion: 0.04
+Nodes (11): GlyphStringGeometry, LineSegments2, LineSegmentsGeometry, SurveyBox, CGeometry, Orb, TerrainMeshGeometry, DyeTraces (+3 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.04
-Nodes (12): DistanceFieldPass, Leg, PublicFactory, Segment, Station, CanvasPopup, SegmentPopup, StationDistancePopup (+4 more)
+Nodes (7): dataURL(), hydrateGeometry(), replaceExtension(), EPSG3857TileSet, Overlay, Tile, WebTerrain
 
 ### Community 6 - "Community 6"
 Cohesion: 0.04
-Nodes (11): StationPosition, LinearScale, Scale, OrbitControls, ClusterMarkers, QuadTree, Marker, Selection (+3 more)
+Nodes (10): ColourCache, SurveyColourMapper(), Leg, PublicFactory, Segment, Station, CanvasPopup, SegmentPopup (+2 more)
 
 ### Community 7 - "Community 7"
-Cohesion: 0.05
-Nodes (10): GlyphStringGeometry, LineSegments2, LineSegmentsGeometry, SurveyBox, CGeometry, Orb, TerrainMeshGeometry, Grid (+2 more)
+Cohesion: 0.04
+Nodes (12): Cfg, AHI, Compass, HudObject, DepthMaterial, EntrancePointMaterial, HeightMaterial, SurveyLineMaterial (+4 more)
 
 ### Community 8 - "Community 8"
 Cohesion: 0.06
 Nodes (10): GlyphString, GlyphStringBase, MutableGlyphString, GlyphStringGeometryCache, AngleScale, CursorScale, ProgressDial, BarGeometry (+2 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.08
-Nodes (8): AHI, Compass, HudObject, CommonTerrainMaterial, EntrancePointMaterial, HypsometricMaterial, TerrainOverlayMaterial, LightingManager()
+Cohesion: 0.06
+Nodes (9): DistanceFieldPass, OrbitControls, AnaglyphEffect(), CameraManager(), ClusterMarkers, QuadTree, Marker, Selection (+1 more)
 
 ### Community 10 - "Community 10"
+Cohesion: 0.06
+Nodes (8): TextureCache, loxLoader, pltLoader, SurveyDataCollector, Svx3dLoader, LoxTile, ImagePopup, PointIndicator
+
+### Community 11 - "Community 11"
+Cohesion: 0.06
+Nodes (8): StationPosition, LinearScale, Scale, PointerControls, Popup, PopupGeometry, Stations, testPoint()
+
+### Community 12 - "Community 12"
 Cohesion: 0.08
 Nodes (5): RenderUtils, TextureLookup, unpackRGBA(), CommonTerrain, Snapshot
 
-### Community 11 - "Community 11"
-Cohesion: 0.1
-Nodes (10): draw(), encodeState(), execManualMeasure(), findStationByName(), getIframeCode(), getShareUrl(), handleCopyShare(), sampleDtmAt() (+2 more)
-
-### Community 12 - "Community 12"
-Cohesion: 0.12
-Nodes (3): pltLoader, SurveyDataCollector, Svx3dLoader
-
 ### Community 13 - "Community 13"
 Cohesion: 0.1
-Nodes (3): Entrances, Routes, SurveyMetadata
+Nodes (10): draw(), encodeState(), execManualMeasure(), findStationByName(), getIframeCode(), getShareUrl(), handleCopyShare(), sampleDtmAt() (+2 more)
 
 ### Community 14 - "Community 14"
 Cohesion: 0.12
 Nodes (4): AHIControl, CompassControl, Control, CursorControl
 
 ### Community 15 - "Community 15"
-Cohesion: 0.22
-Nodes (3): PointerControls, Popup, PopupGeometry
+Cohesion: 0.16
+Nodes (3): ModelSource, CaveViewUI(), FileSelector
 
-### Community 17 - "Community 17"
-Cohesion: 0.25
-Nodes (2): ColourCache, SurveyColourMapper()
+### Community 16 - "Community 16"
+Cohesion: 0.22
+Nodes (3): CommonTerrainMaterial, HypsometricMaterial, TerrainOverlayMaterial
 
 ### Community 18 - "Community 18"
 Cohesion: 0.33
@@ -256,15 +255,7 @@ Nodes (1): FlatTileGeometry
 Cohesion: 0.67
 Nodes (1): Point
 
-### Community 52 - "Community 52"
-Cohesion: 1.0
-Nodes (2): LochViewer, Release 1.1.3
-
 ## Knowledge Gaps
-- **2 isolated node(s):** `LochViewer`, `Release 1.1.3`
-  These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `Community 17`** (8 nodes): `ColourCache`, `.constructor()`, `.getColour()`, `SurveyColourMapper()`, `ColourCache.js`, `SurveyColourMapper.js`, `.color()`, `.setLegColor()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 18`** (6 nodes): `DistanceFieldPlugin.js`, `DistanceFieldPlugin`, `.constructor()`, `DistanceLookup`, `.constructor()`, `.lookup()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 19`** (6 nodes): `FullScreenQuad`, `.constructor()`, `.dispose()`, `.material()`, `.render()`, `FullScreenQuad.js`
@@ -319,23 +310,21 @@ Nodes (2): LochViewer, Release 1.1.3
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 48`** (3 nodes): `Point.js`, `Point`, `.constructor()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 52`** (2 nodes): `LochViewer`, `Release 1.1.3`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Survey` connect `Community 1` to `Community 8`, `Community 0`, `Community 6`, `Community 7`?**
+- **Why does `Survey` connect `Community 3` to `Community 4`, `Community 5`, `Community 8`, `Community 9`, `Community 11`?**
   _High betweenness centrality (0.040) - this node is a cross-community bridge._
-- **Why does `Stations` connect `Community 6` to `Community 0`, `Community 1`?**
+- **Why does `Stations` connect `Community 11` to `Community 9`, `Community 2`, `Community 3`, `Community 7`?**
   _High betweenness centrality (0.023) - this node is a cross-community bridge._
-- **Why does `CommonTerrain` connect `Community 10` to `Community 0`?**
+- **Why does `CommonTerrain` connect `Community 12` to `Community 2`, `Community 5`?**
   _High betweenness centrality (0.022) - this node is a cross-community bridge._
-- **What connects `LochViewer`, `Release 1.1.3` to the rest of the system?**
-  _2 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.03 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
   _Cohesion score 0.05 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.05 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.04 - nodes in this community are weakly interconnected._
+- **Should `Community 3` be split into smaller, more focused modules?**
+  _Cohesion score 0.06 - nodes in this community are weakly interconnected._
