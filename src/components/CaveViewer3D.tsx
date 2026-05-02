@@ -105,8 +105,8 @@ const ClippingEdges = React.memo(({ geo, planes, active, color = "#ff4444" }: { 
 
 // ─── Point Cloud (LiDAR) ──────────────────────────────────────────────────────
 const PointCloud = React.memo(({ cave, options, clippingPlanes, onSurfaceClick, isMoving }: { cave: ParsedCave, options: ViewerOptions, clippingPlanes: any[], onSurfaceClick?: any, isMoving?: boolean }) => {
-  // Ak je zapnuté vyhladenie (Organic) alebo presný mesh (Accurate), mračno bodov skryjeme
-  if (options.smoothScraps || options.accurateScraps) return null;
+  // Ak je zapnuté vyhladenie (Organic), presný mesh (Accurate) alebo drôtený model, mračno bodov skryjeme
+  if (options.smoothScraps || options.accurateScraps || options.scrapsWireframe) return null;
 
   const pointsRef = useRef<THREE.Points>(null!);
 
@@ -201,8 +201,8 @@ const PointCloud = React.memo(({ cave, options, clippingPlanes, onSurfaceClick, 
 
 // ─── Organic Shell (LiDAR Reconstruction) ─────────────────────────────────────
 const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick, isMoving }: { cave: ParsedCave, options: ViewerOptions, clippingPlanes: any[], onSurfaceClick?: any, isMoving?: boolean }) => {
-  // Zobrazujeme iba ak je zapnuté vyhladenie (Organic) alebo presný mesh (Accurate)
-  if (!options.smoothScraps && !options.accurateScraps) return null;
+  // Zobrazujeme ak je zapnuté vyhladenie, presný mesh ALEBO drôtený model
+  if (!options.smoothScraps && !options.accurateScraps && !options.scrapsWireframe) return null;
 
   const geo = useMemo(() => {
     if (!cave.points || cave.points.length === 0) return null;
@@ -214,56 +214,75 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
     // @ts-ignore - BVH pre bleskové klikanie
     g.computeBoundsTree();
     
-    // Pridanie farieb podľa výšky
-    if (options.scrapsAltitude) {
-      const pos = g.getAttribute('position') as THREE.BufferAttribute;
-      const colors = new Float32Array(pos.count * 3);
-      const minZ = cave.bounds.min.z;
-      const maxZ = cave.bounds.max.z;
-      
-      for (let i = 0; i < pos.count; i++) {
+    // Pridanie farieb (buď podľa výšky alebo biela ako základ)
+    const pos = g.getAttribute('position') as THREE.BufferAttribute;
+    const colors = new Float32Array(pos.count * 3);
+    const minZ = cave.bounds.min.z;
+    const maxZ = cave.bounds.max.z;
+    
+    for (let i = 0; i < pos.count; i++) {
+      if (options.scrapsAltitude) {
         const alt = pos.getY(i);
         const c = elevColor(normZ(alt, minZ, maxZ));
         colors[i * 3]     = c.r;
         colors[i * 3 + 1] = c.g;
         colors[i * 3 + 2] = c.b;
+      } else {
+        colors[i * 3] = 1; colors[i * 3 + 1] = 1; colors[i * 3 + 2] = 1;
       }
-      g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     }
+    g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     
     return g;
-  }, [cave.points, cave.bounds, options.scrapsAltitude, options.smoothScraps, options.accurateScraps]);
+  }, [cave.points, cave.bounds, options.scrapsAltitude, options.smoothScraps, options.accurateScraps, options.scrapsWireframe]);
 
   if (!geo) return null;
 
+  const showSolid = options.smoothScraps || options.accurateScraps;
+
   return (
   <>
-    <mesh 
-      geometry={geo} 
-      renderOrder={10}
-      onPointerDown={(e) => {
-        if (!onSurfaceClick) return
-        e.stopPropagation()
-        const p = e.point
-        onSurfaceClick(
-          p.x + cave.centerOffset.x, 
-          -p.z + cave.centerOffset.y, 
-          p.y + cave.centerOffset.z, 
-          e.clientX, e.clientY
-        )
-      }}
-    >
-      <meshStandardMaterial 
-        vertexColors={options.scrapsAltitude}
-        color={options.scrapsAltitude ? '#ffffff' : options.colorScraps} 
-        side={THREE.DoubleSide}
-        roughness={0.6}
-        metalness={0.1}
-        transparent={options.scrapsOpacity < 1}
-        opacity={options.scrapsOpacity}
-        clippingPlanes={clippingPlanes}
-      />
-    </mesh>
+    {showSolid && (
+      <mesh 
+        geometry={geo} 
+        renderOrder={10}
+        onPointerDown={(e) => {
+          if (!onSurfaceClick) return
+          e.stopPropagation()
+          const p = e.point
+          onSurfaceClick(
+            p.x + cave.centerOffset.x, 
+            -p.z + cave.centerOffset.y, 
+            p.y + cave.centerOffset.z, 
+            e.clientX, e.clientY
+          )
+        }}
+      >
+        <meshStandardMaterial 
+          vertexColors={true}
+          color={options.scrapsAltitude ? '#ffffff' : options.colorScraps} 
+          side={THREE.DoubleSide}
+          roughness={0.6}
+          metalness={0.1}
+          transparent={options.scrapsOpacity < 1}
+          opacity={options.scrapsOpacity}
+          clippingPlanes={clippingPlanes}
+        />
+      </mesh>
+    )}
+    
+    {options.scrapsWireframe && (
+      <mesh geometry={geo} renderOrder={11}>
+        <meshBasicMaterial 
+          vertexColors={true}
+          color={options.scrapsAltitude ? '#ffffff' : options.colorScraps} 
+          wireframe={true} 
+          transparent={true} 
+          opacity={showSolid ? 0.4 : 0.8} 
+          clippingPlanes={clippingPlanes} 
+        />
+      </mesh>
+    )}
     
     {/* Hrany orezu pre organický model */}
     <ClippingEdges geometry={geo} color={options.colorClipCave} clippingPlanes={clippingPlanes} />
