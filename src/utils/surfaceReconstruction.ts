@@ -97,10 +97,67 @@ export function reconstructSurface(points: {x:number, y:number, z:number}[], vox
     }
   }
 
-  // 4. Generate Cube Faces for occupied voxels ONLY if they touch EXTERIOR empty space
-  const vertices: number[] = [];
   const isExterior = (ix: number, iy: number, iz: number) => {
     return exterior.has(ix + iy * 2000 + iz * 4000000);
+  };
+
+  // 4. Generate Smooth Mesh (Dual-like approach)
+  const finalVertices: number[] = [];
+  
+  // Calculate centroids for occupied voxels efficiently O(N)
+  const centroids = new Map<number, THREE.Vector3>();
+  const sums = new Map<number, { x: number, y: number, z: number, count: number }>();
+  
+  for (const p of points) {
+    const ix = Math.floor((p.x - minX) / activeVoxelSize);
+    const iy = Math.floor((p.y - minY) / activeVoxelSize);
+    const iz = Math.floor((p.z - minZ) / activeVoxelSize);
+    const key = ix + iy * 2000 + iz * 4000000;
+    
+    let s = sums.get(key);
+    if (!s) {
+      s = { x: 0, y: 0, z: 0, count: 0 };
+      sums.set(key, s);
+    }
+    s.x += p.x; s.y += p.z; s.z += -p.y;
+    s.count++;
+  }
+
+  sums.forEach((s, key) => {
+    centroids.set(key, new THREE.Vector3(s.x / s.count, s.y / s.count, s.z / s.count));
+  });
+
+  // To avoid blockiness, we create vertices at GRID CORNERS
+  // Each corner is shared by 8 voxels.
+  const cornerCache = new Map<string, number[]>();
+  const getCornerVertex = (gx: number, gy: number, gz: number) => {
+    const cid = `${gx},${gy},${gz}`;
+    if (cornerCache.has(cid)) return cornerCache.get(cid)!;
+
+    // Average centroids of occupied voxels touching this corner
+    let sx=0, sy=0, sz=0, c=0;
+    for (let dx=-1; dx<=0; dx++) {
+      for (let dy=-1; dy<=0; dy++) {
+        for (let dz=-1; dz<=0; dz++) {
+          const vKey = (gx+dx) + (gy+dy)*2000 + (gz+dz)*4000000;
+          const cent = centroids.get(vKey);
+          if (cent) { sx += cent.x; sy += cent.y; sz += cent.z; c++; }
+        }
+      }
+    }
+    
+    let res: number[];
+    if (c > 0) {
+      res = [sx/c, sy/c, sz/c];
+    } else {
+      res = [minX + gx * activeVoxelSize, gz * activeVoxelSize, -(minY + gy * activeVoxelSize)];
+    }
+    cornerCache.set(cid, res);
+    return res;
+  };
+
+  const addQuad = (v1: number[], v2: number[], v3: number[], v4: number[]) => {
+    finalVertices.push(...v1, ...v2, ...v3, ...v1, ...v3, ...v4);
   };
 
   for (const key of occupied) {
@@ -108,28 +165,18 @@ export function reconstructSurface(points: {x:number, y:number, z:number}[], vox
     const iy = Math.floor((key % 4000000) / 2000);
     const iz = Math.floor(key / 4000000);
 
-    const x = minX + ix * activeVoxelSize;
-    const y = minY + iy * activeVoxelSize;
-    const z = minZ + iz * activeVoxelSize;
-    const s = activeVoxelSize;
-
-    const addQuad = (v1: number[], v2: number[], v3: number[], v4: number[]) => {
-      vertices.push(...v1, ...v2, ...v3, ...v1, ...v3, ...v4);
-    };
-
-    // Only add faces that touch the "exterior" world
-    if (isExterior(ix, iy, iz + 1)) addQuad([x, z+s, -y], [x+s, z+s, -y], [x+s, z+s, -(y+s)], [x, z+s, -(y+s)]);
-    if (isExterior(ix, iy, iz - 1)) addQuad([x, z, -(y+s)], [x+s, z, -(y+s)], [x+s, z, -y], [x, z, -y]);
-    if (isExterior(ix, iy - 1, iz)) addQuad([x, z, -y], [x+s, z, -y], [x+s, z+s, -y], [x, z+s, -y]);
-    if (isExterior(ix, iy + 1, iz)) addQuad([x+s, z, -(y+s)], [x, z, -(y+s)], [x, z+s, -(y+s)], [x+s, z+s, -(y+s)]);
-    if (isExterior(ix - 1, iy, iz)) addQuad([x, z, -(y+s)], [x, z, -y], [x, z+s, -y], [x, z+s, -(y+s)]);
-    if (isExterior(ix + 1, iy, iz)) addQuad([x+s, z, -y], [x+s, z, -(y+s)], [x+s, z+s, -(y+s)], [x+s, z+s, -y]);
+    // Faces only if touching exterior
+    if (isExterior(ix, iy, iz + 1)) addQuad(getCornerVertex(ix, iy, iz+1), getCornerVertex(ix+1, iy, iz+1), getCornerVertex(ix+1, iy+1, iz+1), getCornerVertex(ix, iy+1, iz+1));
+    if (isExterior(ix, iy, iz - 1)) addQuad(getCornerVertex(ix, iy+1, iz), getCornerVertex(ix+1, iy+1, iz), getCornerVertex(ix+1, iy, iz), getCornerVertex(ix, iy, iz));
+    if (isExterior(ix, iy - 1, iz)) addQuad(getCornerVertex(ix, iy, iz), getCornerVertex(ix+1, iy, iz), getCornerVertex(ix+1, iy, iz+1), getCornerVertex(ix, iy, iz+1));
+    if (isExterior(ix, iy + 1, iz)) addQuad(getCornerVertex(ix+1, iy+1, iz), getCornerVertex(ix, iy+1, iz), getCornerVertex(ix, iy+1, iz+1), getCornerVertex(ix+1, iy+1, iz+1));
+    if (isExterior(ix - 1, iy, iz)) addQuad(getCornerVertex(ix, iy+1, iz), getCornerVertex(ix, iy, iz), getCornerVertex(ix, iy, iz+1), getCornerVertex(ix, iy+1, iz+1));
+    if (isExterior(ix + 1, iy, iz)) addQuad(getCornerVertex(ix+1, iy, iz), getCornerVertex(ix+1, iy+1, iz), getCornerVertex(ix+1, iy+1, iz+1), getCornerVertex(ix+1, iy, iz+1));
   }
 
   let geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-  geo = mergeVertices(geo, 0.01);
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(finalVertices, 3));
+  geo = mergeVertices(geo, 0.0001);
   geo.computeVertexNormals();
-
   return geo;
 }

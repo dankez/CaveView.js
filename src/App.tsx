@@ -613,6 +613,7 @@ export default function App() {
     scrapsWireframe:     false,
     scrapsAltitude:      true,   // farebné podľa výšky
     smoothScraps:        false,
+    accurateScraps:      false,
     showRenderCave:      false,
     caveTexture:         'limestone',
     renderOpacity:       1.0,
@@ -1181,6 +1182,7 @@ export default function App() {
       // Cave walls
       showScraps:          p.get('scraps') !== '0',
       smoothScraps:        p.get('smooth') === '1',
+      accurateScraps:      p.get('acc') === '1',
       scrapsSolid:         p.get('solid') !== '0',
       scrapsWireframe:     p.get('swire') === '1',
       scrapsAltitude:      p.get('salt') === '1',
@@ -1243,6 +1245,7 @@ export default function App() {
     // Cave walls
     if (!o.showScraps) p.set('scraps', '0')
     if (o.smoothScraps) p.set('smooth', '1')
+    if (o.accurateScraps) p.set('acc', '1')
     if (!o.scrapsSolid) p.set('solid', '0')
     if (o.scrapsWireframe) p.set('swire', '1')
     if (o.scrapsAltitude) p.set('salt', '1')
@@ -2197,8 +2200,20 @@ export default function App() {
                         <div className="toggle-row">
                           <label className="toggle-label">{t('cave.organic')}</label>
                           <div className={`switch${opts.smoothScraps ? ' on' : ''}`}
-                            onClick={() => toggleOpt('smoothScraps')} role="switch"
+                            onClick={() => {
+                              const newVal = !opts.smoothScraps;
+                              setOpts(p => ({ ...p, smoothScraps: newVal, accurateScraps: newVal ? false : p.accurateScraps }));
+                            }} role="switch"
                             aria-checked={opts.smoothScraps} tabIndex={0} />
+                        </div>
+                        <div className="toggle-row">
+                          <label className="toggle-label">{t('cave.accurateMesh')}</label>
+                          <div className={`switch${opts.accurateScraps ? ' on' : ''}`}
+                            onClick={() => {
+                              const newVal = !opts.accurateScraps;
+                              setOpts(p => ({ ...p, accurateScraps: newVal, smoothScraps: newVal ? false : p.smoothScraps }));
+                            }} role="switch"
+                            aria-checked={opts.accurateScraps} tabIndex={0} />
                         </div>
                         <div className="toggle-row">
                           <label className="toggle-label">{t('cave.render3d')}</label>
@@ -2236,7 +2251,6 @@ export default function App() {
                           </div>
                         )}
                         {([
-                          { key: 'scrapsSolid' as const, label: t('cave.mesh') },
                           { key: 'scrapsWireframe' as const, label: t('cave.wire') },
                           { key: 'scrapsAltitude' as const, label: t('cave.altitude') },
                         ] as const).map(({ key, label }) => (

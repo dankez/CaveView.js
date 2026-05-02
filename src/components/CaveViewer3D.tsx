@@ -105,8 +105,8 @@ const ClippingEdges = React.memo(({ geo, planes, active, color = "#ff4444" }: { 
 
 // ─── Point Cloud (LiDAR) ──────────────────────────────────────────────────────
 const PointCloud = React.memo(({ cave, options, clippingPlanes, onSurfaceClick, isMoving }: { cave: ParsedCave, options: ViewerOptions, clippingPlanes: any[], onSurfaceClick?: any, isMoving?: boolean }) => {
-  // Ak je zapnuté vyhladenie (Organic), mračno bodov skryjeme a zobrazíme "skrupinu"
-  if (options.smoothScraps) return null;
+  // Ak je zapnuté vyhladenie (Organic) alebo presný mesh (Accurate), mračno bodov skryjeme
+  if (options.smoothScraps || options.accurateScraps) return null;
 
   const pointsRef = useRef<THREE.Points>(null!);
 
@@ -200,15 +200,21 @@ const PointCloud = React.memo(({ cave, options, clippingPlanes, onSurfaceClick, 
 
 // ─── Organic Shell (LiDAR Reconstruction) ─────────────────────────────────────
 const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick, isMoving }: { cave: ParsedCave, options: ViewerOptions, clippingPlanes: any[], onSurfaceClick?: any, isMoving?: boolean }) => {
-  // Zobrazujeme iba ak je zapnuté vyhladenie (Organic)
-  if (!options.smoothScraps) return null;
+  // Zobrazujeme iba ak je zapnuté vyhladenie (Organic) alebo presný mesh (Accurate)
+  if (!options.smoothScraps && !options.accurateScraps) return null;
 
   const geo = useMemo(() => {
     if (!cave.points || cave.points.length === 0) return null
-    let g = reconstructSurface(cave.points);
     
-    // Aplikujeme vyhladenie pre "plachta" efekt
-    g = applyTaubinSmoothing(g, 6);
+    // Pre presný mesh používame menšiu veľkosť voxlu
+    const vSize = options.accurateScraps ? 0.2 : 0.5;
+    let g = reconstructSurface(cave.points, vSize);
+    
+    // Vyhladenie aplikujeme iba ak je v režime "Organic"
+    if (options.smoothScraps && !options.accurateScraps) {
+      g = applyTaubinSmoothing(g, 6);
+    }
+    
     g = computeAngleWeightedNormals(g);
     
     // @ts-ignore - BVH pre bleskové klikanie
@@ -297,6 +303,7 @@ export interface ViewerOptions {
   scrapsWireframe:     boolean
   scrapsAltitude:      boolean
   smoothScraps:        boolean
+  accurateScraps:      boolean
   showRenderCave:      boolean
   caveTexture:         'limestone' | 'dolomite' | 'grey_limestone'
   renderOpacity:       number
