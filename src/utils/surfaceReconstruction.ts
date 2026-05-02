@@ -6,7 +6,7 @@ import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
  * Instead of complex Marching Cubes, we use voxel cubes + aggressive smoothing.
  * This creates the "plachta" (sheet) look requested by the user.
  */
-export function reconstructSurface(points: {x:number, y:number, z:number}[], voxelSize = 0.5): THREE.BufferGeometry {
+export function reconstructSurface(points: {x:number, y:number, z:number}[], voxelSize = 0.5, isAccurate = false): THREE.BufferGeometry {
   if (points.length < 10) return new THREE.BufferGeometry();
 
   // 1. Bounds
@@ -176,7 +176,43 @@ export function reconstructSurface(points: {x:number, y:number, z:number}[], vox
 
   let geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(finalVertices, 3));
-  geo = mergeVertices(geo, 0.0001);
+  geo = mergeVertices(geo, 0.001);
+
+  // 5. SMOOTHING (Only for Organic mode)
+  if (!isAccurate) {
+    const pos = geo.attributes.position.array as Float32Array;
+    const index = geo.index?.array || Array.from({ length: pos.length / 3 }, (_, i) => i);
+    
+    // Simple Laplacian Smoothing (3 iterations)
+    for (let iter = 0; iter < 3; iter++) {
+      const newPos = new Float32Array(pos.length);
+      const neighborSums = new Float32Array(pos.length);
+      const neighborCounts = new Uint32Array(pos.length / 3);
+
+      for (let i = 0; i < index.length; i += 3) {
+        const i1 = index[i], i2 = index[i+1], i3 = index[i+2];
+        const add = (a: number, b: number) => {
+          neighborSums[a*3] += pos[b*3]; neighborSums[a*3+1] += pos[b*3+1]; neighborSums[a*3+2] += pos[b*3+2];
+          neighborCounts[a]++;
+        };
+        add(i1, i2); add(i1, i3);
+        add(i2, i1); add(i2, i3);
+        add(i3, i1); add(i3, i2);
+      }
+
+      for (let i = 0; i < pos.length / 3; i++) {
+        if (neighborCounts[i] > 0) {
+          newPos[i*3] = pos[i*3] * 0.5 + (neighborSums[i*3] / neighborCounts[i]) * 0.5;
+          newPos[i*3+1] = pos[i*3+1] * 0.5 + (neighborSums[i*3+1] / neighborCounts[i]) * 0.5;
+          newPos[i*3+2] = pos[i*3+2] * 0.5 + (neighborSums[i*3+2] / neighborCounts[i]) * 0.5;
+        } else {
+          newPos[i*3] = pos[i*3]; newPos[i*3+1] = pos[i*3+1]; newPos[i*3+2] = pos[i*3+2];
+        }
+      }
+      pos.set(newPos);
+    }
+  }
+
   geo.computeVertexNormals();
   return geo;
 }

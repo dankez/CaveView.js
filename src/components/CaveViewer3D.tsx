@@ -205,18 +205,11 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
   if (!options.smoothScraps && !options.accurateScraps) return null;
 
   const geo = useMemo(() => {
-    if (!cave.points || cave.points.length === 0) return null
+    if (!cave.points || cave.points.length === 0) return null;
     
-    // Pre presný mesh používame menšiu veľkosť voxlu
+    // Pre presný mesh používame menšiu veľkosť voxlu (0.2m), pre organický 0.5m
     const vSize = options.accurateScraps ? 0.2 : 0.5;
-    let g = reconstructSurface(cave.points, vSize);
-    
-    // Vyhladenie aplikujeme iba ak je v režime "Organic"
-    if (options.smoothScraps && !options.accurateScraps) {
-      g = applyTaubinSmoothing(g, 6);
-    }
-    
-    g = computeAngleWeightedNormals(g);
+    const g = reconstructSurface(cave.points, vSize, options.accurateScraps);
     
     // @ts-ignore - BVH pre bleskové klikanie
     g.computeBoundsTree();
@@ -240,7 +233,7 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
     }
     
     return g;
-  }, [cave.points, cave.bounds, options.scrapsAltitude]);
+  }, [cave.points, cave.bounds, options.scrapsAltitude, options.smoothScraps, options.accurateScraps]);
 
   if (!geo) return null;
 
