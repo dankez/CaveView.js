@@ -34,6 +34,12 @@ LochViewer prioritizes user security and data protection. An independent securit
 - **Therion Calibration Support**: Support for external `.txt` calibration files in Therion format.
 - **Smart Visibility**: Terrain remains visible (shaded model) while loading large textures.
 
+### ☁️ LiDAR & Point Cloud Support (.ply)
+- **High-Performance Parser**: Native binary PLY parser supporting millions of vertices with RGB color data.
+- **Organic Surface Reconstruction**: Convert raw point clouds into smooth, "organic" 3D shells (voxel-based) with a single click.
+- **Full Analysis Support**: LiDAR data is fully integrated with point information tools, vertical sections, and clipping planes.
+- **Smart Optimization**: Automatic label suppression and BVH spatial indexing for smooth interaction even with massive datasets.
+
 ### 🔗 Embedding & Sharing
 - **Google Maps Style Embed**: Embed 3D models into any webpage using `<iframe>`.
 - **URL State Persistence**: All sidebar settings (themes, colors, clipping planes, terrain) are automatically saved to the URL.
@@ -54,6 +60,7 @@ LochViewer prioritizes user security and data protection. An independent securit
 * `.lox` (Therion / Loch data - including textures and DTM)
 * `.3d` (Survex data)
 * `.plt` (Compass data)
+* `.ply` (Binary LiDAR Point Clouds)
 
 ---
 <a name="slovenská-verzia"></a>
@@ -91,6 +98,12 @@ LochViewer kladie veľký dôraz na bezpečnosť používateľov a ochranu dát.
 - **Therion Calibration Support**: Podpora pre externé kalibračné súbory `.txt` vo formáte Therion.
 - **Smart Visibility**: Terén zostáva viditeľný (shaded model) aj počas načítavania veľkých textúr.
 
+### ☁️ Podpora LiDAR a mračien bodov (.ply)
+- **Vysokovýkonný parser**: Natívny binárny PLY parser s podporou miliónov bodov vrátane RGB farieb.
+- **Organická rekonštrukcia povrchu**: Premeňte surové mračno bodov na plynulý „organický“ model (voxel-based) jediným kliknutím.
+- **Plná analytická podpora**: LiDAR dáta plne spolupracujú s nástrojmi pre info o bodoch, vertikálnymi rezmi a orezávacími rovinami.
+- **Smart optimalizácia**: Automatické potláčanie menoviek a BVH priestorové indexovanie pre plynulú prácu aj s masívnymi modelmi.
+
 ### 🔗 Zdieľanie a Embedovanie
 - **Google Maps Style Embed**: Možnosť vkladať 3D modely do ľubovoľných webových stránok pomocou `<iframe>`.
 - **URL State Persistence**: Všetky nastavenia sidebaru sa automaticky ukladajú do URL. Keď niekomu pošlete odkaz, uvidí presne to isté.
@@ -111,6 +124,7 @@ LochViewer kladie veľký dôraz na bezpečnosť používateľov a ochranu dát.
 * `.lox` (Therion / Loch data - vrátane textúr a DTM)
 * `.3d` (Survex data)
 * `.plt` (Compass data)
+* `.ply` (Binárne LiDAR mračná bodov)
 
 ---
 ## 📄 Documentation / Dokumentácia

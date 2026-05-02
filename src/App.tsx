@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, Suspense, useMemo } from 'react'
 import proj4 from 'proj4'
-import { parseLox, parseSvx, parsePlt } from './parsers/caveParser'
+import { parseLox, parseSvx, parsePlt, parsePly } from './parsers/caveParser'
 import type { ParsedCave, CaveSurface, Vec3 } from './parsers/caveParser'
 import CaveViewer3D, { ViewerOptions } from './components/CaveViewer3D'
 import { getBrowserLanguage, getTranslation, Language, languages } from './i18n'
@@ -21,6 +21,7 @@ const SUPPORTED = [
   { ext: '.lox', label: 'Therion LOX', icon: '🗺️' },
   { ext: '.3d',  label: 'Survex 3D',   icon: '📐' },
   { ext: '.plt', label: 'Compass PLT', icon: '🧭' },
+  { ext: '.ply', label: 'LiDAR PLY',   icon: '☁️' },
 ]
 
 // ─── GPS & DTM utilities ─────────────────────────────────────────────────────────────
@@ -997,12 +998,22 @@ export default function App() {
       sl.gps = tryUtmToWgs84(origX, origY) || tryJtskToWgs84(origX, origY) || null
     })
 
+    const isPLY = parsed.pointCount > 0
+
     setCave(parsed)
     setOpts(prev => {
       const hasBit = !!(hasBitmap)
       return { 
         ...prev, 
         clippingHeight: parsed.bounds.max.z + parsed.centerOffset.z,
+        // Pre PLY zapneme steny a vypneme stanice/merania
+        showScraps: isPLY ? true : prev.showScraps,
+        showStations: isPLY ? false : prev.showStations,
+        showTraverse: isPLY ? false : prev.showTraverse,
+        showSplay: isPLY ? false : prev.showSplay,
+        scrapsSolid: true,
+        scrapsAltitude: false,
+        scrapsWireframe: false,
         // Necháme zapnutý mesh (tieňovaný model) ako podklad, kým sa načíta textúra
         showSurfaceMesh: true,
         showSurfaceTexture: hasBit,
@@ -1016,8 +1027,8 @@ export default function App() {
 
   const handleFile = useCallback(async (file: File) => {
     const ext = getExt(file.name)
-    if (!['.lox', '.3d', '.plt'].includes(ext)) {
-      setErrorMsg(`Nepodporovaný formát: ${ext}. Použite .lox, .3d alebo .plt`)
+    if (!['.lox', '.3d', '.plt', '.ply'].includes(ext)) {
+      setErrorMsg(`Nepodporovaný formát: ${ext}. Použite .lox, .3d, .plt alebo .ply`)
       return
     }
     setErrorMsg(null)
@@ -1036,6 +1047,8 @@ export default function App() {
       if (ext === '.plt') {
         const text = new TextDecoder().decode(buf)
         parsed = parsePlt(text, setLoadingStatus)
+      } else if (ext === '.ply') {
+        parsed = parsePly(buf, setLoadingStatus)
       } else {
         if (ext === '.lox') {
           parsed = await runParserWorker(buf, setLoadingStatus)
@@ -1047,8 +1060,8 @@ export default function App() {
       setLoadingStatus('finalizing')
       setProgress(95)
 
-      if (parsed.segments.length === 0 && parsed.stations.length === 0) {
-        throw new Error('Súbor neobsahuje žiadne merania alebo stanice.')
+      if (parsed.segments.length === 0 && parsed.stations.length === 0 && parsed.pointCount === 0) {
+        throw new Error('Súbor neobsahuje žiadne merania, stanice ani mračno bodov.')
       }
 
       processCaveData(parsed)
@@ -1095,13 +1108,15 @@ export default function App() {
       if (ext === '.plt') {
         const text = new TextDecoder().decode(buf)
         parsed = parsePlt(text, setLoadingStatus)
+      } else if (ext === '.ply') {
+        parsed = parsePly(buf, setLoadingStatus)
       } else if (ext === '.lox') {
         parsed = await runParserWorker(buf, setLoadingStatus)
       } else {
         parsed = parseSvx(buf, setLoadingStatus)
       }
 
-      if (parsed.segments.length === 0 && parsed.stations.length === 0)
+      if (parsed.segments.length === 0 && parsed.stations.length === 0 && parsed.pointCount === 0)
         throw new Error('Súbor neobsahuje žiadne dáta.')
       
       processCaveData(parsed)
@@ -1713,6 +1728,9 @@ export default function App() {
                   <button className="btn-demo" onClick={() => loadFromUrl('/test_model2.lox', 'model2.lox')} type="button">
                     🗺️ Model2 (scraps)
                   </button>
+                  <button className="btn-demo" onClick={() => loadFromUrl('/vetrna_dira.ply', 'Vetrna_dira_merge.ply')} type="button">
+                    ☁️ LiDAR Vetrná diera
+                  </button>
                 </div>
               </div>
               <div>
@@ -2125,8 +2143,8 @@ export default function App() {
                     )}
                 </div>
 
-                {/* ── STENY JASKYNE (scraps) ── */}
-                {cave.scrapCount > 0 && (
+                {/* ── STENY JASKYNE (scraps / point cloud) ── */}
+                {(cave.scrapCount > 0 || cave.pointCount > 0) && (
                   <div>
                     <div className="s-label">{t('cave.title')}</div>
                     <div className="toggle-row">

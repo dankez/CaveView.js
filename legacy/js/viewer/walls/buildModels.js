@@ -1,8 +1,8 @@
-// import { Points, BufferGeometry } from '../../Three';
+import { Points, BufferGeometry } from '../../Three';
 import { FACE_MODEL } from '../../core/constants';
 import { Walls } from './Walls';
 import { hydrateGeometry } from '../../core/lib';
-// import { CloudPointsMaterial } from '../../materials/CloudPointsMaterial';
+import { CloudPointsMaterial } from '../../materials/CloudPointsMaterial';
 
 function buildModels ( surveyData, survey ) {
 
@@ -17,17 +17,18 @@ function buildModels ( surveyData, survey ) {
 
 	} else {
 
-		console.error( 'point clouds not supported' );
-/*
-		const m = new Points( new BufferGeometry(), new CloudPointsMaterial() );
+		const m = new Points( new BufferGeometry(), new CloudPointsMaterial( survey.ctx ) );
 
 		console.log( 'no indices: assuming point cloud' );
 		mesh = survey.addFeature( m, FACE_MODEL, 'Model' );
 
 		mesh.material.vertexColors = true;
 
-		mesh.setShading = ( s ) => { console.log( 'mode', s ) };
-*/
+		mesh.setShading = ( s ) => { 
+			// Handle shading mode for point clouds (e.g. height coloring)
+			if ( mesh.material.setShading ) mesh.material.setShading( s );
+		};
+
 	}
 
 	const bufferGeometry = mesh.geometry;
@@ -56,7 +57,7 @@ function buildModels ( surveyData, survey ) {
 	// discard javascript attribute buffers after upload to GPU
 	mesh.dropBuffers();
 
-	bufferGeometry.computeVertexNormals();
+	if ( model.index ) bufferGeometry.computeVertexNormals();
 
 	mesh.updateMatrix();
 	mesh.updateMatrixWorld();

@@ -4,6 +4,7 @@ import { OrbitControls, Grid, Html, GizmoHelper, GizmoViewport } from '@react-th
 import * as THREE from 'three'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh'
+import { reconstructSurface } from '../utils/surfaceReconstruction'
 import type { ParsedCave, CaveSurface, Segment } from '../parsers/caveParser'
 import type { SelStation } from '../App'
 
@@ -14,6 +15,121 @@ THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
 // @ts-ignore
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
+
+// ─── Point Cloud (LiDAR) ──────────────────────────────────────────────────────
+const PointCloud = React.memo(({ cave, options, clippingPlanes, onSurfaceClick }: { cave: ParsedCave, options: ViewerOptions, clippingPlanes: any[], onSurfaceClick?: any }) => {
+  // Ak je zapnuté vyhladenie (Organic), mračno bodov skryjeme a zobrazíme "skrupinu"
+  if (options.smoothScraps) return null;
+
+  const geo = useMemo(() => {
+    if (!cave.points || cave.points.length === 0) return null
+    const g = new THREE.BufferGeometry()
+    const pos = new Float32Array(cave.points.length * 3)
+    const colors = new Float32Array(cave.points.length * 3)
+    
+    const minZ = cave.bounds.min.z
+    const maxZ = cave.bounds.max.z
+    
+    cave.points.forEach((p, i) => {
+      pos[i*3] = p.x; pos[i*3+1] = p.z; pos[i*3+2] = -p.y
+      
+      if (options.scrapsAltitude) {
+        const c = elevColor(normZ(p.z, minZ, maxZ))
+        colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b
+      } else if (cave.pointColors) {
+        colors[i*3] = cave.pointColors[i*3]
+        colors[i*3+1] = cave.pointColors[i*3+1]
+        colors[i*3+2] = cave.pointColors[i*3+2]
+      } else {
+        colors[i*3] = 1; colors[i*3+1] = 1; colors[i*3+2] = 1
+      }
+    })
+    
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+    g.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+    return g
+  }, [cave, options.scrapsAltitude])
+
+  if (!geo) return null
+
+  return (
+    <points 
+      geometry={geo} 
+      renderOrder={15}
+      onPointerDown={(e) => {
+        if (!onSurfaceClick) return
+        e.stopPropagation()
+        // Pre mračno bodov berieme bod zásahu v world space
+        const p = e.point
+        onSurfaceClick(
+          p.x + cave.centerOffset.x, 
+          -p.z + cave.centerOffset.y, 
+          p.y + cave.centerOffset.z, 
+          e.clientX, e.clientY
+        )
+      }}
+    >
+      <pointsMaterial 
+        vertexColors 
+        size={0.1} 
+        sizeAttenuation={true}
+        transparent={options.scrapsOpacity < 1} 
+        opacity={options.scrapsOpacity}
+        clippingPlanes={clippingPlanes}
+      />
+    </points>
+  )
+})
+
+// ─── Organic Shell (LiDAR Reconstruction) ─────────────────────────────────────
+const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick }: { cave: ParsedCave, options: ViewerOptions, clippingPlanes: any[], onSurfaceClick?: any }) => {
+  // Zobrazujeme iba ak je zapnuté vyhladenie (Organic)
+  if (!options.smoothScraps) return null;
+
+  const geo = useMemo(() => {
+    if (!cave.points || cave.points.length === 0) return null
+    let g = reconstructSurface(cave.points);
+    
+    // Aplikujeme vyhladenie pre "plachta" efekt
+    g = applyTaubinSmoothing(g, 6);
+    g = computeAngleWeightedNormals(g);
+    
+    // @ts-ignore - BVH pre bleskové klikanie
+    g.computeBoundsTree();
+    
+    return g;
+  }, [cave.points]);
+
+  if (!geo) return null;
+
+  return (
+    <mesh 
+      geometry={geo} 
+      renderOrder={10}
+      onPointerDown={(e) => {
+        if (!onSurfaceClick) return
+        e.stopPropagation()
+        const p = e.point
+        onSurfaceClick(
+          p.x + cave.centerOffset.x, 
+          -p.z + cave.centerOffset.y, 
+          p.y + cave.centerOffset.z, 
+          e.clientX, e.clientY
+        )
+      }}
+    >
+      <meshStandardMaterial 
+        color="#d1d5db"
+        side={THREE.DoubleSide}
+        roughness={0.6}
+        metalness={0.1}
+        transparent={options.scrapsOpacity < 1}
+        opacity={options.scrapsOpacity}
+        clippingPlanes={clippingPlanes}
+      />
+    </mesh>
+  );
+});
 
 // ─── ViewerOptions ────────────────────────────────────────────────────────────
 export interface ViewerOptions {
@@ -1889,6 +2005,7 @@ const CaveViewer3D = ({
         powerPreference: 'high-performance',
         localClippingEnabled: true // Aktivácia rezov
       }}
+      raycaster={{ params: { Points: { threshold: 0.1 } } }}
       camera={{ fov: 55, near: 0.1, far: Math.max(diag * 20, 10000) }}
       onCreated={({ gl }) => {
         // Optimalizácia pre veľké modely – ak GPU nestíha
@@ -1970,6 +2087,14 @@ const CaveViewer3D = ({
             options={o}
             clippingPlanes={caveClippingPlanes}
           />
+        )}
+        
+        {/* ── LiDAR Point Cloud ── */}
+        {o.showScraps && cave.pointCount > 0 && (
+          <>
+            <PointCloud cave={cave} options={o} clippingPlanes={caveClippingPlanes} onSurfaceClick={onSurfaceClick} />
+            <OrganicShell cave={cave} options={o} clippingPlanes={caveClippingPlanes} onSurfaceClick={onSurfaceClick} />
+          </>
         )}
 
         {/* ── Cave traverse (3D rúrky) ── */}
