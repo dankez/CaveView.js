@@ -36,10 +36,13 @@ LochViewer prioritizes user security and data protection. An independent securit
 
 ### ☁️ LiDAR & Point Cloud Support (.ply)
 - **High-Performance Parser**: Native binary PLY parser supporting millions of vertices with RGB color data.
-- **Organic Surface Reconstruction**: Convert raw point clouds into smooth, "organic" 3D shells (voxel-based) with a single click.
-- **Outer Shell Only Logic**: Advanced flood-fill algorithm automatically removes internal artifacts and double walls, showing only the "cave skin."
-- **Dynamic Performance (LOD)**: Shuffled point data and camera-distance-based rendering ensure 60FPS interaction even with 15M+ points.
-- **Full Analysis Support**: LiDAR data is fully integrated with point information tools, vertical sections, and clipping planes.
+- **Surface Reconstruction**: Convert raw point clouds into 3D shells with a single click.
+  - **Organic Mode**: Smooth, rounded surfaces (0.5m voxels) with Laplacian smoothing.
+  - **Accurate Mode**: Precise, high-resolution mesh (0.2m voxels) for technical analysis.
+- **Pure Wireframe Mode**: Interactive triangular net visualization that hides raw points for a clean, structural view.
+- **Analytical Coloring**: Support for elevation gradients (Color by height) on both solid surfaces and wireframes.
+- **Customization**: Dedicated color picker for cave walls and LiDAR meshes in the sidebar.
+- **Interactive Analysis**: Full support for point info, interactive measuring directly on meshes, and vertical sections.
 
 ### ✂️ Advanced Spatial Analysis (Clipping & Profiles)
 - **Highlighted Intersection Edges**: Real-time rendering of intersection lines between clipping planes and 3D models (cave walls, terrain, organic LiDAR).
@@ -106,11 +109,13 @@ LochViewer kladie veľký dôraz na bezpečnosť používateľov a ochranu dát.
 
 ### ☁️ Podpora LiDAR a mračien bodov (.ply)
 - **Vysokovýkonný parser**: Natívny binárny PLY parser s podporou miliónov bodov vrátane RGB farieb.
-- **Organická rekonštrukcia povrchu**: Premeňte surové mračno bodov na plynulý „organický“ model (voxel-based) jediným kliknutím.
-- **Vysokopresná mesh rekonštrukcia**: Režim „Trojuholník / Mesh“ využíva Dual Grid Corner Averaging pre maximálnu presnosť bez schodovitého efektu.
-- **Logika vonkajšej skrupiny**: Pokročilý flood-fill algoritmus automaticky odstraňuje vnútorné artefakty a dvojité steny, zobrazuje len „kožu“ jaskyne.
-- **Dynamický výkon (LOD)**: Premiešané dáta a vykresľovanie podľa vzdialenosti kamery zaručujú 60 FPS aj pri modeloch s 15M+ bodmi.
-- **Plná analytická podpora**: LiDAR dáta plne spolupracujú s nástrojmi pre info o bodoch, vertikálnymi rezmi a orezávacími rovinami.
+- **Rekonštrukcia povrchu**: Premeňte surové mračno bodov na 3D model jediným kliknutím.
+  - **Organický model**: Hladký, zaoblený povrch (0.5m voxely) s Laplacovským vyhladením.
+  - **Trojuholník / Mesh**: Vysokopresná rekonštrukcia (0.2m voxely) pre technickú analýzu.
+- **Čistý drôtený model**: Interaktívna trojuholníková sieť, ktorá skryje surové body pre lepšiu prehľadnosť geometrie.
+- **Analytické vyfarbenie**: Podpora výškových gradientov (Farebné podľa výšky) pre plné modely aj drôtenú sieť.
+- **Personalizácia**: Vlastný výber farieb pre LiDAR modely pomocou Color Pickera v sidebare.
+- **Interaktívna analýza**: Plná podpora pre meranie priamo na meshi, info o bodoch a orezové roviny.
 
 ### ✂️ Pokročilá priestorová analýza (Rezy a profily)
 - **Zvýraznené hrany rezu**: Renderovanie priesečníkov medzi orezávacími rovinami a 3D modelmi (steny jaskyne, terén, organický LiDAR) v reálnom čase.

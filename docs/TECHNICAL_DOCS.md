@@ -24,6 +24,7 @@ LochViewer je moderný webový 3D prehliadač speleologických dát.
 - **.lox (Therion)**: Najlepšia podpora vrátane stien jaskyne, textúr a terénu.
 - **.3d (Survex)**: Podpora pre polygonové ťahy (v3 až v8).
 - **.plt (Compass)**: Základná podpora pre dáta z Compassu.
+- **.ply (LiDAR)**: Pokročilá rekonštrukcia povrchu (Organický model s Laplacovským vyhladením a presný Mesh model).
 
 ---
 
@@ -46,3 +47,4 @@ LochViewer je moderný webový 3D prehliadač speleologických dát.
 - **.lox (Therion)**: Full support including cave walls, textures, and DTM terrain.
 - **.3d (Survex)**: Support for centerlines (v3 through v8).
 - **.plt (Compass)**: Basic support for Compass plot data.
+- **.ply (LiDAR)**: Advanced surface reconstruction (Organic model with Laplacian smoothing and Accurate Mesh model).
