@@ -30,24 +30,78 @@ export function reconstructSurface(points: {x:number, y:number, z:number}[], vox
   if (dy / activeVoxelSize > maxRes) activeVoxelSize = Math.max(activeVoxelSize, dy / maxRes);
   if (dz / activeVoxelSize > maxRes) activeVoxelSize = Math.max(activeVoxelSize, dz / maxRes);
 
-  const resX = Math.ceil(dx / activeVoxelSize);
-  const resY = Math.ceil(dy / activeVoxelSize);
-  
-  // 2. Voxelize using a Set for sparsity (saves memory and avoids giant arrays)
+  // 2. Voxelize using a Map for packing (saves memory and avoids giant arrays)
   const occupied = new Set<number>();
   for (const p of points) {
     const ix = Math.floor((p.x - minX) / activeVoxelSize);
     const iy = Math.floor((p.y - minY) / activeVoxelSize);
     const iz = Math.floor((p.z - minZ) / activeVoxelSize);
-    // Packed key
     occupied.add(ix + iy * 2000 + iz * 4000000);
   }
 
-  // 3. Generate Cube Faces for occupied voxels
-  // Only add faces that are on the boundary (neighbor is empty) to save geometry
-  const vertices: number[] = [];
+  // 3. PERFORMANCE OPTIMIZATION: "Outer Shell Only" via Flood Fill
+  // Identify which empty voxels are "outside" the model.
+  // We start from the corners and fill all reachable empty space.
+  const resX = Math.ceil(dx / activeVoxelSize);
+  const resY = Math.ceil(dy / activeVoxelSize);
+  const resZ = Math.ceil(dz / activeVoxelSize);
   
-  const hasNeighbor = (ix: number, iy: number, iz: number) => occupied.has(ix + iy * 2000 + iz * 4000000);
+  const exterior = new Set<number>();
+  const queue: [number, number, number][] = [];
+  
+  const addExterior = (ix: number, iy: number, iz: number) => {
+    const key = ix + iy * 2000 + iz * 4000000;
+    if (!exterior.has(key)) {
+      exterior.add(key);
+      queue.push([ix, iy, iz]);
+    }
+  };
+
+  // Start from all boundary faces of the bounding box (with 1 voxel padding)
+  for (let x = -1; x <= resX; x++) {
+    for (let y = -1; y <= resY; y++) {
+      addExterior(x, y, -1);
+      addExterior(x, y, resZ);
+    }
+  }
+  for (let x = -1; x <= resX; x++) {
+    for (let z = 0; z < resZ; z++) {
+      addExterior(x, -1, z);
+      addExterior(x, resY, z);
+    }
+  }
+  for (let y = 0; y < resY; y++) {
+    for (let z = 0; z < resZ; z++) {
+      addExterior(-1, y, z);
+      addExterior(resX, y, z);
+    }
+  }
+
+  const isOccupied = (ix: number, iy: number, iz: number) => {
+    if (ix < -1 || ix > resX || iy < -1 || iy > resY || iz < -1 || iz > resZ) return false;
+    return occupied.has(ix + iy * 2000 + iz * 4000000);
+  };
+
+  while (queue.length > 0) {
+    const [ix, iy, iz] = queue.pop()!; // pop is O(1)
+
+    // Neighbors
+    const neighbors = [[1,0,0], [-1,0,0], [0,1,0], [0,-1,0], [0,0,1], [0,0,-1]];
+    for (const [dx, dy, dz] of neighbors) {
+      const nx = ix + dx, ny = iy + dy, nz = iz + dz;
+      if (nx >= -1 && nx <= resX && ny >= -1 && ny <= resY && nz >= -1 && nz <= resZ) {
+        if (!isOccupied(nx, ny, nz)) {
+          addExterior(nx, ny, nz);
+        }
+      }
+    }
+  }
+
+  // 4. Generate Cube Faces for occupied voxels ONLY if they touch EXTERIOR empty space
+  const vertices: number[] = [];
+  const isExterior = (ix: number, iy: number, iz: number) => {
+    return exterior.has(ix + iy * 2000 + iz * 4000000);
+  };
 
   for (const key of occupied) {
     const ix = key % 2000;
@@ -59,34 +113,21 @@ export function reconstructSurface(points: {x:number, y:number, z:number}[], vox
     const z = minZ + iz * activeVoxelSize;
     const s = activeVoxelSize;
 
-    // Helper to add quad
     const addQuad = (v1: number[], v2: number[], v3: number[], v4: number[]) => {
-      // Triangle 1
-      vertices.push(...v1, ...v2, ...v3);
-      // Triangle 2
-      vertices.push(...v1, ...v3, ...v4);
+      vertices.push(...v1, ...v2, ...v3, ...v1, ...v3, ...v4);
     };
 
-    // Check 6 neighbors
-    // Top
-    if (!hasNeighbor(ix, iy, iz + 1)) addQuad([x, z+s, -y], [x+s, z+s, -y], [x+s, z+s, -(y+s)], [x, z+s, -(y+s)]);
-    // Bottom
-    if (!hasNeighbor(ix, iy, iz - 1)) addQuad([x, z, -(y+s)], [x+s, z, -(y+s)], [x+s, z, -y], [x, z, -y]);
-    // Front
-    if (!hasNeighbor(ix, iy - 1, iz)) addQuad([x, z, -y], [x+s, z, -y], [x+s, z+s, -y], [x, z+s, -y]);
-    // Back
-    if (!hasNeighbor(ix, iy + 1, iz)) addQuad([x+s, z, -(y+s)], [x, z, -(y+s)], [x, z+s, -(y+s)], [x+s, z+s, -(y+s)]);
-    // Left
-    if (!hasNeighbor(ix - 1, iy, iz)) addQuad([x, z, -(y+s)], [x, z, -y], [x, z+s, -y], [x, z+s, -(y+s)]);
-    // Right
-    if (!hasNeighbor(ix + 1, iy, iz)) addQuad([x+s, z, -y], [x+s, z, -(y+s)], [x+s, z+s, -(y+s)], [x+s, z+s, -y]);
+    // Only add faces that touch the "exterior" world
+    if (isExterior(ix, iy, iz + 1)) addQuad([x, z+s, -y], [x+s, z+s, -y], [x+s, z+s, -(y+s)], [x, z+s, -(y+s)]);
+    if (isExterior(ix, iy, iz - 1)) addQuad([x, z, -(y+s)], [x+s, z, -(y+s)], [x+s, z, -y], [x, z, -y]);
+    if (isExterior(ix, iy - 1, iz)) addQuad([x, z, -y], [x+s, z, -y], [x+s, z+s, -y], [x, z+s, -y]);
+    if (isExterior(ix, iy + 1, iz)) addQuad([x+s, z, -(y+s)], [x, z, -(y+s)], [x, z+s, -(y+s)], [x+s, z+s, -(y+s)]);
+    if (isExterior(ix - 1, iy, iz)) addQuad([x, z, -(y+s)], [x, z, -y], [x, z+s, -y], [x, z+s, -(y+s)]);
+    if (isExterior(ix + 1, iy, iz)) addQuad([x+s, z, -y], [x+s, z, -(y+s)], [x+s, z+s, -(y+s)], [x+s, z+s, -y]);
   }
 
   let geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-  
-  // 4. Post-processing for "Organic" look
-  // Merge vertices to make it a continuous manifold
   geo = mergeVertices(geo, 0.01);
   geo.computeVertexNormals();
 

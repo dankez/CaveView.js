@@ -65,7 +65,7 @@ const ClippingEdges = React.memo(({ geo, planes, active, color = "#ff4444" }: { 
     lineGeo.setAttribute('position', posAttr);
   }, [lineGeo, posAttr]);
 
-  useFrame(() => {
+  useEffect(() => {
     if (!active || planes.length === 0 || !geo || !geo.boundsTree || !lineRef.current) {
       if (lineRef.current) lineRef.current.visible = false;
       return;
@@ -94,7 +94,7 @@ const ClippingEdges = React.memo(({ geo, planes, active, color = "#ff4444" }: { 
 
     lineGeo.setDrawRange(0, segmentCount * 2);
     posAttr.needsUpdate = true;
-  });
+  }, [geo, planes, active]);
 
   return (
     <lineSegments ref={lineRef} geometry={lineGeo} renderOrder={1000}>
@@ -104,49 +104,79 @@ const ClippingEdges = React.memo(({ geo, planes, active, color = "#ff4444" }: { 
 });
 
 // ─── Point Cloud (LiDAR) ──────────────────────────────────────────────────────
-const PointCloud = React.memo(({ cave, options, clippingPlanes, onSurfaceClick }: { cave: ParsedCave, options: ViewerOptions, clippingPlanes: any[], onSurfaceClick?: any }) => {
+const PointCloud = React.memo(({ cave, options, clippingPlanes, onSurfaceClick, isMoving }: { cave: ParsedCave, options: ViewerOptions, clippingPlanes: any[], onSurfaceClick?: any, isMoving?: boolean }) => {
   // Ak je zapnuté vyhladenie (Organic), mračno bodov skryjeme a zobrazíme "skrupinu"
   if (options.smoothScraps) return null;
 
-  const geo = useMemo(() => {
-    if (!cave.points || cave.points.length === 0) return null
-    const g = new THREE.BufferGeometry()
-    const pos = new Float32Array(cave.points.length * 3)
-    const colors = new Float32Array(cave.points.length * 3)
+  const pointsRef = useRef<THREE.Points>(null!);
+
+  const { geo, totalCount } = useMemo(() => {
+    if (!cave.points || cave.points.length === 0) return { geo: null, totalCount: 0 }
     
+    const count = cave.points.length
+    const pos = new Float32Array(count * 3)
+    const colors = new Float32Array(count * 3)
+    
+    // PERFORMANCE: Náhodné premiešanie indexov pre prirodzený LOD cez setDrawRange
+    const indices = Array.from({ length: count }, (_, i) => i)
+    for (let i = count - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]]
+    }
+
     const minZ = cave.bounds.min.z
     const maxZ = cave.bounds.max.z
     
-    cave.points.forEach((p, i) => {
+    indices.forEach((originalIdx, i) => {
+      const p = cave.points[originalIdx]
       pos[i*3] = p.x; pos[i*3+1] = p.z; pos[i*3+2] = -p.y
       
       if (options.scrapsAltitude) {
         const c = elevColor(normZ(p.z, minZ, maxZ))
         colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b
-      } else if (cave.pointColors) {
-        colors[i*3] = cave.pointColors[i*3]
-        colors[i*3+1] = cave.pointColors[i*3+1]
-        colors[i*3+2] = cave.pointColors[i*3+2]
+      } else if (p.r !== undefined) {
+        colors[i*3] = p.r / 255; colors[i*3+1] = (p.g||0) / 255; colors[i*3+2] = (p.b||0) / 255
       } else {
         colors[i*3] = 1; colors[i*3+1] = 1; colors[i*3+2] = 1
       }
     })
     
+    const g = new THREE.BufferGeometry()
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3))
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3))
-    return g
-  }, [cave, options.scrapsAltitude])
+    return { geo: g, totalCount: count }
+  }, [cave.points, cave.bounds, options.scrapsAltitude])
+
+  useFrame((state) => {
+    if (!pointsRef.current || totalCount === 0) return
+    
+    // PERFORMANCE: LOD podľa vzdialenosti a pohybu
+    const dist = state.camera.position.length()
+    let targetCount = totalCount
+
+    if (isMoving) {
+      targetCount = Math.floor(totalCount * 0.15); // Agresívna redukcia pri pohybe
+    } else if (dist > 1500) {
+      targetCount = Math.floor(totalCount * 0.1); // 10% bodov pri ďalekom zoome
+    } else if (dist > 800) {
+      targetCount = Math.floor(totalCount * 0.35);
+    } else if (dist > 400) {
+      targetCount = Math.floor(totalCount * 0.65);
+    }
+
+    pointsRef.current.geometry.setDrawRange(0, targetCount)
+  })
 
   if (!geo) return null
 
   return (
     <points 
+      ref={pointsRef}
       geometry={geo} 
       renderOrder={15}
       onPointerDown={(e) => {
         if (!onSurfaceClick) return
         e.stopPropagation()
-        // Pre mračno bodov berieme bod zásahu v world space
         const p = e.point
         onSurfaceClick(
           p.x + cave.centerOffset.x, 
@@ -158,7 +188,7 @@ const PointCloud = React.memo(({ cave, options, clippingPlanes, onSurfaceClick }
     >
       <pointsMaterial 
         vertexColors 
-        size={0.1} 
+        size={0.15} 
         sizeAttenuation={true}
         transparent={options.scrapsOpacity < 1} 
         opacity={options.scrapsOpacity}
@@ -169,7 +199,7 @@ const PointCloud = React.memo(({ cave, options, clippingPlanes, onSurfaceClick }
 })
 
 // ─── Organic Shell (LiDAR Reconstruction) ─────────────────────────────────────
-const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick }: { cave: ParsedCave, options: ViewerOptions, clippingPlanes: any[], onSurfaceClick?: any }) => {
+const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick, isMoving }: { cave: ParsedCave, options: ViewerOptions, clippingPlanes: any[], onSurfaceClick?: any, isMoving?: boolean }) => {
   // Zobrazujeme iba ak je zapnuté vyhladenie (Organic)
   if (!options.smoothScraps) return null;
 
@@ -2234,8 +2264,8 @@ const CaveViewer3D = ({
         {/* ── LiDAR Point Cloud ── */}
         {o.showScraps && cave.pointCount > 0 && (
           <>
-            <PointCloud cave={cave} options={o} clippingPlanes={caveClippingPlanes} onSurfaceClick={onSurfaceClick} />
-            <OrganicShell cave={cave} options={o} clippingPlanes={caveClippingPlanes} onSurfaceClick={onSurfaceClick} />
+            <PointCloud cave={cave} options={o} clippingPlanes={caveClippingPlanes} onSurfaceClick={onSurfaceClick} isMoving={isMoving} />
+            <OrganicShell cave={cave} options={o} clippingPlanes={caveClippingPlanes} onSurfaceClick={onSurfaceClick} isMoving={isMoving} />
           </>
         )}
 
