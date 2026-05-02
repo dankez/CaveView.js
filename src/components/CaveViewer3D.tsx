@@ -16,6 +16,93 @@ THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
 // @ts-ignore
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
+const _tri = new THREE.Triangle();
+const _line = new THREE.Line3();
+
+/**
+ * Robust intersection between a triangle and a plane.
+ * Returns 2 points if they intersect, forming a line segment.
+ */
+function intersectTrianglePlane(tri: THREE.Triangle, plane: THREE.Plane, outPoints: THREE.Vector3[]) {
+  let count = 0;
+  const vertices = [tri.a, tri.b, tri.c];
+  
+  for (let i = 0; i < 3; i++) {
+    const v1 = vertices[i];
+    const v2 = vertices[(i + 1) % 3];
+    _line.set(v1, v2);
+    
+    const intersection = plane.intersectLine(_line, new THREE.Vector3());
+    if (intersection) {
+      // Avoid duplicate points at vertices
+      let exists = false;
+      for (let j = 0; j < count; j++) {
+        if (outPoints[j].distanceToSquared(intersection) < 1e-6) {
+          exists = true;
+          break;
+        }
+      }
+      if (!exists && count < 2) {
+        outPoints[count].copy(intersection);
+        count++;
+      }
+    }
+  }
+  return count === 2;
+}
+
+// ─── Clipping Edges Highlight Component ───────────────────────────────────────
+const ClippingEdges = React.memo(({ geo, planes, active, color = "#ff4444" }: { geo: THREE.BufferGeometry | null, planes: THREE.Plane[], active: boolean, color?: string }) => {
+  const lineRef = useRef<THREE.LineSegments>(null!);
+  const [lineGeo] = useState(() => new THREE.BufferGeometry());
+  // Pre-allocate buffer for up to 5000 segments (10000 points)
+  const [posAttr] = useState(() => new THREE.BufferAttribute(new Float32Array(30000), 3));
+  const p1 = useMemo(() => new THREE.Vector3(), []);
+  const p2 = useMemo(() => new THREE.Vector3(), []);
+  const points = useMemo(() => [p1, p2], [p1, p2]);
+
+  useEffect(() => {
+    lineGeo.setAttribute('position', posAttr);
+  }, [lineGeo, posAttr]);
+
+  useFrame(() => {
+    if (!active || planes.length === 0 || !geo || !geo.boundsTree || !lineRef.current) {
+      if (lineRef.current) lineRef.current.visible = false;
+      return;
+    }
+
+    lineRef.current.visible = true;
+    let segmentCount = 0;
+    const array = posAttr.array as Float32Array;
+
+    planes.forEach(plane => {
+      // @ts-ignore
+      geo.boundsTree.shapecast({
+        intersectsBounds: box => plane.intersectsBox(box),
+        intersectsTriangle: (tri) => {
+          if (intersectTrianglePlane(tri, plane, points)) {
+            const idx = segmentCount * 6;
+            if (idx + 5 < array.length) {
+              array[idx]   = points[0].x; array[idx+1] = points[0].y; array[idx+2] = points[0].z;
+              array[idx+3] = points[1].x; array[idx+4] = points[1].y; array[idx+5] = points[1].z;
+              segmentCount++;
+            }
+          }
+        }
+      });
+    });
+
+    lineGeo.setDrawRange(0, segmentCount * 2);
+    posAttr.needsUpdate = true;
+  });
+
+  return (
+    <lineSegments ref={lineRef} geometry={lineGeo} renderOrder={1000}>
+      <lineBasicMaterial color={color} linewidth={3} depthTest={false} transparent opacity={1.0} />
+    </lineSegments>
+  );
+});
+
 // ─── Point Cloud (LiDAR) ──────────────────────────────────────────────────────
 const PointCloud = React.memo(({ cave, options, clippingPlanes, onSurfaceClick }: { cave: ParsedCave, options: ViewerOptions, clippingPlanes: any[], onSurfaceClick?: any }) => {
   // Ak je zapnuté vyhladenie (Organic), mračno bodov skryjeme a zobrazíme "skrupinu"
@@ -97,12 +184,31 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
     // @ts-ignore - BVH pre bleskové klikanie
     g.computeBoundsTree();
     
+    // Pridanie farieb podľa výšky (rovnako ako pri mračne bodov)
+    if (options.scrapsAltitude) {
+      const pos = g.getAttribute('position') as THREE.BufferAttribute;
+      const colors = new Float32Array(pos.count * 3);
+      const minZ = cave.bounds.min.z;
+      const maxZ = cave.bounds.max.z;
+      
+      for (let i = 0; i < pos.count; i++) {
+        // V našom mapovaní je Y v Three.js nadmorská výška (Z v jaskyni)
+        const alt = pos.getY(i);
+        const c = elevColor(normZ(alt, minZ, maxZ));
+        colors[i * 3]     = c.r;
+        colors[i * 3 + 1] = c.g;
+        colors[i * 3 + 2] = c.b;
+      }
+      g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    }
+    
     return g;
-  }, [cave.points]);
+  }, [cave.points, cave.bounds, options.scrapsAltitude]);
 
   if (!geo) return null;
 
   return (
+  <>
     <mesh 
       geometry={geo} 
       renderOrder={10}
@@ -119,7 +225,8 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
       }}
     >
       <meshStandardMaterial 
-        color="#d1d5db"
+        vertexColors={options.scrapsAltitude}
+        color={options.scrapsAltitude ? '#ffffff' : '#d1d5db'}
         side={THREE.DoubleSide}
         roughness={0.6}
         metalness={0.1}
@@ -128,6 +235,13 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
         clippingPlanes={clippingPlanes}
       />
     </mesh>
+    <ClippingEdges 
+      geo={geo} 
+      planes={clippingPlanes} 
+      active={options.showClippingEdges} 
+      color={options.colorClippingEdges} 
+    />
+  </>
   );
 });
 
@@ -196,6 +310,10 @@ export interface ViewerOptions {
   showProfileClipping: boolean
   profileClipFlip:     boolean
   profileClipOffset:   number
+  showClippingEdges:   boolean
+  showSurfaceClippingEdges: boolean
+  colorClippingEdges:  string
+  colorSurfaceClippingEdges: string
   clippingPlanes?:     any[]
 
   // Floor Map
@@ -979,6 +1097,17 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
   const [floorAffine, setFloorAffine] = useState<{a:number,b:number,c:number,d:number,e:number,f:number} | null>(null)
 
   useEffect(() => {
+    if (geos.solid) {
+      // @ts-ignore
+      geos.solid.computeBoundsTree();
+    }
+    if (geos.alt) {
+      // @ts-ignore
+      geos.alt.computeBoundsTree();
+    }
+  }, [geos]);
+
+  useEffect(() => {
     if (!options.floorMapSvg && !options.floorMapTh2) { setFloorTex(null); return }
     
     if (options.floorMapSvg) {
@@ -1180,6 +1309,13 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
             clippingPlanes={props.clippingPlanes} />
         </mesh>
       )}
+
+      <ClippingEdges 
+        geo={showAltitude ? altGeo : solidGeo} 
+        planes={props.clippingPlanes || []} 
+        active={options.showClippingEdges} 
+        color={options.colorClippingEdges} 
+      />
     </>
   )
 })
@@ -1547,6 +1683,12 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
           <meshBasicMaterial color={props.colorTerrainWire} wireframe depthWrite={false} transparent={true} opacity={0.45} clippingPlanes={props.clippingPlanes} />
         </mesh>
       )}
+      <ClippingEdges 
+        geo={geo} 
+        planes={props.clippingPlanes || []} 
+        active={props.options.showSurfaceClippingEdges} 
+        color={props.options.colorSurfaceClippingEdges} 
+      />
     </group>
   );
 });

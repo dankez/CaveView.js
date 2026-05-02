@@ -40,6 +40,11 @@ LochViewer prioritizes user security and data protection. An independent securit
 - **Full Analysis Support**: LiDAR data is fully integrated with point information tools, vertical sections, and clipping planes.
 - **Smart Optimization**: Automatic label suppression and BVH spatial indexing for smooth interaction even with massive datasets.
 
+### ✂️ Advanced Spatial Analysis (Clipping & Profiles)
+- **Highlighted Intersection Edges**: Real-time rendering of intersection lines between clipping planes and 3D models (cave walls, terrain, organic LiDAR).
+- **Custom Analysis Colors**: Independent color pickers for cave and terrain clipping highlights to improve visual distinction in complex cross-sections.
+- **Vertical Cross-Sections**: Define precise vertical profiles by selecting two points on any model (legacy survey or LiDAR).
+
 ### 🔗 Embedding & Sharing
 - **Google Maps Style Embed**: Embed 3D models into any webpage using `<iframe>`.
 - **URL State Persistence**: All sidebar settings (themes, colors, clipping planes, terrain) are automatically saved to the URL.
@@ -103,6 +108,11 @@ LochViewer kladie veľký dôraz na bezpečnosť používateľov a ochranu dát.
 - **Organická rekonštrukcia povrchu**: Premeňte surové mračno bodov na plynulý „organický“ model (voxel-based) jediným kliknutím.
 - **Plná analytická podpora**: LiDAR dáta plne spolupracujú s nástrojmi pre info o bodoch, vertikálnymi rezmi a orezávacími rovinami.
 - **Smart optimalizácia**: Automatické potláčanie menoviek a BVH priestorové indexovanie pre plynulú prácu aj s masívnymi modelmi.
+
+### ✂️ Pokročilá priestorová analýza (Rezy a profily)
+- **Zvýraznené hrany rezu**: Renderovanie priesečníkov medzi orezávacími rovinami a 3D modelmi (steny jaskyne, terén, organický LiDAR) v reálnom čase.
+- **Vlastné farby analýzy**: Nezávislé výbery farieb pre zvýraznenie rezov jaskyne a terénu pre lepšiu prehľadnosť v zložitých profiloch.
+- **Vertikálne rezy**: Definujte presné vertikálne profily výberom dvoch bodov na ľubovoľnom modeli (klasické meranie alebo LiDAR).
 
 ### 🔗 Zdieľanie a Embedovanie
 - **Google Maps Style Embed**: Možnosť vkladať 3D modely do ľubovoľných webových stránok pomocou `<iframe>`.

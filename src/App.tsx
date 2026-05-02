@@ -649,6 +649,10 @@ export default function App() {
     showProfileClipping: false,
     profileClipFlip:     false,
     profileClipOffset:   0,
+    showClippingEdges:   true,
+    showSurfaceClippingEdges: true,
+    colorClippingEdges:  '#ff4444',
+    colorSurfaceClippingEdges: '#44ff44',
     // Floor Map
     floorMapSvg:         null,
     floorMapTh2:         null,
@@ -2070,15 +2074,49 @@ export default function App() {
                       )}
 
                       {(opts.showClipping || opts.showProfileClipping) && (
-                        <div className="toggle-row" style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                          <label className="toggle-label" style={{ fontSize: '10px', color: '#94a3b8' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>visibility_off</span>
-                            {lang === 'sk' ? 'Vynechať jaskyňu z rezu' : 'Exclude cave from clip'}
-                          </label>
-                          <div className={`switch${opts.excludeModelFromClipping ? ' on' : ''}`}
-                            onClick={() => toggleOpt('excludeModelFromClipping')} role="switch"
-                            aria-checked={opts.excludeModelFromClipping} tabIndex={0} />
-                        </div>
+                        <>
+                          <div style={{ marginTop: '8px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div className="toggle-row" style={{ marginBottom: '8px' }}>
+                              <label className="toggle-label" style={{ fontSize: '10px', color: '#94a3b8' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>border_outer</span>
+                                {lang === 'sk' ? 'Hrana rezu jaskyne' : 'Cave clipping edge'}
+                              </label>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <input type="color" value={opts.colorClippingEdges} 
+                                  onChange={(e) => setOpts(p => ({ ...p, colorClippingEdges: e.target.value }))}
+                                  style={{ width: '20px', height: '20px', padding: 0, border: 'none', background: 'none', cursor: 'pointer' }} />
+                                <div className={`switch${opts.showClippingEdges ? ' on' : ''}`}
+                                  onClick={() => toggleOpt('showClippingEdges')} role="switch"
+                                  aria-checked={opts.showClippingEdges} tabIndex={0} />
+                              </div>
+                            </div>
+
+                            <div className="toggle-row" style={{ marginBottom: '12px' }}>
+                              <label className="toggle-label" style={{ fontSize: '10px', color: '#94a3b8' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>landscape</span>
+                                {lang === 'sk' ? 'Hrana rezu povrchu' : 'Surface clipping edge'}
+                              </label>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <input type="color" value={opts.colorSurfaceClippingEdges} 
+                                  onChange={(e) => setOpts(p => ({ ...p, colorSurfaceClippingEdges: e.target.value }))}
+                                  style={{ width: '20px', height: '20px', padding: 0, border: 'none', background: 'none', cursor: 'pointer' }} />
+                                <div className={`switch${opts.showSurfaceClippingEdges ? ' on' : ''}`}
+                                  onClick={() => toggleOpt('showSurfaceClippingEdges')} role="switch"
+                                  aria-checked={opts.showSurfaceClippingEdges} tabIndex={0} />
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="toggle-row" style={{ marginTop: '4px' }}>
+                            <label className="toggle-label" style={{ fontSize: '10px', color: '#94a3b8' }}>
+                              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>visibility_off</span>
+                              {lang === 'sk' ? 'Vynechať jaskyňu z rezu' : 'Exclude cave from clip'}
+                            </label>
+                            <div className={`switch${opts.excludeModelFromClipping ? ' on' : ''}`}
+                              onClick={() => toggleOpt('excludeModelFromClipping')} role="switch"
+                              aria-checked={opts.excludeModelFromClipping} tabIndex={0} />
+                          </div>
+                        </>
                       )}
                     </div>
                 </div>
