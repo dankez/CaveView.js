@@ -97,7 +97,7 @@ const ClippingEdges = React.memo(({ geo, planes, active, color = "#ff4444" }: { 
   }, [geo, planes, active]);
 
   return (
-    <lineSegments ref={lineRef} geometry={lineGeo} renderOrder={1000}>
+    <lineSegments ref={lineRef} geometry={lineGeo} renderOrder={1000} frustumCulled={false}>
       <lineBasicMaterial color={color} linewidth={3} depthTest={false} transparent opacity={1.0} />
     </lineSegments>
   );
@@ -272,7 +272,21 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
     )}
     
     {options.scrapsWireframe && (
-      <mesh geometry={geo} renderOrder={11}>
+      <mesh 
+        geometry={geo} 
+        renderOrder={11}
+        onPointerDown={(e) => {
+          if (!onSurfaceClick) return
+          e.stopPropagation()
+          const p = e.point
+          onSurfaceClick(
+            p.x + cave.centerOffset.x, 
+            -p.z + cave.centerOffset.y, 
+            p.y + cave.centerOffset.z, 
+            e.clientX, e.clientY
+          )
+        }}
+      >
         <meshBasicMaterial 
           vertexColors={true}
           color={options.scrapsAltitude ? '#ffffff' : options.colorScraps} 
@@ -285,7 +299,12 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
     )}
     
     {/* Hrany orezu pre organický model */}
-    <ClippingEdges geometry={geo} color={options.colorClipCave} clippingPlanes={clippingPlanes} />
+    <ClippingEdges 
+      geo={geo} 
+      planes={clippingPlanes} 
+      active={options.showClippingEdges} 
+      color={options.colorClipCave} 
+    />
   </>
   )
 })
