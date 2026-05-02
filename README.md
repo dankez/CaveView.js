@@ -107,6 +107,7 @@ LochViewer kladie veľký dôraz na bezpečnosť používateľov a ochranu dát.
 ### ☁️ Podpora LiDAR a mračien bodov (.ply)
 - **Vysokovýkonný parser**: Natívny binárny PLY parser s podporou miliónov bodov vrátane RGB farieb.
 - **Organická rekonštrukcia povrchu**: Premeňte surové mračno bodov na plynulý „organický“ model (voxel-based) jediným kliknutím.
+- **Vysokopresná mesh rekonštrukcia**: Režim „Trojuholník / Mesh“ využíva Dual Grid Corner Averaging pre maximálnu presnosť bez schodovitého efektu.
 - **Logika vonkajšej skrupiny**: Pokročilý flood-fill algoritmus automaticky odstraňuje vnútorné artefakty a dvojité steny, zobrazuje len „kožu“ jaskyne.
 - **Dynamický výkon (LOD)**: Premiešané dáta a vykresľovanie podľa vzdialenosti kamery zaručujú 60 FPS aj pri modeloch s 15M+ bodmi.
 - **Plná analytická podpora**: LiDAR dáta plne spolupracujú s nástrojmi pre info o bodoch, vertikálnymi rezmi a orezávacími rovinami.

@@ -128,7 +128,8 @@ const PointCloud = React.memo(({ cave, options, clippingPlanes, onSurfaceClick, 
     const maxZ = cave.bounds.max.z
     
     indices.forEach((originalIdx, i) => {
-      const p = cave.points[originalIdx]
+      const p = (cave.points as any)[originalIdx]
+      if (!p) return
       pos[i*3] = p.x; pos[i*3+1] = p.z; pos[i*3+2] = -p.y
       
       if (options.scrapsAltitude) {
@@ -2184,7 +2185,7 @@ const CaveViewer3D = ({
         powerPreference: 'high-performance',
         localClippingEnabled: true // Aktivácia rezov
       }}
-      raycaster={{ params: { Points: { threshold: 0.1 } } }}
+      raycaster={{ params: { Points: { threshold: 0.1 } } } as any}
       camera={{ fov: 55, near: 0.1, far: Math.max(diag * 20, 10000) }}
       onCreated={({ gl }) => {
         // Optimalizácia pre veľké modely – ak GPU nestíha
