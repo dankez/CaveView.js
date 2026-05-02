@@ -214,7 +214,7 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
     // @ts-ignore - BVH pre bleskové klikanie
     g.computeBoundsTree();
     
-    // Pridanie farieb podľa výšky (rovnako ako pri mračne bodov)
+    // Pridanie farieb podľa výšky
     if (options.scrapsAltitude) {
       const pos = g.getAttribute('position') as THREE.BufferAttribute;
       const colors = new Float32Array(pos.count * 3);
@@ -222,7 +222,6 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
       const maxZ = cave.bounds.max.z;
       
       for (let i = 0; i < pos.count; i++) {
-        // V našom mapovaní je Y v Three.js nadmorská výška (Z v jaskyni)
         const alt = pos.getY(i);
         const c = elevColor(normZ(alt, minZ, maxZ));
         colors[i * 3]     = c.r;
@@ -256,7 +255,7 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
     >
       <meshStandardMaterial 
         vertexColors={options.scrapsAltitude}
-        color={options.scrapsAltitude ? '#ffffff' : '#d1d5db'}
+        color={options.scrapsAltitude ? '#ffffff' : options.colorScraps} 
         side={THREE.DoubleSide}
         roughness={0.6}
         metalness={0.1}
@@ -265,15 +264,12 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
         clippingPlanes={clippingPlanes}
       />
     </mesh>
-    <ClippingEdges 
-      geo={geo} 
-      planes={clippingPlanes} 
-      active={options.showClippingEdges} 
-      color={options.colorClippingEdges} 
-    />
+    
+    {/* Hrany orezu pre organický model */}
+    <ClippingEdges geometry={geo} color={options.colorClipCave} clippingPlanes={clippingPlanes} />
   </>
-  );
-});
+  )
+})
 
 // ─── ViewerOptions ────────────────────────────────────────────────────────────
 export interface ViewerOptions {
