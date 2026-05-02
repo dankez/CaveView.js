@@ -638,7 +638,7 @@ export default function App() {
     surfaceTextureCalibration: null,
     colorSplay:          '#78909c',
     colorTraverse:       '#4fc3f7',
-    colorScraps:         '#2a5585',
+    colorScraps:         '#94a3b8',
     colorScrapsWire:     '#6a9fd8',
     colorStations:       '#fbbf24',
     colorStationNames:   '#fbbf24',
@@ -682,7 +682,7 @@ export default function App() {
       showEntrances: true,
       showEntranceLabels: true,
       colorGrid:         '#224422',
-      colorScraps:       '#2a5585',
+      colorScraps:       '#94a3b8',
       colorScrapsWire:   '#6a9fd8',
       colorTerrainWire:  '#6ab04c',
       colorBoundingBox:  '#990000',
@@ -699,7 +699,7 @@ export default function App() {
       showEntrances: true,
       showEntranceLabels: true,
       colorGrid:         '#161e2b',
-      colorScraps:       '#2a5585',
+      colorScraps:       '#94a3b8',
       colorScrapsWire:   '#a5f3fc',
       colorTerrainWire:  '#1e293b',
       colorBoundingBox:  '#990000',
@@ -2187,7 +2187,11 @@ export default function App() {
                 {/* ── STENY JASKYNE (scraps / point cloud) ── */}
                 {(cave.scrapCount > 0 || cave.pointCount > 0) && (
                   <div>
-                    <div className="s-label">{t('cave.title')}</div>
+                    <div className="s-label">
+                      <div className="dot" style={{ background: opts.colorScraps }} />
+                      {t('cave.title')}
+                      <ColorPicker t={t} value={opts.colorScraps} onChange={(c) => setOpts(p => ({ ...p, colorScraps: c }))} />
+                    </div>
                     <div className="toggle-row">
                       <label className="toggle-label">{t('cave.show')}</label>
                       <div className={`switch${opts.showScraps ? ' on' : ''}`}
