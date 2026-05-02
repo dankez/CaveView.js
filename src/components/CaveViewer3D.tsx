@@ -303,7 +303,7 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
       geo={geo} 
       planes={clippingPlanes} 
       active={options.showClippingEdges} 
-      color={options.colorClipCave} 
+      color={options.colorClippingEdges} 
     />
   </>
   )
