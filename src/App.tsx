@@ -1565,7 +1565,7 @@ export default function App() {
         .sidebar::-webkit-scrollbar-track{background:rgba(0,0,0,0.1)}
         .sidebar::-webkit-scrollbar-thumb{background:rgba(99,179,237,0.3);border-radius:10px}
         .sidebar::-webkit-scrollbar-thumb:hover{background:rgba(99,179,237,0.5)}
-        .s-label{font-size:.68rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem;margin-top:1.2rem;border-left:3px solid #3b82f6;padding-left:8px;display:flex;align-items:center}
+        .s-label{font-size:.72rem;font-weight:900;color:#f8fafc;text-transform:uppercase;letter-spacing:.15em;margin-bottom:.8rem;margin-top:1.5rem;border-left:4px solid #3b82f6;padding-left:10px;display:flex;align-items:center;background:rgba(59,130,246,0.05);padding-top:4px;padding-bottom:4px;border-radius:0 4px 4px 0}
         .s-label:first-of-type { margin-top: 0.5rem; }
         .info-row{display:flex;justify-content:space-between;font-size:.75rem;padding:.28rem 0;border-bottom:1px solid rgba(255,255,255,.04);color:#718096}
         .info-val{color:#63b3ed;font-weight:600}
@@ -1718,6 +1718,7 @@ export default function App() {
                 <h1 className="logo-title" style={{ marginBottom: '0.2rem' }}>LochViewer</h1>
                 <div className="welcome-version">v1.3.1</div>
                 <p className="logo-sub" style={{ marginTop: '0.8rem' }}>{t('welcome.sub')}</p>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6366f1', background: 'rgba(99,102,241,0.1)', padding: '4px 12px', borderRadius: '12px', marginTop: '1rem', display: 'inline-block', border: '1px solid rgba(99,102,241,0.2)' }}>v1.3.1</div>
               </div>
 
               <div
@@ -1727,7 +1728,7 @@ export default function App() {
                 onDragLeave={e => { e.preventDefault(); setIsDragging(false) }}
                 onClick={() => fileInputRef.current?.click()}
                 role="button" tabIndex={0}
-                style={{ width: '100%', maxWidth: '500px' }}
+                style={{ width: '100%', maxWidth: '720px', minHeight: '260px' }}
                 onKeyDown={e => e.key === 'Enter' && fileInputRef.current?.click()}
               >
                 <span className="dz-icon">📂</span>
@@ -1751,7 +1752,7 @@ export default function App() {
               )}
 
               {/* Demo models */}
-              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '500px' }}>
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '720px' }}>
                 <div>
                   <div style={{ fontSize: '.62rem', fontWeight: 700, color: '#4a5568', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '.5rem', textAlign: 'center' }}>{t('welcome.demoTitle')}</div>
                   <div style={{ display: 'flex', gap: '.6rem', justifyContent: 'center' }}>
@@ -1785,13 +1786,14 @@ export default function App() {
                 História verzií
               </div>
 
-              <div className="changelog-ver">v1.3.1 (Dnes)</div>
-              <div className="changelog-group">UI & Refinement</div>
+              <div className="changelog-ver">release-2026-05-03-1 (Dnes)</div>
+              <div className="changelog-group">Opravy & LiDAR Interakcia</div>
               <ul className="changelog-list">
-                <li className="changelog-item">Zvýraznené sekcie sidebaru a čistejšie UI</li>
-                <li className="changelog-item">Nové poradie tlačidiel Share a Close</li>
-                <li className="changelog-item">Červené "Zavrieť" vpravo hore pre lepší UX</li>
-                <li className="changelog-item">Zobrazenie changelogu na úvodnej obrazovke</li>
+                <li className="changelog-item">Opravené meranie a klikanie na PLY mračná bodov</li>
+                <li className="changelog-item">Zvýšená citlivosť raycastingu na 0.5m</li>
+                <li className="changelog-item">Hladší "Silk" povrch pre organickú rekonštrukciu</li>
+                <li className="changelog-item">Responzívnejšia úvodná obrazovka (Wide layout)</li>
+                <li className="changelog-item">Zvýraznené sekcie v bočnom paneli</li>
               </ul>
 
               <div className="changelog-ver">v1.3.0</div>
@@ -1924,6 +1926,14 @@ export default function App() {
                   <span className="material-symbols-outlined" style={{ fontSize: '18px', display: 'block' }}>fit_screen</span>
                 </button>
 
+                <button 
+                  onClick={handleReset}
+                  style={{ background: '#ef4444', border: '1px solid #dc2626', borderRadius: '6px', color: '#fff', padding: '6px 12px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px', display: 'block' }}>close</span>
+                  <span>{t('ui.close')}</span>
+                </button>
+
                 {/* Share button - only when model is loaded from a public URL */}
                 {!isEmbedMode && (
                   <button
@@ -1936,14 +1946,6 @@ export default function App() {
                     <span>{lang === 'sk' ? 'Zdieľať' : 'Share'}</span>
                   </button>
                 )}
-
-                <button 
-                  onClick={handleReset}
-                  style={{ background: '#ef4444', border: '1px solid #dc2626', borderRadius: '6px', color: '#fff', padding: '6px 12px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px', display: 'block' }}>close</span>
-                  <span>{t('ui.close')}</span>
-                </button>
               </div>
             </div>
             )}
@@ -1959,7 +1961,7 @@ export default function App() {
                     cave={cave}
                     options={opts}
                     onStationClick={handleStationClick}
-                    onSurfaceClick={isMeasuringMode ? handleSurfaceClick : undefined}
+                    onSurfaceClick={handleSurfaceClick}
                     onMoveStateChange={setIsModelMoving}
                     onCameraUpdate={setCameraData}
                     contourInterval={contourLevels.major}

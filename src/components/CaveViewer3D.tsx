@@ -2129,6 +2129,14 @@ const CaveViewer3D = ({
   const [isMoving, setIsMoving] = useState(false)
   const [camData, setCamData] = useState<{ dist: number, fov: number, height: number } | null>(null)
   const movingTimeout = useRef<any>(null)
+  const { raycaster } = useThree()
+
+  // PERFORMANCE & INTERACTION: Zvýšenie prahu pre mračná bodov (PLY) aby bolo meranie použiteľné
+  useEffect(() => {
+    if (raycaster.params.Points) {
+      raycaster.params.Points.threshold = 0.5;
+    }
+  }, [raycaster.params.Points]);
 
   const startStopTimeout = useCallback(() => {
     if (movingTimeout.current) clearTimeout(movingTimeout.current)

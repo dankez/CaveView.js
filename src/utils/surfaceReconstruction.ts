@@ -244,13 +244,13 @@ export function reconstructSurface(points: {x:number, y:number, z:number}[], vox
     geo = applyTaubinSmoothing(geo, 3);
   } else {
     // --- ORGANICKÝ / VYHLADENÝ (Silk/Fabric) ---
-    // Použijeme čistý Laplacian so silným napätím (0.5), aby sme dosiahli efekt napnutej látky
+    // Použijeme čistý Laplacian so silným napätím (0.6), aby sme dosiahli efekt napnutej látky
     const pos = geo.attributes.position.array as Float32Array;
     const idx = geo.index!.array;
     const vCount = geo.attributes.position.count;
     
-    // Počet iterácií podľa organicLevel (0 = aspoň 5 pre základnú hladkosť, 10 = 25 iterácií)
-    const silkIterations = 5 + (organicLevel * 2);
+    // Počet iterácií výrazne zvýšený pre "silk" efekt (minimum 15, maximum 45)
+    const silkIterations = 15 + (organicLevel * 3);
     
     for (let it = 0; it < silkIterations; it++) {
       const newPos = new Float32Array(pos.length);
@@ -268,10 +268,10 @@ export function reconstructSurface(points: {x:number, y:number, z:number}[], vox
       
       for (let i = 0; i < vCount; i++) {
         if (counts[i] > 0) {
-          // Napätie 0.5 pre efekt "stiahnutia" látky na model
-          newPos[i*3] = pos[i*3] + (sums[i*3]/counts[i] - pos[i*3]) * 0.5;
-          newPos[i*3+1] = pos[i*3+1] + (sums[i*3+1]/counts[i] - pos[i*3+1]) * 0.5;
-          newPos[i*3+2] = pos[i*3+2] + (sums[i*3+2]/counts[i] - pos[i*3+2]) * 0.5;
+          // Napätie 0.6 pre ešte hladší efekt "hodvábu"
+          newPos[i*3] = pos[i*3] + (sums[i*3]/counts[i] - pos[i*3]) * 0.6;
+          newPos[i*3+1] = pos[i*3+1] + (sums[i*3+1]/counts[i] - pos[i*3+1]) * 0.6;
+          newPos[i*3+2] = pos[i*3+2] + (sums[i*3+2]/counts[i] - pos[i*3+2]) * 0.6;
         } else {
           newPos[i*3]=pos[i*3]; newPos[i*3+1]=pos[i*3+1]; newPos[i*3+2]=pos[i*3+2];
         }

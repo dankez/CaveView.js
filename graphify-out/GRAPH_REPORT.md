@@ -1,7 +1,7 @@
 # Graph Report - CaveView-modernized  (2026-05-03)
 
 ## Corpus Check
-- 185 files · ~254,730 words
+- 185 files · ~254,825 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
