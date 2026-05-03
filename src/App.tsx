@@ -1516,7 +1516,8 @@ export default function App() {
         @keyframes shimmer{0%{background-position:0% center}100%{background-position:200% center}}
         .logo-sub{font-size:.85rem;color:#718096;margin-top:.3rem;letter-spacing:.08em;text-transform:uppercase}
 
-        .dropzone{width:100%;border:2px dashed rgba(99,179,237,.3);border-radius:20px;padding:2.5rem 2rem;text-align:center;cursor:pointer;transition:all .25s ease;background:rgba(99,179,237,.03);position:relative;overflow:hidden}
+        .welcome-main > div { width: 100%; max-width: 920px; }
+        .dropzone{width:100%; max-width: 920px; border:2px dashed rgba(99,179,237,.3);border-radius:20px;padding:2.5rem 2rem;text-align:center;cursor:pointer;transition:all .25s ease;background:rgba(99,179,237,.03);position:relative;overflow:hidden}
         .dropzone:hover,.dropzone.over{border-color:rgba(99,179,237,.7);background:rgba(99,179,237,.08);transform:scale(1.01);box-shadow:0 0 40px rgba(99,179,237,.15)}
         .dz-icon{font-size:2.5rem;margin-bottom:.7rem;display:block}
         .dz-title{font-size:1.05rem;font-weight:600;margin-bottom:.3rem}
