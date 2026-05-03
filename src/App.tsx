@@ -1490,7 +1490,8 @@ export default function App() {
         /* WELCOME */
         .app{position:relative;z-index:1;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
         .welcome{display:flex;flex-direction:row;align-items:stretch;width:100vw;height:100vh;background:#020617;overflow:hidden;position:fixed;top:0;left:0;z-index:1000}
-        .welcome-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.5rem; padding: 2rem; overflow-y: auto; background: radial-gradient(circle at center, #0f172a 0%, #020617 100%); }
+        .welcome-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3rem; padding: 4rem; overflow-y: auto; background: radial-gradient(circle at center, #111827 0%, #020617 100%); position: relative; }
+        .welcome-main::before { content: ""; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 800px; height: 800px; background: radial-gradient(circle at center, rgba(59, 130, 246, 0.03) 0%, transparent 70%); pointer-events: none; }
         .welcome-sidebar { width: 350px; background: rgba(15,23,42,0.5); border-left: 1px solid #1e293b; padding: 2.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.5rem; text-align: left; backdrop-filter: blur(10px); }
         
         @media (max-width: 900px) {
@@ -1926,14 +1927,6 @@ export default function App() {
                   <span className="material-symbols-outlined" style={{ fontSize: '18px', display: 'block' }}>fit_screen</span>
                 </button>
 
-                <button 
-                  onClick={handleReset}
-                  style={{ background: '#ef4444', border: '1px solid #dc2626', borderRadius: '6px', color: '#fff', padding: '6px 12px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px', display: 'block' }}>close</span>
-                  <span>{t('ui.close')}</span>
-                </button>
-
                 {/* Share button - only when model is loaded from a public URL */}
                 {!isEmbedMode && (
                   <button
@@ -1946,6 +1939,14 @@ export default function App() {
                     <span>{lang === 'sk' ? 'Zdieľať' : 'Share'}</span>
                   </button>
                 )}
+
+                <button 
+                  onClick={handleReset}
+                  style={{ background: '#ef4444', border: '1px solid #dc2626', borderRadius: '6px', color: '#fff', padding: '6px 12px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px', display: 'block' }}>close</span>
+                  <span>{t('ui.close')}</span>
+                </button>
               </div>
             </div>
             )}
