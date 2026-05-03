@@ -1489,7 +1489,16 @@ export default function App() {
 
         /* WELCOME */
         .app{position:relative;z-index:1;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
-        .welcome{display:flex;flex-direction:column;align-items:center;gap:2rem;padding:2rem;max-width:680px;width:100%}
+        .welcome{display:flex;flex-direction:column;align-items:center;gap:2rem;padding:2rem;max-width:800px;width:100%}
+        .welcome-version { font-size: 0.75rem; color: #6366f1; font-weight: 700; margin-top: -0.5rem; background: rgba(99,102,241,0.1); padding: 2px 8px; border-radius: 4px; display: inline-block; }
+        .changelog-container { display: flex; gap: 2rem; width: 100%; margin-top: 1rem; text-align: left; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 2rem; }
+        .changelog-col { flex: 1; }
+        .changelog-title { font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 0.75rem; }
+        .changelog-list { list-style: none; padding: 0; margin: 0; }
+        .changelog-item { font-size: 11px; color: #94a3b8; margin-bottom: 0.5rem; line-height: 1.4; display: flex; gap: 6px; }
+        .changelog-item:before { content: "•"; color: #3b82f6; }
+        .changelog-col.left .changelog-item { color: #64748b; font-size: 10.5px; }
+        .changelog-col.left .changelog-item:before { color: #475569; }
         .logo-icon{font-size:4rem;filter:drop-shadow(0 0 28px rgba(99,179,237,.55));animation:float 4s ease-in-out infinite}
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
         .logo-title{font-size:2.8rem;font-weight:800;letter-spacing:-.02em;background:linear-gradient(135deg,#63b3ed 0%,#9f7aea 50%,#63b3ed 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 4s linear infinite}
@@ -1695,8 +1704,9 @@ export default function App() {
           <div className="welcome">
             <div style={{ textAlign: 'center' }}>
               <div className="logo-icon">🏔️</div>
-              <h1 className="logo-title">LochViewer</h1>
-              <p className="logo-sub">{t('welcome.sub')}</p>
+              <h1 className="logo-title" style={{ marginBottom: '0.5rem' }}>LochViewer</h1>
+              <div className="welcome-version">v1.3.1</div>
+              <p className="logo-sub" style={{ marginTop: '1rem' }}>{t('welcome.sub')}</p>
             </div>
 
             <div
@@ -1752,6 +1762,27 @@ export default function App() {
                     🏔️ {t('welcome.bigModel')}
                   </button>
                 </div>
+              </div>
+            </div>
+            {/* Changelog section */}
+            <div className="changelog-container">
+              <div className="changelog-col left">
+                <div className="changelog-title">Nedávne (v1.3.0)</div>
+                <ul className="changelog-list">
+                  <li className="changelog-item">Silk/Fabric algoritmus pre organické modely</li>
+                  <li className="changelog-item">Angle-Weighted Normals pre hladký povrch</li>
+                  <li className="changelog-item">Surface Nets (Dual Contouring) integrácia</li>
+                  <li className="changelog-item">Oprava presnosti Triangle Mesh (Taubin)</li>
+                </ul>
+              </div>
+              <div className="changelog-col">
+                <div className="changelog-title">Čo je nové (v1.3.1)</div>
+                <ul className="changelog-list">
+                  <li className="changelog-item">Zvýraznené sekcie sidebaru a čistejšie UI</li>
+                  <li className="changelog-item">Nové poradie tlačidiel Share a Close</li>
+                  <li className="changelog-item">Červené "Zavrieť" vpravo hore pre lepší UX</li>
+                  <li className="changelog-item">Kompletná dokumentácia algoritmov (ALGORITHMS.md)</li>
+                </ul>
               </div>
             </div>
           </div>
