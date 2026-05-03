@@ -4,7 +4,7 @@ import { OrbitControls, Grid, Html, GizmoHelper, GizmoViewport } from '@react-th
 import * as THREE from 'three'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh'
-import { reconstructSurface } from '../utils/surfaceReconstruction'
+import { reconstructSurface, reconstructSurfaceNet } from '../utils/surfaceReconstruction'
 import type { ParsedCave, CaveSurface, Segment } from '../parsers/caveParser'
 import type { SelStation } from '../App'
 
@@ -105,8 +105,8 @@ const ClippingEdges = React.memo(({ geo, planes, active, color = "#ff4444" }: { 
 
 // ─── Point Cloud (LiDAR) ──────────────────────────────────────────────────────
 const PointCloud = React.memo(({ cave, options, clippingPlanes, onSurfaceClick, isMoving }: { cave: ParsedCave, options: ViewerOptions, clippingPlanes: any[], onSurfaceClick?: any, isMoving?: boolean }) => {
-  // Ak je zapnuté vyhladenie (Organic), presný mesh (Accurate) alebo drôtený model, mračno bodov skryjeme
-  if (options.smoothScraps || options.accurateScraps || options.scrapsWireframe) return null;
+  // Ak je zapnuté vyhladenie (Organic), presný mesh (Accurate), drôtený model alebo Surface Nets, mračno bodov skryjeme
+  if (options.smoothScraps || options.accurateScraps || options.scrapsWireframe || options.useSurfaceNet) return null;
 
   const pointsRef = useRef<THREE.Points>(null!);
 
@@ -202,14 +202,22 @@ const PointCloud = React.memo(({ cave, options, clippingPlanes, onSurfaceClick, 
 // ─── Organic Shell (LiDAR Reconstruction) ─────────────────────────────────────
 const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick, isMoving }: { cave: ParsedCave, options: ViewerOptions, clippingPlanes: any[], onSurfaceClick?: any, isMoving?: boolean }) => {
   // Zobrazujeme ak je zapnuté vyhladenie, presný mesh ALEBO drôtený model
-  if (!options.smoothScraps && !options.accurateScraps && !options.scrapsWireframe) return null;
+  if (!options.smoothScraps && !options.accurateScraps && !options.scrapsWireframe && !options.useSurfaceNet) return null;
 
   const geo = useMemo(() => {
     if (!cave.points || cave.points.length === 0) return null;
     
     // Pre presný mesh používame menšiu veľkosť voxlu (0.2m), pre organický 0.5m
     const vSize = options.accurateScraps ? 0.2 : 0.5;
-    const g = reconstructSurface(cave.points, vSize, options.accurateScraps);
+    
+    let g: THREE.BufferGeometry;
+    if (options.useSurfaceNet) {
+      g = reconstructSurfaceNet(cave.points, vSize);
+    } else {
+      g = reconstructSurface(cave.points, vSize, options.accurateScraps, options.organicLevel);
+    }
+    
+    if (!g.getAttribute('position')) return null;
     
     // @ts-ignore - BVH pre bleskové klikanie
     g.computeBoundsTree();
@@ -221,8 +229,16 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
     const maxZ = cave.bounds.max.z;
     
     for (let i = 0; i < pos.count; i++) {
+      // Y-Z swap (x, z, -y) pre vygenerovaný model
+      const px = pos.getX(i);
+      const py = pos.getY(i);
+      const pz = pos.getZ(i);
+      pos.setXYZ(i, px, pz, -py);
+
       if (options.scrapsAltitude) {
-        const alt = pos.getY(i);
+        // Tu používame transformované pz (ktoré bolo predtým jaskynné elevation)
+        // Ale pozor, alt je teraz Three.js Y.
+        const alt = pos.getY(i); 
         const c = elevColor(normZ(alt, minZ, maxZ));
         colors[i * 3]     = c.r;
         colors[i * 3 + 1] = c.g;
@@ -231,14 +247,15 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
         colors[i * 3] = 1; colors[i * 3 + 1] = 1; colors[i * 3 + 2] = 1;
       }
     }
+    g.computeVertexNormals();
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     
     return g;
-  }, [cave.points, cave.bounds, options.scrapsAltitude, options.smoothScraps, options.accurateScraps, options.scrapsWireframe]);
+  }, [cave.points, cave.bounds, options.scrapsAltitude, options.smoothScraps, options.accurateScraps, options.scrapsWireframe, options.useSurfaceNet, options.organicLevel]);
 
   if (!geo) return null;
 
-  const showSolid = options.smoothScraps || options.accurateScraps;
+  const showSolid = options.smoothScraps || options.accurateScraps || options.useSurfaceNet;
 
   return (
   <>
@@ -335,6 +352,7 @@ export interface ViewerOptions {
   showRenderCave:      boolean
   caveTexture:         'limestone' | 'dolomite' | 'grey_limestone'
   renderOpacity:       number
+  organicLevel:        number
   // Cave traverse
   showTraverse:        boolean
   traverseRadius:      number
@@ -379,6 +397,7 @@ export interface ViewerOptions {
   showSurfaceClippingEdges: boolean
   colorClippingEdges:  string
   colorSurfaceClippingEdges: string
+  useSurfaceNet:       boolean
   clippingPlanes?:     any[]
 
   // Floor Map
@@ -2283,7 +2302,8 @@ const CaveViewer3D = ({
         {o.showScraps && cave.scraps?.length > 0 && (
           <CaveScraps
             cave={cave} opacity={o.scrapsOpacity}
-            showSolid={o.scrapsSolid}
+            // Ak beží Surface Nets, vypneme "Solid" v tomto komponente, aby sa neprekrývali
+            showSolid={o.scrapsSolid && !o.useSurfaceNet}
             showWire={o.scrapsWireframe}
             showAltitude={o.scrapsAltitude}
             smooth={o.smoothScraps}

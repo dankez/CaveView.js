@@ -225,8 +225,9 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, t, l
           </span>
         </div>
         <button onClick={onClose} style={{
-          background: 'none', border: 'none', color: '#64748b', cursor: 'pointer',
-          fontSize: 16, lineHeight: 1, padding: '2px 4px', borderRadius: 4,
+          background: '#ef4444', border: 'none', color: '#fff', cursor: 'pointer',
+          fontSize: 14, fontWeight: '700', lineHeight: 1, padding: '4px 8px', borderRadius: 6,
+          transition: 'background 0.2s'
         }} title={t('ui.close')} aria-label={t('ui.close')}>✕</button>
       </div>
 
@@ -611,9 +612,10 @@ export default function App() {
     scrapsOpacity:       0.75,
     scrapsSolid:         true,
     scrapsWireframe:     false,
-    scrapsAltitude:      true,   // farebné podľa výšky
+    scrapsAltitude:      false,
     smoothScraps:        false,
     accurateScraps:      false,
+    organicLevel:        5,
     showRenderCave:      false,
     caveTexture:         'limestone',
     renderOpacity:       1.0,
@@ -654,6 +656,7 @@ export default function App() {
     showSurfaceClippingEdges: true,
     colorClippingEdges:  '#ff4444',
     colorSurfaceClippingEdges: '#44ff44',
+    useSurfaceNet:       false,
     // Floor Map
     floorMapSvg:         null,
     floorMapTh2:         null,
@@ -1543,7 +1546,8 @@ export default function App() {
         .sidebar::-webkit-scrollbar-track{background:rgba(0,0,0,0.1)}
         .sidebar::-webkit-scrollbar-thumb{background:rgba(99,179,237,0.3);border-radius:10px}
         .sidebar::-webkit-scrollbar-thumb:hover{background:rgba(99,179,237,0.5)}
-        .s-label{font-size:.62rem;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.45rem}
+        .s-label{font-size:.68rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem;margin-top:1.2rem;border-left:3px solid #3b82f6;padding-left:8px;display:flex;align-items:center}
+        .s-label:first-of-type { margin-top: 0.5rem; }
         .info-row{display:flex;justify-content:space-between;font-size:.75rem;padding:.28rem 0;border-bottom:1px solid rgba(255,255,255,.04);color:#718096}
         .info-val{color:#63b3ed;font-weight:600}
 
@@ -1620,16 +1624,16 @@ export default function App() {
 
         /* ── SHARE DIALOG ── */
         .share-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.75); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 1rem; }
-        .share-dialog { background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 1.5rem; max-width: 560px; width: 100%; box-shadow: 0 24px 80px rgba(0,0,0,0.7); }
-        .share-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.25rem; color: #f1f5f9; }
+        .share-dialog { background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 1.5rem; max-width: 560px; width: 100%; box-shadow: 0 24px 80px rgba(0,0,0,0.7); position: relative; }
+        .share-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.25rem; color: #f1f5f9; padding-right: 30px; }
         .share-sub { font-size: 0.8rem; color: #64748b; margin-bottom: 1.2rem; }
         .share-code { background: #020617; border: 1px solid #1e293b; border-radius: 8px; padding: 0.85rem; font-family: monospace; font-size: 11px; color: #7dd3fc; word-break: break-all; line-height: 1.6; margin-bottom: 0.75rem; max-height: 120px; overflow-y: auto; }
         .share-preview-label { font-size: 10px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 0.5rem; }
         .share-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
         .share-copy-btn { flex: 1; background: linear-gradient(135deg,#4299e1,#6366f1); color: #fff; border: none; border-radius: 8px; padding: 0.6rem 1rem; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity .2s; }
         .share-copy-btn:hover { opacity: 0.9; }
-        .share-close-btn { background: #1e293b; border: 1px solid #334155; color: #94a3b8; border-radius: 8px; padding: 0.6rem 1rem; font-size: 13px; cursor: pointer; }
-        .share-close-btn:hover { background: #334155; }
+        .share-close-btn { position: absolute; top: 1.2rem; right: 1.2rem; background: #ef4444; border: none; color: #fff; border-radius: 8px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; cursor: pointer; transition: background .2s; z-index: 10; }
+        .share-close-btn:hover { background: #dc2626; }
         .share-open-link { display: block; font-size: 10px; color: #6366f1; text-align: center; margin-top: 0.75rem; text-decoration: none; }
         .share-open-link:hover { text-decoration: underline; }
 
@@ -1855,14 +1859,6 @@ export default function App() {
                   <span className="material-symbols-outlined" style={{ fontSize: '18px', display: 'block' }}>fit_screen</span>
                 </button>
 
-                <button 
-                  onClick={handleReset}
-                  style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: '#94a3b8', padding: '6px 12px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px', display: 'block' }}>close</span>
-                  <span>{t('ui.close')}</span>
-                </button>
-
                 {/* Share button - only when model is loaded from a public URL */}
                 {!isEmbedMode && (
                   <button
@@ -1875,6 +1871,14 @@ export default function App() {
                     <span>{lang === 'sk' ? 'Zdieľať' : 'Share'}</span>
                   </button>
                 )}
+
+                <button 
+                  onClick={handleReset}
+                  style={{ background: '#ef4444', border: '1px solid #dc2626', borderRadius: '6px', color: '#fff', padding: '6px 12px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px', display: 'block' }}>close</span>
+                  <span>{t('ui.close')}</span>
+                </button>
               </div>
             </div>
             )}
@@ -2206,19 +2210,50 @@ export default function App() {
                           <div className={`switch${opts.smoothScraps ? ' on' : ''}`}
                             onClick={() => {
                               const newVal = !opts.smoothScraps;
-                              setOpts(p => ({ ...p, smoothScraps: newVal, accurateScraps: newVal ? false : p.accurateScraps }));
+                              setOpts(p => ({ ...p, smoothScraps: newVal, accurateScraps: newVal ? false : p.accurateScraps, useSurfaceNet: newVal ? false : p.useSurfaceNet }));
                             }} role="switch"
                             aria-checked={opts.smoothScraps} tabIndex={0} />
                         </div>
+
+                        {opts.smoothScraps && (
+                          <div style={{ marginBottom: 12, padding: '0 4px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                              <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>{lang === 'sk' ? 'Úroveň organickosti' : 'Organic Level'}</label>
+                              <span style={{ fontSize: 10, color: '#4fc3f7', fontWeight: 800 }}>{opts.organicLevel}</span>
+                            </div>
+                            <input 
+                              type="range" min="0" max="10" step="1"
+                              value={opts.organicLevel}
+                              onChange={(e) => setOpts(p => ({ ...p, organicLevel: parseInt(e.target.value) }))}
+                              style={{ width: '100%', height: 4, borderRadius: 2, appearance: 'none', background: 'rgba(255,255,255,0.1)', outline: 'none' }}
+                            />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2, fontSize: 8, color: '#64748b' }}>
+                              <span>{lang === 'sk' ? 'Technický' : 'Technical'}</span>
+                              <span>{lang === 'sk' ? 'Hodváb' : 'Silk'}</span>
+                              <span>{lang === 'sk' ? 'Tekutý' : 'Liquid'}</span>
+                            </div>
+                          </div>
+                        )}
                         <div className="toggle-row">
                           <label className="toggle-label">{t('cave.accurateMesh')}</label>
                           <div className={`switch${opts.accurateScraps ? ' on' : ''}`}
                             onClick={() => {
                               const newVal = !opts.accurateScraps;
-                              setOpts(p => ({ ...p, accurateScraps: newVal, smoothScraps: newVal ? false : p.smoothScraps }));
+                              setOpts(p => ({ ...p, accurateScraps: newVal, smoothScraps: newVal ? false : p.smoothScraps, useSurfaceNet: newVal ? false : p.useSurfaceNet }));
                             }} role="switch"
                             aria-checked={opts.accurateScraps} tabIndex={0} />
                         </div>
+                        {cave && cave.isLiDAR && cave.pointCount > 0 && (
+                          <div className="toggle-row">
+                            <label className="toggle-label">Surface Nets</label>
+                            <div className={`switch${opts.useSurfaceNet ? ' on' : ''}`}
+                              onClick={() => {
+                                const newVal = !opts.useSurfaceNet;
+                                setOpts(p => ({ ...p, useSurfaceNet: newVal, smoothScraps: newVal ? false : p.smoothScraps, accurateScraps: newVal ? false : p.accurateScraps }));
+                              }} role="switch"
+                              aria-checked={opts.useSurfaceNet} tabIndex={0} />
+                          </div>
+                        )}
                         <div className="toggle-row">
                           <label className="toggle-label">{t('cave.render3d')}</label>
                           <div className={`switch${opts.showRenderCave ? ' on' : ''}`}
@@ -2803,6 +2838,8 @@ export default function App() {
                 ? 'Tip: Ak model hostuješ na vlastnom serveri, nezabudni povoliť CORS.'
                 : 'Tip: If hosting the model on your own server, remember to enable CORS.'}
             </div>
+            <button className="share-close-btn" onClick={() => setShareDialogOpen(false)}>✕</button>
+
             <div className="share-actions">
               <button className="share-copy-btn" onClick={handleCopyShare}>
                 {shareCopied ? '✓ Skopírované!' : '📋 Kopírovať iframe kód'}
@@ -2813,7 +2850,6 @@ export default function App() {
                 onClick={() => navigator.clipboard.writeText(getShareUrl(true)).then(() => { setShareCopied(true); setTimeout(() => setShareCopied(false), 2500) })}
                 title={lang === 'sk' ? 'Kopírovať priamy odkaz' : 'Copy direct link'}
               >🔗</button>
-              <button className="share-close-btn" onClick={() => setShareDialogOpen(false)}>✕</button>
             </div>
             <a href={getShareUrl(true)} target="_blank" rel="noopener noreferrer" className="share-open-link">
               ↗ {lang === 'sk' ? 'Otvoriť v novom okne (embed náhľad)' : 'Open in new window (embed preview)'}

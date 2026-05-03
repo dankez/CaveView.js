@@ -140,6 +140,7 @@ export function parseLox(buffer: ArrayBuffer, onProgress?: (msg: string) => void
 
   const stations = Array.from(stationsById.values())
   const ids      = Array.from(stationsById.keys())
+
   return buildResult(segments, stations, stationMeta, scraps, surfaces, ids)
 
   // ── type 1 ─ Survey ──────────────────────────────────────────────────────────
@@ -542,7 +543,8 @@ function buildResult(
   stationMeta: Map<number, { name: string; z: number; isEntrance?: boolean; fullLabel?: string }>,
   scraps:      Scrap[],
   surfaces:    CaveSurface[],
-  stationIds?: number[]
+  stationIds?: number[],
+  extraPoints?: Vec3[]
 ): ParsedCave {
   if (stations.length === 0 && segments.length > 0) {
     segments.forEach(s => { stations.push(s.from, s.to) })
@@ -617,5 +619,6 @@ function buildResult(
     scrapCount:    scraps.length,
     pointCount:    0,
     hasSurface:    surfaces.length > 0,
+    isLiDAR:       isLiDAR
   }
 }

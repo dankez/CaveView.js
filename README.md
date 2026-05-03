@@ -36,9 +36,10 @@ LochViewer prioritizes user security and data protection. An independent securit
 
 ### ☁️ LiDAR & Point Cloud Support (.ply)
 - **High-Performance Parser**: Native binary PLY parser supporting millions of vertices with RGB color data.
-- **Surface Reconstruction**: Convert raw point clouds into 3D shells with a single click.
-  - **Organic Mode**: Smooth, rounded surfaces (0.5m voxels) with Laplacian smoothing.
-  - **Accurate Mode**: Precise, high-resolution mesh (0.2m voxels) for technical analysis.
+- **Surface Reconstruction**: Convert raw point clouds into high-fidelity 3D shells.
+  - **Organic (Silk)**: New "Silk/Fabric" membrane effect using high-tension Laplacian smoothing.
+  - **Triangle Mesh (Accurate)**: Precision reconstruction using Taubin non-shrinking algorithm.
+  - **Surface Nets**: Professional dual-contouring topology for seamless cave meshes.
 - **Pure Wireframe Mode**: Interactive triangular net visualization that hides raw points for a clean, structural view.
 - **Analytical Coloring**: Support for elevation gradients (Color by height) on both solid surfaces and wireframes.
 - **Customization**: Dedicated color picker for cave walls and LiDAR meshes in the sidebar.
@@ -110,8 +111,9 @@ LochViewer kladie veľký dôraz na bezpečnosť používateľov a ochranu dát.
 ### ☁️ Podpora LiDAR a mračien bodov (.ply)
 - **Vysokovýkonný parser**: Natívny binárny PLY parser s podporou miliónov bodov vrátane RGB farieb.
 - **Rekonštrukcia povrchu**: Premeňte surové mračno bodov na 3D model jediným kliknutím.
-  - **Organický model**: Hladký, zaoblený povrch (0.5m voxely) s Laplacovským vyhladením.
-  - **Trojuholník / Mesh**: Vysokopresná rekonštrukcia (0.2m voxely) pre technickú analýzu.
+  - **Organický (Silk)**: Nový efekt „napnutej látky“ (hodvábu) pomocou Laplacian vyhladzovania.
+  - **Trojuholník / Mesh**: Presná rekonštrukcia (Taubin algorithm) pre technickú analýzu.
+  - **Surface Nets**: Profesionálna dual-contouring topológia pre plynulé modely.
 - **Čistý drôtený model**: Interaktívna trojuholníková sieť, ktorá skryje surové body pre lepšiu prehľadnosť geometrie.
 - **Analytické vyfarbenie**: Podpora výškových gradientov (Farebné podľa výšky) pre plné modely aj drôtenú sieť.
 - **Personalizácia**: Vlastný výber farieb pre LiDAR modely pomocou Color Pickera v sidebare.
@@ -149,6 +151,7 @@ LochViewer kladie veľký dôraz na bezpečnosť používateľov a ochranu dát.
 Detailed guides and technical specifications are available in the [docs/](docs/) directory:
 - [GOOGLE_SETUP.md](docs/GOOGLE_SETUP.md): Google Cloud & API configuration guide.
 - [TECHNICAL_DOCS.md](docs/TECHNICAL_DOCS.md): Project architecture and library overview.
+- [ALGORITHMS.md](ALGORITHMS.md): Detailed mathematical formulas and 3D reconstruction logic (Taubin, Silk, Surface Nets).
 - [SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md): Security posture and audit results.
 
 © 2026 LochViewer Project. Vyvinuté pre profesionálne speleologické prezentácie a výskum.
