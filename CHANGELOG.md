@@ -1,5 +1,11 @@
 # Changelog
 
+## [release-2026-05-03-2] - 2026-05-03
+### Optimalizácia & Finalizácia
+- **UI Consistency:** Zjednotenie verziových štítkov na v1.3.2 naprieč celou aplikáciou.
+- **Responsive Depth:** Pridanie vizuálnej hĺbky (centrálny glow) na úvodnú obrazovku pre prémiový vzhľad na ultra-širokých monitoroch.
+- **Mobile Navigation:** Vylepšená stabilita bočného menu pri prechode medzi mobilným a desktopovým zobrazením.
+
 ## [release-2026-05-03-1] - 2026-05-03
 ### Opravy & LiDAR Interakcia
 - **PLY Interaction:** Opravené meranie a klikanie na mračná bodov (PLY) zvýšením thresholdu raycastingu na 0.5m.

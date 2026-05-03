@@ -1718,9 +1718,9 @@ export default function App() {
               <div style={{ textAlign: 'center' }}>
                 <div className="logo-icon">🏔️</div>
                 <h1 className="logo-title" style={{ marginBottom: '0.2rem' }}>LochViewer</h1>
-                <div className="welcome-version">v1.3.1</div>
+                <div className="welcome-version">v1.3.2</div>
                 <p className="logo-sub" style={{ marginTop: '0.8rem' }}>{t('welcome.sub')}</p>
-                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6366f1', background: 'rgba(99,102,241,0.1)', padding: '4px 12px', borderRadius: '12px', marginTop: '1rem', display: 'inline-block', border: '1px solid rgba(99,102,241,0.2)' }}>v1.3.1</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6366f1', background: 'rgba(99,102,241,0.1)', padding: '4px 12px', borderRadius: '12px', marginTop: '1rem', display: 'inline-block', border: '1px solid rgba(99,102,241,0.2)' }}>v1.3.2</div>
               </div>
 
               <div

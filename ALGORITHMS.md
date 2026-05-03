@@ -56,4 +56,4 @@ V LochViewer implementujeme analytické rezanie cez `clippingPlanes`.
 - **Indexovanie**: Prevod lokálnych súradníc staníc na globálny jaskynný priestor s centrovaním na ťažisko modelu.
 
 ---
-*Dokumentácia verzie: release-2026-05-03-1*
+*Dokumentácia verzie: release-2026-05-03-2*
