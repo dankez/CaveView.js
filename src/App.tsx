@@ -1489,17 +1489,26 @@ export default function App() {
 
         /* WELCOME */
         .app{position:relative;z-index:1;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
-        .welcome{display:flex;flex-direction:row;align-items:stretch;justify-content:center;gap:0;padding:0;max-width:1100px;width:95vw;height:85vh;background:#0f172a;border-radius:24px;border:1px solid #1e293b;overflow:hidden;box-shadow:0 30px 100px rgba(0,0,0,0.8)}
-        .welcome-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2rem; padding: 3rem; overflow-y: auto; }
-        .welcome-sidebar { width: 320px; background: rgba(0,0,0,0.2); border-left: 1px solid #1e293b; padding: 2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.5rem; text-align: left; }
-        .welcome-version { font-size: 0.75rem; color: #6366f1; font-weight: 700; background: rgba(99,102,241,0.1); padding: 2px 8px; border-radius: 4px; display: inline-block; margin-top: 0.5rem; }
-        .changelog-title { font-size: 11px; font-weight: 800; color: #6366f1; text-transform: uppercase; letter-spacing: .15em; margin-bottom: 1.2rem; display: flex; alignItems: center; gap: 8px; }
-        .changelog-ver { font-size: 12px; font-weight: 700; color: #f1f5f9; margin-top: 1.5rem; margin-bottom: 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px; }
+        .welcome{display:flex;flex-direction:row;align-items:stretch;width:100vw;height:100vh;background:#020617;overflow:hidden;position:fixed;top:0;left:0;z-index:1000}
+        .welcome-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.5rem; padding: 2rem; overflow-y: auto; background: radial-gradient(circle at center, #0f172a 0%, #020617 100%); }
+        .welcome-sidebar { width: 350px; background: rgba(15,23,42,0.5); border-left: 1px solid #1e293b; padding: 2.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.5rem; text-align: left; backdrop-filter: blur(10px); }
+        
+        @media (max-width: 900px) {
+          .welcome { flex-direction: column; overflow-y: auto; height: auto; min-height: 100vh; position: relative; }
+          .welcome-main { padding: 4rem 1.5rem; flex: none; width: 100%; }
+          .welcome-sidebar { width: 100%; border-left: none; border-top: 1px solid #1e293b; padding: 2rem 1.5rem; flex: none; background: #020617; }
+        }
+
+        .welcome-version { font-size: 0.8rem; color: #6366f1; font-weight: 700; background: rgba(99,102,241,0.1); padding: 4px 12px; border-radius: 6px; display: inline-block; margin-top: 0.75rem; border: 1px solid rgba(99,102,241,0.2); }
+        .changelog-title { font-size: 12px; font-weight: 800; color: #f8fafc; text-transform: uppercase; letter-spacing: .2em; margin-bottom: 1.5rem; display: flex; alignItems: center; gap: 10px; }
+        .changelog-ver { font-size: 13px; font-weight: 700; color: #6366f1; margin-top: 2rem; margin-bottom: 0.8rem; border-bottom: 1px solid rgba(99,102,241,0.1); padding-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
+        .changelog-ver:after { content: "NEW"; font-size: 8px; background: #3b82f6; color: white; padding: 1px 4px; border-radius: 3px; opacity: 0; }
+        .changelog-ver:first-of-type:after { opacity: 1; }
         .changelog-ver:first-of-type { margin-top: 0; }
         .changelog-list { list-style: none; padding: 0; margin: 0; }
-        .changelog-item { font-size: 11px; color: #94a3b8; margin-bottom: 0.5rem; line-height: 1.5; display: flex; gap: 8px; }
-        .changelog-item:before { content: "•"; color: #3b82f6; flex-shrink: 0; }
-        .changelog-group { font-size: 9px; font-weight: 700; color: #475569; text-transform: uppercase; margin: 0.8rem 0 0.4rem 0; letter-spacing: 0.05em; }
+        .changelog-item { font-size: 11.5px; color: #94a3b8; margin-bottom: 0.7rem; line-height: 1.6; display: flex; gap: 10px; }
+        .changelog-item:before { content: "→"; color: #6366f1; flex-shrink: 0; font-weight: bold; }
+        .changelog-group { font-size: 9px; font-weight: 800; color: #475569; text-transform: uppercase; margin: 1rem 0 0.5rem 0; letter-spacing: 0.1em; background: rgba(255,255,255,0.03); padding: 2px 6px; border-radius: 3px; display: inline-block; }
         .logo-icon{font-size:4rem;filter:drop-shadow(0 0 28px rgba(99,179,237,.55));animation:float 4s ease-in-out infinite}
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
         .logo-title{font-size:2.8rem;font-weight:800;letter-spacing:-.02em;background:linear-gradient(135deg,#63b3ed 0%,#9f7aea 50%,#63b3ed 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 4s linear infinite}
