@@ -97,16 +97,26 @@ function computeAngleWeightedNormals(geometry: THREE.BufferGeometry): THREE.Buff
 /**
  * Fast Voxel-based Shell Reconstruction (Legacy Organic).
  */
-export function reconstructSurface(points: {x:number, y:number, z:number}[], voxelSize = 0.5, isAccurate = false, organicLevel = 5): THREE.BufferGeometry {
-  if (points.length < 10) return new THREE.BufferGeometry();
+export function reconstructSurface(points: Float32Array | {x:number, y:number, z:number}[], voxelSize = 0.5, isAccurate = false, organicLevel = 5): THREE.BufferGeometry {
+  const pCount = points instanceof Float32Array ? points.length / 3 : points.length;
+  if (pCount < 10) return new THREE.BufferGeometry();
 
-  // ... (vypocet bounds zostava rovnaky)
   let minX = Infinity, minY = Infinity, minZ = Infinity;
   let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
-  for (const p of points) {
-    if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
-    if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
-    if (p.z < minZ) minZ = p.z; if (p.z > maxZ) maxZ = p.z;
+
+  if (points instanceof Float32Array) {
+    for (let i = 0; i < points.length; i += 3) {
+      const x = points[i], y = points[i+1], z = points[i+2];
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+      if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+    }
+  } else {
+    for (const p of points) {
+      if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
+      if (p.z < minZ) minZ = p.z; if (p.z > maxZ) maxZ = p.z;
+    }
   }
 
   const dx = maxX - minX, dy = maxY - minY, dz = maxZ - minZ;
@@ -121,11 +131,20 @@ export function reconstructSurface(points: {x:number, y:number, z:number}[], vox
   };
 
   const occupied = new Set<bigint>();
-  for (const p of points) {
-    const ix = Math.floor((p.x - minX) / activeVoxelSize);
-    const iy = Math.floor((p.y - minY) / activeVoxelSize);
-    const iz = Math.floor((p.z - minZ) / activeVoxelSize);
-    occupied.add(getVKey(ix, iy, iz));
+  if (points instanceof Float32Array) {
+    for (let i = 0; i < points.length; i += 3) {
+      const ix = Math.floor((points[i] - minX) / activeVoxelSize);
+      const iy = Math.floor((points[i+1] - minY) / activeVoxelSize);
+      const iz = Math.floor((points[i+2] - minZ) / activeVoxelSize);
+      occupied.add(getVKey(ix, iy, iz));
+    }
+  } else {
+    for (const p of points) {
+      const ix = Math.floor((p.x - minX) / activeVoxelSize);
+      const iy = Math.floor((p.y - minY) / activeVoxelSize);
+      const iz = Math.floor((p.z - minZ) / activeVoxelSize);
+      occupied.add(getVKey(ix, iy, iz));
+    }
   }
 
   // --- KROK: Vyplnenie malých dier (Dilation) ---

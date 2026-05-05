@@ -3,6 +3,27 @@ import proj4 from 'proj4'
 import { parseLox, parseSvx, parsePlt, parsePly } from './parsers/caveParser'
 import type { ParsedCave, CaveSurface, Vec3 } from './parsers/caveParser'
 import CaveViewer3D, { ViewerOptions } from './components/CaveViewer3D'
+
+// ─── Error Boundary ───────────────────────────────────────────────────────────
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: any) { super(props); this.state = { hasError: false, error: null }; }
+  static getDerivedStateFromError(error: Error) { return { hasError: true, error }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '2rem', background: '#0f172a', color: '#f8fafc', borderRadius: '12px', border: '1px solid #334155', margin: '2rem', textAlign: 'center' }}>
+          <h2 style={{ color: '#f56565' }}>Ups! Niečo sa pokazilo pri vykresľovaní.</h2>
+          <p style={{ opacity: 0.8 }}>{this.state.error?.message}</p>
+          <button onClick={() => window.location.reload()} style={{ padding: '0.5rem 1rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', marginTop: '1rem' }}>
+            Obnoviť aplikáciu
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 import { getBrowserLanguage, getTranslation, Language, languages } from './i18n'
 
 // ── Google Drive Config (Vymeň za tvoje reálne kľúče v .env súbore) ──
@@ -613,6 +634,8 @@ export default function App() {
     scrapsSolid:         true,
     scrapsWireframe:     false,
     scrapsAltitude:      false,
+    scrapsIntensity:     false,
+    scrapsClassification: false,
     smoothScraps:        false,
     accurateScraps:      false,
     organicLevel:        5,
@@ -635,6 +658,9 @@ export default function App() {
     contourColor10:      '#f29d62',
     surfaceOpacity:      0.8,
     surfaceColor:        '#ffffff',
+    showVegetation:      true,
+    showGround:          true,
+    showCaveLiDAR:       true,
     surfaceTextureOffset: { x: 0, y: 0 },
     surfaceTextureScale:  { x: 1, y: 1 },
     surfaceTextureCalibration: null,
@@ -782,8 +808,8 @@ export default function App() {
           setOpts(p => ({
             ...p,
             surfaceTextureCalibration: {
-              p1: { x: x1, y: y1, lat: lat1, lon: lon1, mx: m1[0] - cave.centerOffset.x, my: m1[1] - cave.centerOffset.y },
-              p2: { x: x2, y: y2, lat: lat2, lon: lon2, mx: m2[0] - cave.centerOffset.x, my: m2[1] - cave.centerOffset.y }
+              p1: { x: x1, y: y1, lat: lat1, lon: lon1, mx: m1[0] - (cave.centerOffset?.x || 0), my: m1[1] - (cave.centerOffset?.y || 0) },
+              p2: { x: x2, y: y2, lat: lat2, lon: lon2, mx: m2[0] - (cave.centerOffset?.x || 0), my: m2[1] - (cave.centerOffset?.y || 0) }
             } as any
           }))
         }
@@ -805,8 +831,8 @@ export default function App() {
     const sl = cave.stationLabels[idx]
     if (!sl) return
 
-    const origX = sl.pos.x + cave.centerOffset.x
-    const origY = sl.pos.y + cave.centerOffset.y
+    const origX = sl.pos.x + (cave.centerOffset?.x || 0)
+    const origY = sl.pos.y + (cave.centerOffset?.y || 0)
     const altitude = sl.altitude
 
     let gps: { lat: number; lon: number; zone?: number; epsg?: string } | null = null;
@@ -864,11 +890,11 @@ export default function App() {
       gps, distToSurf: 0,
       screenX, screenY,
       pos: {
-        x: origX - cave.centerOffset.x,
-        y: altitude - cave.centerOffset.z,
-        z: -(origY - cave.centerOffset.y)
+        x: origX - (cave.centerOffset?.x || 0),
+        y: altitude - (cave.centerOffset?.z || 0),
+        z: -(origY - (cave.centerOffset?.y || 0))
       },
-      centerX: cave.centerOffset.x, centerY: cave.centerOffset.y, centerZ: cave.centerOffset.z
+      centerX: cave.centerOffset?.x || 0, centerY: cave.centerOffset?.y || 0, centerZ: cave.centerOffset?.z || 0
     }
     
     setSurfPointCache(prev => ({ ...prev, [sid]: newSt }))
@@ -904,8 +930,8 @@ export default function App() {
     if (idx === -1) return null
 
     const sl = cave.stationLabels[idx]
-    const origX = sl.pos.x + cave.centerOffset.x
-    const origY = sl.pos.y + cave.centerOffset.y
+    const origX = sl.pos.x + (cave.centerOffset?.x || 0)
+    const origY = sl.pos.y + (cave.centerOffset?.y || 0)
     const altitude = sl.altitude
 
     const gps = tryUtmToWgs84(origX, origY) || tryJtskToWgs84(origX, origY) || null
@@ -919,7 +945,7 @@ export default function App() {
       idx, name: sl.name, origX, origY, altitude, gps, distToSurf, 
       screenX: window.innerWidth/2 - 140, screenY: window.innerHeight/2 - 150,
       pos: sl.pos,
-      centerX: cave.centerOffset.x, centerY: cave.centerOffset.y, centerZ: cave.centerOffset.z
+      centerX: cave.centerOffset?.x || 0, centerY: cave.centerOffset?.y || 0, centerZ: cave.centerOffset?.z || 0
     }
   }
 
@@ -970,7 +996,7 @@ export default function App() {
 
   const getExt = (name: string) => '.' + name.split('.').pop()!.toLowerCase()
 
-  const runParserWorker = useCallback((buffer: ArrayBuffer, onProgress: (msg: string) => void): Promise<ParsedCave> => {
+  const runParserWorker = useCallback((buffer: ArrayBuffer, ext: string, onProgress: (msg: string) => void): Promise<ParsedCave> => {
     return new Promise((resolve, reject) => {
       const worker = new Worker(new URL('./parsers/parser.worker.ts', import.meta.url), { type: 'module' });
       worker.onmessage = (e) => {
@@ -983,7 +1009,7 @@ export default function App() {
         reject(err);
         worker.terminate();
       };
-      worker.postMessage({ buffer }, [buffer]);
+      worker.postMessage({ buffer, ext }, [buffer]);
     });
   }, []);
 
@@ -1001,8 +1027,8 @@ export default function App() {
 
     // Doplníme GPS pre všetky labely, aby sme vedeli detegovať projekciu projektu
     parsed.stationLabels.forEach(sl => {
-      const origX = sl.pos.x + parsed.centerOffset.x
-      const origY = sl.pos.y + parsed.centerOffset.y
+      const origX = sl.pos.x + (parsed.centerOffset?.x || 0)
+      const origY = sl.pos.y + (parsed.centerOffset?.y || 0)
       sl.gps = tryUtmToWgs84(origX, origY) || tryJtskToWgs84(origX, origY) || null
     })
 
@@ -1013,7 +1039,7 @@ export default function App() {
       const hasBit = !!(hasBitmap)
       return { 
         ...prev, 
-        clippingHeight: parsed.bounds.max.z + parsed.centerOffset.z,
+        clippingHeight: parsed.bounds.max.z + (parsed.centerOffset?.z || 0),
         // Pre PLY zapneme steny a vypneme stanice/merania
         showScraps: isPLY ? true : prev.showScraps,
         showStations: isPLY ? false : prev.showStations,
@@ -1045,25 +1071,13 @@ export default function App() {
     setProgress(10)
 
     try {
-      let parsed: ParsedCave
       setLoadingStatus('loading_file')
 
       const buf = await file.arrayBuffer()
       setLastLoadedBuffer(buf.slice(0))
       setProgress(50)
 
-      if (ext === '.plt') {
-        const text = new TextDecoder().decode(buf)
-        parsed = parsePlt(text, setLoadingStatus)
-      } else if (ext === '.ply') {
-        parsed = parsePly(buf, setLoadingStatus)
-      } else {
-        if (ext === '.lox') {
-          parsed = await runParserWorker(buf, setLoadingStatus)
-        } else {
-          parsed = parseSvx(buf, setLoadingStatus)
-        }
-      }
+      const parsed = await runParserWorker(buf, ext, setLoadingStatus)
 
       setLoadingStatus('finalizing')
       setProgress(95)
@@ -1112,17 +1126,7 @@ export default function App() {
       setProgress(60)
       setLoadedFile({ name: label, size: buf.byteLength, ext })
       
-      let parsed: ParsedCave
-      if (ext === '.plt') {
-        const text = new TextDecoder().decode(buf)
-        parsed = parsePlt(text, setLoadingStatus)
-      } else if (ext === '.ply') {
-        parsed = parsePly(buf, setLoadingStatus)
-      } else if (ext === '.lox') {
-        parsed = await runParserWorker(buf, setLoadingStatus)
-      } else {
-        parsed = parseSvx(buf, setLoadingStatus)
-      }
+      const parsed = await runParserWorker(buf, ext, setLoadingStatus)
 
       if (parsed.segments.length === 0 && parsed.stations.length === 0 && parsed.pointCount === 0)
         throw new Error('Súbor neobsahuje žiadne dáta.')
@@ -1449,8 +1453,8 @@ export default function App() {
     }
     if (minZ === Infinity) return null
     return {
-      minAlt: minZ + cave.centerOffset.z,
-      maxAlt: maxZ + cave.centerOffset.z
+      minAlt: minZ + (cave.centerOffset?.z || 0),
+      maxAlt: maxZ + (cave.centerOffset?.z || 0)
     }
   }, [cave, opts.scrapsAltitude, opts.traverseAltitude])
 
@@ -1744,7 +1748,7 @@ export default function App() {
                 >
                   📁 {t('welcome.selectFile')}
                 </button>
-                <input ref={fileInputRef} type="file" accept=".lox,.3d,.plt" onChange={e => {
+                <input ref={fileInputRef} type="file" accept=".lox,.3d,.plt,.ply" onChange={e => {
                   const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''
                 }} />
               </div>
@@ -1959,29 +1963,39 @@ export default function App() {
                     <span className="loading-3d">{t('ui.init3d')}</span>
                   </div>
                 }>
-                  <CaveViewer3D
-                    cave={cave}
-                    options={opts}
-                    onStationClick={handleStationClick}
-                    onSurfaceClick={handleSurfaceClick}
-                    onMoveStateChange={setIsModelMoving}
-                    onCameraUpdate={setCameraData}
-                    contourInterval={contourLevels.major}
-                    minorInterval={contourLevels.minor}
-                    onProcessingStart={setProcessingInfo}
-                    onProcessingEnd={() => setProcessingInfo(null)}
-                    fitTrigger={fitTrigger}
-                    selectedStations={selectedStations}
-                    activeProfilePoints={activeProfilePoints}
-                    manualConnection={
-                      selectedStations.length === 2 && selectedStations[0] && selectedStations[1]
-                        ? {
-                            p1: { x: selectedStations[0].origX - cave.centerOffset.x, y: selectedStations[0].origY - cave.centerOffset.y, z: selectedStations[0].altitude - cave.centerOffset.z },
-                            p2: { x: selectedStations[1].origX - cave.centerOffset.x, y: selectedStations[1].origY - cave.centerOffset.y, z: selectedStations[1].altitude - cave.centerOffset.z }
-                          }
-                        : null
-                    }
-                  />
+                  <ErrorBoundary>
+                    <CaveViewer3D
+                      cave={cave}
+                      options={opts}
+                      onStationClick={handleStationClick}
+                      onSurfaceClick={handleSurfaceClick}
+                      onMoveStateChange={setIsModelMoving}
+                      onCameraUpdate={setCameraData}
+                      contourInterval={contourLevels.major}
+                      minorInterval={contourLevels.minor}
+                      onProcessingStart={setProcessingInfo}
+                      onProcessingEnd={() => setProcessingInfo(null)}
+                      fitTrigger={fitTrigger}
+                      selectedStations={selectedStations}
+                      activeProfilePoints={activeProfilePoints}
+                      manualConnection={
+                        selectedStations.length === 2 && selectedStations[0] && selectedStations[1]
+                          ? {
+                              p1: { 
+                                x: selectedStations[0].origX - (cave.centerOffset?.x || 0), 
+                                y: selectedStations[0].origY - (cave.centerOffset?.y || 0), 
+                                z: selectedStations[0].altitude - (cave.centerOffset?.z || 0) 
+                              },
+                              p2: { 
+                                x: selectedStations[1].origX - (cave.centerOffset?.x || 0), 
+                                y: selectedStations[1].origY - (cave.centerOffset?.y || 0), 
+                                z: selectedStations[1].altitude - (cave.centerOffset?.z || 0) 
+                              }
+                            }
+                          : null
+                      }
+                    />
+                  </ErrorBoundary>
                 </Suspense>
 
                 {/* Station detail card overlay */}
@@ -2107,7 +2121,7 @@ export default function App() {
                             <button onClick={() => setOpts(p => ({ ...p, clippingHeight: p.clippingHeight - 1 }))}
                               style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #334155', background: '#1e293b', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>-</button>
                             <input type="range" className="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-                              min={cave.bounds.min.z + cave.centerOffset.z - 10} max={cave.bounds.max.z + cave.centerOffset.z + 10}
+                              min={(cave.bounds.min.z + (cave.centerOffset?.z || 0)) - 10} max={(cave.bounds.max.z + (cave.centerOffset?.z || 0)) + 10}
                               step={0.1} value={opts.clippingHeight} onChange={(e) => setOpts(p => ({ ...p, clippingHeight: parseFloat(e.target.value) }))} />
                             <button onClick={() => setOpts(p => ({ ...p, clippingHeight: p.clippingHeight + 1 }))}
                               style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #334155', background: '#1e293b', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>+</button>
@@ -2321,6 +2335,58 @@ export default function App() {
                                 setOpts(p => ({ ...p, useSurfaceNet: newVal, smoothScraps: newVal ? false : p.smoothScraps, accurateScraps: newVal ? false : p.accurateScraps }));
                               }} role="switch"
                               aria-checked={opts.useSurfaceNet} tabIndex={0} />
+                          </div>
+                        )}
+
+                        {cave && cave.isLiDAR && (
+                          <div style={{ marginTop: '12px', padding: '8px', background: 'rgba(15,23,42,0.4)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div style={{ fontSize: '10px', color: '#4fc3f7', fontWeight: 800, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                              LiDAR ANALÝZA
+                            </div>
+                            <div className="toggle-row">
+                              <label className="toggle-label">{lang === 'sk' ? 'Podľa výšky' : 'By Elevation'}</label>
+                              <div className={`switch${opts.scrapsAltitude ? ' on' : ''}`}
+                                onClick={() => setOpts(p => ({ ...p, scrapsAltitude: !p.scrapsAltitude, scrapsIntensity: false, scrapsClassification: false }))} 
+                                role="switch" aria-checked={opts.scrapsAltitude} tabIndex={0} />
+                            </div>
+                            <div className="toggle-row">
+                              <label className="toggle-label">{lang === 'sk' ? 'Podľa intenzity' : 'By Intensity'}</label>
+                              <div className={`switch${opts.scrapsIntensity ? ' on' : ''}`}
+                                onClick={() => setOpts(p => ({ ...p, scrapsAltitude: false, scrapsIntensity: !p.scrapsIntensity, scrapsClassification: false }))} 
+                                role="switch" aria-checked={opts.scrapsIntensity} tabIndex={0} />
+                            </div>
+                            <div className="toggle-row">
+                              <label className="toggle-label">{lang === 'sk' ? 'Podľa klasifikácie' : 'By Classification'}</label>
+                              <div className={`switch${opts.scrapsClassification ? ' on' : ''}`}
+                                onClick={() => setOpts(p => ({ ...p, scrapsAltitude: false, scrapsIntensity: false, scrapsClassification: !p.scrapsClassification }))} 
+                                role="switch" aria-checked={opts.scrapsClassification} tabIndex={0} />
+                            </div>
+                            
+                            <div style={{ fontSize: '9px', color: '#64748b', marginTop: '12px', marginBottom: '6px', fontWeight: 600 }}>VRSTVY (FILTER)</div>
+                            <div className="toggle-row">
+                              <label className="toggle-label">
+                                <div className="dot" style={{ background: '#d2b48c', width: '8px', height: '8px' }} />
+                                {lang === 'sk' ? 'Povrch / Terén' : 'Ground'}
+                              </label>
+                              <div className={`switch${opts.showGround ? ' on' : ''}`}
+                                onClick={() => toggleOpt('showGround')} role="switch" aria-checked={opts.showGround} tabIndex={0} />
+                            </div>
+                            <div className="toggle-row">
+                              <label className="toggle-label">
+                                <div className="dot" style={{ background: '#228b22', width: '8px', height: '8px' }} />
+                                {lang === 'sk' ? 'Vegetácia' : 'Vegetation'}
+                              </label>
+                              <div className={`switch${opts.showVegetation ? ' on' : ''}`}
+                                onClick={() => toggleOpt('showVegetation')} role="switch" aria-checked={opts.showVegetation} tabIndex={0} />
+                            </div>
+                            <div className="toggle-row">
+                              <label className="toggle-label">
+                                <div className="dot" style={{ background: '#4169e1', width: '8px', height: '8px' }} />
+                                {lang === 'sk' ? 'Jaskynné chodby' : 'Cave Passages'}
+                              </label>
+                              <div className={`switch${opts.showCaveLiDAR ? ' on' : ''}`}
+                                onClick={() => toggleOpt('showCaveLiDAR')} role="switch" aria-checked={opts.showCaveLiDAR} tabIndex={0} />
+                            </div>
                           </div>
                         )}
                         <div className="toggle-row">

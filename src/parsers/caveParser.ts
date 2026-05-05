@@ -60,8 +60,12 @@ export interface ParsedCave {
   scrapCount:    number
   pointCount:    number      // Added for point clouds
   hasSurface:    boolean
-  points?:       Vec3[]      // Added for point clouds
-  pointColors?:  Float32Array // Added for point clouds (RGB)
+  points?:       Float32Array // Points as [x, y, z, ...]
+  pointColors?:  Float32Array // Points as [r, g, b, ...] (0-1)
+  pointNormals?: Float32Array // Points as [nx, ny, nz, ...]
+  pointIntensity?: Float32Array // Intensity values
+  pointClassification?: Uint8Array // Classification codes
+  isLiDAR?:      boolean      // Added for point clouds
 }
 
 // ─── LOX Parser ────────────────────────────────────────────────────────────────
@@ -434,105 +438,212 @@ export function parsePlt(text: string, onProgress?: (msg: string) => void): Pars
 // ─── PLY parser (LiDAR / Mesh) ──────────────────────────────────────────────────
 
 export function parsePly(buffer: ArrayBuffer, onProgress?: (msg: string) => void): ParsedCave {
-  const headerText = new TextDecoder().decode(new Uint8Array(buffer, 0, 1024));
-  const headerLines = headerText.split('\n');
+  // Read header more robustly (can be > 1024 bytes)
+  const bytes = new Uint8Array(buffer);
+  let headerEnd = -1;
+  const decoder = new TextDecoder();
+  
+  // Find "end_header"
+  const searchStr = 'end_header';
+  for (let i = 0; i < Math.min(bytes.length, 16384); i++) {
+    if (bytes[i] === 101 && bytes[i+1] === 110 && bytes[i+2] === 100) { // "end"
+      const chunk = decoder.decode(bytes.subarray(i, i + 20));
+      if (chunk.startsWith('end_header')) {
+        headerEnd = i + chunk.indexOf('\n') + 1;
+        if (chunk.includes('\r\n')) headerEnd = i + chunk.indexOf('\n') + 1;
+        break;
+      }
+    }
+  }
+
+  if (headerEnd === -1) throw new Error('Invalid PLY: Missing end_header');
+  
+  const headerText = decoder.decode(bytes.subarray(0, headerEnd));
+  const headerLines = headerText.split(/\r?\n/);
   
   let vertexCount = 0;
   let faceCount = 0;
-  let headerSize = 0;
   let format = '';
   
-  const properties: { name: string, type: string }[] = [];
+  const properties: { name: string, type: string, size: number, offset: number }[] = [];
+  let currentElement = '';
+  let currentStride = 0;
   
-  for (let i = 0; i < headerLines.length; i++) {
-    const line = headerLines[i].trim();
-    headerSize += line.length + 1;
-    if (line === 'end_header') break;
-    
-    const parts = line.split(/\s+/);
+  const typeSizes: Record<string, number> = {
+    'char': 1, 'uchar': 1, 'short': 2, 'ushort': 2, 'int': 4, 'uint': 4, 'float': 4, 'double': 8,
+    'int8': 1, 'uint8': 1, 'int16': 2, 'uint16': 2, 'int32': 4, 'uint32': 4, 'float32': 4, 'float64': 8
+  };
+
+  for (const line of headerLines) {
+    const parts = line.trim().split(/\s+/);
     if (parts[0] === 'format') format = parts[1];
     if (parts[0] === 'element') {
+      currentElement = parts[1];
       if (parts[1] === 'vertex') vertexCount = parseInt(parts[2]);
       if (parts[1] === 'face') faceCount = parseInt(parts[2]);
     }
-    if (parts[0] === 'property' && vertexCount > 0 && faceCount === 0) {
-      properties.push({ type: parts[1], name: parts[2] });
+    if (parts[0] === 'property' && currentElement === 'vertex') {
+      const type = parts[1];
+      const name = parts[2];
+      const size = typeSizes[type] || 4;
+      properties.push({ name, type, size, offset: currentStride });
+      currentStride += size;
     }
   }
 
   if (format !== 'binary_little_endian') {
-    throw new Error('Only binary_little_endian PLY is supported for now.');
+    throw new Error('Support for ASCII or Big Endian PLY not implemented yet.');
   }
 
-  if (onProgress) onProgress('parsing_model');
+  if (onProgress) onProgress(vertexCount > 500000 ? 'loading_large_lidar' : 'parsing_model');
 
-  const dv = new DataView(buffer, headerSize);
-  let offset = 0;
+  const vertexStride = currentStride;
+  const dv = new DataView(buffer, headerEnd);
   
-  // Calculate vertex size
-  let vertexStride = 0;
-  properties.forEach(p => {
-    if (['float', 'int32', 'uint32'].includes(p.type)) vertexStride += 4;
-    else if (['double'].includes(p.type)) vertexStride += 8;
-    else if (['short', 'ushort'].includes(p.type)) vertexStride += 2;
-    else vertexStride += 1; // char, uchar
-  });
-
-  const points: Vec3[] = [];
+  // Allocate optimized typed arrays
+  const points = new Float32Array(vertexCount * 3);
   const pointColors = new Float32Array(vertexCount * 3);
-  const scraps: Scrap[] = [];
+  const pointNormals = new Float32Array(vertexCount * 3);
+  const pointIntensity = new Float32Array(vertexCount);
+  const pointClassification = new Uint8Array(vertexCount);
+  
+  // Property indices for fast access
+  const propIdx = {
+    x: properties.find(p => p.name === 'x'),
+    y: properties.find(p => p.name === 'y'),
+    z: properties.find(p => p.name === 'z'),
+    r: properties.find(p => p.name === 'red' || p.name === 'r' || p.name === 'diffuse_red'),
+    g: properties.find(p => p.name === 'green' || p.name === 'g' || p.name === 'diffuse_green'),
+    b: properties.find(p => p.name === 'blue' || p.name === 'b' || p.name === 'diffuse_blue'),
+    nx: properties.find(p => p.name === 'nx' || p.name === 'normal_x'),
+    ny: properties.find(p => p.name === 'ny' || p.name === 'normal_y'),
+    nz: properties.find(p => p.name === 'nz' || p.name === 'normal_z'),
+    intensity: properties.find(p => p.name === 'intensity' || p.name === 'i' || p.name === 'scalar_Intensity'),
+    class: properties.find(p => p.name === 'classification' || p.name === 'class' || p.name === 'scalar_Classification')
+  };
 
+  let minX = Infinity, minY = Infinity, minZ = Infinity;
+  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+
+  // Faster parsing loop
   for (let i = 0; i < vertexCount; i++) {
+    const vOffset = i * vertexStride;
+    
+    // Position (mandatory)
     let x = 0, y = 0, z = 0;
-    let r = 255, g = 255, b = 255;
+    if (propIdx.x) x = dv.getFloat32(vOffset + propIdx.x.offset, true);
+    if (propIdx.y) y = dv.getFloat32(vOffset + propIdx.y.offset, true);
+    if (propIdx.z) z = dv.getFloat32(vOffset + propIdx.z.offset, true);
     
-    let vOffset = i * vertexStride;
+    points[i*3] = x; points[i*3+1] = y; points[i*3+2] = z;
     
-    properties.forEach(p => {
-      if (p.name === 'x') x = dv.getFloat32(vOffset, true);
-      else if (p.name === 'y') y = dv.getFloat32(vOffset, true);
-      else if (p.name === 'z') z = dv.getFloat32(vOffset, true);
-      else if (p.name === 'red') r = dv.getUint8(vOffset);
-      else if (p.name === 'green') g = dv.getUint8(vOffset);
-      else if (p.name === 'blue') b = dv.getUint8(vOffset);
-      
-      // Advance offset based on type
-      if (['float', 'int32', 'uint32'].includes(p.type)) vOffset += 4;
-      else if (['double'].includes(p.type)) vOffset += 8;
-      else if (['short', 'ushort'].includes(p.type)) vOffset += 2;
-      else vOffset += 1;
-    });
-    
-    points.push({ x, y, z });
-    pointColors[i * 3] = r / 255;
-    pointColors[i * 3 + 1] = g / 255;
-    pointColors[i * 3 + 2] = b / 255;
-  }
+    // Bounds
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+    if (y < minY) minY = y; if (y > maxY) maxY = y;
+    if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
 
-  offset = vertexCount * vertexStride;
-  
-  if (faceCount > 0) {
-    // Parse faces if present
-    const faces: number[][] = [];
-    for (let i = 0; i < faceCount; i++) {
-      const numIndices = dv.getUint8(offset++);
-      const face: number[] = [];
-      for (let j = 0; j < numIndices; j++) {
-        face.push(dv.getUint32(offset, true));
-        offset += 4;
-      }
-      faces.push(face);
+    // Color (optional)
+    if (propIdx.r && propIdx.g && propIdx.b) {
+      pointColors[i*3]   = dv.getUint8(vOffset + propIdx.r.offset) / 255;
+      pointColors[i*3+1] = dv.getUint8(vOffset + propIdx.g.offset) / 255;
+      pointColors[i*3+2] = dv.getUint8(vOffset + propIdx.b.offset) / 255;
+    } else {
+      pointColors[i*3] = 1; pointColors[i*3+1] = 1; pointColors[i*3+2] = 1;
     }
-    scraps.push({ vertices: points, faces });
+
+    // Normals (optional)
+    if (propIdx.nx && propIdx.ny && propIdx.nz) {
+      pointNormals[i*3]   = dv.getFloat32(vOffset + propIdx.nx.offset, true);
+      pointNormals[i*3+1] = dv.getFloat32(vOffset + propIdx.ny.offset, true);
+      pointNormals[i*3+2] = dv.getFloat32(vOffset + propIdx.nz.offset, true);
+    }
+
+    // Intensity (optional)
+    if (propIdx.intensity) {
+      pointIntensity[i] = dv.getFloat32(vOffset + propIdx.intensity.offset, true);
+    }
+
+    // Classification (optional)
+    if (propIdx.class) {
+      pointClassification[i] = dv.getUint8(vOffset + propIdx.class.offset);
+    }
   }
 
-  const result = buildResult([], points, new Map(), scraps, []);
+  // Centering
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  const cz = (minZ + maxZ) / 2;
   
-  result.points = result.stations;
-  result.pointColors = pointColors;
-  result.pointCount = vertexCount;
-  
-  return result;
+  for (let i = 0; i < vertexCount; i++) {
+    points[i*3] -= cx; points[i*3+1] -= cy; points[i*3+2] -= cz;
+  }
+
+  return {
+    segments: [],
+    stations: [],
+    stationLabels: [],
+    scraps: [],
+    surfaces: [],
+    bounds: {
+      min:    { x: minX - cx, y: minY - cy, z: minZ - cz },
+      max:    { x: maxX - cx, y: maxY - cy, z: maxZ - cz },
+      center: { x: 0, y: 0, z: 0 },
+      size:   { x: maxX - minX, y: maxY - minY, z: maxZ - minZ },
+    },
+    centerOffset: { x: cx, y: cy, z: cz },
+    stationCount: 0,
+    segmentCount: 0,
+    scrapCount: 0,
+    pointCount: vertexCount,
+    hasSurface: false,
+    isLiDAR: true,
+    points,
+    pointColors,
+    pointNormals,
+    pointIntensity,
+    pointClassification
+  };
+}
+
+/**
+ * Heuristic classification of LiDAR points.
+ * Distinguishes between Ground, Vegetation, and Cave Passages.
+ */
+export function classifyLiDAR(cave: ParsedCave) {
+  if (!cave.points || !cave.pointNormals) return;
+  const count = cave.pointCount;
+  const classes = new Uint8Array(count);
+  const points = cave.points;
+  const normals = cave.pointNormals;
+
+  // Calculate local stats if needed (simplified for performance)
+  let avgZ = 0;
+  for (let i = 0; i < count; i++) avgZ += points[i*3+2];
+  avgZ /= count;
+
+  for (let i = 0; i < count; i++) {
+    const pIdx = i * 3;
+    const nz = normals[pIdx + 2];
+    const z = points[pIdx + 2];
+
+    // 1. GROUND (Horizontal normals, relatively flat)
+    if (nz > 0.85) {
+      classes[i] = 2; // Ground
+    } 
+    // 2. VEGETATION (Random normals, usually high up)
+    else if (z > avgZ + 2 && Math.abs(nz) < 0.7) {
+      classes[i] = 4; // Vegetation
+    }
+    // 3. CAVE (Deep points, mostly vertical walls)
+    else if (z < avgZ - 5) {
+      classes[i] = 10; // Custom: Cave
+    }
+    // 4. UNCLASSIFIED
+    else {
+      classes[i] = 1; 
+    }
+  }
+  cave.pointClassification = classes;
 }
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
@@ -543,8 +654,7 @@ function buildResult(
   stationMeta: Map<number, { name: string; z: number; isEntrance?: boolean; fullLabel?: string }>,
   scraps:      Scrap[],
   surfaces:    CaveSurface[],
-  stationIds?: number[],
-  extraPoints?: Vec3[]
+  stationIds?: number[]
 ): ParsedCave {
   if (stations.length === 0 && segments.length > 0) {
     segments.forEach(s => { stations.push(s.from, s.to) })
@@ -565,9 +675,9 @@ function buildResult(
     if (v.z < minZ) minZ = v.z; if (v.z > maxZ) maxZ = v.z
   }
 
-  const cx = (minX + maxX) / 2
-  const cy = (minY + maxY) / 2
-  const cz = (minZ + maxZ) / 2
+  const cx = (isFinite(minX) && isFinite(maxX)) ? (minX + maxX) / 2 : 0
+  const cy = (isFinite(minY) && isFinite(maxY)) ? (minY + maxY) / 2 : 0
+  const cz = (isFinite(minZ) && isFinite(maxZ)) ? (minZ + maxZ) / 2 : 0
 
   const centered = segments.map(s => ({
     type: s.type,
@@ -601,6 +711,15 @@ function buildResult(
   const centerOffset: Vec3 = { x: cx, y: cy, z: cz }
   const centeredSurfaces = surfaces.map(s => ({ ...s, centerOffset }))
 
+  // Convert stations to Float32Array points for rendering
+  const pointCount = centeredStations.length
+  const pointsTyped = new Float32Array(pointCount * 3)
+  for (let i = 0; i < pointCount; i++) {
+    pointsTyped[i*3] = centeredStations[i].x
+    pointsTyped[i*3+1] = centeredStations[i].y
+    pointsTyped[i*3+2] = centeredStations[i].z
+  }
+
   return {
     segments:      centered,
     stations:      centeredStations,
@@ -617,8 +736,9 @@ function buildResult(
     stationCount:  stations.length,
     segmentCount:  segments.length,
     scrapCount:    scraps.length,
-    pointCount:    0,
+    pointCount:    pointCount,
     hasSurface:    surfaces.length > 0,
-    isLiDAR:       isLiDAR
+    isLiDAR:       isLiDAR,
+    points:        pointsTyped
   }
 }

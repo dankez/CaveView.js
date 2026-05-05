@@ -103,6 +103,17 @@ const ClippingEdges = React.memo(({ geo, planes, active, color = "#ff4444" }: { 
   );
 });
 
+// ─── LiDAR Classification Colors ──────────────────────────────────────────────
+const CLASSIFICATION_COLORS: Record<number, THREE.Color> = {
+  1:  new THREE.Color(0x888888), // Unclassified
+  2:  new THREE.Color(0xd2b48c), // Ground (Tan)
+  3:  new THREE.Color(0x228b22), // Low Veg
+  4:  new THREE.Color(0x006400), // Medium Veg
+  5:  new THREE.Color(0x004d00), // High Veg
+  6:  new THREE.Color(0xff0000), // Building
+  10: new THREE.Color(0x4169e1), // Custom: Cave (Royal Blue)
+};
+
 // ─── Point Cloud (LiDAR) ──────────────────────────────────────────────────────
 const PointCloud = React.memo(({ cave, options, clippingPlanes, onSurfaceClick, isMoving }: { cave: ParsedCave, options: ViewerOptions, clippingPlanes: any[], onSurfaceClick?: any, isMoving?: boolean }) => {
   // Ak je zapnuté vyhladenie (Organic), presný mesh (Accurate), drôtený model alebo Surface Nets, mračno bodov skryjeme
@@ -111,42 +122,91 @@ const PointCloud = React.memo(({ cave, options, clippingPlanes, onSurfaceClick, 
   const pointsRef = useRef<THREE.Points>(null!);
 
   const { geo, totalCount } = useMemo(() => {
-    if (!cave.points || cave.points.length === 0) return { geo: null, totalCount: 0 }
+    if (!cave.points || cave.pointCount === 0) return { geo: null, totalCount: 0 }
     
-    const count = cave.points.length
+    const count = cave.pointCount
     const pos = new Float32Array(count * 3)
     const colors = new Float32Array(count * 3)
     
-    // PERFORMANCE: Náhodné premiešanie indexov pre prirodzený LOD cez setDrawRange
-    const indices = Array.from({ length: count }, (_, i) => i)
-    for (let i = count - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [indices[i], indices[j]] = [indices[j], indices[i]]
+    // PERFORMANCE: Use a pre-shuffled index map only for LOD
+    // For very large datasets (> 1M), we use a simpler strategy or smaller shuffle buffer
+    const lodIndices = new Uint32Array(count)
+    for (let i = 0; i < count; i++) lodIndices[i] = i
+    
+    // Only shuffle if it's not too huge, or shuffle in chunks
+    if (count < 2000000) {
+      for (let i = count - 1; i > 0; i--) {
+        const j = (Math.random() * (i + 1)) | 0;
+        const tmp = lodIndices[i]; lodIndices[i] = lodIndices[j]; lodIndices[j] = tmp;
+      }
     }
 
     const minZ = cave.bounds.min.z
     const maxZ = cave.bounds.max.z
+    const hasNormals = !!cave.pointNormals && cave.pointNormals.length > 0;
+    const normals = hasNormals ? new Float32Array(count * 3) : null;
     
-    indices.forEach((originalIdx, i) => {
-      const p = (cave.points as any)[originalIdx]
-      if (!p) return
-      pos[i*3] = p.x; pos[i*3+1] = p.z; pos[i*3+2] = -p.y
+    for (let i = 0; i < count; i++) {
+      const originalIdx = lodIndices[i]
+      const pIdx = originalIdx * 3
+      
+      const x = cave.points[pIdx]
+      const y = cave.points[pIdx+1]
+      const z = cave.points[pIdx+2]
+
+      // Filter by classification if enabled
+      if (cave.pointClassification) {
+        const cls = cave.pointClassification[originalIdx];
+        if (cls >= 3 && cls <= 5 && !options.showVegetation) continue; // Hide vegetation
+        if (cls === 2 && !options.showGround) continue; // Hide ground
+        if (cls === 10 && !options.showCaveLiDAR) continue; // Hide cave
+      }
+      
+      // Mapping Cave (X, Y, Z_up) -> Three (X, Z_up, -Y)
+      pos[i*3] = x; pos[i*3+1] = z; pos[i*3+2] = -y
       
       if (options.scrapsAltitude) {
-        const c = elevColor(normZ(p.z, minZ, maxZ))
+        const c = elevColor(normZ(z, minZ, maxZ))
         colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b
-      } else if (p.r !== undefined) {
-        colors[i*3] = p.r / 255; colors[i*3+1] = (p.g||0) / 255; colors[i*3+2] = (p.b||0) / 255
+      } else if (options.scrapsIntensity && cave.pointIntensity) {
+        const val = cave.pointIntensity[originalIdx];
+        colors[i*3] = val; colors[i*3+1] = val; colors[i*3+2] = val;
+      } else if (options.scrapsClassification && cave.pointClassification) {
+        const cls = cave.pointClassification[originalIdx];
+        const clr = CLASSIFICATION_COLORS[cls] || CLASSIFICATION_COLORS[1];
+        colors[i*3] = clr.r; colors[i*3+1] = clr.g; colors[i*3+2] = clr.b;
+      } else if (cave.pointColors && cave.pointColors.length > pIdx + 2) {
+        colors[i*3] = cave.pointColors[pIdx]; 
+        colors[i*3+1] = cave.pointColors[pIdx+1]; 
+        colors[i*3+2] = cave.pointColors[pIdx+2];
       } else {
         colors[i*3] = 1; colors[i*3+1] = 1; colors[i*3+2] = 1
       }
-    })
+
+      if (normals && cave.pointNormals) {
+        const nx = cave.pointNormals[pIdx]
+        const ny = cave.pointNormals[pIdx+1]
+        const nz = cave.pointNormals[pIdx+2]
+        
+        // Cave Z is up. Let's assume a light from top-right
+        // We modulate the color slightly based on verticality and orientation
+        const dot = Math.max(0.4, nz * 0.6 + 0.4); 
+        colors[i*3] *= dot;
+        colors[i*3+1] *= dot;
+        colors[i*3+2] *= dot;
+        
+        // Mapping Cave (X, Y, Z_up) -> Three (X, Z_up, -Y)
+        normals[i*3] = nx; normals[i*3+1] = nz; normals[i*3+2] = -ny
+      }
+    }
     
     const g = new THREE.BufferGeometry()
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3))
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+    if (normals) g.setAttribute('normal', new THREE.BufferAttribute(normals, 3))
+    
     return { geo: g, totalCount: count }
-  }, [cave.points, cave.bounds, options.scrapsAltitude])
+  }, [cave.points, cave.pointCount, cave.bounds, options.scrapsAltitude])
 
   useFrame((state) => {
     if (!pointsRef.current || totalCount === 0) return
@@ -347,6 +407,8 @@ export interface ViewerOptions {
   scrapsSolid:         boolean
   scrapsWireframe:     boolean
   scrapsAltitude:      boolean
+  scrapsIntensity:     boolean
+  scrapsClassification: boolean
   smoothScraps:        boolean
   accurateScraps:      boolean
   showRenderCave:      boolean
@@ -369,6 +431,10 @@ export interface ViewerOptions {
   contourColor10:      string
   surfaceOpacity:      number
   surfaceColor:        string
+  // LiDAR Layers
+  showVegetation:      boolean
+  showGround:          boolean
+  showCaveLiDAR:       boolean
   surfaceTextureOffset: { x: number, y: number }
   surfaceTextureScale:  { x: number, y: number }
   surfaceTextureCalibration?: {
@@ -575,8 +641,8 @@ function BoundingBox({ cave, show, options: o }: { cave: ParsedCave, show: boole
           { c: dtm.samples - 1, r: dtm.lines - 1 }
         ]
         corners.forEach(p => {
-          const wx = calib.xOrigin + p.c * calib.xx + p.r * calib.xy - cx.x
-          const wy = calib.yOrigin + p.c * calib.yx + p.r * calib.yy - cx.y
+          const wx = calib.xOrigin + p.c * calib.xx + p.r * calib.xy - (cx?.x || 0)
+          const wy = calib.yOrigin + p.c * calib.yx + p.r * calib.yy - (cx?.y || 0)
           // Pridáme len rovinné súradnice (Y v Three.js je výška, tú nastavíme nižšie)
           b.expandByPoint(new THREE.Vector3(wx, b.min.y, -wy))
           b.expandByPoint(new THREE.Vector3(wx, b.max.y, -wy))
@@ -588,8 +654,8 @@ function BoundingBox({ cave, show, options: o }: { cave: ParsedCave, show: boole
           if (data[i] < sMinZ) sMinZ = data[i]
           if (data[i] > sMaxZ) sMaxZ = data[i]
         }
-        b.min.y = Math.min(b.min.y, sMinZ - cx.z)
-        b.max.y = Math.max(b.max.y, sMaxZ - cx.z)
+        b.min.y = Math.min(b.min.y, sMinZ - (cx?.z || 0))
+        b.max.y = Math.max(b.max.y, sMaxZ - (cx?.z || 0))
       })
     }
 
@@ -1353,8 +1419,8 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
                 '#include <begin_vertex>',
                 `#include <begin_vertex>
                  // x = caveX, -z = caveY
-                 float vx = position.x + ${cave.centerOffset.x};
-                 float vy = -position.z + ${cave.centerOffset.y};
+                 float vx = position.x + ${cave.centerOffset?.x || 0.0};
+                 float vy = -position.z + ${cave.centerOffset?.y || 0.0};
                  float svgX = uAffine[0] * vx + uAffine[1] * vy + uAffine[2];
                  float svgY = uAffine[3] * vx + uAffine[4] * vy + uAffine[5];
                  // Normalizácia na 0..1 (predpokladáme 2048x2048 canvas pre TH2 alebo natural size pre SVG)
@@ -1976,6 +2042,16 @@ function SceneBackground({ texture, color }: { texture: THREE.Texture | null, co
   return null
 }
 
+function RaycasterManager() {
+  const { raycaster } = useThree()
+  useEffect(() => {
+    if (raycaster.params.Points) {
+      raycaster.params.Points.threshold = 0.5;
+    }
+  }, [raycaster]);
+  return null
+}
+
 function CameraMonitor({ onUpdate }: { onUpdate: (data: { dist: number, fov: number, height: number }) => void }) {
   const { camera, size } = useThree()
   
@@ -2129,15 +2205,6 @@ const CaveViewer3D = ({
   const [isMoving, setIsMoving] = useState(false)
   const [camData, setCamData] = useState<{ dist: number, fov: number, height: number } | null>(null)
   const movingTimeout = useRef<any>(null)
-  const { raycaster } = useThree()
-
-  // PERFORMANCE & INTERACTION: Zvýšenie prahu pre mračná bodov (PLY) aby bolo meranie použiteľné
-  useEffect(() => {
-    if (raycaster.params.Points) {
-      raycaster.params.Points.threshold = 0.5;
-    }
-  }, [raycaster.params.Points]);
-
   const startStopTimeout = useCallback(() => {
     if (movingTimeout.current) clearTimeout(movingTimeout.current)
     movingTimeout.current = setTimeout(() => {
@@ -2251,6 +2318,7 @@ const CaveViewer3D = ({
       onWheel={() => handleCameraChange()}
     >
       <SceneBackground texture={bgTexture} color={o.colorBackground} />
+      <RaycasterManager />
       <ambientLight intensity={0.25} /> {/* Znížené pre lepší kontrast tieňov */}
       <directionalLight position={[1, 3, 1]}    intensity={0.6} />
       <directionalLight position={[-2, 1, -2]} intensity={0.3} />
@@ -2404,22 +2472,32 @@ export default React.memo(CaveViewer3D)
 // ─── Map Georeferencing Utilities ─────────────────────────────────────────────
 
 function solveAffine(matches: { src: {x:number, y:number}, dst: {x:number, y:number} }[]) {
-  if (matches.length < 2) return { a:1, b:0, c:0, d:0, e:1, f:0 }
+  if (!matches || matches.length < 2) return { a:1, b:0, c:0, d:0, e:1, f:0 }
   
   let srcX = 0, srcY = 0, dstX = 0, dstY = 0
-  matches.forEach(m => { srcX += m.src.x; srcY += m.src.y; dstX += m.dst.x; dstY += m.dst.y })
-  srcX /= matches.length; srcY /= matches.length; dstX /= matches.length; dstY /= matches.length
+  let count = 0
+  matches.forEach(m => {
+    if (m && m.src && m.dst && isFinite(m.src.x) && isFinite(m.src.y)) {
+      srcX += m.src.x; srcY += m.src.y; dstX += m.dst.x; dstY += m.dst.y
+      count++
+    }
+  })
+  if (count < 2) return { a:1, b:0, c:0, d:0, e:1, f:0 }
+  
+  srcX /= count; srcY /= count; dstX /= count; dstY /= count
   
   let sxx=0, sxy=0, syy=0, sxdx=0, sxdy=0, sydx=0, sydy=0
   matches.forEach(m => {
-    const dx = m.src.x - srcX, dy = m.src.y - srcY
-    const dDx = m.dst.x - dstX, dDy = m.dst.y - dstY
-    sxx += dx*dx; sxy += dx*dy; syy += dy*dy
-    sxdx += dx*dDx; sxdy += dx*dDy; sydx += dy*dDx; sydy += dy*dDy
+    if (m && m.src && m.dst && isFinite(m.src.x) && isFinite(m.src.y)) {
+      const dx = m.src.x - srcX, dy = m.src.y - srcY
+      const dDx = m.dst.x - dstX, dDy = m.dst.y - dstY
+      sxx += dx*dx; sxy += dx*dy; syy += dy*dy
+      sxdx += dx*dDx; sxdy += dx*dDy; sydx += dy*dDx; sydy += dy*dDy
+    }
   })
   
   const det = sxx * syy - sxy * sxy
-  if (Math.abs(det) < 1e-10) return { a:1, b:0, c:0, d:0, e:1, f:0 }
+  if (!isFinite(det) || Math.abs(det) < 1e-12) return { a:1, b:0, c:0, d:0, e:1, f:0 }
   
   const a = (sxdx * syy - sydx * sxy) / det
   const b = (sydx * sxx - sxdx * sxy) / det
@@ -2427,6 +2505,11 @@ function solveAffine(matches: { src: {x:number, y:number}, dst: {x:number, y:num
   const e = (sydy * sxx - sxdy * sxy) / det
   const c = dstX - a * srcX - b * srcY
   const f = dstY - d * srcX - e * srcY
+  
+  // Final check for validity
+  if (!isFinite(a) || !isFinite(b) || !isFinite(c) || !isFinite(d) || !isFinite(e) || !isFinite(f)) {
+    return { a:1, b:0, c:0, d:0, e:1, f:0 }
+  }
   
   return { a, b, c, d, e, f }
 }

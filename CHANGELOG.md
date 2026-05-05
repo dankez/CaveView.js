@@ -1,5 +1,12 @@
 # Changelog
 
+## [release-2026-05-05-1] - 2026-05-05
+### LiDAR Segmentácia & Klasifikácia (v1.3.3)
+- **Heuristická Detekcia:** Implementovaný motor pre automatickú segmentáciu LiDAR dát na Terén (Ground), Vegetáciu a Jaskynné chodby (Cave) pomocou analýzy normál a relatívnej výšky.
+- **Vrstvový Filter:** Pridaná možnosť selektívne skrývať/zobrazovať vrstvy (napr. skryť vegetáciu pre lepší pohľad na terén alebo jaskyňu).
+- **LiDAR Analýza UI:** Nová sekcia v bočnom paneli pre prepínanie módov zobrazenia (RGB, Elevation, Intensity, Classification).
+- **Zbgis DMR:** Príprava pre integráciu priameho sťahovania DMR dát (v procese).
+
 ## [release-2026-05-03-2] - 2026-05-03
 ### Optimalizácia & Finalizácia
 - **UI Consistency:** Zjednotenie verziových štítkov na v1.3.2 naprieč celou aplikáciou.

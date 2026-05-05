@@ -13,3 +13,7 @@ test-results/
 .env
 .env.local
 .env.*.local
+
+# Large test models (> 20MB)
+test_model/*.ply
+!test_model/Vetrna_dira_merge.ply
