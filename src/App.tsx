@@ -833,6 +833,10 @@ export default function App() {
     const sl = cave.stationLabels[idx]
     if (!sl) return
 
+    // Ak nie sme v režime merania a nie je CTRL, chytáme IBA polygonové body (majú meno)
+    const isPolygon = sl.name !== ''
+    if (!isMeasuringMode && !ctrlKey && !isPolygon) return
+
     const origX = sl.pos.x + (cave.centerOffset?.x || 0)
     const origY = sl.pos.y + (cave.centerOffset?.y || 0)
     const altitude = sl.altitude
@@ -2003,6 +2007,7 @@ export default function App() {
                       fitTrigger={fitTrigger}
                       selectedStations={selectedStations}
                       activeProfilePoints={activeProfilePoints}
+                      isMeasuringMode={isMeasuringMode}
                       manualConnection={
                         selectedStations.length === 2 && selectedStations[0] && selectedStations[1]
                           ? {
@@ -2342,9 +2347,33 @@ export default function App() {
                                 </div>
                               </div>
                               <input 
-                                type="range" min="0" max="20" step="1"
+                                type="range" min="0" max="20" step="0.1"
                                 value={opts.organicLevel}
                                 onChange={(e) => setOpts(p => ({ ...p, organicLevel: parseFloat(e.target.value) }))}
+                                style={{ width: '100%', height: 4, borderRadius: 2, appearance: 'none', background: 'rgba(255,255,255,0.1)', outline: 'none' }}
+                              />
+                            </div>
+
+                            {/* Vypuklosť (Bulge) - dodatočná dilatácia modelu */}
+                            <div style={{ marginBottom: 8 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>{lang === 'sk' ? 'Vypuklosť (Bulge)' : 'Bulge / Dilation'}</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <button 
+                                    onClick={() => setOpts(p => ({ ...p, organicDilation: Math.max(-5, Math.round((p.organicDilation - 0.1) * 10) / 10) }))}
+                                    className="debug-btn"
+                                  >-</button>
+                                  <span className="debug-val" style={{ minWidth: '24px', textAlign: 'center' }}>{opts.organicDilation.toFixed(2)}</span>
+                                  <button 
+                                    onClick={() => setOpts(p => ({ ...p, organicDilation: Math.min(10, Math.round((p.organicDilation + 0.1) * 10) / 10) }))}
+                                    className="debug-btn"
+                                  >+</button>
+                                </div>
+                              </div>
+                              <input 
+                                type="range" min="-5" max="10" step="0.05"
+                                value={opts.organicDilation}
+                                onChange={(e) => setOpts(p => ({ ...p, organicDilation: parseFloat(e.target.value) }))}
                                 style={{ width: '100%', height: 4, borderRadius: 2, appearance: 'none', background: 'rgba(255,255,255,0.1)', outline: 'none' }}
                               />
                             </div>

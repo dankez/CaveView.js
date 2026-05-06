@@ -28,14 +28,28 @@ Používa sa pre presné (Accurate) modely na odstránenie šumu bez straty obje
   2. $V'' = V' + \mu \cdot \Delta V'$
   kde $\lambda > 0$ a $\mu < -\lambda$ (typicky $\lambda = 0.5, \mu = -0.53$).
 
+### 1.4 Dilation / Bulge (Model Offset)
+Umožňuje "nafúknutie" alebo "zúženie" výsledného meshu posunom vrcholov v smere ich normál.
+- **Princíp**: Každý vrchol $V$ sa posunie o hodnotu $d$ (dilation) v smere normály $N$.
+- **Vzorec**:
+  $$V_{final} = V_{smooth} + (d \cdot N)$$
+  Kde $N$ je vážený priemer normál okolitých trojuholníkov.
+
 ---
 
 ## 2. Spracovanie a Interakcia
 
-### 2.1 LiDAR Raycasting (Point Cloud Hit Detection)
-Aby bolo možné merať vzdialenosti na mračnách bodov s miliónmi prvkov, používame adaptívny raycasting.
-- **Threshold**: Nastavený na $0.5m$ (v porovnaní so štandardným $0.1m$), čo zabezpečuje spoľahlivé zachytenie bodov aj pri redších skenoch.
-- **LOD (Level of Detail)**: Dynamické vykresľovanie drawRange podľa vzdialenosti kamery pre udržanie 60 FPS.
+### 2.1 LiDAR Raycasting & LOD (Level of Detail)
+Aplikácia používa progresívny systém zjemňovania pre plynulosť pri obrovských dátach.
+- **Dynamický Stride**: Počas pohybu kamery sa vykresľuje len každý 16. bod (stride=16).
+- **Progresívne zjemňovanie**: Po zastavení kamery sa v 4 krokoch dopĺňajú zvyšné body (16 -> 8 -> 4 -> 2 -> 1), kým model nedosiahne plnú vernosť.
+- **Voxelová mriežka**: Pre rýchlu detekciu duplicity a rovnomernú decimáciu používame 3D hash mriežku s limitom 1 000 000 unikátnych bodov pre GPU buffer.
+
+### 2.2 Režim merania a Gating interakcie
+Implementovali sme striktnú logiku filtrovania udalostí na ochranu pred náhodným výberom LiDAR dát.
+- **Navigation Mode**: Raycaster ignoruje vrstvy `PointCloud`, `OrganicShell` a `TerrainMesh`.
+- **Polygon Filtering**: V komponente `ClickableStations` sú povolené len stanice s príznakom `isPolygon` (t.j. stanice s menom z LOX/PLT).
+- **Measurement Mode**: Aktivuje všetky vrstvy a umožní presné meranie vzdialeností a súradníc na ľubovoľnom povrchu.
 
 ### 2.2 Vertikálne profilovanie (Clipping)
 V LochViewer implementujeme analytické rezanie cez `clippingPlanes`.
@@ -56,4 +70,4 @@ V LochViewer implementujeme analytické rezanie cez `clippingPlanes`.
 - **Indexovanie**: Prevod lokálnych súradníc staníc na globálny jaskynný priestor s centrovaním na ťažisko modelu.
 
 ---
-*Dokumentácia verzie: release-2026-05-03-2*
+*Dokumentácia verzie: release-2026-05-06-02*

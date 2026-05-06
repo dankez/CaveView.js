@@ -40,10 +40,17 @@ LochViewer prioritizes user security and data protection. An independent securit
   - **Organic (Silk)**: New "Silk/Fabric" membrane effect using high-tension Laplacian smoothing.
   - **Triangle Mesh (Accurate)**: Precision reconstruction using Taubin non-shrinking algorithm.
   - **Surface Nets**: Professional dual-contouring topology for seamless cave meshes.
+  - **Bulge / Dilation Control**: Interactive slider to adjust model volume (dilation/erosion) for a better fit or visual clarity.
 - **Pure Wireframe Mode**: Interactive triangular net visualization that hides raw points for a clean, structural view.
 - **Analytical Coloring**: Support for elevation gradients (Color by height) on both solid surfaces and wireframes.
 - **Customization**: Dedicated color picker for cave walls and LiDAR meshes in the sidebar.
-- **Interactive Analysis**: Full support for point info, interactive measuring directly on meshes, and vertical sections.
+- **Smart Ceiling Fix**: Optimized PLY processing that prevents automatic classification from cutting off cave ceilings, ensuring full vertical fidelity.
+
+### 📏 Measurement Mode & Interaction Control
+- **Strict Gating**: New toggle to switch between "Navigation" and "Measurement" modes.
+- **Safety First**: In Navigation mode, the 3D model ignores LiDAR points and meshes, making it impossible to accidentally click on dense clouds.
+- **Polygon Priority**: Only survey stations (LOX/PLT) are interactive when measurement is off, ensuring fast and precise cave traverse analysis.
+- **Full Analysis**: Activating Measurement Mode restores full interaction with all layers (LiDAR, Terrain, Organic Shell).
 
 ### ✂️ Advanced Spatial Analysis (Clipping & Profiles)
 - **Highlighted Intersection Edges**: Real-time rendering of intersection lines between clipping planes and 3D models (cave walls, terrain, organic LiDAR).
@@ -114,10 +121,17 @@ LochViewer kladie veľký dôraz na bezpečnosť používateľov a ochranu dát.
   - **Organický (Silk)**: Nový efekt „napnutej látky“ (hodvábu) pomocou Laplacian vyhladzovania.
   - **Trojuholník / Mesh**: Presná rekonštrukcia (Taubin algorithm) pre technickú analýzu.
   - **Surface Nets**: Profesionálna dual-contouring topológia pre plynulé modely.
+  - **Vypuklosť (Bulge/Dilation)**: Interaktívny posuvník pre dodatočnú dilatáciu modelu, umožňujúci "nafúknutie" alebo zúženie rekonštruovanej jaskyne.
 - **Čistý drôtený model**: Interaktívna trojuholníková sieť, ktorá skryje surové body pre lepšiu prehľadnosť geometrie.
 - **Analytické vyfarbenie**: Podpora výškových gradientov (Farebné podľa výšky) pre plné modely aj drôtenú sieť.
 - **Personalizácia**: Vlastný výber farieb pre LiDAR modely pomocou Color Pickera v sidebare.
-- **Interaktívna analýza**: Plná podpora pre meranie priamo na meshi, info o bodoch a orezové roviny.
+- **Fixácia orezania stropov**: Optimalizovaný PLY processing, ktorý eliminuje chybu horizontálneho odrezávania horných častí jaskyne pri generovaní modelov.
+
+### 📏 Režim merania a kontrola interakcie
+- **Striktné bránenie (Gating)**: Nový prepínač medzi režimom navigácie a merania.
+- **Zameranie na polygon**: Ak nie je meranie aktívne, 3D model ignoruje LiDAR a terén. To zabraňuje náhodnému klikaniu na milióny bodov pri prezeraní jaskynného ťahu.
+- **Priorita jaskyne**: V základnom stave sú interaktívne IBA body polygonového ťahu (LOX/PLT), čo zaručuje bleskovú analýzu merania bez rušenia mračnom bodov.
+- **Plná analýza**: Zapnutím merania sa aktivuje raycasting pre všetky vrstvy (LiDAR, terén, organický model).
 
 ### ✂️ Pokročilá priestorová analýza (Rezy a profily)
 - **Zvýraznené hrany rezu**: Renderovanie priesečníkov medzi orezávacími rovinami a 3D modelmi (steny jaskyne, terén, organický LiDAR) v reálnom čase.

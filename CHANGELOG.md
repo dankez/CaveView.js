@@ -1,5 +1,12 @@
 # Changelog
 
+## [release-2026-05-06-02] - 2026-05-06
+### Podmienená interakcia & LiDAR Bulge (v1.4.1)
+- **Režim merania (Measurement Mode):** Implementovaný striktný gating interakcie. V základnom režime navigácie sú interaktívne IBA polygonové body (LOX/PLT), čím sa eliminuje náhodné klikanie na LiDAR mračná a terén.
+- **Vypuklosť / Dilation (Bulge):** Pridaný nový ovládací prvok pre organické modely, umožňujúci interaktívne nafúknutie alebo zúženie rekonštruovaného povrchu (offset vrcholov v smere normál).
+- **Fixácia LiDAR stropov:** Opravená kritická chyba v `parser.worker.ts`, kde heuristická klasifikácia odrezávala horné steny jaskýň. PLY súbory bez natívnej klasifikácie sú teraz spracovávané v plnom vertikálnom rozsahu.
+- **Optimalizácia interakcie:** Gating bol aplikovaný na `PointCloud`, `OrganicShell`, `TerrainMesh` a `ClickableStations` pre maximálnu presnosť pri práci s polygonovým ťahom.
+
 ## [release-2026-05-06-01] - 2026-05-06
 ### LiDAR Progresívny LOD & Optimalizácia (v1.4.0)
 - **Progresívne zjemňovanie (Refinement):** Implementovaný systém plynulého dovykresľovania bodov (stride 16 -> 8 -> 4 -> 2 -> 1) po zastavení pohybu pre maximálny detail.

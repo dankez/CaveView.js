@@ -456,9 +456,10 @@ export interface ViewerOptions {
 }
 
 // ─── Clickable stations (neviditelné gule, raycasting) & Hover Highlight ───
-function ClickableStations({ cave, onStationClick }: {
+function ClickableStations({ cave, onStationClick, isMeasuringMode }: {
   cave: ParsedCave
   onStationClick: (idx: number, screenX: number, screenY: number, ctrlKey: boolean) => void
+  isMeasuringMode: boolean
 }) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
 
@@ -499,14 +500,27 @@ function ClickableStations({ cave, onStationClick }: {
       <primitive
         object={mesh}
         onPointerOver={(e: any) => {
-          e.stopPropagation()
-          if (e.instanceId !== undefined) setHoveredIdx(e.instanceId)
+          if (e.instanceId !== undefined) {
+            const lbl = cave.stationLabels?.[e.instanceId]
+            const isPolygon = lbl && lbl.name !== ''
+            // Ak nie sme v móde merania, ignorujeme všetko okrem polygonových bodov
+            if (!isMeasuringMode && !isPolygon) return
+            
+            e.stopPropagation()
+            setHoveredIdx(e.instanceId)
+          }
         }}
         onPointerOut={() => setHoveredIdx(null)}
         onClick={(e: any) => {
-          e.stopPropagation()
           if (e.instanceId !== undefined) {
+            const lbl = cave.stationLabels?.[e.instanceId]
+            const isPolygon = lbl && lbl.name !== ''
             const ctrl = e.nativeEvent.ctrlKey || e.nativeEvent.metaKey
+            
+            // Ak nie sme v móde merania a nie je CTRL, ignorujeme všetko okrem polygonových bodov
+            if (!isMeasuringMode && !ctrl && !isPolygon) return
+
+            e.stopPropagation()
             onStationClick(e.instanceId, e.nativeEvent.clientX, e.nativeEvent.clientY, ctrl)
           }
         }}
@@ -1817,7 +1831,7 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
   );
 });
 
-const TerrainMesh = React.memo(({ surface, ...props }: any) => {
+const TerrainMesh = React.memo(({ surface, isMeasuringMode, ...props }: any) => {
   const { samples, lines } = surface.dtm;
   
   const tiles = useMemo(() => {
@@ -2081,6 +2095,7 @@ interface Props {
   minorInterval?: number
   selectedStations?: SelStation[]
   activeProfilePoints?: SelStation[] | null
+  isMeasuringMode: boolean
 }
 
 function EntranceMarkerItem({ ent, options }: { ent: any, options: ViewerOptions }) {
@@ -2174,7 +2189,7 @@ function EntranceMarkers({ cave, options }: { cave: ParsedCave, options: ViewerO
 const CaveViewer3D = ({ 
   cave, options: o, onStationClick, onSurfaceClick, onBackgroundClick, onMoveStateChange, onCameraUpdate, 
   onProcessingStart, onProcessingEnd, manualConnection, placedCaver, fitTrigger, selectedStations, activeProfilePoints,
-  contourInterval, minorInterval
+  contourInterval, minorInterval, isMeasuringMode
 }: Props) => {
   const [isMoving, setIsMoving] = useState(false)
   const [camData, setCamData] = useState<{ dist: number, fov: number, height: number } | null>(null)
