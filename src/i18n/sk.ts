@@ -104,6 +104,7 @@ export const sk = {
     title: "Merania",
     splay: "Splay merania",
     grid: "Mriežka",
+    gizmo: "Rotačný Gizmo",
     bbox: "Bounding Box",
     altitude: "Farebné podľa výšky",
     tubes: "Polygónový ťah (3D)",

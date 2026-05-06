@@ -104,6 +104,7 @@ export const fr = {
     title: "Topographie",
     splay: "Visées rayonnantes",
     grid: "Grille",
+    gizmo: "Gizmo de rotation",
     bbox: "Boîte englobante",
     altitude: "Couleur par altitude",
     tubes: "Lignes de levé 3D (tubes)",

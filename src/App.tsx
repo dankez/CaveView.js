@@ -622,7 +622,8 @@ export default function App() {
     showStationAlt:      false,
     showEntrances:       true,
     showEntranceLabels:  true,
-    showGrid:            true,
+    showGrid:            false,
+    showGizmo:           true,
     colorGrid:           '#222222',
     colorBoundingBox:    '#990000',
     showBoundingBox:     false,
@@ -2263,6 +2264,12 @@ export default function App() {
                       <div className={`switch${opts.showGrid ? ' on' : ''}`}
                         onClick={() => toggleOpt('showGrid')} role="switch"
                         aria-checked={opts.showGrid} tabIndex={0} />
+                    </div>
+                    <div className="toggle-row">
+                      <label className="toggle-label">{t('survey.gizmo')}</label>
+                      <div className={`switch${opts.showGizmo ? ' on' : ''}`}
+                        onClick={() => toggleOpt('showGizmo')} role="switch"
+                        aria-checked={opts.showGizmo} tabIndex={0} />
                     </div>
                     <div className="toggle-row">
                       <label className="toggle-label">{t('survey.bbox')}</label>

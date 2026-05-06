@@ -104,6 +104,7 @@ export const de = {
     title: "Vermessung",
     splay: "Splays (Strahlen)",
     grid: "Gitter",
+    gizmo: "Rotations-Gizmo",
     bbox: "Begrenzungsrahmen",
     altitude: "Farbe nach Höhe",
     tubes: "3D-Vermessungslinien (Röhren)",

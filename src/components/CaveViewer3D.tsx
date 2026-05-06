@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useState, useCallback, useRef } from 'react'
 import { Canvas, useThree, useFrame } from '@react-three/fiber'
-import { OrbitControls, Grid, Html, GizmoHelper, GizmoViewport } from '@react-three/drei'
+import { OrbitControls, Grid, Html, GizmoHelper, GizmoViewport, PivotControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh'
@@ -439,6 +439,7 @@ export interface ViewerOptions {
   colorSurfaceClippingEdges: string
   useSurfaceNet:       boolean
   clippingPlanes?:     any[]
+  showGizmo:           boolean
 
   // Floor Map
   floorMapSvg:         string | null
@@ -2346,11 +2347,24 @@ const CaveViewer3D = ({
       ))}
 
       {/* ─── CAVE MODEL (Movable for calibration) ─── */}
-      <group position={[
-        o.caveCalibrationOffset?.x || 0, 
-        o.caveCalibrationOffset?.z || 0, 
-        -(o.caveCalibrationOffset?.y || 0)
-      ]}>
+      <PivotControls
+        visible={o.showGizmo}
+        depthTest={false}
+        fixed={true}
+        scale={80}
+        anchor={[0, 0, 0]}
+        disableScaling={true}
+        lineWidth={3}
+        axisColors={['#ef4444', '#22c55e', '#3b82f6']}
+        onDrag={(matrix) => {
+          // Future: sync with calibration offset
+        }}
+      >
+        <group position={[
+          o.caveCalibrationOffset?.x || 0, 
+          o.caveCalibrationOffset?.z || 0, 
+          -(o.caveCalibrationOffset?.y || 0)
+        ]}>
         {/* ── Entrances ── */}
         <EntranceMarkers cave={cave} options={o} />
         
@@ -2425,7 +2439,7 @@ const CaveViewer3D = ({
 
         {/* ── Station dots & labels & clickable targets ── */}
         {o.showStations && <Stations cave={cave} options={o} />}
-        <ClickableStations cave={cave} onStationClick={onStationClick} />
+        <ClickableStations cave={cave} onStationClick={onStationClick} isMeasuringMode={isMeasuringMode} />
         <group visible={!isMoving}>
           {(o.showStationNames || o.showStationAlt) && (
             <StationLabels cave={cave} showNames={o.showStationNames} showAltitudes={o.showStationAlt} options={o} />
@@ -2434,6 +2448,7 @@ const CaveViewer3D = ({
 
         {manualConnection && <ManualConnection p1={manualConnection.p1} p2={manualConnection.p2} />}
       </group>
+      </PivotControls>
  
       {/* ── Auto-fit pri zmene jaskyne alebo aktivácii triggera ── */}
       <AutoFit cave={cave} trigger={fitTrigger} />

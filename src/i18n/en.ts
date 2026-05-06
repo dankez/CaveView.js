@@ -104,6 +104,7 @@ export const en = {
     title: "Survey",
     splay: "Splay shots",
     grid: "Grid",
+    gizmo: "Rotation Gizmo",
     bbox: "Bounding Box",
     altitude: "Color by height",
     tubes: "3D Survey legs (tubes)",
