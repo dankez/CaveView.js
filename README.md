@@ -57,6 +57,12 @@ LochViewer prioritizes user security and data protection. An independent securit
 - **Custom Analysis Colors**: Independent color pickers for cave and terrain clipping highlights to improve visual distinction in complex cross-sections.
 - **Vertical Cross-Sections**: Define precise vertical profiles by selecting two points on any model (legacy survey or LiDAR).
 
+### 🎡 Adaptive Rotation Gizmo
+- **Smart Orientation**: A professional visual aid for 3D rotation that appears dynamically during interaction.
+- **Model-Relative Scaling**: The gizmo automatically adjusts its size and line thickness to match the dimensions of the specific cave model, ensuring perfect visibility across all scales.
+- **Minimalist Aesthetic**: Ultra-thin rings and axis indicators provide a premium look without cluttering the viewport.
+- **Interactive Feedback**: Tied to the movement state, it serves as a subtle guide during navigation and disappears when the model is stable.
+
 ### 🔗 Embedding & Sharing
 - **Google Maps Style Embed**: Embed 3D models into any webpage using `<iframe>`.
 - **URL State Persistence**: All sidebar settings (themes, colors, clipping planes, terrain) are automatically saved to the URL.
@@ -137,6 +143,12 @@ LochViewer kladie veľký dôraz na bezpečnosť používateľov a ochranu dát.
 - **Zvýraznené hrany rezu**: Renderovanie priesečníkov medzi orezávacími rovinami a 3D modelmi (steny jaskyne, terén, organický LiDAR) v reálnom čase.
 - **Vlastné farby analýzy**: Nezávislé výbery farieb pre zvýraznenie rezov jaskyne a terénu pre lepšiu prehľadnosť v zložitých profiloch.
 - **Vertikálne rezy**: Definujte presné vertikálne profily výberom dvoch bodov na ľubovoľnom modeli (klasické meranie alebo LiDAR).
+
+### 🎡 Adaptívny Rotačný Gizmo
+- **Inteligentná orientácia**: Profesionálna vizuálna pomôcka pre 3D rotáciu, ktorá sa dynamicky zobrazuje počas interakcie s modelom.
+- **Relatívna mierka**: Gizmo automaticky prispôsobuje svoju veľkosť a hrúbku čiar rozmerom konkrétnej jaskyne, čo zaručuje perfektnú viditeľnosť pri malých dómoch aj veľkých systémoch.
+- **Minimalistická estetika**: Ultra-tenké prstence a indikátory osí poskytujú prémiový vzhľad bez vizuálneho šumu.
+- **Interaktívna odozva**: Nástroj je prepojený so stavom pohybu – slúži ako jemný sprievodca počas navigácie a po zastavení zmizne, aby neprekrýval model.
 
 ### 🔗 Zdieľanie a Embedovanie
 - **Google Maps Style Embed**: Možnosť vkladať 3D modely do ľubovoľných webových stránok pomocou `<iframe>`.

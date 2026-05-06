@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useState, useCallback, useRef } from 'react'
 import { Canvas, useThree, useFrame } from '@react-three/fiber'
-import { OrbitControls, Grid, Html, GizmoHelper, GizmoViewport, PivotControls } from '@react-three/drei'
+import { OrbitControls, Grid, Html, GizmoHelper, GizmoViewport } from '@react-three/drei'
 import * as THREE from 'three'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh'
@@ -455,6 +455,55 @@ export interface ViewerOptions {
   excludeModelFromClipping: boolean
   caveCalibrationOffset: { x: number, y: number, z: number }
 }
+
+// ─── Modern Gizmo (Full circles, thin lines) ───
+// ─── Modern Gizmo (Full circles, thin lines) ───
+const ModernGizmo = ({ visible, modelScale }: { visible: boolean, modelScale: number }) => {
+  if (!visible) return null;
+  
+  // Prispôsobíme hrúbku čiar mierke, aby ostali moderné a tenké
+  const tubeWidth = modelScale * 0.0001; 
+
+  return (
+    <group scale={modelScale} renderOrder={999}>
+      {/* X Axis & Ring (Red) */}
+      <mesh rotation={[0, Math.PI / 2, 0]}>
+        <torusGeometry args={[1, tubeWidth, 16, 100]} />
+        <meshBasicMaterial color="#ff4d4d" transparent opacity={0.7} depthTest={false} />
+      </mesh>
+      <mesh rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[tubeWidth, tubeWidth, 2.4, 8]} />
+        <meshBasicMaterial color="#ff4d4d" transparent opacity={0.4} depthTest={false} />
+      </mesh>
+
+      {/* Y Axis & Ring (Green) */}
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[1, tubeWidth, 16, 100]} />
+        <meshBasicMaterial color="#4dff88" transparent opacity={0.7} depthTest={false} />
+      </mesh>
+      <mesh rotation={[0, 0, 0]}>
+        <cylinderGeometry args={[tubeWidth, tubeWidth, 2.4, 8]} />
+        <meshBasicMaterial color="#4dff88" transparent opacity={0.4} depthTest={false} />
+      </mesh>
+
+      {/* Z Axis & Ring (Blue) */}
+      <mesh rotation={[0, 0, 0]}>
+        <torusGeometry args={[1, tubeWidth, 16, 100]} />
+        <meshBasicMaterial color="#4d88ff" transparent opacity={0.7} depthTest={false} />
+      </mesh>
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[tubeWidth, tubeWidth, 2.4, 8]} />
+        <meshBasicMaterial color="#4d88ff" transparent opacity={0.4} depthTest={false} />
+      </mesh>
+
+      {/* Outer White Ring */}
+      <mesh>
+        <torusGeometry args={[1.2, tubeWidth * 0.5, 16, 100]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.15} depthTest={false} />
+      </mesh>
+    </group>
+  );
+};
 
 // ─── Clickable stations (neviditelné gule, raycasting) & Hover Highlight ───
 function ClickableStations({ cave, onStationClick, isMeasuringMode }: {
@@ -2347,24 +2396,12 @@ const CaveViewer3D = ({
       ))}
 
       {/* ─── CAVE MODEL (Movable for calibration) ─── */}
-      <PivotControls
-        visible={o.showGizmo}
-        depthTest={false}
-        fixed={true}
-        scale={80}
-        anchor={[0, 0, 0]}
-        disableScaling={true}
-        lineWidth={3}
-        axisColors={['#ef4444', '#22c55e', '#3b82f6']}
-        onDrag={(matrix) => {
-          // Future: sync with calibration offset
-        }}
-      >
-        <group position={[
-          o.caveCalibrationOffset?.x || 0, 
-          o.caveCalibrationOffset?.z || 0, 
-          -(o.caveCalibrationOffset?.y || 0)
-        ]}>
+      <ModernGizmo visible={o.showGizmo && isMoving} modelScale={diag * 0.45} />
+      <group position={[
+        o.caveCalibrationOffset?.x || 0, 
+        o.caveCalibrationOffset?.z || 0, 
+        -(o.caveCalibrationOffset?.y || 0)
+      ]}>
         {/* ── Entrances ── */}
         <EntranceMarkers cave={cave} options={o} />
         
@@ -2448,7 +2485,6 @@ const CaveViewer3D = ({
 
         {manualConnection && <ManualConnection p1={manualConnection.p1} p2={manualConnection.p2} />}
       </group>
-      </PivotControls>
  
       {/* ── Auto-fit pri zmene jaskyne alebo aktivácii triggera ── */}
       <AutoFit cave={cave} trigger={fitTrigger} />

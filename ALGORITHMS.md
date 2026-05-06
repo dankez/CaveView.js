@@ -59,15 +59,16 @@ V LochViewer implementujeme analytické rezanie cez `clippingPlanes`.
 
 ---
 
-## 3. Formáty dát
+## 4. Používateľské rozhranie (UI)
 
-### 3.1 PLY (Polygon File Format)
-- Podporujeme binárne aj ASCII kódovanie.
-- **Vertex Extraction**: Automatická detekcia atribútov `x, y, z` a `red, green, blue` pre vizualizáciu textúr.
-
-### 3.2 LOX (Loch Viewer XML)
-- Proprietárny XML formát pre jaskynné polygóny.
-- **Indexovanie**: Prevod lokálnych súradníc staníc na globálny jaskynný priestor s centrovaním na ťažisko modelu.
+### 4.1 Adaptívny Rotačný Gizmo (Adaptive Rotation Gizmo)
+Nový vizuálny nástroj pre presnú orientáciu v 3D priestore.
+- **Geometria**: Skladá sa z troch torusov (prstencov) a valcov pre každú os ($x, y, z$).
+- **Dynamické škálovanie**: Gizmo automaticky prispôsobuje svoju veľkosť podľa celkových rozmerov modelu (diagonála bounding boxu).
+  - **Vzorec mierky**:
+    $$S_{gizmo} = \text{Diagonal}(Cave) \cdot 0.45$$
+- **Smart Visibility**: Aktivuje sa len počas detekcie pohybu v scéne, aby nerušil statický náhľad na model.
+- **Tenké línie**: Hrúbka čiar je normalizovaná voči mierke modelu ($S \cdot 10^{-4}$), čo zabezpečuje konzistentný "premium" vzhľad.
 
 ---
-*Dokumentácia verzie: release-2026-05-06-02*
+*Dokumentácia verzie: release-2026-05-06-03*
