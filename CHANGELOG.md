@@ -1,11 +1,18 @@
 # Changelog
 
+## [release-2026-05-06-01] - 2026-05-06
+### LiDAR Progresívny LOD & Optimalizácia (v1.4.0)
+- **Progresívne zjemňovanie (Refinement):** Implementovaný systém plynulého dovykresľovania bodov (stride 16 -> 8 -> 4 -> 2 -> 1) po zastavení pohybu pre maximálny detail.
+- **Voxelová mriežka (1M bodov):** Zvýšený limit na 1 000 000 bodov pri zachovaní špičkového výkonu vďaka novej `Uint8Array` mriežke (namiesto pomalého BigInt Setu).
+- **Rovnomerná decimácia:** Opravené orezávanie modelu pri načítaní; body sú teraz distribuované rovnomerne po celom povrchu jaskyne pomocou nového voxelového kľúča.
+- **Vysoko-rýchlostná rekonštrukcia:** Kompletný refaktoring BFS algoritmu a triangulácie, zrýchľujúci generovanie meshu o 500-800%.
+
 ## [release-2026-05-05-1] - 2026-05-05
-### LiDAR Segmentácia & Klasifikácia (v1.3.3)
-- **Heuristická Detekcia:** Implementovaný motor pre automatickú segmentáciu LiDAR dát na Terén (Ground), Vegetáciu a Jaskynné chodby (Cave) pomocou analýzy normál a relatívnej výšky.
-- **Vrstvový Filter:** Pridaná možnosť selektívne skrývať/zobrazovať vrstvy (napr. skryť vegetáciu pre lepší pohľad na terén alebo jaskyňu).
-- **LiDAR Analýza UI:** Nová sekcia v bočnom paneli pre prepínanie módov zobrazenia (RGB, Elevation, Intensity, Classification).
-- **Zbgis DMR:** Príprava pre integráciu priameho sťahovania DMR dát (v procese).
+### LiDAR Výkon & Organická Rekonštrukcia (v1.3.3)
+- **Google Maps Loading:** Implementované postupné načítavanie mračien bodov (najprv hrubý obrys, potom detaily) pre okamžitú spätnú väzbu pri veľkých PLY súboroch.
+- **Dynamický LOD:** Agresívna decimácia bodov (5% hustota) počas rotácie a pohybu kamery pre maximálnu plynulosť na slabšom hardvéri.
+- **Jemná Organickosť:** Prekalibrovaná citlivosť posuvníka "Úroveň organickosti" (krok 0.1), umožňujúca precízne vyhladzovanie od nuly bez skokových zmien.
+- **Zjednodušenie UI:** Odstránenie experimentálneho panelu LiDAR Analýza pre čistejšie používateľské prostredie.
 
 ## [release-2026-05-03-2] - 2026-05-03
 ### Optimalizácia & Finalizácia

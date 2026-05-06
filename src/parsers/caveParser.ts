@@ -569,14 +569,73 @@ export function parsePly(buffer: ArrayBuffer, onProgress?: (msg: string) => void
     }
   }
 
-  // Centering
+  // ── Voxelová decimácia (rovnomerná, celý model) ───────────────────────────
+  // OPRAVA: Predtým sa zastavilo pri MAX_POINTS → zachoval sa len začiatok súboru.
+  // Teraz: VŠETKY body prechádzajú voxelovou mriežkou; voxelový krok zabezpečí
+  // rovnomernú hustotu po celom modeli.
   const cx = (minX + maxX) / 2;
   const cy = (minY + maxY) / 2;
   const cz = (minZ + maxZ) / 2;
-  
+
+  const MAX_POINTS = 1_000_000;
+  const rangeMax = Math.max(maxX - minX, maxY - minY, maxZ - minZ);
+
+  const dX = maxX - minX, dY = maxY - minY, dZ = maxZ - minZ;
+  const approxSurface = 2 * (dX*dY + dX*dZ + dY*dZ) || rangeMax * rangeMax;
+  const surfaceVoxel = Math.sqrt(approxSurface / MAX_POINTS);
+  const voxelStep = vertexCount > MAX_POINTS
+    ? Math.max(0.005, surfaceVoxel)
+    : 0.002;
+
+  const invVoxel = 1.0 / voxelStep;
+  const voxelMap = new Map<bigint, number>();
+
+  const outPoints = new Float32Array(Math.min(vertexCount, MAX_POINTS) * 3);
+  const hasColors = !!(propIdx.r && propIdx.g && propIdx.b);
+  const outColors    = hasColors     ? new Float32Array(outPoints.length)               : new Float32Array(0);
+  const hasNativeCls = propIdx.class !== undefined;
+  const outCls       = hasNativeCls  ? new Uint8Array(Math.min(vertexCount, MAX_POINTS)) : new Uint8Array(0);
+  const hasIntensity = propIdx.intensity !== undefined;
+  const outIntensity = hasIntensity  ? new Float32Array(Math.min(vertexCount, MAX_POINTS)) : new Float32Array(0);
+
+  let outCount = 0;
+
   for (let i = 0; i < vertexCount; i++) {
-    points[i*3] -= cx; points[i*3+1] -= cy; points[i*3+2] -= cz;
+    if (outCount >= MAX_POINTS) break; 
+    const x = points[i*3];
+    const y = points[i*3+1];
+    const z = points[i*3+2];
+
+    const ix = Math.floor((x - minX) * invVoxel);
+    const iy = Math.floor((y - minY) * invVoxel);
+    const iz = Math.floor((z - minZ) * invVoxel);
+
+    const key = BigInt(ix & 0x3FFF) | (BigInt(iy & 0x3FFF) << 14n) | (BigInt(iz & 0x3FFF) << 28n);
+    if (voxelMap.has(key)) continue;
+    voxelMap.set(key, outCount);
+
+    const o3 = outCount * 3;
+    outPoints[o3]   = x - cx;
+    outPoints[o3+1] = y - cy;
+    outPoints[o3+2] = z - cz;
+
+    if (hasColors) {
+      outColors[o3]   = pointColors[i*3];
+      outColors[o3+1] = pointColors[i*3+1];
+      outColors[o3+2] = pointColors[i*3+2];
+    }
+    if (hasNativeCls) outCls[outCount] = pointClassification[i];
+    if (hasIntensity) outIntensity[outCount] = pointIntensity[i];
+
+    outCount++;
   }
+
+  if (onProgress) onProgress('finalizing');
+
+  const finalPoints  = outPoints.subarray(0, outCount * 3);
+  const finalColors  = hasColors ? outColors.subarray(0, outCount * 3) : null;
+  const finalCls     = hasNativeCls ? outCls.subarray(0, outCount) : null;
+  const finalInt     = hasIntensity ? outIntensity.subarray(0, outCount) : null;
 
   return {
     segments: [],
@@ -594,14 +653,14 @@ export function parsePly(buffer: ArrayBuffer, onProgress?: (msg: string) => void
     stationCount: 0,
     segmentCount: 0,
     scrapCount: 0,
-    pointCount: vertexCount,
+    pointCount: outCount,
     hasSurface: false,
     isLiDAR: true,
-    points,
-    pointColors,
-    pointNormals,
-    pointIntensity,
-    pointClassification
+    points:               new Float32Array(finalPoints),
+    pointColors:          finalColors  ? new Float32Array(finalColors)  : new Float32Array(outCount * 3),
+    pointNormals:         new Float32Array(0),   // normály generuje GPU, nepotrebujeme prenášať
+    pointIntensity:       finalInt     ? new Float32Array(finalInt)     : new Float32Array(0),
+    pointClassification:  finalCls     ? new Uint8Array(finalCls)       : new Uint8Array(0),
   };
 }
 
