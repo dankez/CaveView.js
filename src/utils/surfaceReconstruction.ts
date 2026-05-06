@@ -56,6 +56,40 @@ function applyTaubinSmoothing(geometry: THREE.BufferGeometry, iterations = 5): T
   return geometry;
 }
 
+function applyLaplacianSmoothing(geometry: THREE.BufferGeometry, iterations = 20, tension = 0.6): THREE.BufferGeometry {
+  const pos = geometry.attributes.position.array as Float32Array;
+  const idx = geometry.index!.array;
+  const vCount = geometry.attributes.position.count;
+  
+  for (let it = 0; it < iterations; it++) {
+    const newPos = new Float32Array(pos.length);
+    const sums = new Float32Array(pos.length);
+    const counts = new Uint32Array(vCount);
+    
+    for (let i = 0; i < idx.length; i += 3) {
+      const i1 = idx[i], i2 = idx[i+1], i3 = idx[i+2];
+      const add = (a: number, b: number) => {
+        sums[a*3]+=pos[b*3]; sums[a*3+1]+=pos[b*3+1]; sums[a*3+2]+=pos[b*3+2];
+        counts[a]++;
+      };
+      add(i1,i2); add(i1,i3); add(i2,i1); add(i2,i3); add(i3,i1); add(i3,i2);
+    }
+    
+    for (let i = 0; i < vCount; i++) {
+      if (counts[i] > 0) {
+        newPos[i*3] = pos[i*3] + (sums[i*3]/counts[i] - pos[i*3]) * tension;
+        newPos[i*3+1] = pos[i*3+1] + (sums[i*3+1]/counts[i] - pos[i*3+1]) * tension;
+        newPos[i*3+2] = pos[i*3+2] + (sums[i*3+2]/counts[i] - pos[i*3+2]) * tension;
+      } else {
+        newPos[i*3]=pos[i*3]; newPos[i*3+1]=pos[i*3+1]; newPos[i*3+2]=pos[i*3+2];
+      }
+    }
+    pos.set(newPos);
+  }
+  geometry.attributes.position.needsUpdate = true;
+  return geometry;
+}
+
 function computeAngleWeightedNormals(geometry: THREE.BufferGeometry): THREE.BufferGeometry {
   if (!geometry.index) { geometry.computeVertexNormals(); return geometry; }
   const posArr = geometry.attributes.position.array as Float32Array;
@@ -95,12 +129,30 @@ function computeAngleWeightedNormals(geometry: THREE.BufferGeometry): THREE.Buff
 }
 
 /**
- * Fast Voxel-based Shell Reconstruction (Legacy Organic).
+ * Fast Voxel-based Shell Reconstruction.
+ * 
+ * Pre LiDAR PLY:
+ *  - Adaptívny voxelSize (nie fixný maxRes) → zachová detail
+ *  - Žiadna dilatácia voxelov → body sú priamo škrupina (shrink-wrap)
+ *  - Taubin smoothing (volume-preserving) → strop sa NEzmrší
+ *  - Padding 3 voxely → bezpečný flood-fill
+ * 
+ * Pre LOX:
+ *  - Pôvodný Taubin+Laplacian hybrid ostáva nezmenený
  */
-export function reconstructSurface(points: Float32Array | {x:number, y:number, z:number}[], voxelSize = 0.5, isAccurate = false, organicLevel = 5): THREE.BufferGeometry {
+export function reconstructSurface(
+  points: Float32Array | {x:number, y:number, z:number}[], 
+  voxelSize = 0.5, 
+  isAccurate = false, 
+  organicLevel = 5, 
+  isLiDAR = false,
+  corePoints?: Float32Array,
+  dilationSteps?: number
+): THREE.BufferGeometry {
   const pCount = points instanceof Float32Array ? points.length / 3 : points.length;
   if (pCount < 10) return new THREE.BufferGeometry();
 
+  // ── 1. Bounding box ──
   let minX = Infinity, minY = Infinity, minZ = Infinity;
   let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
 
@@ -119,197 +171,173 @@ export function reconstructSurface(points: Float32Array | {x:number, y:number, z
     }
   }
 
-  const dx = maxX - minX, dy = maxY - minY, dz = maxZ - minZ;
-  const maxRes = 150;
-  let activeVoxelSize = voxelSize;
-  if (dx / activeVoxelSize > maxRes) activeVoxelSize = dx / maxRes;
-  if (dy / activeVoxelSize > maxRes) activeVoxelSize = Math.max(activeVoxelSize, dy / maxRes);
-  if (dz / activeVoxelSize > maxRes) activeVoxelSize = Math.max(activeVoxelSize, dz / maxRes);
+  // ── 2. Adaptívny voxelSize (LiDAR: max 150 buniek/os, bolo 300) ──
+  const maxDim = Math.max(maxX - minX, maxY - minY, maxZ - minZ);
+  const maxGridCells = isLiDAR ? 150 : 120;
+  const activeVoxelSize = Math.max(voxelSize, maxDim / maxGridCells);
 
-  const getVKey = (ix: number, iy: number, iz: number) => {
-    return BigInt(ix + 1000) | (BigInt(iy + 1000) << 20n) | (BigInt(iz + 1000) << 40n);
-  };
+  // ── 3. Padding (2 voxely) ──
+  const pad = activeVoxelSize * 2;
+  const pMinX = minX - pad, pMinY = minY - pad, pMinZ = minZ - pad;
 
-  const occupied = new Set<bigint>();
+  // ── 4. Flat grid (Uint8Array): bit0=occupied, bit1=exterior ──
+  const resX = Math.ceil((maxX - minX + 2*pad) / activeVoxelSize) + 1;
+  const resY = Math.ceil((maxY - minY + 2*pad) / activeVoxelSize) + 1;
+  const resZ = Math.ceil((maxZ - minZ + 2*pad) / activeVoxelSize) + 1;
+  const strideZ = 1, strideY = resZ, strideX = resY * resZ;
+  const grid = new Uint8Array(resX * resY * resZ);
+  const gi = (ix: number, iy: number, iz: number) => ix * strideX + iy * strideY + iz;
+
+  // ── 5. Voxelizácia bodov (flat grid) ──
   if (points instanceof Float32Array) {
     for (let i = 0; i < points.length; i += 3) {
-      const ix = Math.floor((points[i] - minX) / activeVoxelSize);
-      const iy = Math.floor((points[i+1] - minY) / activeVoxelSize);
-      const iz = Math.floor((points[i+2] - minZ) / activeVoxelSize);
-      occupied.add(getVKey(ix, iy, iz));
+      const ix = Math.floor((points[i]   - pMinX) / activeVoxelSize);
+      const iy = Math.floor((points[i+1] - pMinY) / activeVoxelSize);
+      const iz = Math.floor((points[i+2] - pMinZ) / activeVoxelSize);
+      if (ix>=0&&ix<resX&&iy>=0&&iy<resY&&iz>=0&&iz<resZ) grid[gi(ix,iy,iz)] |= 1;
     }
   } else {
     for (const p of points) {
-      const ix = Math.floor((p.x - minX) / activeVoxelSize);
-      const iy = Math.floor((p.y - minY) / activeVoxelSize);
-      const iz = Math.floor((p.z - minZ) / activeVoxelSize);
-      occupied.add(getVKey(ix, iy, iz));
+      const ix = Math.floor((p.x - pMinX) / activeVoxelSize);
+      const iy = Math.floor((p.y - pMinY) / activeVoxelSize);
+      const iz = Math.floor((p.z - pMinZ) / activeVoxelSize);
+      if (ix>=0&&ix<resX&&iy>=0&&iy<resY&&iz>=0&&iz<resZ) grid[gi(ix,iy,iz)] |= 1;
     }
   }
 
-  // --- KROK: Vyplnenie malých dier (Dilation) ---
-  // Sila dilatácie závisí od organicLevel (nad 7 robíme 2 kroky dilatácie)
-  if (!isAccurate && organicLevel > 0) {
-    const dilationSteps = organicLevel > 7 ? 2 : 1;
-    for (let step = 0; step < dilationSteps; step++) {
-      const toAdd = new Set<bigint>();
-      for (const vKey of occupied) {
-        const [ix, iy, iz] = [
-          Number(vKey & 0xFFFFFn) - 1000,
-          Number((vKey >> 20n) & 0xFFFFFn) - 1000,
-          Number((vKey >> 40n) & 0xFFFFFn) - 1000
-        ];
-        for (let dx = -1; dx <= 1; dx++) {
-          for (let dy = -1; dy <= 1; dy++) {
-            for (let dz = -1; dz <= 1; dz++) {
-              if (dx === 0 && dy === 0 && dz === 0) continue;
-              toAdd.add(getVKey(ix + dx, iy + dy, iz + dz));
-            }
-          }
-        }
+  // ── 6. Dilatácia pre LOX ──
+  if (!isLiDAR && !isAccurate) {
+    const tmp = new Uint8Array(grid.length); tmp.set(grid);
+    for (let ix=1;ix<resX-1;ix++) for (let iy=1;iy<resY-1;iy++) for (let iz=1;iz<resZ-1;iz++)
+      if (grid[gi(ix,iy,iz)]&1)
+        for (let ddx=-1;ddx<=1;ddx++) for (let ddy=-1;ddy<=1;ddy++) for (let ddz=-1;ddz<=1;ddz++)
+          tmp[gi(ix+ddx,iy+ddy,iz+ddz)] |= 1;
+    grid.set(tmp);
+  }
+
+  // ── 7. Core points ──
+  if (corePoints && corePoints.length > 0) {
+    for (let i=0;i<corePoints.length;i+=3) {
+      const bx=Math.floor((corePoints[i]-pMinX)/activeVoxelSize);
+      const by=Math.floor((corePoints[i+1]-pMinY)/activeVoxelSize);
+      const bz=Math.floor((corePoints[i+2]-pMinZ)/activeVoxelSize);
+      for (let ddx=-1;ddx<=1;ddx++) for (let ddy=-1;ddy<=1;ddy++) for (let ddz=-1;ddz<=1;ddz++) {
+        const nx=bx+ddx,ny=by+ddy,nz=bz+ddz;
+        if (nx>=0&&nx<resX&&ny>=0&&ny<resY&&nz>=0&&nz<resZ) grid[gi(nx,ny,nz)] |= 1;
       }
-      for (const vKey of toAdd) occupied.add(vKey);
     }
   }
 
-  const resX = Math.ceil(dx / activeVoxelSize), resY = Math.ceil(dy / activeVoxelSize), resZ = Math.ceil(dz / activeVoxelSize);
-  const exterior = new Set<bigint>();
-  const queue: [number, number, number][] = [];
-  
-  const addExterior = (ix: number, iy: number, iz: number) => {
-    const key = getVKey(ix, iy, iz);
-    if (!exterior.has(key)) {
-      exterior.add(key);
-      queue.push([ix, iy, iz]);
-    }
+  // ── 8. BFS flood-fill (flat Int32Array queue – bez BigInt) ──
+  const bfsQ = new Int32Array(resX*resY*resZ*3);
+  let qH=0, qT=0;
+  const seedExt=(ix:number,iy:number,iz:number)=>{
+    if (ix<0||ix>=resX||iy<0||iy>=resY||iz<0||iz>=resZ) return;
+    const g=gi(ix,iy,iz); if (grid[g]) return;
+    grid[g]=2; bfsQ[qT++]=ix; bfsQ[qT++]=iy; bfsQ[qT++]=iz;
   };
-
-  for (let x = -1; x <= resX; x++) {
-    for (let y = -1; y <= resY; y++) {
-      addExterior(x, y, -1); addExterior(x, y, resZ);
-    }
-  }
-  for (let x = -1; x <= resX; x++) {
-    for (let z = 0; z < resZ; z++) {
-      addExterior(x, -1, z); addExterior(x, resY, z);
-    }
-  }
-  for (let y = 0; y < resY; y++) {
-    for (let z = 0; z < resZ; z++) {
-      addExterior(-1, y, z); addExterior(resX, y, z);
+  for (let x=0;x<resX;x++) for (let y=0;y<resY;y++) { seedExt(x,y,0); seedExt(x,y,resZ-1); }
+  for (let x=0;x<resX;x++) for (let z=0;z<resZ;z++) { seedExt(x,0,z); seedExt(x,resY-1,z); }
+  for (let y=0;y<resY;y++) for (let z=0;z<resZ;z++) { seedExt(0,y,z); seedExt(resX-1,y,z); }
+  const DX=[1,-1,0,0,0,0],DY=[0,0,1,-1,0,0],DZ=[0,0,0,0,1,-1];
+  while (qH<qT) {
+    const ix=bfsQ[qH++],iy=bfsQ[qH++],iz=bfsQ[qH++];
+    for (let d=0;d<6;d++) {
+      const nx=ix+DX[d],ny=iy+DY[d],nz=iz+DZ[d];
+      if (nx<0||nx>=resX||ny<0||ny>=resY||nz<0||nz>=resZ) continue;
+      const g=gi(nx,ny,nz);
+      if (grid[g]===0){grid[g]=2;bfsQ[qT++]=nx;bfsQ[qT++]=ny;bfsQ[qT++]=nz;}
     }
   }
 
-  while (queue.length > 0) {
-    const [ix, iy, iz] = queue.pop()!;
-    for (const [dx, dy, dz] of [[1,0,0], [-1,0,0], [0,1,0], [0,-1,0], [0,0,1], [0,0,-1]]) {
-      const nx = ix + dx, ny = iy + dy, nz = iz + dz;
-      if (nx >= -1 && nx <= resX && ny >= -1 && ny <= resY && nz >= -1 && nz <= resZ) {
-        if (!occupied.has(getVKey(nx, ny, nz)) && !exterior.has(getVKey(nx, ny, nz))) {
-          addExterior(nx, ny, nz);
-        }
-      }
-    }
-  }
-
+  // ── 9. Povrchová triangulácia (int-key vertexMap) ──
   const vertices: number[] = [];
-  const indices: number[] = [];
-  const vertexMap = new Map<bigint, number>();
+  const indices:  number[] = [];
+  const vertexMap = new Map<number, number>();
 
-  const getVertex = (ix: number, iy: number, iz: number) => {
-    const key = getVKey(ix, iy, iz);
-    if (vertexMap.has(key)) return vertexMap.get(key)!;
-    const idx = vertices.length / 3;
-    vertices.push(minX + ix * activeVoxelSize, minY + iy * activeVoxelSize, minZ + iz * activeVoxelSize);
-    vertexMap.set(key, idx);
-    return idx;
+  const getVertex = (ix: number, iy: number, iz: number): number => {
+    const key = ix * 1000000 + iy * 1000 + iz; // safe for grid ≤ 150
+    let vi = vertexMap.get(key);
+    if (vi !== undefined) return vi;
+    vi = vertices.length / 3;
+    vertices.push(pMinX + ix * activeVoxelSize, pMinY + iy * activeVoxelSize, pMinZ + iz * activeVoxelSize);
+    vertexMap.set(key, vi);
+    return vi;
   };
 
-  for (let ix = 0; ix <= resX; ix++) {
-    for (let iy = 0; iy <= resY; iy++) {
-      for (let iz = 0; iz <= resZ; iz++) {
-        if (occupied.has(getVKey(ix, iy, iz))) {
-          for (const [dx, dy, dz, f] of [[1,0,0,0], [-1,0,0,1], [0,1,0,2], [0,-1,0,3], [0,0,1,4], [0,0,-1,5]]) {
-            if (exterior.has(getVKey(ix + dx, iy + dy, iz + dz))) {
-              let i1, i2, i3, i4;
-              if (f === 0) { i1=[1,0,0]; i2=[1,1,0]; i3=[1,1,1]; i4=[1,0,1]; }
-              else if (f === 1) { i1=[0,0,0]; i2=[0,0,1]; i3=[0,1,1]; i4=[0,1,0]; }
-              else if (f === 2) { i1=[0,1,0]; i2=[0,1,1]; i3=[1,1,1]; i4=[1,1,0]; }
-              else if (f === 3) { i1=[0,0,0]; i2=[1,0,0]; i3=[1,0,1]; i4=[0,0,1]; }
-              else if (f === 4) { i1=[0,0,1]; i2=[1,0,1]; i3=[1,1,1]; i4=[0,1,1]; }
-              else { i1=[0,0,0]; i2=[0,1,0]; i3=[1,1,0]; i4=[1,0,0]; }
-              const a = getVertex(ix+i1[0], iy+i1[1], iz+i1[2]);
-              const b = getVertex(ix+i2[0], iy+i2[1], iz+i2[2]);
-              const c = getVertex(ix+i3[0], iy+i3[1], iz+i3[2]);
-              const d = getVertex(ix+i4[0], iy+i4[1], iz+i4[2]);
-              indices.push(a, b, c, a, c, d);
-            }
-          }
-        }
+  type FE = [number,number,number, number[],number[],number[],number[]];
+  const faceData: FE[] = [
+    [1,0,0,  [1,0,0],[1,1,0],[1,1,1],[1,0,1]],
+    [-1,0,0, [0,0,0],[0,0,1],[0,1,1],[0,1,0]],
+    [0,1,0,  [0,1,0],[0,1,1],[1,1,1],[1,1,0]],
+    [0,-1,0, [0,0,0],[1,0,0],[1,0,1],[0,0,1]],
+    [0,0,1,  [0,0,1],[1,0,1],[1,1,1],[0,1,1]],
+    [0,0,-1, [0,0,0],[0,1,0],[1,1,0],[1,0,0]],
+  ];
+
+  for (let ix=0;ix<resX;ix++) for (let iy=0;iy<resY;iy++) for (let iz=0;iz<resZ;iz++) {
+    if (!(grid[gi(ix,iy,iz)]&1)) continue;
+    for (const [fdx,fdy,fdz,c1,c2,c3,c4] of faceData) {
+      const nx=ix+fdx,ny=iy+fdy,nz=iz+fdz;
+      if (nx<0||nx>=resX||ny<0||ny>=resY||nz<0||nz>=resZ) continue;
+      if (grid[gi(nx,ny,nz)]&2) {
+        const a=getVertex(ix+c1[0],iy+c1[1],iz+c1[2]);
+        const b=getVertex(ix+c2[0],iy+c2[1],iz+c2[2]);
+        const c=getVertex(ix+c3[0],iy+c3[1],iz+c3[2]);
+        const d=getVertex(ix+c4[0],iy+c4[1],iz+c4[2]);
+        indices.push(a,b,c, a,c,d);
       }
     }
   }
 
+  // ── 10. Geometry + Smoothing ──
   let geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
   geo.setIndex(indices);
-
-  // 1. Zvariť vrcholy
   geo = mergeVertices(geo, 0.001);
 
   if (isAccurate) {
-    // --- TRIANGLE MESH (Accurate) ---
-    // Ponechávame Taubin pre presnosť (toto bolo označené ako OK)
-    geo = applyTaubinSmoothing(geo, 3);
+    // Presný: minimálne zaoblenie (1 iterácia), zachová detaily skenu
+    geo = applyTaubinSmoothing(geo, 1);
+  } else if (!isLiDAR) {
+    // LOX: Taubin + jemný Laplacian (overené ako správne pre ručné merania)
+    geo = applyTaubinSmoothing(geo, 10);
+    geo = applyLaplacianSmoothing(geo, 15, 0.4);
   } else {
-    // --- ORGANICKÝ / VYHLADENÝ (Silk/Fabric) ---
-    // Použijeme čistý Laplacian so silným napätím (0.6), aby sme dosiahli efekt napnutej látky
-    const pos = geo.attributes.position.array as Float32Array;
-    const idx = geo.index!.array;
-    const vCount = geo.attributes.position.count;
+    // LiDAR Organický: Výrazné vyhladenie pre "silk" efekt
+    // organicLevel (0-20) -> Taubin (0-100 iterácií)
+    const taubinIter = Math.floor(organicLevel * 5);
+    if (taubinIter > 0) {
+      geo = applyTaubinSmoothing(geo, taubinIter);
+    }
     
-    // Počet iterácií výrazne zvýšený pre "silk" efekt (minimum 15, maximum 45)
-    const silkIterations = 15 + (organicLevel * 3);
-    
-    for (let it = 0; it < silkIterations; it++) {
-      const newPos = new Float32Array(pos.length);
-      const sums = new Float32Array(pos.length);
-      const counts = new Uint32Array(vCount);
-      
-      for (let i = 0; i < idx.length; i += 3) {
-        const i1 = idx[i], i2 = idx[i+1], i3 = idx[i+2];
-        const add = (a: number, b: number) => {
-          sums[a*3]+=pos[b*3]; sums[a*3+1]+=pos[b*3+1]; sums[a*3+2]+=pos[b*3+2];
-          counts[a]++;
-        };
-        add(i1,i2); add(i1,i3); add(i2,i1); add(i2,i3); add(i3,i1); add(i3,i2);
-      }
-      
-      for (let i = 0; i < vCount; i++) {
-        if (counts[i] > 0) {
-          // Napätie 0.6 pre ešte hladší efekt "hodvábu"
-          newPos[i*3] = pos[i*3] + (sums[i*3]/counts[i] - pos[i*3]) * 0.6;
-          newPos[i*3+1] = pos[i*3+1] + (sums[i*3+1]/counts[i] - pos[i*3+1]) * 0.6;
-          newPos[i*3+2] = pos[i*3+2] + (sums[i*3+2]/counts[i] - pos[i*3+2]) * 0.6;
-        } else {
-          newPos[i*3]=pos[i*3]; newPos[i*3+1]=pos[i*3+1]; newPos[i*3+2]=pos[i*3+2];
-        }
-      }
-      pos.set(newPos);
+    // Progresívny Laplacian: začína od levelu 2, stupňuje sa do levelu 20
+    // Toto vytvorí ten hladký, organický "tečúci" povrch bez zmrštenia (vďaka predchádzajúcemu Taubinu)
+    if (organicLevel > 2) {
+      const lapIter = Math.floor((organicLevel - 2) * 4);
+      const lapTension = 0.2 + (organicLevel / 20) * 0.3; // 0.2 -> 0.5 tension
+      geo = applyLaplacianSmoothing(geo, lapIter, lapTension);
     }
   }
 
-  // 3. Poctivé vážené normály (Silk efekt)
+  // Finálne normály: angle-weighted sú oveľa lepšie pre jaskyne než standardné
   geo = computeAngleWeightedNormals(geo);
-
   return geo;
 }
+
 
 /**
  * Professional-grade Surface Nets implementation (v3).
  * Optimized for both LiDAR (dense) and LOX (sparse) data.
  */
-export function reconstructSurfaceNet(points: Float32Array | {x:number,y:number,z:number}[], voxelSize = 0.5): THREE.BufferGeometry {
+export function reconstructSurfaceNet(
+  points: Float32Array | {x:number,y:number,z:number}[], 
+  voxelSize = 0.5,
+  organicLevel = 5,
+  dilationSteps = 0
+): THREE.BufferGeometry {
+  const vertexInflation = dilationSteps;
+
   const pCount = points instanceof Float32Array ? points.length / 3 : points.length;
   if (pCount < 10) return new THREE.BufferGeometry();
 
@@ -332,18 +360,28 @@ export function reconstructSurfaceNet(points: Float32Array | {x:number,y:number,
     }
   }
 
-  const dx = maxX - minX, dy = maxY - minY, dz = maxZ - minZ;
+  const dxBase = maxX - minX, dyBase = maxY - minY, dzBase = maxZ - minZ;
   const maxRes = 150;
   let activeVoxelSize = voxelSize;
-  if (dx / activeVoxelSize > maxRes) activeVoxelSize = dx / maxRes;
-  if (dy / activeVoxelSize > maxRes) activeVoxelSize = Math.max(activeVoxelSize, dy / maxRes);
-  if (dz / activeVoxelSize > maxRes) activeVoxelSize = Math.max(activeVoxelSize, dz / maxRes);
+  if (dxBase / activeVoxelSize > maxRes) activeVoxelSize = dxBase / maxRes;
+  if (dyBase / activeVoxelSize > maxRes) activeVoxelSize = Math.max(activeVoxelSize, dyBase / maxRes);
+  if (dzBase / activeVoxelSize > maxRes) activeVoxelSize = Math.max(activeVoxelSize, dzBase / maxRes);
+
+  // Pridáme bezpečný padding (2 voxely), aby flood-fill rekonštrukcia neorezala okraje (najmä strop jaskyne)
+  minX -= activeVoxelSize * 2;
+  minY -= activeVoxelSize * 2;
+  minZ -= activeVoxelSize * 2;
+  maxX += activeVoxelSize * 2;
+  maxY += activeVoxelSize * 2;
+  maxZ += activeVoxelSize * 2;
+
+  const dx = maxX - minX, dy = maxY - minY, dz = maxZ - minZ;
 
   const getVKey = (ix: number, iy: number, iz: number) => {
-    return BigInt(ix + 1000) | (BigInt(iy + 1000) << 20n) | (BigInt(iz + 1000) << 40n);
+    return BigInt(ix + 2000) | (BigInt(iy + 2000) << 20n) | (BigInt(iz + 2000) << 40n);
   };
   const fromVKey = (key: bigint) => {
-    return [Number(key & 0xFFFFFn) - 1000, Number((key >> 20n) & 0xFFFFFn) - 1000, Number((key >> 40n) & 0xFFFFFn) - 1000];
+    return [Number(key & 0xFFFFFn) - 2000, Number((key >> 20n) & 0xFFFFFn) - 2000, Number((key >> 40n) & 0xFFFFFn) - 2000];
   };
 
   // 2. Voxelization and Centroids
@@ -452,7 +490,8 @@ export function reconstructSurfaceNet(points: Float32Array | {x:number,y:number,
   const pos = geo.attributes.position.array as Float32Array;
   const idx = geo.index?.array || Array.from({ length: pos.length / 3 }, (_, i) => i);
   const lambda = 0.5, mu = -0.53;
-  for (let it = 0; it < 3; it++) {
+  const smoothIterations = Math.max(1, Math.min(20, Math.round(organicLevel)));
+  for (let it = 0; it < smoothIterations; it++) {
     for (const step of [lambda, mu]) {
       const newPos = new Float32Array(pos.length);
       const sum = new Float32Array(pos.length), cnt = new Uint32Array(pos.length / 3);
@@ -475,6 +514,25 @@ export function reconstructSurfaceNet(points: Float32Array | {x:number,y:number,
   }
 
   geo.computeVertexNormals();
+
+  // 7. Fine Bulge (Vertex Inflation along Normals)
+  if (vertexInflation > 0) {
+    const posAttr = geo.attributes.position;
+    const normAttr = geo.attributes.normal;
+    if (posAttr && normAttr) {
+      for (let i = 0; i < posAttr.count; i++) {
+        const nx = normAttr.getX(i), ny = normAttr.getY(i), nz = normAttr.getZ(i);
+        posAttr.setXYZ(
+          i,
+          posAttr.getX(i) + nx * vertexInflation,
+          posAttr.getY(i) + ny * vertexInflation,
+          posAttr.getZ(i) + nz * vertexInflation
+        );
+      }
+      posAttr.needsUpdate = true;
+    }
+  }
+
   // @ts-ignore
   geo.computeBoundsTree();
   return geo;

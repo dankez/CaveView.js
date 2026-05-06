@@ -639,6 +639,8 @@ export default function App() {
     smoothScraps:        false,
     accurateScraps:      false,
     organicLevel:        5,
+    organicVoxelSize:     0.3,
+    organicDilation:      0,
     showRenderCave:      false,
     caveTexture:         'limestone',
     renderOpacity:       1.0,
@@ -1638,6 +1640,29 @@ export default function App() {
           50% { transform: scale(1.4); opacity: 0.5; }
           100% { transform: scale(1); opacity: 1; }
         }
+        .debug-btn {
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.12);
+          color: #fff;
+          border-radius: 6px;
+          width: 24px;
+          height: 24px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          font-weight: 500;
+          transition: all 0.2s;
+        }
+        .debug-btn:hover {
+          background: rgba(255,255,255,0.15);
+          border-color: rgba(255,255,255,0.25);
+          transform: translateY(-1px);
+        }
+        .debug-btn:active {
+          transform: translateY(0);
+        }
 
         /* ── EMBED MODE ── */
         .embed-topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 999; display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: rgba(8,12,24,0.85); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.06); }
@@ -2300,20 +2325,28 @@ export default function App() {
 
                         {opts.smoothScraps && (
                           <div style={{ marginBottom: 12, padding: '0 4px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                              <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>{lang === 'sk' ? 'Úroveň organickosti' : 'Organic Level'}</label>
-                              <span style={{ fontSize: 10, color: '#4fc3f7', fontWeight: 800 }}>{opts.organicLevel}</span>
-                            </div>
-                            <input 
-                              type="range" min="0" max="10" step="1"
-                              value={opts.organicLevel}
-                              onChange={(e) => setOpts(p => ({ ...p, organicLevel: parseInt(e.target.value) }))}
-                              style={{ width: '100%', height: 4, borderRadius: 2, appearance: 'none', background: 'rgba(255,255,255,0.1)', outline: 'none' }}
-                            />
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2, fontSize: 8, color: '#64748b' }}>
-                              <span>{lang === 'sk' ? 'Technický' : 'Technical'}</span>
-                              <span>{lang === 'sk' ? 'Hodváb' : 'Silk'}</span>
-                              <span>{lang === 'sk' ? 'Tekutý' : 'Liquid'}</span>
+                            {/* Organická úroveň (Hladkosť) - pre LiDAR nastavuje jemnosť rekonštrukcie, pre LOX úroveň vyhladenia stien */}
+                            <div style={{ marginBottom: 8 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>{lang === 'sk' ? 'Úroveň vyhladenia' : 'Smoothness Level'}</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <button 
+                                    onClick={() => setOpts(p => ({ ...p, organicLevel: Math.max(0, Math.round((p.organicLevel - 1) * 10) / 10) }))}
+                                    className="debug-btn"
+                                  >-</button>
+                                  <span className="debug-val" style={{ minWidth: '24px', textAlign: 'center' }}>{Math.round(opts.organicLevel)}</span>
+                                  <button 
+                                    onClick={() => setOpts(p => ({ ...p, organicLevel: Math.min(20, Math.round((p.organicLevel + 1) * 10) / 10) }))}
+                                    className="debug-btn"
+                                  >+</button>
+                                </div>
+                              </div>
+                              <input 
+                                type="range" min="0" max="20" step="1"
+                                value={opts.organicLevel}
+                                onChange={(e) => setOpts(p => ({ ...p, organicLevel: parseFloat(e.target.value) }))}
+                                style={{ width: '100%', height: 4, borderRadius: 2, appearance: 'none', background: 'rgba(255,255,255,0.1)', outline: 'none' }}
+                              />
                             </div>
                           </div>
                         )}
@@ -2326,69 +2359,9 @@ export default function App() {
                             }} role="switch"
                             aria-checked={opts.accurateScraps} tabIndex={0} />
                         </div>
-                        {cave && cave.isLiDAR && cave.pointCount > 0 && (
-                          <div className="toggle-row">
-                            <label className="toggle-label">Surface Nets</label>
-                            <div className={`switch${opts.useSurfaceNet ? ' on' : ''}`}
-                              onClick={() => {
-                                const newVal = !opts.useSurfaceNet;
-                                setOpts(p => ({ ...p, useSurfaceNet: newVal, smoothScraps: newVal ? false : p.smoothScraps, accurateScraps: newVal ? false : p.accurateScraps }));
-                              }} role="switch"
-                              aria-checked={opts.useSurfaceNet} tabIndex={0} />
-                          </div>
-                        )}
 
-                        {cave && cave.isLiDAR && (
-                          <div style={{ marginTop: '12px', padding: '8px', background: 'rgba(15,23,42,0.4)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                            <div style={{ fontSize: '10px', color: '#4fc3f7', fontWeight: 800, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                              LiDAR ANALÝZA
-                            </div>
-                            <div className="toggle-row">
-                              <label className="toggle-label">{lang === 'sk' ? 'Podľa výšky' : 'By Elevation'}</label>
-                              <div className={`switch${opts.scrapsAltitude ? ' on' : ''}`}
-                                onClick={() => setOpts(p => ({ ...p, scrapsAltitude: !p.scrapsAltitude, scrapsIntensity: false, scrapsClassification: false }))} 
-                                role="switch" aria-checked={opts.scrapsAltitude} tabIndex={0} />
-                            </div>
-                            <div className="toggle-row">
-                              <label className="toggle-label">{lang === 'sk' ? 'Podľa intenzity' : 'By Intensity'}</label>
-                              <div className={`switch${opts.scrapsIntensity ? ' on' : ''}`}
-                                onClick={() => setOpts(p => ({ ...p, scrapsAltitude: false, scrapsIntensity: !p.scrapsIntensity, scrapsClassification: false }))} 
-                                role="switch" aria-checked={opts.scrapsIntensity} tabIndex={0} />
-                            </div>
-                            <div className="toggle-row">
-                              <label className="toggle-label">{lang === 'sk' ? 'Podľa klasifikácie' : 'By Classification'}</label>
-                              <div className={`switch${opts.scrapsClassification ? ' on' : ''}`}
-                                onClick={() => setOpts(p => ({ ...p, scrapsAltitude: false, scrapsIntensity: false, scrapsClassification: !p.scrapsClassification }))} 
-                                role="switch" aria-checked={opts.scrapsClassification} tabIndex={0} />
-                            </div>
-                            
-                            <div style={{ fontSize: '9px', color: '#64748b', marginTop: '12px', marginBottom: '6px', fontWeight: 600 }}>VRSTVY (FILTER)</div>
-                            <div className="toggle-row">
-                              <label className="toggle-label">
-                                <div className="dot" style={{ background: '#d2b48c', width: '8px', height: '8px' }} />
-                                {lang === 'sk' ? 'Povrch / Terén' : 'Ground'}
-                              </label>
-                              <div className={`switch${opts.showGround ? ' on' : ''}`}
-                                onClick={() => toggleOpt('showGround')} role="switch" aria-checked={opts.showGround} tabIndex={0} />
-                            </div>
-                            <div className="toggle-row">
-                              <label className="toggle-label">
-                                <div className="dot" style={{ background: '#228b22', width: '8px', height: '8px' }} />
-                                {lang === 'sk' ? 'Vegetácia' : 'Vegetation'}
-                              </label>
-                              <div className={`switch${opts.showVegetation ? ' on' : ''}`}
-                                onClick={() => toggleOpt('showVegetation')} role="switch" aria-checked={opts.showVegetation} tabIndex={0} />
-                            </div>
-                            <div className="toggle-row">
-                              <label className="toggle-label">
-                                <div className="dot" style={{ background: '#4169e1', width: '8px', height: '8px' }} />
-                                {lang === 'sk' ? 'Jaskynné chodby' : 'Cave Passages'}
-                              </label>
-                              <div className={`switch${opts.showCaveLiDAR ? ' on' : ''}`}
-                                onClick={() => toggleOpt('showCaveLiDAR')} role="switch" aria-checked={opts.showCaveLiDAR} tabIndex={0} />
-                            </div>
-                          </div>
-                        )}
+
+
                         <div className="toggle-row">
                           <label className="toggle-label">{t('cave.render3d')}</label>
                           <div className={`switch${opts.showRenderCave ? ' on' : ''}`}

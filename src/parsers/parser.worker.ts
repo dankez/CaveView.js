@@ -12,11 +12,11 @@ self.onmessage = async (e: MessageEvent) => {
 
     if (ext === '.ply') {
       cave = parsePly(buffer, progress);
-      // Auto-classify if not present
-      if (!cave.pointClassification || cave.pointClassification.every(c => c === 0)) {
-        const { classifyLiDAR } = await import('./caveParser');
-        classifyLiDAR(cave);
-      }
+      // POZOR: classifyLiDAR() sa NESMIE volať pre jaskynné PLY skeny!
+      // Jej heuristika ("body nad priemerom = vegetácia") odreže horné steny jaskyne.
+      // Klasifikácia sa používa LEN ak PLY súbor obsahuje natívnu 'class' vlastnosť.
+      // Ak nie je natívna klasifikácia, všetky body ostanú class=0 (unclassified)
+      // a OrganicShell ich všetky zahrnie do rekonštrukcie.
     } else if (ext === '.lox') {
       cave = parseLox(buffer, progress);
     } else if (ext === '.plt') {
@@ -26,6 +26,9 @@ self.onmessage = async (e: MessageEvent) => {
       // Default k SVX pre neznáme prípony
       cave = parseSvx(buffer, progress);
     }
+
+    // Všetky body sa posielajú bez filtrácie.
+    // Filtrovanie podľa klasifikácie robí OrganicShell v CaveViewer3D.tsx.
 
     // Vrátime výsledok hlavnému vláknu
     // Ak je to veľký point cloud, môžeme preniesť typed arrays (transferables) pre výkon
