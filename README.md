@@ -1,4 +1,4 @@
-# LochViewer - Modernized Speleological Viewer
+# LochViewer - Modernized Speleological Viewer (v1.4.3)
 
 [🇸🇰 Slovenská verzia nižšie / Slovak version below](#slovenská-verzia)
 
@@ -87,7 +87,7 @@ LochViewer prioritizes user security and data protection. An independent securit
 
 ---
 <a name="slovenská-verzia"></a>
-# LochViewer - Modernizovaný Speleologický Prehliadač
+# LochViewer - Modernizovaný Speleologický Prehliadač (v1.4.3)
 
 Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémov, postavená na technológiách React, Three.js a React-Three-Fiber.
 
