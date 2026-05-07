@@ -2114,13 +2114,18 @@ function AutoFit({ cave, trigger }: { cave: ParsedCave, trigger?: number }) {
   useEffect(() => {
     const b    = cave.bounds
     const diag = Math.sqrt(b.size.x ** 2 + b.size.y ** 2 + b.size.z ** 2)
-    // Zvýšená vzdialenosť (2.0 * diag) pre skutočný "Fit to screen"
     const dist = Math.max(diag * 2.0, 50)
-    camera.position.set(dist, dist * 0.8, dist)
-    camera.near = 0.1; camera.far = diag * 25
+    
+    // Target the actual center of the model (in Three.js space: x=x, y=z, z=-y)
+    const targetX = b.center.x;
+    const targetY = b.center.z;
+    const targetZ = -b.center.y;
+    
+    camera.position.set(targetX + dist, targetY + dist * 0.8, targetZ + dist)
+    camera.near = 0.1; camera.far = Math.max(diag * 25, 5000)
     camera.updateProjectionMatrix()
     if (controls && controls.target) {
-      controls.target.set(0, 0, 0)
+      controls.target.set(targetX, targetY, targetZ)
       controls.update()
     }
   }, [cave, trigger, camera, controls])

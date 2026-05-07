@@ -1,4 +1,4 @@
-# LochViewer - Modernized Speleological Viewer (v1.4.3)
+# LochViewer - Modernized Speleological Viewer (v1.5.0)
 
 [🇸🇰 Slovenská verzia nižšie / Slovak version below](#slovenská-verzia)
 
@@ -29,10 +29,13 @@ LochViewer prioritizes user security and data protection. An independent securit
 - **Interactive Model Shift**: Manually shift the cave model (traverse, stations, walls) relative to a fixed surface in X, Y, and Z axes.
 - **Fine-tuning (0.5m)**: Calibration works in 0.5-meter steps for maximum precision when fitting the cave under the terrain.
 
-### 🗺️ Advanced Texture & Terrain Visualization
-- **High-Contrast Contours**: Support for two independent contour colors. Major contours feature legible elevation labels that scale dynamically.
-- **Therion Calibration Support**: Support for external `.txt` calibration files in Therion format.
-- **Smart Visibility**: Terrain remains visible (shaded model) while loading large textures.
+### 🌍 High-Precision Custom Surfaces (GeoTIFF)
+- **Standalone Surface Layers**: Import external terrain data from GeoTIFF (.tif/.tiff) files as additional layers.
+- **World File Support (.tfw)**: Automatic georeferencing using sidecar .tfw files for perfect spatial alignment.
+- **Automatic CRS Reprojection**: Intelligently transforms S-JTSK Krovak terrain coordinate matrices into the cave model's GPS/UTM coordinate system, aligning the terrain perfectly without any manual positioning.
+- **Full Fidelity**: Surface meshes are generated with pixel-to-vertex precision, maintaining the full quality of the original DTM/DEM.
+- **Tiled Rendering**: Optimized rendering pipeline using tiled meshes to handle high-resolution terrain without performance drops.
+- **Drag & Drop Workflow**: Support for simultaneous drag-and-drop of TIFF + TFW pairs.
 
 ### ☁️ LiDAR & Point Cloud Support (.ply)
 - **High-Performance Parser**: Native binary PLY parser supporting millions of vertices with RGB color data.
@@ -84,10 +87,11 @@ LochViewer prioritizes user security and data protection. An independent securit
 * `.3d` (Survex data)
 * `.plt` (Compass data)
 * `.ply` (Binary LiDAR Point Clouds)
+* `.tif / .tiff` (GeoTIFF Terrain Models)
 
 ---
 <a name="slovenská-verzia"></a>
-# LochViewer - Modernizovaný Speleologický Prehliadač (v1.4.3)
+# LochViewer - Modernizovaný Speleologický Prehliadač (v1.5.0)
 
 Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémov, postavená na technológiách React, Three.js a React-Three-Fiber.
 
@@ -116,10 +120,13 @@ LochViewer kladie veľký dôraz na bezpečnosť používateľov a ochranu dát.
 - **Interaktívny posun modelu**: Možnosť manuálne posúvať jaskynný model (polygonový ťah, stanice, steny) voči fixnému povrchu v osiach X, Y a Z.
 - **Jemné doladenie (0.5m)**: Kalibrácia prebieha v krokoch po 0.5 metra pre maximálnu presnosť pri pasovaní jaskyne pod terén.
 
-### 🗺️ Pokročilá vizualizácia textúr a terénu
-- **Vrstevnice s vysokým kontrastom**: Podpora pre dve nezávislé farby vrstevníc. Hlavné vrstevnice obsahujú čitateľné dynamické kóty nadmorskej výšky.
-- **Therion Calibration Support**: Podpora pre externé kalibračné súbory `.txt` vo formáte Therion.
-- **Smart Visibility**: Terén zostáva viditeľný (shaded model) aj počas načítavania veľkých textúr.
+### 🌍 Externé povrchy vo vysokej kvalite (GeoTIFF)
+- **Samostatné vrstvy povrchu**: Importujte externé topografické dáta z GeoTIFF (.tif/.tiff) súborov ako dodatočné vrstvy.
+- **Podpora World súborov (.tfw)**: Automatické georeferencovanie pomocou sprievodných .tfw súborov.
+- **Automatická reprojekcia (CRS)**: Aplikácia inteligentne prepočítava S-JTSK (Krovak) súradnice terénu do GPS/UTM súradníc jaskyne. Povrch a model tak perfektne lícujú bez akejkoľvek potreby manuálneho posúvania.
+- **Plná kvalita (Fidelity)**: Povrchové siete sú generované s presnosťou pixel-na-bod, čím zachovávajú plnú kvalitu pôvodného DTM/DEM.
+- **Dlaždicové renderovanie**: Optimalizovaná vykresľovacia pipeline využívajúca dlaždicové (tiled) siete pre prácu s modelmi vo vysokom rozlíšení.
+- **Plynulý workflow**: Podpora pre simultánne pretiahnutie (drag & drop) párov TIFF + TFW.
 
 ### ☁️ Podpora LiDAR a mračien bodov (.ply)
 - **Vysokovýkonný parser**: Natívny binárny PLY parser s podporou miliónov bodov vrátane RGB farieb.
@@ -171,6 +178,7 @@ LochViewer kladie veľký dôraz na bezpečnosť používateľov a ochranu dát.
 * `.3d` (Survex data)
 * `.plt` (Compass data)
 * `.ply` (Binárne LiDAR mračná bodov)
+* `.tif / .tiff` (GeoTIFF terénne modely)
 
 ---
 ## 📄 Documentation / Dokumentácia

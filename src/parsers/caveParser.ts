@@ -45,6 +45,13 @@ export interface CaveSurface {
   bitmapCalib?: Calibration | null
   /** Same centering offset as applied to all cave coords */
   centerOffset: Vec3
+  /** Real-world bounds of the terrain data (provided by tiffParser) */
+  bounds?: {
+    minZ: number;
+    maxZ: number;
+    width: number;
+    height: number;
+  }
 }
 
 export interface ParsedCave {

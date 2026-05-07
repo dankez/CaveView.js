@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect, Suspense, useMemo } fr
 import proj4 from 'proj4'
 import { parseLox, parseSvx, parsePlt, parsePly } from './parsers/caveParser'
 import type { ParsedCave, CaveSurface, Vec3 } from './parsers/caveParser'
+import { parseGeoTiff } from './parsers/tiffParser'
 import CaveViewer3D, { ViewerOptions } from './components/CaveViewer3D'
 
 // ─── Error Boundary ───────────────────────────────────────────────────────────
@@ -766,6 +767,8 @@ export default function App() {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textureFileInputRef = useRef<HTMLInputElement>(null)
+  const tiffFileInputRef = useRef<HTMLInputElement>(null)
+  const tfwFileInputRef = useRef<HTMLInputElement>(null)
   const calibFileInputRef = useRef<HTMLInputElement>(null)
 
   const getProjectProjection = useCallback(() => {
@@ -1071,9 +1074,14 @@ export default function App() {
 
   const handleFile = useCallback(async (file: File) => {
     const ext = getExt(file.name)
-    if (!['.lox', '.3d', '.plt', '.ply'].includes(ext)) {
-      setErrorMsg(`Nepodporovaný formát: ${ext}. Použite .lox, .3d, .plt alebo .ply`)
+    if (!['.lox', '.3d', '.plt', '.ply', '.tif', '.tiff'].includes(ext)) {
+      setErrorMsg(`Nepodporovaný formát: ${ext}. Použite .lox, .3d, .plt, .ply alebo .tif`)
       return
+    }
+
+    if (ext === '.tif' || ext === '.tiff') {
+      handleTiffFile(file);
+      return;
     }
     setErrorMsg(null)
     setLoadedFile({ name: file.name, size: file.size, ext })
@@ -1132,10 +1140,47 @@ export default function App() {
       setProgress(40)
       const contentLength = Number(resp.headers.get('content-length') || 0)
       const buf = await resp.arrayBuffer()
-      setLastLoadedBuffer(buf.slice(0)) // Slice creates a copy, preventing detachment by worker transfer
+      setLastLoadedBuffer(buf.slice(0)) 
       setProgress(60)
       setLoadedFile({ name: label, size: buf.byteLength, ext })
       
+      if (ext === '.tif' || ext === '.tiff') {
+        let tfwText: string | null = null;
+        // Try to fetch .tfw sidecar for any TIFF
+        try {
+          const tfwUrl = url.replace(/\.tiff?$/i, '.tfw');
+          const tfwResp = await fetch(tfwUrl);
+          if (tfwResp.ok) tfwText = await tfwResp.text();
+        } catch(e) {}
+        const surf = await parseGeoTiff(buf, tfwText);
+        const b = surf.bounds!;
+        const midZ = (b.minZ + b.maxZ) / 2;
+        const halfW = b.width / 2;
+        const halfH = b.height / 2;
+        const centerOffset = { 
+          x: surf.dtm.calib.xOrigin + halfW, 
+          y: surf.dtm.calib.yOrigin - halfH,
+          z: midZ
+        };
+        surf.centerOffset = centerOffset;
+        const emptyCave: ParsedCave = {
+          segments: [], stations: [], stationLabels: [], scraps: [],
+          surfaces: [surf],
+          bounds: { 
+            min: { x: -halfW, y: -halfH, z: b.minZ - midZ },
+            max: { x: halfW, y: halfH, z: b.maxZ - midZ },
+            center: { x: 0, y: 0, z: 0 },
+            size: { x: b.width, y: b.height, z: b.maxZ - b.minZ }
+          },
+          centerOffset,
+          stationCount: 0, segmentCount: 0, scrapCount: 0, pointCount: 0,
+          hasSurface: true
+        };
+        processCaveData(emptyCave);
+        setAppState('viewer');
+        return;
+      }
+
       const parsed = await runParserWorker(buf, ext, setLoadingStatus)
 
       if (parsed.segments.length === 0 && parsed.stations.length === 0 && parsed.pointCount === 0)
@@ -1152,11 +1197,135 @@ export default function App() {
     }
   }, [])
 
+  const handleTiffFile = async (tifFile: File, tfwFile?: File) => {
+    try {
+      setAppState('loading');
+      setLoadingStatus('parsing_tiff');
+      const tifBuf = await tifFile.arrayBuffer();
+      let tfwText: string | null = null;
+      if (tfwFile) {
+        tfwText = await tfwFile.text();
+      }
+      
+      const cx = cave ? cave.centerOffset : { x: 0, y: 0, z: 0 };
+      const newSurface = await parseGeoTiff(tifBuf, tfwText, cx);
+      
+      console.log('[TIFF] Parsed surface:', {
+        samples: newSurface.dtm.samples,
+        lines: newSurface.dtm.lines,
+        calib: newSurface.dtm.calib,
+        bounds: newSurface.bounds,
+        centerOffset: newSurface.centerOffset
+      });
+
+      if (!cave) {
+        const b = newSurface.bounds!;
+        const midZ = (b.minZ + b.maxZ) / 2;
+        const halfW = b.width / 2;
+        const halfH = b.height / 2;
+        const centerOffset = { 
+          x: newSurface.dtm.calib.xOrigin + halfW, 
+          y: newSurface.dtm.calib.yOrigin - halfH,
+          z: midZ
+        };
+        newSurface.centerOffset = centerOffset;
+        const emptyCave: ParsedCave = {
+          segments: [], stations: [], stationLabels: [], scraps: [],
+          surfaces: [newSurface],
+          bounds: { 
+            min: { x: -halfW, y: -halfH, z: b.minZ - midZ },
+            max: { x: halfW, y: halfH, z: b.maxZ - midZ },
+            center: { x: 0, y: 0, z: 0 },
+            size: { x: b.width, y: b.height, z: b.maxZ - b.minZ }
+          },
+          centerOffset,
+          stationCount: 0, segmentCount: 0, scrapCount: 0, pointCount: 0,
+          hasSurface: true
+        };
+        processCaveData(emptyCave);
+        setAppState('viewer');
+      } else {
+        // Automatic Reprojection (S-JTSK -> Cave CRS)
+        const cal = newSurface.dtm.calib;
+        const isSjtsk = cal.xOrigin > -950000 && cal.xOrigin < -150000 && cal.yOrigin > -1350000 && cal.yOrigin < -900000;
+        
+        let caveProj = getProjectProjection();
+        
+        // Fallback: If cave projection is unknown but cave is centered at UTM-like coordinates
+        if (!caveProj) {
+          const { x, y } = cave.centerOffset;
+          if (x > 100000 && x < 800000 && y > 4000000 && y < 6000000) {
+            // Assume UTM zone 34N
+            caveProj = "+proj=utm +zone=34 +ellps=WGS84 +datum=WGS84 +units=m +no_defs";
+            console.log('[TIFF] Guessed Cave CRS as UTM 34N');
+          }
+        }
+
+        if (isSjtsk && caveProj) {
+          try {
+            const sjtskDef = "+proj=krovak +lat_0=49.5 +lon_0=24.83333333333333 +alpha=30.28813972222222 +k=0.9999 +x_0=0 +y_0=0 +ellps=bessel +towgs84=589,76,480,0,0,0,0 +units=m +no_defs";
+            console.log('[TIFF] Reprojecting surface from S-JTSK to Cave CRS', caveProj);
+            
+            // Reproject origin and vectors
+            const oWgs = proj4(sjtskDef, "WGS84", [cal.xOrigin, cal.yOrigin]);
+            const oTarget = proj4("WGS84", caveProj, oWgs);
+            
+            const xWgs = proj4(sjtskDef, "WGS84", [cal.xOrigin + cal.xx, cal.yOrigin + cal.yx]);
+            const xTarget = proj4("WGS84", caveProj, xWgs);
+            
+            const yWgs = proj4(sjtskDef, "WGS84", [cal.xOrigin + cal.xy, cal.yOrigin + cal.yy]);
+            const yTarget = proj4("WGS84", caveProj, yWgs);
+
+            newSurface.dtm.calib = {
+              xOrigin: oTarget[0],
+              yOrigin: oTarget[1],
+              xx: xTarget[0] - oTarget[0],
+              yx: xTarget[1] - oTarget[1],
+              xy: yTarget[0] - oTarget[0],
+              yy: yTarget[1] - oTarget[1]
+            };
+            console.log('[TIFF] Reprojection successful:', newSurface.dtm.calib);
+          } catch(e) {
+            console.error('[TIFF] Failed to reproject:', e);
+          }
+        }
+
+        // Add to existing cave
+        setCave(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            surfaces: [...prev.surfaces, newSurface],
+            hasSurface: true
+          };
+        });
+        setOpts(prev => ({
+          ...prev,
+          showSurfaceMesh: true
+        }));
+        setAppState('viewer');
+      }
+
+    } catch (e: any) {
+      console.error(e);
+      setErrorMsg('Chyba pri načítaní TIFF: ' + String(e));
+      setAppState('error');
+    }
+  };
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault(); setIsDragging(false)
     const files = Array.from(e.dataTransfer.files)
+    if (files.length > 1) {
+      const tif = files.find(f => f.name.toLowerCase().endsWith('.tif') || f.name.toLowerCase().endsWith('.tiff'));
+      const tfw = files.find(f => f.name.toLowerCase().endsWith('.tfw'));
+      if (tif) {
+        handleTiffFile(tif, tfw);
+        return;
+      }
+    }
     if (files[0]) handleFile(files[0])
-  }, [handleFile])
+  }, [handleFile, cave])
 
   const handleReset = () => {
     setAppState('welcome'); setLoadedFile(null); setCave(null)
@@ -1756,7 +1925,6 @@ export default function App() {
                 <div className="logo-icon">🏔️</div>
                 <h1 className="logo-title" style={{ marginBottom: '0.2rem' }}>LochViewer</h1>
                 <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 600, letterSpacing: '0.05em' }}>by DankeZ</div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6366f1', background: 'rgba(99,102,241,0.1)', padding: '4px 12px', borderRadius: '12px', marginTop: '0.5rem', display: 'inline-block', border: '1px solid rgba(99,102,241,0.2)' }}>v1.4.3</div>
                 <p className="logo-sub" style={{ marginTop: '1.2rem' }}>{t('welcome.sub')}</p>
               </div>
 
@@ -1804,6 +1972,10 @@ export default function App() {
                     <button className="btn-demo" onClick={() => loadFromUrl('/vetrna_dira.ply', 'Vetrna_dira_merge.ply')} type="button">
                       ☁️ LiDAR
                     </button>
+                    <button className="btn-demo" style={{ borderColor: '#818cf8', color: '#a5b4fc', background: 'rgba(99,102,241,0.05)' }} 
+                      onClick={() => loadFromUrl('/dmr5.tif', 'dmr5.tif')} type="button">
+                      🌍 TIFF
+                    </button>
                   </div>
                 </div>
                 <div>
@@ -1825,14 +1997,22 @@ export default function App() {
                 História verzií
               </div>
 
-              <div className="changelog-ver">release-2026-05-03-1 (Dnes)</div>
+              <div className="changelog-ver">release-2026-05-07-01 (Dnes)</div>
+              <div className="changelog-group">GeoTIFF & Custom Povrchy</div>
+              <ul className="changelog-list">
+                <li className="changelog-item">Integrácia GeoTIFF (.tif) ako vlastný povrch k modelu</li>
+                <li className="changelog-item">Podpora pre .tfw (World file) pre presné georeferencovanie</li>
+                <li className="changelog-item">Drag & drop podpora pre páry TIFF + TFW</li>
+                <li className="changelog-item">Možnosť nahrať terén v plnej kvalite (pixel-to-vertex)</li>
+                <li className="changelog-item">Optimalizované renderovanie cez dlaždicový (tiled) mesh</li>
+              </ul>
+
+              <div className="changelog-ver">v1.4.3</div>
               <div className="changelog-group">Opravy & LiDAR Interakcia</div>
               <ul className="changelog-list">
                 <li className="changelog-item">Opravené meranie a klikanie na PLY mračná bodov</li>
                 <li className="changelog-item">Zvýšená citlivosť raycastingu na 0.5m</li>
                 <li className="changelog-item">Hladší "Silk" povrch pre organickú rekonštrukciu</li>
-                <li className="changelog-item">Responzívnejšia úvodná obrazovka (Wide layout)</li>
-                <li className="changelog-item">Zvýraznené sekcie v bočnom paneli</li>
               </ul>
 
               <div className="changelog-ver">v1.3.0</div>
@@ -2453,9 +2633,15 @@ export default function App() {
                 )}
 
                 {/* ── TERÉN (surface) ── */}
-                {cave.hasSurface && (
+                {cave && (
                   <div>
-                    <div className="s-label">{t('terrain.title')}</div>
+                    <div className="s-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      {t('terrain.title')}
+                      {!cave.hasSurface && <span style={{ fontSize: '8px', color: '#64748b', fontWeight: 'normal' }}>({lang === 'sk' ? 'žiadny' : 'none'})</span>}
+                    </div>
+                    
+                    {cave.hasSurface ? (
+                      <>
                     <div className="toggle-row">
                       <label className="toggle-label">
                         <div className="dot" style={{ background: opts.surfaceColor }} />
@@ -2651,15 +2837,57 @@ export default function App() {
                       </button>
                     </div>
 
-                    <div style={{ marginTop: '12px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', marginBottom: '6px' }}>
-                        <span>{t('terrain.opacity')}</span>
-                        <span style={{ color: '#818cf8', fontWeight: 'bold' }}>{(opts.surfaceOpacity * 100).toFixed(0)}%</span>
+                      </>
+                    ) : (
+                      <div style={{ padding: '12px', background: 'rgba(30,41,59,0.2)', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)', textAlign: 'center', marginBottom: '12px' }}>
+                        <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '8px' }}>
+                          {lang === 'sk' ? 'Model nemá povrch.' : 'No surface for this model.'}
+                        </div>
                       </div>
-                      <input type="range" min={5} max={100} step={5}
-                        value={Math.round(opts.surfaceOpacity * 100)}
-                        onChange={e => setOpacity('surfaceOpacity', Number(e.target.value) / 100)}
-                        className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+                    )}
+
+                    {/* Vždy zobrazená možnosť pridania TIFF povrchu */}
+                    <div style={{ padding: '10px', background: 'rgba(99,102,241,0.05)', borderRadius: '8px', border: '1px solid rgba(99,102,241,0.15)' }}>
+                      <div className="toggle-row" style={{ border: 'none', padding: 0 }}>
+                        <label className="toggle-label">
+                          <span className="material-symbols-outlined" style={{ fontSize: '18px', verticalAlign: 'middle', marginRight: '6px' }}>upload_file</span>
+                          {lang === 'sk' ? 'Pridať TIFF povrch' : 'Add TIFF surface'}
+                        </label>
+                        <button 
+                          onClick={() => tiffFileInputRef.current?.click()}
+                          style={{ padding: '4px 8px', fontSize: '10px', background: '#1e293b', border: '1px solid #334155', borderRadius: '4px', color: '#94a3b8', cursor: 'pointer' }}
+                        >
+                          {lang === 'sk' ? 'Vybrať .tif' : 'Select .tif'}
+                        </button>
+                        <input 
+                          type="file" ref={tiffFileInputRef} accept=".tif,.tiff" style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleTiffFile(file);
+                          }}
+                        />
+                      </div>
+                      
+                      <div style={{ padding: '8px', background: 'rgba(30,41,59,0.3)', borderRadius: '6px', marginTop: '8px', fontSize: '9px', color: '#64748b' }}>
+                        {lang === 'sk' 
+                          ? 'Tip: Ak máš aj .tfw (World file), načítaj ho pre presné umiestnenie.'
+                          : 'Tip: If you have a .tfw file, load it for precise positioning.'}
+                        <button 
+                          onClick={() => tfwFileInputRef.current?.click()}
+                          style={{ display: 'block', marginTop: '4px', background: 'none', border: 'none', color: '#818cf8', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                        >
+                          {lang === 'sk' ? 'Načítať .tfw' : 'Load .tfw'}
+                        </button>
+                        <input 
+                          type="file" ref={tfwFileInputRef} accept=".tfw" style={{ display: 'none' }}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file && cave) {
+                              alert(lang === 'sk' ? 'Najlepšie je pretiahnuť oba súbory (tif+tfw) naraz do okna.' : 'Best results: drag and drop both tif and tfw together.');
+                            }
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
