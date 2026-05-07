@@ -71,4 +71,20 @@ Nový vizuálny nástroj pre presnú orientáciu v 3D priestore.
 - **Tenké línie**: Hrúbka čiar je normalizovaná voči mierke modelu ($S \cdot 10^{-4}$), čo zabezpečuje konzistentný "premium" vzhľad.
 
 ---
-*Dokumentácia verzie: release-2026-05-06-03*
+## 5. Odstraňovanie stropu (Ceiling Removal)
+
+Analytický nástroj pre lepšiu vizualizáciu interiérov jaskynných chodieb pri LiDAR skenoch aj LOX modeloch.
+
+### 5.1 Normálové filtrovanie (Normal-based Discarding)
+Tento algoritmus využíva smer normály povrchu na identifikáciu častí modelu, ktoré tvoria strop.
+- **Princíp**: V GPU shaderi sa pre každý fragment (pixel) vypočíta svetová normála. Ak jej vertikálna zložka ($y$) klesne pod definovanú hranicu (cutoff), fragment sa zahodí (`discard`).
+- **Logika**:
+  - **Podlaha**: Normála smeruje hore ($y \approx 1.0$).
+  - **Steny**: Normála smeruje do strán ($y \approx 0.0$).
+  - **Strop**: Normála smeruje dole ($y \approx -1.0$).
+- **Prahová funkcia**:
+  $$\text{Render}(f) = \begin{cases} \text{render} & \text{ak } N_{y} \ge \text{Cutoff} \\ \text{discard} & \text{ak } N_{y} < \text{Cutoff} \end{cases}$$
+- **Využitie**: Primárne pre LiDAR rekonštrukcie (OrganicShell) a LOX steny, kde umožňuje "odkryť" jaskyňu a vidieť dno chodby bez nutnosti manuálneho nastavovania orezových rovín. Tento prístup zachováva dno a spodnú časť stien, čím vytvára efekt "odrezanej strechy".
+
+---
+*Dokumentácia verzie: release-2026-05-06-04*

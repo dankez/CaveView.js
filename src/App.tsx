@@ -624,6 +624,8 @@ export default function App() {
     showEntranceLabels:  true,
     showGrid:            false,
     showGizmo:           true,
+    removeCeiling:       false,
+    ceilingCutoff:       -0.3,
     colorGrid:           '#222222',
     colorBoundingBox:    '#990000',
     showBoundingBox:     false,
@@ -2383,6 +2385,34 @@ export default function App() {
                                 onChange={(e) => setOpts(p => ({ ...p, organicDilation: parseFloat(e.target.value) }))}
                                 style={{ width: '100%', height: 4, borderRadius: 2, appearance: 'none', background: 'rgba(255,255,255,0.1)', outline: 'none' }}
                               />
+                            </div>
+
+                            {/* Odstránenie stropu (Ceiling Removal) */}
+                            <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                              <div className="toggle-row" style={{ marginBottom: '8px' }}>
+                                <span style={{ fontSize: '11px', fontWeight: 600, color: '#e2e8f0' }}>
+                                  <span className="material-symbols-outlined" style={{ fontSize: '16px', verticalAlign: 'middle', marginRight: '6px' }}>vertical_align_bottom</span>
+                                  {lang === 'sk' ? 'Odstrániť strop' : 'Remove ceiling'}
+                                </span>
+                                <div className={`switch${opts.removeCeiling ? ' on' : ''}`}
+                                  onClick={() => toggleOpt('removeCeiling')} role="switch"
+                                  aria-checked={opts.removeCeiling} tabIndex={0} />
+                              </div>
+                              
+                              {opts.removeCeiling && (
+                                <div style={{ marginBottom: 8 }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                    <label style={{ fontSize: 9, color: '#94a3b8', fontWeight: 700 }}>{lang === 'sk' ? 'Citlivosť orezania' : 'Cutoff Sensitivity'}</label>
+                                    <span style={{ fontSize: 9, color: '#818cf8', fontWeight: 'bold' }}>{opts.ceilingCutoff.toFixed(2)}</span>
+                                  </div>
+                                  <input 
+                                    type="range" min="-1.0" max="0.0" step="0.05"
+                                    value={opts.ceilingCutoff}
+                                    onChange={(e) => setOpts(p => ({ ...p, ceilingCutoff: parseFloat(e.target.value) }))}
+                                    style={{ width: '100%', height: 4, borderRadius: 2, appearance: 'none', background: 'rgba(255,255,255,0.1)', outline: 'none' }}
+                                  />
+                                </div>
+                              )}
                             </div>
                           </div>
                         )}

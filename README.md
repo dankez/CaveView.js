@@ -45,6 +45,7 @@ LochViewer prioritizes user security and data protection. An independent securit
 - **Analytical Coloring**: Support for elevation gradients (Color by height) on both solid surfaces and wireframes.
 - **Customization**: Dedicated color picker for cave walls and LiDAR meshes in the sidebar.
 - **Smart Ceiling Fix**: Optimized PLY processing that prevents automatic classification from cutting off cave ceilings, ensuring full vertical fidelity.
+- **Ceiling Removal**: Dedicated toggle to analytically hide the cave roof based on surface normals, providing an "uncovered" view of the floor and lower walls for better interior inspection.
 
 ### 📏 Measurement Mode & Interaction Control
 - **Strict Gating**: New toggle to switch between "Navigation" and "Measurement" modes.
@@ -132,6 +133,7 @@ LochViewer kladie veľký dôraz na bezpečnosť používateľov a ochranu dát.
 - **Analytické vyfarbenie**: Podpora výškových gradientov (Farebné podľa výšky) pre plné modely aj drôtenú sieť.
 - **Personalizácia**: Vlastný výber farieb pre LiDAR modely pomocou Color Pickera v sidebare.
 - **Fixácia orezania stropov**: Optimalizovaný PLY processing, ktorý eliminuje chybu horizontálneho odrezávania horných častí jaskyne pri generovaní modelov.
+- **Odstraňovanie stropu**: Špeciálna funkcia na analytické skrytie stropu jaskyne na základe orientácie normál povrchu. Umožňuje „odkrytý“ pohľad na dno a spodné časti stien pre lepšiu analýzu interiéru.
 
 ### 📏 Režim merania a kontrola interakcie
 - **Striktné bránenie (Gating)**: Nový prepínač medzi režimom navigácie a merania.

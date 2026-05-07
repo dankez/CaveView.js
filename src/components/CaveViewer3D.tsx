@@ -311,8 +311,56 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
     return g;
   }, [cave.points, cave.pointClassification, cave.pointCount, cave.bounds, options.scrapsAltitude, options.smoothScraps, options.accurateScraps, options.organicLevel, options.colorScraps]);
 
+  const shaderRef = useRef<THREE.Shader | null>(null);
+  const wireShaderRef = useRef<THREE.Shader | null>(null);
+
+  useEffect(() => {
+    if (shaderRef.current) {
+      shaderRef.current.uniforms.uRemoveCeiling.value = options.removeCeiling;
+      shaderRef.current.uniforms.uCeilingCutoff.value = options.ceilingCutoff;
+    }
+    if (wireShaderRef.current) {
+      wireShaderRef.current.uniforms.uRemoveCeiling.value = options.removeCeiling;
+      wireShaderRef.current.uniforms.uCeilingCutoff.value = options.ceilingCutoff;
+    }
+  }, [options.removeCeiling, options.ceilingCutoff]);
+
   if (!geo) return null;
   const showSolid = options.smoothScraps || options.accurateScraps;
+
+  const patchShader = (shader: THREE.Shader, isWire: boolean) => {
+    if (isWire) wireShaderRef.current = shader;
+    else shaderRef.current = shader;
+
+    shader.uniforms.uRemoveCeiling = { value: options.removeCeiling };
+    shader.uniforms.uCeilingCutoff = { value: options.ceilingCutoff };
+    
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <common>',
+      `#include <common>
+       varying vec3 vNormalWorld;`
+    );
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <beginnormal_vertex>',
+      `#include <beginnormal_vertex>
+       vNormalWorld = normalize( ( modelMatrix * vec4( objectNormal, 0.0 ) ).xyz );`
+    );
+    
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <common>',
+      `#include <common>
+       varying vec3 vNormalWorld;
+       uniform bool uRemoveCeiling;
+       uniform float uCeilingCutoff;`
+    );
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <dithering_fragment>',
+      `#include <dithering_fragment>
+       if (uRemoveCeiling) {
+         if (vNormalWorld.y < uCeilingCutoff) discard;
+       }`
+    );
+  };
 
   return (
     <>
@@ -336,6 +384,7 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
             transparent={options.scrapsOpacity < 1}
             opacity={options.scrapsOpacity}
             clippingPlanes={clippingPlanes}
+            onBeforeCompile={(s) => patchShader(s, false)}
           />
         </mesh>
       )}
@@ -349,6 +398,7 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
             transparent={true} 
             opacity={showSolid ? 0.4 : 0.8} 
             clippingPlanes={clippingPlanes} 
+            onBeforeCompile={(s) => patchShader(s, true)}
           />
         </mesh>
       )}
@@ -440,6 +490,8 @@ export interface ViewerOptions {
   useSurfaceNet:       boolean
   clippingPlanes?:     any[]
   showGizmo:           boolean
+  removeCeiling:       boolean
+  ceilingCutoff:       number
 
   // Floor Map
   floorMapSvg:         string | null
@@ -1395,6 +1447,56 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
     return () => tex.dispose()
   }, [caveTexture])
 
+  const shaderRef = useRef<THREE.Shader | null>(null);
+  const altShaderRef = useRef<THREE.Shader | null>(null);
+  const renderShaderRef = useRef<THREE.Shader | null>(null);
+  const wireShaderRef = useRef<THREE.Shader | null>(null);
+
+  useEffect(() => {
+    [shaderRef, altShaderRef, renderShaderRef, wireShaderRef].forEach(ref => {
+      if (ref.current) {
+        ref.current.uniforms.uRemoveCeiling.value = options.removeCeiling;
+        ref.current.uniforms.uCeilingCutoff.value = options.ceilingCutoff;
+      }
+    });
+  }, [options.removeCeiling, options.ceilingCutoff]);
+
+  const patchShader = (shader: THREE.Shader, type: 'solid'|'alt'|'render'|'wire') => {
+    if (type === 'solid') shaderRef.current = shader;
+    else if (type === 'alt') altShaderRef.current = shader;
+    else if (type === 'render') renderShaderRef.current = shader;
+    else if (type === 'wire') wireShaderRef.current = shader;
+
+    shader.uniforms.uRemoveCeiling = { value: options.removeCeiling };
+    shader.uniforms.uCeilingCutoff = { value: options.ceilingCutoff };
+    
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <common>',
+      `#include <common>
+       varying vec3 vNormalWorld;`
+    );
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <beginnormal_vertex>',
+      `#include <beginnormal_vertex>
+       vNormalWorld = normalize( ( modelMatrix * vec4( objectNormal, 0.0 ) ).xyz );`
+    );
+    
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <common>',
+      `#include <common>
+       varying vec3 vNormalWorld;
+       uniform bool uRemoveCeiling;
+       uniform float uCeilingCutoff;`
+    );
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <dithering_fragment>',
+      `#include <dithering_fragment>
+       if (uRemoveCeiling) {
+         if (vNormalWorld.y < uCeilingCutoff) discard;
+       }`
+    );
+  };
+
   return (
     <>
       {/* ── Tieňovaný solid mesh ── */}
@@ -1403,7 +1505,8 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
           <meshStandardMaterial color={options.colorScraps} side={THREE.DoubleSide} transparent={opacity < 1} opacity={opacity}
             roughness={0.7} metalness={0.1}
             polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1}
-            clippingPlanes={props.clippingPlanes} />
+            clippingPlanes={props.clippingPlanes} 
+            onBeforeCompile={(s) => patchShader(s, 'solid')} />
         </mesh>
       )}
 
@@ -1418,7 +1521,8 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
             roughness={0.6} 
             metalness={0.0}
             polygonOffset polygonOffsetFactor={0.5} polygonOffsetUnits={0.5}
-            clippingPlanes={props.clippingPlanes} />
+            clippingPlanes={props.clippingPlanes} 
+            onBeforeCompile={(s) => patchShader(s, 'render')} />
         </mesh>
       )}
 
@@ -1428,7 +1532,8 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
           <meshStandardMaterial vertexColors side={THREE.DoubleSide} transparent={opacity < 1} opacity={opacity}
             roughness={0.65} metalness={0.05}
             polygonOffset polygonOffsetFactor={0} polygonOffsetUnits={0} 
-            clippingPlanes={props.clippingPlanes} />
+            clippingPlanes={props.clippingPlanes} 
+            onBeforeCompile={(s) => patchShader(s, 'alt')} />
         </mesh>
       )}
 
@@ -1494,7 +1599,8 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
         <mesh geometry={solidGeo} renderOrder={10}>
           <meshBasicMaterial color={options.colorScrapsWire} wireframe depthWrite={false} transparent={true}
             opacity={isMoving ? 0.3 : (showSolid || showAltitude ? 0.28 : 0.65)} 
-            clippingPlanes={props.clippingPlanes} />
+            clippingPlanes={props.clippingPlanes} 
+            onBeforeCompile={(s) => patchShader(s, 'wire')} />
         </mesh>
       )}
 
