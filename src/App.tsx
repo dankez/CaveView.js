@@ -503,6 +503,9 @@ const ColorScaleLegend = ({ caveLegend, surfLegend, lang }: {
           <div style={{ fontSize: 8, color: '#fff', textShadow: '0 1px 2px #000', marginTop: 2, fontWeight: 700, letterSpacing: '0.02em' }}>{lang === 'sk' ? 'Povrch' : 'Surface'}</div>
         </div>
       )}
+      <div style={{ alignSelf: 'flex-end', fontSize: '8px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, paddingBottom: '2px', letterSpacing: '0.02em' }}>
+        LochViewer by DankeZ
+      </div>
     </div>
   )
 }
@@ -1752,9 +1755,8 @@ export default function App() {
               <div style={{ textAlign: 'center' }}>
                 <div className="logo-icon">🏔️</div>
                 <h1 className="logo-title" style={{ marginBottom: '0.2rem' }}>LochViewer</h1>
-                <div className="welcome-version">v1.3.2</div>
-                <p className="logo-sub" style={{ marginTop: '0.8rem' }}>{t('welcome.sub')}</p>
-                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6366f1', background: 'rgba(99,102,241,0.1)', padding: '4px 12px', borderRadius: '12px', marginTop: '1rem', display: 'inline-block', border: '1px solid rgba(99,102,241,0.2)' }}>v1.3.2</div>
+                <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 600, letterSpacing: '0.05em' }}>by DankeZ</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6366f1', background: 'rgba(99,102,241,0.1)', padding: '4px 12px', borderRadius: '12px', marginTop: '0.5rem', display: 'inline-block', border: '1px solid rgba(99,102,241,0.2)' }}>v1.4.3</div>
               </div>
 
               <div
@@ -1888,7 +1890,7 @@ export default function App() {
                 <span>☰</span>
               </button>
 
-              <span className="tb-logo">CV 3D</span>
+              <span className="tb-logo">LV 3D</span>
               <span className="tb-file" title={loadedFile?.name}>{loadedFile?.name}</span>
               <MemoizedStatusBadge isMoving={isModelMoving} />
               <span className="tb-badge hide-mobile">{loadedFile?.ext?.replace('.', '')?.toUpperCase()}</span>

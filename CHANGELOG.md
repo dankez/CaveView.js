@@ -1,5 +1,11 @@
 # Changelog
 
+## [release-2026-05-07-01] - 2026-05-07
+### Branding & Signature (v1.4.3)
+- **Rebranding:** Premenovanie skratky aplikácie v lište z `CV 3D` na `LV 3D` (LochViewer).
+- **Podpis autora:** Pridaný text "by DankeZ" na úvodnú obrazovku pod názov aplikácie a do legendy výškového odstupňovania.
+- **Oprava UI:** Odstránené duplicitné zobrazenie verzie na úvodnej obrazovke.
+
 ## [release-2026-05-06-02] - 2026-05-06
 ### Podmienená interakcia & LiDAR Bulge (v1.4.1)
 - **Režim merania (Measurement Mode):** Implementovaný striktný gating interakcie. V základnom režime navigácie sú interaktívne IBA polygonové body (LOX/PLT), čím sa eliminuje náhodné klikanie na LiDAR mračná a terén.
