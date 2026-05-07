@@ -1757,6 +1757,7 @@ export default function App() {
                 <h1 className="logo-title" style={{ marginBottom: '0.2rem' }}>LochViewer</h1>
                 <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 600, letterSpacing: '0.05em' }}>by DankeZ</div>
                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6366f1', background: 'rgba(99,102,241,0.1)', padding: '4px 12px', borderRadius: '12px', marginTop: '0.5rem', display: 'inline-block', border: '1px solid rgba(99,102,241,0.2)' }}>v1.4.3</div>
+                <p className="logo-sub" style={{ marginTop: '1.2rem' }}>{t('welcome.sub')}</p>
               </div>
 
               <div
