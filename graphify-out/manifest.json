@@ -20,8 +20,8 @@
     "hash": "1a4fb1c9680cdea7a78ffe64450eacda"
   },
   "/home/dankez/cave3d/CaveView-modernized/vite.config.ts": {
-    "mtime": 1778309403.852712,
-    "hash": "b4425202f8f7015aa52b5e7c35384345"
+    "mtime": 1778338238.0957317,
+    "hash": "c1652e2809b18309e5121df44679ff23"
   },
   "/home/dankez/cave3d/CaveView-modernized/inspect_lox.ts": {
     "mtime": 1777201521.1537378,
@@ -99,9 +99,13 @@
     "mtime": 1776409952.8888268,
     "hash": "53f9c4e8a6c4275f86624dc5bdd356a9"
   },
+  "/home/dankez/cave3d/CaveView-modernized/src/utils/XyzTileDownloader.ts": {
+    "mtime": 1778338592.374232,
+    "hash": "7dd1fc64eedd1eb4653725e3dffa7eeb"
+  },
   "/home/dankez/cave3d/CaveView-modernized/src/utils/WmsTileDownloader.ts": {
-    "mtime": 1778316168.4142842,
-    "hash": "e222131494d1ccd812737199b21ff061"
+    "mtime": 1778319413.1497734,
+    "hash": "563d9e8ea3e7fed5a45a7ad9305d77ad"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/utils/surfaceReconstruction.ts": {
     "mtime": 1778142441.5857043,
@@ -112,8 +116,8 @@
     "hash": "604ac718a40d9d35f68c242f99a0763a"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/components/CaveViewer3D.tsx": {
-    "mtime": 1778316206.6036122,
-    "hash": "cef9b050ff2f4398c0487e9f98c22df3"
+    "mtime": 1778338656.3863726,
+    "hash": "af5f5eb23298d16fb92b9ff9dfc554ac"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/core/constants.ts": {
     "mtime": 1776409952.8878267,
@@ -743,6 +747,66 @@
     "mtime": 1776280433.1706715,
     "hash": "4b62e101dbc4e1d72530958d0b8f8c68"
   },
+  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/index.tsx": {
+    "mtime": 1768380035.0,
+    "hash": "a6db34dac786540fd7ae835aaa6f543f"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/types.ts": {
+    "mtime": 1768380035.0,
+    "hash": "99af123725d3428314623d0524fc5b78"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/App.tsx": {
+    "mtime": 1768380035.0,
+    "hash": "8be007ffe983fc965294596279b98a61"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/vite.config.ts": {
+    "mtime": 1768380035.0,
+    "hash": "b02247fc15de1a3ff3a9cb4c1bbe3fa1"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/translations.ts": {
+    "mtime": 1768380035.0,
+    "hash": "b39fe37084c5f8dc4ceb431c75ec66b8"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/geology.ts": {
+    "mtime": 1768380035.0,
+    "hash": "473bccf6d6ad3dbb328d8802dc2ed097"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/freemap.ts": {
+    "mtime": 1768380035.0,
+    "hash": "2b21101f43efd48f1666cbbceae1fe0b"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/zbgis.ts": {
+    "mtime": 1768380035.0,
+    "hash": "98ee3ae39404165a2c9c035fdfce7e7a"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/historical.ts": {
+    "mtime": 1768380035.0,
+    "hash": "1316e44c89c96f71bb3406c660cc8c3c"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/gn_ortofoto.ts": {
+    "mtime": 1768380035.0,
+    "hash": "fbabb862815ff25823d81ed68dd8c169"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/ortofoto.ts": {
+    "mtime": 1768380035.0,
+    "hash": "75a0e028d4248fcc378b96f3e953650e"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/index.ts": {
+    "mtime": 1768380035.0,
+    "hash": "0babc6679881079d558e21d63f3e1ad0"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/zbgis_orto.ts": {
+    "mtime": 1768380035.0,
+    "hash": "46896f6e72944e9e804e3104f54d0fd3"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/zbgis_teren.ts": {
+    "mtime": 1768380035.0,
+    "hash": "36bddc2188739f057e3035a67c39db57"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/terrain2.ts": {
+    "mtime": 1768380035.0,
+    "hash": "b33124032bb28d15fe11d4d3ca6f81eb"
+  },
   "/home/dankez/cave3d/CaveView-modernized/scratch/test_proj4.js": {
     "mtime": 1777970016.5038202,
     "hash": "5e7173424ef1b31ce71756f9dc5d1a07"
@@ -794,6 +858,14 @@
   "/home/dankez/cave3d/CaveView-modernized/GEMINI.md": {
     "mtime": 1777585309.8565907,
     "hash": "8ee39dcfe68a23b3797b02648930d699"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/index.html": {
+    "mtime": 1768380035.0,
+    "hash": "89ce72617e8a6d3025e67720612f028b"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/README.md": {
+    "mtime": 1768380035.0,
+    "hash": "044bcffd474fe2ef042dfbeb5e1e1154"
   },
   "/home/dankez/cave3d/CaveView-modernized/public/privacy.html": {
     "mtime": 1777640815.9362934,

@@ -6,6 +6,7 @@ import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh'
 import { reconstructSurface } from '../utils/surfaceReconstruction'
 import { downloadTiledWms } from '../utils/WmsTileDownloader'
+import { downloadTiledXyz } from '../utils/XyzTileDownloader'
 import type { ParsedCave, CaveSurface, Segment } from '../parsers/caveParser'
 import type { SelStation } from '../App'
 
@@ -1620,7 +1621,7 @@ function buildTerrainTileData(surface: CaveSurface, colStart: number, rowStart: 
 // ─── Terrain surface mesh (všetky módy) ──────────────────────────────────────
 const TILE_SIZE = 128; // Počet vrcholov na hranu dlaždice
 
-const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCount, imgSize, imgSizeUniformRef, ...props }: any) => {
+const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCount, imgSize, imgSizeUniformRef, wmsInfo, ...props }: any) => {
   const [geo, setGeo] = useState<THREE.BufferGeometry | null>(null);
 
   useEffect(() => {
@@ -1751,23 +1752,15 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
     textureUniforms.uTexOffset.value   = [props.options.surfaceTextureOffset.x, props.options.surfaceTextureOffset.y];
     textureUniforms.uDtmDim.value      = [dtmWidth, dtmHeight];
     
-    if (isWms && surface.sjtskBbox) {
-      const parts = surface.sjtskBbox.split(',').map(Number);
-      if (parts.length === 4) {
-        // uCalib0: minx, miny, maxx, maxy
-        textureUniforms.uCalib0.value.set(parts[0], parts[1], parts[2], parts[3]);
-        const aspect = surface.sjtskAspect || 1.0;
-        const texWidth = props.options.surfaceWmsResolution || 2048;
-        const texHeight = Math.max(256, Math.round(texWidth * aspect));
-        // uCalib1: px_min, py_min, px_max, py_max
-        textureUniforms.uCalib1.value.set(0, 0, texWidth, texHeight);
-      }
+    if (isWms && wmsInfo) {
+      textureUniforms.uCalib0.value.set(wmsInfo.minX, wmsInfo.minY, wmsInfo.maxX, wmsInfo.maxY);
+      textureUniforms.uCalib1.value.set(0, 0, wmsInfo.texWidth, wmsInfo.texHeight);
     } else if (calib) {
       textureUniforms.uCalib0.value.set(calib.p1.mx, calib.p1.my, calib.p2.mx, calib.p2.my);
       textureUniforms.uCalib1.value.set(calib.p1.x, calib.p1.y, calib.p2.x, calib.p2.y);
     }
     textureUniforms.uTextureOpacity.value = props.options.surfaceTextureOpacity ?? 1.0;
-  }, [textureUniforms, surface, imgSize, props.options.surfaceTextureOffset, props.options.surfaceTextureCalibration, props.surfaceTextureUrl, props.options.surfaceTextureOpacity, props.options.surfaceTextureSource, props.options.surfaceWmsResolution]);
+  }, [textureUniforms, surface, imgSize, wmsInfo, props.options.surfaceTextureOffset, props.options.surfaceTextureCalibration, props.surfaceTextureUrl, props.options.surfaceTextureOpacity, props.options.surfaceTextureSource, props.options.surfaceWmsResolution]);
 
   if (!geo) return null;
 
@@ -1930,28 +1923,53 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, ...props }: any) => 
   // Ref na shader uniforms pre dynamickú aktualizáciu bez rekompilácie
   const imgSizeUniformRef = useRef<{ value: [number, number] }[]>([])
 
+  const wmsInfo = useMemo(() => {
+    if (!surface.sjtskBbox) return null;
+    const aspect = surface.sjtskAspect || 1.0;
+    
+    const modelWidthMeters = (surface.dtm.samples - 1) * Math.abs(surface.dtm.calib.xx || 1);
+    const modelHeightMeters = (surface.dtm.lines - 1) * Math.abs(surface.dtm.calib.yy || 1);
+    const maxDim = Math.max(modelWidthMeters, modelHeightMeters);
+
+    let targetMetersPerPixel = 1.0;
+    if (maxDim < 400) targetMetersPerPixel = 0.5;      // Zoom 18
+    else if (maxDim < 1000) targetMetersPerPixel = 0.8; 
+    else if (maxDim > 3000) targetMetersPerPixel = 2.0;
+
+    let texWidth = props.options.surfaceWmsResolution || Math.round(modelWidthMeters / targetMetersPerPixel);
+    texWidth = Math.min(4096, Math.max(1024, texWidth));
+    const texHeight = Math.round(texWidth * aspect);
+
+    const parts = surface.sjtskBbox.split(',').map(Number);
+    const w = parts[2] - parts[0];
+    const h = parts[3] - parts[1];
+    const pad = 0.25;
+    const minX = parts[0] - w * pad;
+    const minY = parts[1] - h * pad;
+    const maxX = parts[2] + w * pad;
+    const maxY = parts[3] + h * pad;
+    const expandedBbox = `${minX},${minY},${maxX},${maxY}`;
+
+    return { expandedBbox, texWidth, texHeight, minX, minY, maxX, maxY };
+  }, [surface.sjtskBbox, surface.dtm, surface.sjtskAspect, props.options.surfaceWmsResolution]);
+
   useEffect(() => {
     const source = props.options.surfaceTextureSource || 'custom';
     let url: string | null = null;
 
-    const aspect = surface.sjtskAspect || 1.0;
-    const texWidth = props.options.surfaceWmsResolution || 2048;
-    const texHeight = Math.max(256, Math.round(texWidth * aspect));
-
     if (source === 'custom') {
       url = props.surfaceTextureUrl || surface.bitmapUrl;
-    } else if (surface.sjtskBbox) {
-      const bbox = surface.sjtskBbox;
+    } else if (wmsInfo) {
+      const { expandedBbox, texWidth, texHeight } = wmsInfo;
 
       if (source === 'wms-geology') {
-        // Geologická mapa ŠGÚDŠ (WMS 1.1.1 pre ArcGIS, EPSG:5514)
-        url = `/wms-proxy/geology?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=0&STYLES=&SRS=EPSG:5514&BBOX=${bbox}&WIDTH=${texWidth}&HEIGHT=${texHeight}&FORMAT=image/png&TRANSPARENT=TRUE`;
+        url = `/wms-proxy/geology?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=0&STYLES=&SRS=EPSG:5514&BBOX=${expandedBbox}&WIDTH=${texWidth}&HEIGHT=${texHeight}&FORMAT=image/png&TRANSPARENT=TRUE`;
       } else if (source === 'wms-orto') {
-        // ZBGIS Ortofoto — via proxy (CORS bypass), vrstva 1
-        url = `/wms-proxy/orto?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=1&STYLES=&CRS=EPSG:5514&BBOX=${bbox}&WIDTH=${texWidth}&HEIGHT=${texHeight}&FORMAT=image/jpeg`;
+        // Switching to XYZ scraping as requested
+        url = `/xyz-proxy/zbgis/Ortofoto/MapServer/tile/{z}/{y}/{x}?blankTile=false`;
       } else if (source === 'wms-shadow') {
-        // ZBGIS DMR Tieňovaný reliéf — vrstva 18 (číselné pomenovanie vrstvy v zbgis_wms)
-        url = `/wms-proxy/shadow?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=18&STYLES=&CRS=EPSG:5514&BBOX=${bbox}&WIDTH=${texWidth}&HEIGHT=${texHeight}&FORMAT=image/png&TRANSPARENT=TRUE`;
+        // Switching to XYZ scraping as requested (DMR5)
+        url = `/xyz-proxy/zbgis/LLS_DMR5/MapServer/tile/{z}/{y}/{x}?blankTile=false`;
       }
     }
 
@@ -1966,30 +1984,70 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, ...props }: any) => 
       setWmsLoading(true);
       setWmsProgress(0);
       
-      const baseUrl = url.split('&BBOX=')[0];
-      
-      downloadTiledWms(baseUrl, surface.sjtskBbox, texWidth, texHeight, (p) => {
-        setWmsProgress(Math.round((p.current / p.total) * 100));
-      }).then(dataUrl => {
-        const loader = new THREE.TextureLoader();
-        loader.load(dataUrl, (t) => {
-          t.colorSpace = THREE.SRGBColorSpace;
-          t.needsUpdate = true;
-          setTexture(t);
-          const newSize: [number, number] = [texWidth, texHeight];
-          setImgSize(newSize);
-          for (const u of imgSizeUniformRef.current) u.value = newSize;
+      const isXyz = source === 'wms-orto' || source === 'wms-shadow';
+
+      if (isXyz) {
+        const format = source === 'wms-shadow' ? 'image/png' : 'image/jpeg';
+        downloadTiledXyz(url!, surface.sjtskBbox, format, (p) => {
+          setWmsProgress(Math.round((p.current / p.total) * 100));
+        }).then(dataUrl => {
+          const loader = new THREE.TextureLoader();
+          loader.load(dataUrl, (t) => {
+            t.colorSpace = THREE.SRGBColorSpace;
+            t.minFilter = THREE.LinearFilter;
+            t.magFilter = THREE.LinearFilter;
+            t.needsUpdate = true;
+            setTexture(t);
+            
+            // Note: imgSize is used for resolution-dependent effects.
+            // Since we might have scaled the canvas, we should update it.
+            const img = t.image;
+            if (img) {
+              const newSize: [number, number] = [img.width, img.height];
+              setImgSize(newSize);
+              for (const u of imgSizeUniformRef.current) u.value = newSize;
+            }
+            
+            setWmsLoading(false);
+          });
+        }).catch(err => {
+          console.error("XYZ Scraping failed:", err);
           setWmsLoading(false);
         });
-      }).catch(err => {
-        console.error("Tiled WMS failed, falling back to direct load:", err);
-        const loader = new THREE.TextureLoader();
-        loader.load(url!, (t) => {
-          t.colorSpace = THREE.SRGBColorSpace;
-          setTexture(t);
-          setWmsLoading(false);
+      } else {
+        // Preserve other parameters like FORMAT and TRANSPARENT for WMS (Geology)
+        const baseUrl = url!
+          .replace(/&BBOX=[^&]*/, '')
+          .replace(/&WIDTH=[^&]*/, '')
+          .replace(/&HEIGHT=[^&]*/, '');
+        
+        const formatMatch = url!.match(/FORMAT=([^&]*)/);
+        const format = formatMatch ? formatMatch[1] : 'image/jpeg';
+        
+        if (!wmsInfo) return;
+        downloadTiledWms(baseUrl, surface.sjtskBbox, wmsInfo.texWidth, wmsInfo.texHeight, format, (p) => {
+          setWmsProgress(Math.round((p.current / p.total) * 100));
+        }).then(dataUrl => {
+          const loader = new THREE.TextureLoader();
+          loader.load(dataUrl, (t) => {
+            t.colorSpace = THREE.SRGBColorSpace;
+            t.needsUpdate = true;
+            setTexture(t);
+            const newSize: [number, number] = [wmsInfo!.texWidth, wmsInfo!.texHeight];
+            setImgSize(newSize);
+            for (const u of imgSizeUniformRef.current) u.value = newSize;
+            setWmsLoading(false);
+          });
+        }).catch(err => {
+          console.error("Tiled WMS failed, falling back to direct load:", err);
+          const loader = new THREE.TextureLoader();
+          loader.load(url!, (t) => {
+            t.colorSpace = THREE.SRGBColorSpace;
+            setTexture(t);
+            setWmsLoading(false);
+          });
         });
-      });
+      }
     } else {
       const loader = new THREE.TextureLoader()
       loader.load(url, (t) => {
@@ -2005,10 +2063,8 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, ...props }: any) => 
       })
     }
     return () => {
-      // texture dispose removed here to avoid flickering on rapid changes, 
-      // but ideally we should dispose previous textures if they are no longer used.
     }
-  }, [surface.bitmapUrl, props.surfaceTextureUrl, props.options.surfaceTextureSource, props.options.surfaceWmsResolution, surface.sjtskBbox])
+  }, [surface.bitmapUrl, props.surfaceTextureUrl, props.options.surfaceTextureSource, props.options.surfaceWmsResolution, surface.sjtskBbox, wmsInfo])
 
   const hoverGeo = useMemo(() => new THREE.SphereGeometry(0.25, 8, 8), [])
   const hoverMat = useMemo(() => new THREE.MeshBasicMaterial({ color: "#ef4444", depthTest: false }), [])
@@ -2050,6 +2106,7 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, ...props }: any) => 
           key={`${tile.colStart}-${tile.rowStart}-${imgSize[0]}x${imgSize[1]}`} 
           surface={surface} {...tile} {...props} 
           texture={texture} imgSize={imgSize} 
+          wmsInfo={wmsInfo}
           imgSizeUniformRef={imgSizeUniformRef}
         />
       ))}

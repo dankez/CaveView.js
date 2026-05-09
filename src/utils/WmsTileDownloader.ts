@@ -59,6 +59,7 @@ export async function downloadTiledWms(
   sjtskBbox: string,
   targetWidth: number,
   targetHeight: number,
+  format: string = 'image/jpeg',
   onProgress?: (p: DownloadProgress) => void
 ): Promise<string> {
   const [minX, minY, maxX, maxY] = sjtskBbox.split(',').map(Number);
@@ -107,10 +108,30 @@ export async function downloadTiledWms(
       try {
         let blob = await TileCache.get(cacheKey);
         if (!blob) {
-          const url = `${baseUrl}&BBOX=${tileBbox}&WIDTH=${tileWidth}&HEIGHT=${tileHeight}`;
+          const isV130 = baseUrl.includes('VERSION=1.3.0');
+          // V 1.3.0 pre EPSG:5514 (S-JTSK) sa často vyžaduje axis order Y, X (minY, minX, maxY, maxX)
+          // Ale ZBGIS je niekedy benevolentný. Skúsime detekovať alebo použiť fallback.
+          let finalBbox = `${tMinX},${tMinY},${tMaxX},${tMaxY}`;
+          
+          // Ak je to ZBGIS a 1.3.0, skúsime prehodený axis order ak to bežné zlyháva? 
+          // Radšej to spravíme konfigurovateľné alebo budeme sledovať baseUrl.
+          if (isV130 && !baseUrl.includes('geology')) {
+             // ZBGIS 1.3.0
+             // finalBbox = `${tMinY},${tMinX},${tMaxY},${tMaxX}`; 
+          }
+
+          const url = `${baseUrl}&BBOX=${finalBbox}&WIDTH=${tileWidth}&HEIGHT=${tileHeight}`;
+          console.log(`[WMS] Fetching tile ${col},${row}:`, url);
+          
           const resp = await fetch(url);
-          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          if (!resp.ok) {
+            const errorText = await resp.text();
+            throw new Error(`HTTP ${resp.status}: ${errorText.substring(0, 100)}`);
+          }
           blob = await resp.blob();
+          if (blob.type.includes('xml') || blob.size < 100) {
+            throw new Error("Invalid tile blob (likely WMS Service Exception)");
+          }
           await TileCache.set(cacheKey, blob);
         }
 
@@ -137,5 +158,5 @@ export async function downloadTiledWms(
   const workers = Array(5).fill(null).map(worker);
   await Promise.all(workers);
 
-  return canvas.toDataURL('image/jpeg', 0.9);
+  return canvas.toDataURL(format, format === 'image/jpeg' ? 0.9 : 1.0);
 }

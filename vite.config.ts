@@ -25,6 +25,22 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: path => path.replace(/^\/wms-proxy\/shadow/, '/zbgis_dmr_wms/service.svc/get'),
       },
+      // XYZ Tile Proxies for scraping
+      '/xyz-proxy/zbgis': {
+        target: 'https://zbgis.skgeodesy.sk',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/xyz-proxy\/zbgis/, '/zbgis/rest/services'),
+      },
+      '/xyz-proxy/freemap-orto': {
+        target: 'https://ortofoto.tiles.freemap.sk',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/xyz-proxy\/freemap-orto/, ''),
+      },
+      '/xyz-proxy/freemap-shading': {
+        target: 'https://dmr5-shading.tiles.freemap.sk',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/xyz-proxy\/freemap-shading/, ''),
+      },
     },
   },
   test: {
