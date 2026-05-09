@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh'
 import { reconstructSurface } from '../utils/surfaceReconstruction'
+import { downloadTiledWms } from '../utils/WmsTileDownloader'
 import type { ParsedCave, CaveSurface, Segment } from '../parsers/caveParser'
 import type { SelStation } from '../App'
 
@@ -1924,6 +1925,8 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, ...props }: any) => 
 
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
   const [imgSize, setImgSize] = useState<[number, number]>([1, 1])
+  const [wmsLoading, setWmsLoading] = useState(false);
+  const [wmsProgress, setWmsProgress] = useState(0);
   // Ref na shader uniforms pre dynamickú aktualizáciu bez rekompilácie
   const imgSizeUniformRef = useRef<{ value: [number, number] }[]>([])
 
@@ -1931,13 +1934,14 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, ...props }: any) => 
     const source = props.options.surfaceTextureSource || 'custom';
     let url: string | null = null;
 
+    const aspect = surface.sjtskAspect || 1.0;
+    const texWidth = props.options.surfaceWmsResolution || 2048;
+    const texHeight = Math.max(256, Math.round(texWidth * aspect));
+
     if (source === 'custom') {
       url = props.surfaceTextureUrl || surface.bitmapUrl;
     } else if (surface.sjtskBbox) {
       const bbox = surface.sjtskBbox;
-      const aspect = surface.sjtskAspect || 1.0;
-      const texWidth = props.options.surfaceWmsResolution || 2048;
-      const texHeight = Math.max(256, Math.round(texWidth * aspect));
 
       if (source === 'wms-geology') {
         // Geologická mapa ŠGÚDŠ (WMS 1.1.1 pre ArcGIS, EPSG:5514)
@@ -1955,25 +1959,56 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, ...props }: any) => 
       setTexture(null)
       return
     }
-    const loader = new THREE.TextureLoader()
-    loader.load(url, (t) => {
-      t.colorSpace = THREE.SRGBColorSpace
-      t.flipY = true 
-      t.needsUpdate = true
-      if (t.image && t.image.width && t.image.height) {
-        const newSize: [number, number] = [t.image.width, t.image.height]
-        setImgSize(newSize)
-        // Aktualizuj všetky registrované uniforms priamo — bez rekompilácie shadera
-        for (const u of imgSizeUniformRef.current) {
-          u.value = newSize
+
+    const isWms = source !== 'custom';
+
+    if (isWms && surface.sjtskBbox) {
+      setWmsLoading(true);
+      setWmsProgress(0);
+      
+      const baseUrl = url.split('&BBOX=')[0];
+      
+      downloadTiledWms(baseUrl, surface.sjtskBbox, texWidth, texHeight, (p) => {
+        setWmsProgress(Math.round((p.current / p.total) * 100));
+      }).then(dataUrl => {
+        const loader = new THREE.TextureLoader();
+        loader.load(dataUrl, (t) => {
+          t.colorSpace = THREE.SRGBColorSpace;
+          t.needsUpdate = true;
+          setTexture(t);
+          const newSize: [number, number] = [texWidth, texHeight];
+          setImgSize(newSize);
+          for (const u of imgSizeUniformRef.current) u.value = newSize;
+          setWmsLoading(false);
+        });
+      }).catch(err => {
+        console.error("Tiled WMS failed, falling back to direct load:", err);
+        const loader = new THREE.TextureLoader();
+        loader.load(url!, (t) => {
+          t.colorSpace = THREE.SRGBColorSpace;
+          setTexture(t);
+          setWmsLoading(false);
+        });
+      });
+    } else {
+      const loader = new THREE.TextureLoader()
+      loader.load(url, (t) => {
+        t.colorSpace = THREE.SRGBColorSpace
+        t.flipY = true 
+        t.needsUpdate = true
+        if (t.image && t.image.width && t.image.height) {
+          const newSize: [number, number] = [t.image.width, t.image.height]
+          setImgSize(newSize)
+          for (const u of imgSizeUniformRef.current) u.value = newSize
         }
-      }
-      setTexture(t)
-    })
-    return () => {
-      if (texture) texture.dispose()
+        setTexture(t)
+      })
     }
-  }, [surface.bitmapUrl, props.surfaceTextureUrl, props.options.surfaceTextureSource, props.options.surfaceWmsResolution])
+    return () => {
+      // texture dispose removed here to avoid flickering on rapid changes, 
+      // but ideally we should dispose previous textures if they are no longer used.
+    }
+  }, [surface.bitmapUrl, props.surfaceTextureUrl, props.options.surfaceTextureSource, props.options.surfaceWmsResolution, surface.sjtskBbox])
 
   const hoverGeo = useMemo(() => new THREE.SphereGeometry(0.25, 8, 8), [])
   const hoverMat = useMemo(() => new THREE.MeshBasicMaterial({ color: "#ef4444", depthTest: false }), [])

@@ -99,6 +99,10 @@
     "mtime": 1776409952.8888268,
     "hash": "53f9c4e8a6c4275f86624dc5bdd356a9"
   },
+  "/home/dankez/cave3d/CaveView-modernized/src/utils/WmsTileDownloader.ts": {
+    "mtime": 1778316168.4142842,
+    "hash": "e222131494d1ccd812737199b21ff061"
+  },
   "/home/dankez/cave3d/CaveView-modernized/src/utils/surfaceReconstruction.ts": {
     "mtime": 1778142441.5857043,
     "hash": "096c8bd08673f2219bfbca6ab329c5c3"
@@ -108,8 +112,8 @@
     "hash": "604ac718a40d9d35f68c242f99a0763a"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/components/CaveViewer3D.tsx": {
-    "mtime": 1778309419.637547,
-    "hash": "628a692b7a59c6a51f1a4d8646858918"
+    "mtime": 1778316206.6036122,
+    "hash": "cef9b050ff2f4398c0487e9f98c22df3"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/core/constants.ts": {
     "mtime": 1776409952.8878267,
