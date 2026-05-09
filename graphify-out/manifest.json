@@ -36,16 +36,16 @@
     "hash": "f73035793bc69cd59e6cbfaa5080f878"
   },
   "/home/dankez/cave3d/CaveView-modernized/eslint.config.js": {
-    "mtime": 1777201521.1537378,
-    "hash": "f64a794c1e6de761989d542f6d493cbc"
+    "mtime": 1778338898.5242484,
+    "hash": "75fd6f3bbb1933245b43221c9668a041"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/vite-env.d.ts": {
     "mtime": 1777624679.4486542,
     "hash": "e15f4c9754927c9219958cbbcf4537b4"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/App.tsx": {
-    "mtime": 1778309431.2564254,
-    "hash": "c41aea59f121cb869eec2b8a4fe704e5"
+    "mtime": 1778343212.4927015,
+    "hash": "49f8be6402df13d27fc2a593930971c5"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/main.tsx": {
     "mtime": 1776409952.8888268,
@@ -76,8 +76,8 @@
     "hash": "db8d19a4ff0ee4f20a8947825ffae8a3"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/i18n/sk.ts": {
-    "mtime": 1778092057.3522112,
-    "hash": "bb465250da8c0b1746dae26785f654ef"
+    "mtime": 1778343161.667179,
+    "hash": "144e7e253d7c9aa15a4de90fdb6b2637"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/i18n/fr.ts": {
     "mtime": 1778092183.024982,
@@ -88,8 +88,8 @@
     "hash": "fe8379cea7f18f48709bbcc7aacac98e"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/i18n/en.ts": {
-    "mtime": 1778092064.5211413,
-    "hash": "861fb80979972a12c3219aeca4c21aa8"
+    "mtime": 1778343178.2890234,
+    "hash": "7699225f0e86c170210e341a4a64b66c"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/test/setup.ts": {
     "mtime": 1777201521.7377317,
@@ -98,6 +98,10 @@
   "/home/dankez/cave3d/CaveView-modernized/src/types/index.ts": {
     "mtime": 1776409952.8888268,
     "hash": "53f9c4e8a6c4275f86624dc5bdd356a9"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/utils/geoUtils.ts": {
+    "mtime": 1778343109.9756598,
+    "hash": "8a82350f48f286a028a691aa66cb3aa3"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/utils/XyzTileDownloader.ts": {
     "mtime": 1778338592.374232,

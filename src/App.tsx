@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, Suspense, useMemo } from 'react'
 import proj4 from 'proj4'
+import { fetchAltitudeFromZbgis } from './utils/geoUtils'
 import { parseLox, parseSvx, parsePlt, parsePly } from './parsers/caveParser'
 import type { ParsedCave, CaveSurface, Vec3 } from './parsers/caveParser'
 import { parseGeoTiff } from './parsers/tiffParser'
@@ -170,20 +171,63 @@ export interface SelStation {
   centerZ?:     number
 }
 
-function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, t, lang }: { 
+function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUpdateGps, t, lang }: { 
   stations: SelStation[]; 
   onClose: () => void;
   onPlaceCaver: (pos: [number, number, number] | null, pose: 'standing' | 'crawling') => void;
   onSetProfile: (sts: SelStation[]) => void;
+  onUpdateGps: (stIdx: number, lat: number, lon: number, alt: number) => void;
   t: (key: string) => string;
   lang: string;
 }) {
   const [posOffset, setPosOffset] = useState({ x: 0, y: 0 })
   const dragRef = useRef<{ startX: number; startY: number; isDragging: boolean }>({ startX: 0, startY: 0, isDragging: false })
+  
+  // State for manual GPS entry
+  const [editGps, setEditGps] = useState(false)
+  const [latInput, setLatInput] = useState('')
+  const [lonInput, setLonInput] = useState('')
+  const [altInput, setAltInput] = useState('')
+  const [isFetchingAlt, setIsFetchingAlt] = useState(false)
 
   if (stations.length === 0) return null
   const st1 = stations[0]
   const st2 = stations.length > 1 ? stations[1] : null
+
+  // Initialize inputs when station changes or enters edit mode
+  useEffect(() => {
+    if (st1) {
+      setLatInput(st1.gps?.lat.toString() || '')
+      setLonInput(st1.gps?.lon.toString() || '')
+      setAltInput(st1.altitude.toFixed(2))
+    }
+  }, [st1, editGps])
+
+  const handleFetchAlt = async () => {
+    const lat = parseFloat(latInput)
+    const lon = parseFloat(lonInput)
+    if (isNaN(lat) || isNaN(lon)) return
+    
+    setIsFetchingAlt(true)
+    try {
+      const alt = await fetchAltitudeFromZbgis(lat, lon)
+      if (alt !== null) {
+        setAltInput(alt.toFixed(2))
+      }
+    } finally {
+      setIsFetchingAlt(false)
+    }
+  }
+
+  const handleApplyGps = () => {
+    const lat = parseFloat(latInput)
+    const lon = parseFloat(lonInput)
+    const alt = parseFloat(altInput)
+    if (isNaN(lat) || isNaN(lon) || isNaN(alt)) return
+    
+    onUpdateGps(st1.idx, lat, lon, alt)
+    setEditGps(false)
+  }
 
   // Pôvodná poloha karty
   const cx = Math.min(Math.max(st1.screenX, 280), window.innerWidth - 320)
@@ -266,7 +310,19 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, t, l
           ) : (
             <Row label={t('stations.coordinates')} value={st.name} />
           )}
-          <Row label={t('stations.altitude')} value={`${st.altitude.toFixed(2)} m`} sub="n.m." />
+          
+          {!editGps ? (
+            <Row label={t('stations.altitude')} value={`${st.altitude.toFixed(2)} m`} sub="n.m." />
+          ) : (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+              <span style={{ fontSize: 11, color: '#94a3b8' }}>{t('stations.altitude')}</span>
+              <input 
+                type="text" value={altInput} onChange={e => setAltInput(e.target.value)}
+                style={{ width: 80, background: 'rgba(0,0,0,0.3)', border: '1px solid #4fc3f7', color: '#fff', fontSize: 12, textAlign: 'right', borderRadius: 4, padding: '2px 4px' }}
+              />
+            </div>
+          )}
+
           {st.distToSurf !== null && (
             <Row
               label={t('stations.depth')}
@@ -275,28 +331,78 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, t, l
             />
           )}
 
-          {/* GPS Section only if 1 station is selected to save space */}
+          {/* GPS Section */}
           {stations.length === 1 && (
             <>
-              <div style={{ margin: '10px 0 2px', fontSize: 10, color: '#4fc3f7', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                GPS WGS84 {st.gps ? (st.gps.zone ? `(UTM ${st.gps.zone}N)` : `(${st.gps.epsg})`) : ''}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '10px 0 2px' }}>
+                <div style={{ fontSize: 10, color: '#4fc3f7', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  GPS WGS84 {st.gps ? (st.gps.zone ? `(UTM ${st.gps.zone}N)` : `(${st.gps.epsg})`) : ''}
+                </div>
+                {!editGps && (
+                  <button 
+                    onClick={() => setEditGps(true)}
+                    style={{ background: 'none', border: 'none', color: '#4fc3f7', cursor: 'pointer', fontSize: 10, textDecoration: 'underline', padding: 0 }}
+                  >
+                    {st.gps ? t('ui.edit') : t('ui.add')}
+                  </button>
+                )}
               </div>
-              {st.gps ? (
-                <>
-                  <Row label="Latitude" value={`${st.gps.lat.toFixed(6)}°`} />
-                  <Row label="Longitude" value={`${st.gps.lon.toFixed(6)}°`} />
-                  <div style={{ marginTop: 4 }}>
-                    <a
-                      href={`https://maps.google.com/?q=${st.gps.lat.toFixed(6)},${st.gps.lon.toFixed(6)}`}
-                      target="_blank" rel="noopener noreferrer"
-                      style={{ fontSize: 11, color: '#4fc3f7', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
-                    >
-                      🗺️ {t('ui.googleMaps')}
-                    </a>
-                  </div>
-                </>
+
+              {!editGps ? (
+                st.gps ? (
+                  <>
+                    <Row label="Latitude" value={`${st.gps.lat.toFixed(6)}°`} />
+                    <Row label="Longitude" value={`${st.gps.lon.toFixed(6)}°`} />
+                    <div style={{ marginTop: 4 }}>
+                      <a
+                        href={`https://maps.google.com/?q=${st.gps.lat.toFixed(6)},${st.gps.lon.toFixed(6)}`}
+                        target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize: 11, color: '#4fc3f7', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
+                      >
+                        🗺️ {t('ui.googleMaps')}
+                      </a>
+                    </div>
+                  </>
+                ) : (
+                  <Row label="GPS" value={t('measuring.unavailable')} sub="" />
+                )
               ) : (
-                <Row label="GPS" value={t('measuring.unavailable')} sub="" />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 11, color: '#94a3b8', width: 60 }}>Lat</span>
+                    <input 
+                      type="text" placeholder="48.123456" value={latInput} onChange={e => setLatInput(e.target.value)}
+                      style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: 12, borderRadius: 4, padding: '4px' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 11, color: '#94a3b8', width: 60 }}>Lon</span>
+                    <input 
+                      type="text" placeholder="17.123456" value={lonInput} onChange={e => setLonInput(e.target.value)}
+                      style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: 12, borderRadius: 4, padding: '4px' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                    <button 
+                      onClick={handleFetchAlt} disabled={isFetchingAlt}
+                      style={{ flex: 1, padding: '6px', background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 6, color: '#4fc3f7', cursor: 'pointer', fontSize: 10, fontWeight: 700 }}
+                    >
+                      {isFetchingAlt ? t('ui.loadingAltitude') : t('ui.fetchAltitude')}
+                    </button>
+                    <button 
+                      onClick={handleApplyGps}
+                      style={{ flex: 1, padding: '6px', background: '#3b82f6', border: 'none', borderRadius: 6, color: 'white', cursor: 'pointer', fontSize: 10, fontWeight: 700 }}
+                    >
+                      {t('ui.apply')}
+                    </button>
+                    <button 
+                      onClick={() => setEditGps(false)}
+                      style={{ padding: '6px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 6, color: '#fff', cursor: 'pointer', fontSize: 10 }}
+                    >
+                      {t('ui.cancel')}
+                    </button>
+                  </div>
+                </div>
               )}
             </>
           )}
@@ -328,7 +434,7 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, t, l
       })()}
 
       {/* Mierka - Jaskyniar */}
-      {stations.length === 1 && (
+      {stations.length === 1 && !editGps && (
         <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', gap: 8 }}>
             <button 
@@ -350,7 +456,7 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, t, l
             onClick={() => onPlaceCaver(null, 'standing')}
             style={{ width: '100%', padding: '6px', background: 'none', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 6, color: '#f87171', cursor: 'pointer', fontSize: 10, fontWeight: 700 }}
           >
-            {lang === 'sk' ? 'ODSTRÁNIŤ JASKYNIARA' : 'REMOVE CAVER'}
+            {t('caver.remove').toUpperCase()}
           </button>
         </div>
       )}
@@ -939,7 +1045,6 @@ export default function App() {
     setShowStationCard(true)
   }, [cave, isMeasuringMode])
 
-  // Manuálne meranie cez textové vstupy
   useEffect(() => {
     if (selectedStations.length > 0) {
       setMan1(selectedStations[0].name)
@@ -950,6 +1055,33 @@ export default function App() {
       setMan2('')
     }
   }, [selectedStations])
+
+  const handleUpdateGps = useCallback((stIdx: number, lat: number, lon: number, alt: number) => {
+    if (!cave) return
+    
+    setCave(prev => {
+      if (!prev) return null
+      const newStationLabels = [...prev.stationLabels]
+      if (newStationLabels[stIdx]) {
+        newStationLabels[stIdx] = {
+          ...newStationLabels[stIdx],
+          gps: { lat, lon, epsg: 'Manual' },
+          altitude: alt
+        }
+      }
+      return { ...prev, stationLabels: newStationLabels }
+    })
+    
+    // Aktualizácia výberu aby sa karta hneď prekreslila
+    setSelectedStations(prev => {
+      return prev.map(s => {
+        if (s.idx === stIdx) {
+          return { ...s, gps: { lat, lon, epsg: 'Manual' }, altitude: alt }
+        }
+        return s
+      })
+    })
+  }, [cave])
 
   const stationMeta = new Map<number, { name: string; z: number; isEntrance?: boolean }>()
   const findStationByName = (name: string): SelStation | null => {
@@ -2258,18 +2390,19 @@ export default function App() {
 
                 {/* Station detail card overlay */}
                 {selectedStations.length > 0 && showStationCard && (
-                  <StationDetailCard
-                    stations={selectedStations}
-                    onClose={() => setShowStationCard(false)}
-                    onPlaceCaver={(pos, pose) => setOpts(p => ({ ...p, placedCaver: pos ? { pos, pose } : null }))}
-                    onSetProfile={(sts) => {
-                      setActiveProfilePoints([...sts])
-                      setOpts(p => ({ ...p, showProfileClipping: true, profileClipOffset: 0 }))
-                      setShowStationCard(false)
-                    }}
-                    t={t}
-                    lang={lang}
-                  />
+                    <StationDetailCard
+                      stations={selectedStations}
+                      onClose={() => setShowStationCard(false)}
+                      onPlaceCaver={(pos, pose) => setOpts(p => ({ ...p, placedCaver: pos ? { pos, pose } : null }))}
+                      onSetProfile={(sts) => {
+                        setActiveProfilePoints([...sts])
+                        setOpts(p => ({ ...p, showProfileClipping: true, profileClipOffset: 0 }))
+                        setShowStationCard(false)
+                      }}
+                      onUpdateGps={handleUpdateGps}
+                      t={t}
+                      lang={lang}
+                    />
                 )}
               </div>
 

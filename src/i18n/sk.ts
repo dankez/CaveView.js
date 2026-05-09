@@ -33,6 +33,12 @@ export const sk = {
     finalizing: "Finalizujem model...",
     parsing_model: "Parsovanie modelu...",
     done: "Hotovo",
+    edit: "Upraviť",
+    add: "Pridať",
+    apply: "Použiť",
+    cancel: "Zrušiť",
+    fetchAltitude: "Načítať výšku (ZBGIS)",
+    loadingAltitude: "Načítavam...",
   },
   welcome: {
     sub: "3D Prehliadač jaskynných prieskumov",

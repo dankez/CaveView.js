@@ -33,6 +33,12 @@ export const en = {
     finalizing: "Finalizing model...",
     parsing_model: "Parsing model...",
     done: "Done",
+    edit: "Edit",
+    add: "Add",
+    apply: "Apply",
+    cancel: "Cancel",
+    fetchAltitude: "Fetch elevation (ZBGIS)",
+    loadingAltitude: "Loading...",
   },
   welcome: {
     sub: "3D Cave Survey Viewer",
