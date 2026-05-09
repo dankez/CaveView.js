@@ -1,13 +1,18 @@
-# Graph Report - CaveView-modernized  (2026-05-07)
+# Graph Report - CaveView-modernized  (2026-05-09)
 
 ## Corpus Check
-- 188 files · ~259,899 words
+- 197 files · ~261,179 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 991 nodes · 1678 edges · 43 communities detected
-- Extraction: 64% EXTRACTED · 36% INFERRED · 0% AMBIGUOUS · INFERRED: 605 edges (avg confidence: 0.8)
+- 1154 nodes · 1864 edges · 124 communities (61 shown, 63 thin omitted)
+- Extraction: 68% EXTRACTED · 32% INFERRED · 0% AMBIGUOUS · INFERRED: 605 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
+
+## Graph Freshness
+- Built from commit: `91e534a9`
+- Run `git rev-parse HEAD` and compare to check if the graph is stale.
+- Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - [[_COMMUNITY_Community 0|Community 0]]
@@ -27,6 +32,7 @@
 - [[_COMMUNITY_Community 14|Community 14]]
 - [[_COMMUNITY_Community 15|Community 15]]
 - [[_COMMUNITY_Community 16|Community 16]]
+- [[_COMMUNITY_Community 17|Community 17]]
 - [[_COMMUNITY_Community 18|Community 18]]
 - [[_COMMUNITY_Community 19|Community 19]]
 - [[_COMMUNITY_Community 20|Community 20]]
@@ -40,19 +46,65 @@
 - [[_COMMUNITY_Community 28|Community 28]]
 - [[_COMMUNITY_Community 29|Community 29]]
 - [[_COMMUNITY_Community 30|Community 30]]
+- [[_COMMUNITY_Community 31|Community 31]]
+- [[_COMMUNITY_Community 32|Community 32]]
 - [[_COMMUNITY_Community 33|Community 33]]
 - [[_COMMUNITY_Community 34|Community 34]]
 - [[_COMMUNITY_Community 35|Community 35]]
 - [[_COMMUNITY_Community 36|Community 36]]
 - [[_COMMUNITY_Community 37|Community 37]]
 - [[_COMMUNITY_Community 38|Community 38]]
-- [[_COMMUNITY_Community 39|Community 39]]
 - [[_COMMUNITY_Community 40|Community 40]]
 - [[_COMMUNITY_Community 41|Community 41]]
 - [[_COMMUNITY_Community 42|Community 42]]
 - [[_COMMUNITY_Community 43|Community 43]]
 - [[_COMMUNITY_Community 44|Community 44]]
+- [[_COMMUNITY_Community 45|Community 45]]
 - [[_COMMUNITY_Community 46|Community 46]]
+- [[_COMMUNITY_Community 47|Community 47]]
+- [[_COMMUNITY_Community 48|Community 48]]
+- [[_COMMUNITY_Community 49|Community 49]]
+- [[_COMMUNITY_Community 50|Community 50]]
+- [[_COMMUNITY_Community 51|Community 51]]
+- [[_COMMUNITY_Community 52|Community 52]]
+- [[_COMMUNITY_Community 53|Community 53]]
+- [[_COMMUNITY_Community 54|Community 54]]
+- [[_COMMUNITY_Community 55|Community 55]]
+- [[_COMMUNITY_Community 56|Community 56]]
+- [[_COMMUNITY_Community 57|Community 57]]
+- [[_COMMUNITY_Community 58|Community 58]]
+- [[_COMMUNITY_Community 59|Community 59]]
+- [[_COMMUNITY_Community 60|Community 60]]
+- [[_COMMUNITY_Community 61|Community 61]]
+- [[_COMMUNITY_Community 62|Community 62]]
+- [[_COMMUNITY_Community 63|Community 63]]
+- [[_COMMUNITY_Community 64|Community 64]]
+- [[_COMMUNITY_Community 65|Community 65]]
+- [[_COMMUNITY_Community 66|Community 66]]
+- [[_COMMUNITY_Community 67|Community 67]]
+- [[_COMMUNITY_Community 68|Community 68]]
+- [[_COMMUNITY_Community 69|Community 69]]
+- [[_COMMUNITY_Community 71|Community 71]]
+- [[_COMMUNITY_Community 72|Community 72]]
+- [[_COMMUNITY_Community 73|Community 73]]
+- [[_COMMUNITY_Community 74|Community 74]]
+- [[_COMMUNITY_Community 75|Community 75]]
+- [[_COMMUNITY_Community 76|Community 76]]
+- [[_COMMUNITY_Community 77|Community 77]]
+- [[_COMMUNITY_Community 78|Community 78]]
+- [[_COMMUNITY_Community 79|Community 79]]
+- [[_COMMUNITY_Community 80|Community 80]]
+- [[_COMMUNITY_Community 81|Community 81]]
+- [[_COMMUNITY_Community 82|Community 82]]
+- [[_COMMUNITY_Community 83|Community 83]]
+- [[_COMMUNITY_Community 84|Community 84]]
+- [[_COMMUNITY_Community 85|Community 85]]
+- [[_COMMUNITY_Community 86|Community 86]]
+- [[_COMMUNITY_Community 87|Community 87]]
+- [[_COMMUNITY_Community 88|Community 88]]
+- [[_COMMUNITY_Community 90|Community 90]]
+- [[_COMMUNITY_Community 91|Community 91]]
+- [[_COMMUNITY_Community 95|Community 95]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `Survey` - 49 edges
@@ -73,249 +125,138 @@
   legacy/js/viewer/walls/buildCrossSections.js → legacy/js/viewer/walls/WallBuilders.js
 - `buildWallsSync()` --calls--> `buildScraps()`  [INFERRED]
   legacy/js/viewer/walls/WallBuilders.js → legacy/js/viewer/walls/buildScraps.js
+- `App()` --calls--> `getBrowserLanguage()`  [EXTRACTED]
+  src/App.tsx → src/i18n/index.ts
 
-## Communities
+## Communities (124 total, 63 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.03
-Nodes (15): ModelSource, RenderUtils, WorkerPoolCache, DistanceFieldFilterPass, DistanceFieldPass, HUD(), CaveLoader, FileLoader (+7 more)
-
-### Community 1 - "Community 1"
-Cohesion: 0.04
-Nodes (29): intersectTrianglePlane(), equalArray(), getCanvas(), getMinMax(), getPaddedArrayBuffer(), getPaddedBufferSize(), GLTFExporter, GLTFLightExtension (+21 more)
-
-### Community 2 - "Community 2"
 Cohesion: 0.07
 Nodes (14): _getId(), EditPage, ExportPage, Frame, HelpPage, InfoPage, Page, RoutePanel (+6 more)
 
+### Community 1 - "Community 1"
+Cohesion: 0.05
+Nodes (6): WallMaterial, Legs, Survey, buildCrossSections(), buildScraps(), buildWallsSync()
+
+### Community 2 - "Community 2"
+Cohesion: 0.06
+Nodes (22): equalArray(), getCanvas(), getMinMax(), getPaddedArrayBuffer(), getPaddedBufferSize(), GLTFExporter, GLTFLightExtension, GLTFMaterialsClearcoatExtension (+14 more)
+
 ### Community 3 - "Community 3"
-Cohesion: 0.04
-Nodes (8): dataURL(), hydrateGeometry(), replaceExtension(), WorkerPool, EPSG3857TileSet, Overlay, Tile, WebTerrain
+Cohesion: 0.05
+Nodes (18): ViewerOptions, getBrowserLanguage(), getTranslation(), parseGeoTiff(), App(), AppState, draw(), encodeState() (+10 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.04
-Nodes (13): ColourCache, SurveyColourMapper(), Leg, PublicFactory, Segment, Station, CanvasPopup, OrbitControls (+5 more)
-
-### Community 5 - "Community 5"
-Cohesion: 0.06
-Nodes (6): StationMarkers, Survey, buildCrossSections(), buildScraps(), buildWallsSync(), Walls
-
-### Community 6 - "Community 6"
-Cohesion: 0.04
-Nodes (14): Cfg, Compass, HudObject, DepthMaterial, EntrancePointMaterial, HeightMaterial, Materials(), SurveyLineMaterial (+6 more)
-
-### Community 7 - "Community 7"
-Cohesion: 0.05
-Nodes (14): GlyphString, GlyphStringBase, MutableGlyphString, GlyphStringGeometry, GlyphStringGeometryCache, AHI, AngleScale, CursorScale (+6 more)
-
-### Community 8 - "Community 8"
-Cohesion: 0.05
-Nodes (8): LineSegments2, LineSegmentsGeometry, SurveyBox, CGeometry, Orb, TerrainMeshGeometry, DyeTraces, Legs
-
-### Community 9 - "Community 9"
 Cohesion: 0.05
 Nodes (9): StationPosition, TextureLookup, unpackRGBA(), LinearScale, Scale, Selection, StationLabels, Stations (+1 more)
 
-### Community 10 - "Community 10"
-Cohesion: 0.07
-Nodes (8): TextureCache, loxLoader, pltLoader, SurveyDataCollector, Svx3dLoader, progress(), ImagePopup, PointIndicator
+### Community 5 - "Community 5"
+Cohesion: 0.06
+Nodes (8): GlyphStringGeometry, LineSegments2, LineSegmentsGeometry, CGeometry, Orb, TerrainMeshGeometry, Grid, Walls
 
-### Community 11 - "Community 11"
-Cohesion: 0.09
-Nodes (7): draw(), encodeState(), execManualMeasure(), findStationByName(), getIframeCode(), getShareUrl(), handleCopyShare()
+### Community 6 - "Community 6"
+Cohesion: 0.05
+Nodes (15): CaveScraps, CaveTraverse, CLASSIFICATION_COLORS, ClippingEdges, ContourLabels, CYL_UP, ELEV_STOPS, intersectTrianglePlane() (+7 more)
 
-### Community 12 - "Community 12"
+### Community 7 - "Community 7"
+Cohesion: 0.06
+Nodes (31): 🎡 Adaptívny Rotačný Gizmo, 🎡 Adaptive Rotation Gizmo, ✂️ Advanced Spatial Analysis (Clipping & Profiles), 🔒 Bezpečnosť a Audit, ☁️ Cloud Sharing (Google Drive) & Security, code:bash (git clone https://github.com/dankez/CaveView.js.git), code:bash (git clone https://github.com/dankez/CaveView.js.git), 📄 Documentation / Dokumentácia (+23 more)
+
+### Community 8 - "Community 8"
+Cohesion: 0.1
+Nodes (5): loxLoader, pltLoader, SurveyDataCollector, Svx3dLoader, progress()
+
+### Community 9 - "Community 9"
 Cohesion: 0.1
 Nodes (3): Entrances, Routes, SurveyMetadata
 
-### Community 13 - "Community 13"
-Cohesion: 0.14
+### Community 10 - "Community 10"
+Cohesion: 0.13
 Nodes (3): ClusterMarkers, QuadTree, Marker
 
-### Community 14 - "Community 14"
+### Community 11 - "Community 11"
+Cohesion: 0.11
+Nodes (17): [1.2.0] - 2026-05-01, [1.3.0] - 2026-05-03, Branding & Signature (v1.4.3), Changelog, LiDAR Progresívny LOD & Optimalizácia (v1.4.0), LiDAR Výkon & Organická Rekonštrukcia (v1.3.3), Opravené, Opravy & LiDAR Interakcia (+9 more)
+
+### Community 12 - "Community 12"
 Cohesion: 0.12
 Nodes (4): AHIControl, CompassControl, Control, CursorControl
+
+### Community 14 - "Community 14"
+Cohesion: 0.14
+Nodes (4): AHI, Compass, HudObject, EntrancePointMaterial
 
 ### Community 15 - "Community 15"
 Cohesion: 0.17
 Nodes (4): CommonTerrainMaterial, ContourMaterial, HypsometricMaterial, TerrainOverlayMaterial
 
-### Community 16 - "Community 16"
+### Community 19 - "Community 19"
+Cohesion: 0.19
+Nodes (3): ModelSource, CaveViewUI(), FileSelector
+
+### Community 20 - "Community 20"
+Cohesion: 0.13
+Nodes (14): 🏔️ 1. Vrstevnice, ktoré vám konečne niečo povedia, 🗺️ 2. Mapy a povrchy s profesionálnou presnosťou, 📐 3. Merania (pre tých, čo chcú mať všetko pod kontrolou), 🎥 4. Filmové štúdio priamo v prehliadači, 📱 5. Mobilná verzia (pre jaskynných nomádov), 🔗 6. Zdieľanie ako u profíkov (Embed), 👤 7. Jaskyniar so svetlom a orezávaním, ✂️ 8. Rezy jaskyňou (Clipping) – Vidieť dovnútra nikdy nebolo jednoduchšie (+6 more)
+
+### Community 21 - "Community 21"
+Cohesion: 0.18
+Nodes (12): buildResult(), Calibration, CaveSurface, ParsedCave, parseLox(), parsePlt(), parsePly(), parseSvx() (+4 more)
+
+### Community 22 - "Community 22"
+Cohesion: 0.15
+Nodes (4): GlyphString, MutableGlyphString, GlyphStringGeometryCache, GlyphMaterial
+
+### Community 24 - "Community 24"
+Cohesion: 0.15
+Nodes (4): Leg, OrbitControls, SegmentPopup, CameraManager()
+
+### Community 26 - "Community 26"
+Cohesion: 0.15
+Nodes (12): 1.1 Surface Nets (Dual Contouring), 1.2 Silk/Fabric Smoothing (Laplacian), 1.3 Taubin Smoothing (Volume Preserving), 1.4 Dilation / Bulge (Model Offset), 1. Rekonštrukcia povrchu (Surface Reconstruction), 2.1 LiDAR Raycasting & LOD (Level of Detail), 2.2 Režim merania a Gating interakcie, 2.2 Vertikálne profilovanie (Clipping) (+4 more)
+
+### Community 30 - "Community 30"
+Cohesion: 0.18
+Nodes (3): TextureCache, ImagePopup, PointIndicator
+
+### Community 35 - "Community 35"
+Cohesion: 0.22
+Nodes (3): dataURL(), hydrateGeometry(), replaceExtension()
+
+### Community 38 - "Community 38"
 Cohesion: 0.22
 Nodes (3): PointerControls, Popup, PopupGeometry
 
-### Community 18 - "Community 18"
-Cohesion: 0.33
-Nodes (2): DistanceFieldPlugin, DistanceLookup
-
-### Community 19 - "Community 19"
-Cohesion: 0.33
-Nodes (1): FullScreenQuad
-
-### Community 20 - "Community 20"
-Cohesion: 0.4
-Nodes (1): WorkerLoader
-
-### Community 21 - "Community 21"
-Cohesion: 0.4
-Nodes (2): ARButton, ARPlugin
-
-### Community 22 - "Community 22"
-Cohesion: 0.4
-Nodes (2): LocationPlugin, LocationSource
-
-### Community 23 - "Community 23"
-Cohesion: 0.4
-Nodes (1): CursorMaterial
-
-### Community 24 - "Community 24"
-Cohesion: 0.4
-Nodes (1): DepthCursorMaterial
-
-### Community 25 - "Community 25"
-Cohesion: 0.5
-Nodes (1): Line2Material
-
-### Community 26 - "Community 26"
-Cohesion: 0.5
-Nodes (1): GlyphAtlas
-
-### Community 27 - "Community 27"
-Cohesion: 0.5
-Nodes (1): LoxTerrainGeometry
-
-### Community 28 - "Community 28"
-Cohesion: 0.5
-Nodes (1): HeightLookup
-
-### Community 29 - "Community 29"
-Cohesion: 0.5
-Nodes (1): StationNameLabel
-
-### Community 30 - "Community 30"
-Cohesion: 0.67
-Nodes (2): include(), read()
-
-### Community 33 - "Community 33"
-Cohesion: 0.67
-Nodes (1): TerrainMeshLoader
-
-### Community 34 - "Community 34"
-Cohesion: 0.67
-Nodes (1): HeightMapLoader
-
-### Community 35 - "Community 35"
-Cohesion: 0.67
-Nodes (1): OSFilePlugin
-
-### Community 36 - "Community 36"
-Cohesion: 0.67
-Nodes (1): WaterMaterial
-
-### Community 37 - "Community 37"
-Cohesion: 0.67
-Nodes (1): StationMaterial
-
-### Community 38 - "Community 38"
-Cohesion: 0.67
-Nodes (1): DepthMapMaterial
-
-### Community 39 - "Community 39"
-Cohesion: 0.67
-Nodes (1): MissingMaterial
-
-### Community 40 - "Community 40"
-Cohesion: 0.67
-Nodes (1): ExtendedPointsMaterial
-
-### Community 41 - "Community 41"
-Cohesion: 0.67
-Nodes (1): ClusterMaterial
-
 ### Community 42 - "Community 42"
-Cohesion: 0.67
-Nodes (1): PopupMaterial
+Cohesion: 0.38
+Nodes (7): applyTaubinSmoothing(), buildScrapsGeo(), buildTerrainTileData(), computeAngleWeightedNormals(), elevColor(), normZ(), segsToGeoWithColors()
 
-### Community 43 - "Community 43"
-Cohesion: 0.67
-Nodes (1): TerrainTileGeometry
+### Community 47 - "Community 47"
+Cohesion: 0.29
+Nodes (6): code:html (<iframe), ⚠️ Dôležité upozornenie (CORS), 🚀 Hlavné funkcie, 🔗 LochViewer - Systém zdieľania a vkladania (Embed), 🛠️ Parametre URL adresy, 📦 Príklad vloženia do stránky
 
-### Community 44 - "Community 44"
-Cohesion: 0.67
-Nodes (1): FlatTileGeometry
-
-### Community 46 - "Community 46"
-Cohesion: 0.67
-Nodes (1): Point
+### Community 53 - "Community 53"
+Cohesion: 0.33
+Nodes (5): Aktuálny stav (Current Progress), Core Requirements (Striktné pravidlá), graphify, Project Goal, Role: Speleological Software Engineer
 
 ## Knowledge Gaps
-- **Thin community `Community 18`** (6 nodes): `DistanceFieldPlugin.js`, `DistanceFieldPlugin`, `.constructor()`, `DistanceLookup`, `.constructor()`, `.lookup()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 19`** (6 nodes): `FullScreenQuad`, `.constructor()`, `.dispose()`, `.material()`, `.render()`, `FullScreenQuad.js`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 20`** (5 nodes): `WorkerLoader.js`, `WorkerLoader`, `.abort()`, `.constructor()`, `.load()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 21`** (5 nodes): `ARPlugin.js`, `ARButton`, `.createButton()`, `ARPlugin`, `.constructor()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 22`** (5 nodes): `LocationPlugin.js`, `LocationPlugin`, `.constructor()`, `LocationSource`, `.constructor()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 23`** (5 nodes): `CursorMaterial.js`, `CursorMaterial`, `.constructor()`, `.getCursor()`, `.setCursor()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 24`** (5 nodes): `DepthCursorMaterial.js`, `DepthCursorMaterial`, `.constructor()`, `.getCursor()`, `.setCursor()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 25`** (4 nodes): `Line2Material.js`, `Line2Material`, `.constructor()`, `.dispose()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 26`** (4 nodes): `GlyphAtlas.js`, `GlyphAtlas`, `.constructor()`, `GlyphAtlasCache()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 27`** (4 nodes): `LoxTerrainGeometry.js`, `LoxTerrainGeometry`, `.constructor()`, `.setupUVs()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 28`** (4 nodes): `HeightLookup.js`, `HeightLookup`, `.constructor()`, `.lookup()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 29`** (4 nodes): `StationNameLabel.js`, `StationNameLabel`, `.close()`, `.constructor()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 30`** (4 nodes): `include()`, `makeColours.js`, `mkJSON()`, `read()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 33`** (3 nodes): `TerrainMeshLoader.js`, `TerrainMeshLoader`, `.constructor()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 34`** (3 nodes): `HeightMapLoader.js`, `HeightMapLoader`, `.constructor()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 35`** (3 nodes): `OSFilePlugin.js`, `OSFilePlugin`, `.constructor()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 36`** (3 nodes): `WaterMaterial.js`, `WaterMaterial`, `.constructor()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 37`** (3 nodes): `StationMaterial.js`, `StationMaterial`, `.constructor()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 38`** (3 nodes): `DepthMapMaterial.js`, `DepthMapMaterial`, `.constructor()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 39`** (3 nodes): `MissingMaterial.js`, `MissingMaterial`, `.constructor()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 40`** (3 nodes): `ExtendedPointsMaterial.js`, `ExtendedPointsMaterial`, `.constructor()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 41`** (3 nodes): `ClusterMaterial.js`, `ClusterMaterial`, `.constructor()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 42`** (3 nodes): `PopupMaterial.js`, `PopupMaterial`, `.constructor()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 43`** (3 nodes): `TerrainTileGeometry.js`, `TerrainTileGeometry`, `.constructor()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 44`** (3 nodes): `FlatTileGeometry.js`, `FlatTileGeometry`, `.constructor()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 46`** (3 nodes): `Point.js`, `Point`, `.constructor()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **85 isolated node(s):** `AppState`, `LoadedFile`, `SUPPORTED`, `MemoizedStatusBadge`, `Scrap` (+80 more)
+  These have ≤1 connection - possible missing edges or undocumented components.
+- **63 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Materials()` connect `Community 6` to `Community 0`, `Community 1`, `Community 2`, `Community 7`?**
-  _High betweenness centrality (0.039) - this node is a cross-community bridge._
-- **Why does `Survey` connect `Community 5` to `Community 9`, `Community 3`, `Community 4`, `Community 7`?**
-  _High betweenness centrality (0.037) - this node is a cross-community bridge._
-- **Why does `Stations` connect `Community 9` to `Community 0`, `Community 5`?**
-  _High betweenness centrality (0.022) - this node is a cross-community bridge._
+- **Why does `reconstructSurface()` connect `Community 2` to `Community 0`, `Community 6`?**
+  _High betweenness centrality (0.040) - this node is a cross-community bridge._
+- **Why does `Materials()` connect `Community 18` to `Community 0`, `Community 1`, `Community 2`, `Community 37`, `Community 14`, `Community 22`, `Community 27`?**
+  _High betweenness centrality (0.033) - this node is a cross-community bridge._
+- **What connects `AppState`, `LoadedFile`, `SUPPORTED` to the rest of the system?**
+  _85 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.03 - nodes in this community are weakly interconnected._
-- **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.04 - nodes in this community are weakly interconnected._
-- **Should `Community 2` be split into smaller, more focused modules?**
   _Cohesion score 0.07 - nodes in this community are weakly interconnected._
+- **Should `Community 1` be split into smaller, more focused modules?**
+  _Cohesion score 0.05 - nodes in this community are weakly interconnected._
+- **Should `Community 2` be split into smaller, more focused modules?**
+  _Cohesion score 0.06 - nodes in this community are weakly interconnected._
 - **Should `Community 3` be split into smaller, more focused modules?**
-  _Cohesion score 0.04 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05 - nodes in this community are weakly interconnected._

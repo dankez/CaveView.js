@@ -671,6 +671,11 @@ export default function App() {
     surfaceTextureOffset: { x: 0, y: 0 },
     surfaceTextureScale:  { x: 1, y: 1 },
     surfaceTextureCalibration: null,
+    surfaceTextureUrl:   null,
+    surfaceTextureSource: 'custom',
+    surfaceTextureOpacity: 1.0,
+    surfaceWmsResolution: 2048,
+    surfaceOffset:       { x: 0, y: 0, z: 0 },
     colorSplay:          '#78909c',
     colorTraverse:       '#4fc3f7',
     colorScraps:         '#94a3b8',
@@ -701,7 +706,6 @@ export default function App() {
     cinematicMode:       false,
     recordingDuration:   10, // 0 = manual
     excludeModelFromClipping: false,
-    surfaceTextureUrl:   null,
     caveCalibrationOffset: { x: 0, y: 0, z: 0 }
   })
 
@@ -786,6 +790,19 @@ export default function App() {
     setOpts(p => ({
       ...p,
       surfaceTextureOffset: { x: p.surfaceTextureOffset.x + dx, y: p.surfaceTextureOffset.y + dy }
+    }))
+  }
+
+  const handleTextureFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    const url = URL.createObjectURL(file)
+    setOpts(p => ({ 
+      ...p, 
+      surfaceTextureUrl: url,
+      surfaceTextureSource: 'custom',
+      showSurfaceTexture: true 
     }))
   }
 
@@ -1217,6 +1234,33 @@ export default function App() {
         bounds: newSurface.bounds,
         centerOffset: newSurface.centerOffset
       });
+
+      // Add WMS texture from GKÚ Ortofoto if it looks like S-JTSK coordinates
+      const origCal = newSurface.dtm.calib;
+      const isSjtskOrig = origCal.xOrigin > -950000 && origCal.xOrigin < -150000 && origCal.yOrigin > -1350000 && origCal.yOrigin < -900000;
+      if (isSjtskOrig) {
+        const samples = newSurface.dtm.samples;
+        const lines = newSurface.dtm.lines;
+        
+        const minX = origCal.xOrigin;
+        const maxX = origCal.xOrigin + samples * origCal.xx;
+        const maxY = origCal.yOrigin; // yy is usually negative
+        const minY = origCal.yOrigin + lines * origCal.yy;
+
+        const bboxX1 = Math.min(minX, maxX);
+        const bboxY1 = Math.min(minY, maxY);
+        const bboxX2 = Math.max(minX, maxX);
+        const bboxY2 = Math.max(minY, maxY);
+        
+        newSurface.sjtskBbox = `${bboxX1},${bboxY1},${bboxX2},${bboxY2}`;
+        newSurface.sjtskAspect = Math.abs(bboxY2 - bboxY1) / Math.abs(bboxX2 - bboxX1);
+        
+        // Default initially to orthophoto
+        const texWidth = 2048;
+        const texHeight = Math.max(256, Math.round(texWidth * newSurface.sjtskAspect));
+        newSurface.bitmapUrl = `/wms-proxy/orto?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=1&STYLES=&CRS=EPSG:5514&BBOX=${newSurface.sjtskBbox}&WIDTH=${texWidth}&HEIGHT=${texHeight}&FORMAT=image/jpeg`;
+        console.log('[TIFF] Attached WMS Orthophoto:', newSurface.bitmapUrl);
+      }
 
       if (!cave) {
         const b = newSurface.bounds!;
@@ -2760,8 +2804,75 @@ export default function App() {
                       </div>
                     </div>
 
-                    {opts.showSurfaceTexture && opts.surfaceTextureUrl && (
+                    {opts.showSurfaceTexture && (
                       <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(15,23,42,0.5)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>map</span>
+                              {lang === 'sk' ? 'ZDROJ TEXTÚRY' : 'TEXTURE SOURCE'}
+                            </div>
+                            <select 
+                              value={opts.surfaceTextureSource} 
+                              onChange={(e) => setOpts(p => ({ ...p, surfaceTextureSource: e.target.value as any }))}
+                              style={{ background: '#1e293b', color: 'white', border: '1px solid #334155', borderRadius: '4px', fontSize: '10px', padding: '2px 4px', outline: 'none' }}
+                            >
+                              <option value="custom">{lang === 'sk' ? 'Súbor (JPG/PNG/Lox)' : 'Custom File (JPG/PNG/Lox)'}</option>
+                              <option value="wms-orto">WMS: Ortofotomapa (ZBGIS)</option>
+                              <option value="wms-geology">WMS: Geologická mapa (ŠGÚDŠ)</option>
+                              <option value="wms-shadow">WMS: DMR Tieňovaný reliéf (ZBGIS)</option>
+                              <option value="none">{lang === 'sk' ? 'Vypnutá' : 'None'}</option>
+                            </select>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '10px', color: '#94a3b8' }}>{lang === 'sk' ? 'Priehľadnosť' : 'Opacity'}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, marginLeft: '12px' }}>
+                              <input 
+                                type="range" min="0" max="1" step="0.05"
+                                value={opts.surfaceTextureOpacity}
+                                onChange={(e) => setOpts(p => ({ ...p, surfaceTextureOpacity: parseFloat(e.target.value) }))}
+                                style={{ flex: 1, height: '4px' }}
+                              />
+                              <span style={{ fontSize: '10px', color: '#e2e8f0', minWidth: '25px', textAlign: 'right' }}>{Math.round(opts.surfaceTextureOpacity * 100)}%</span>
+                            </div>
+                          </div>
+
+                          {(opts.surfaceTextureSource === 'wms-orto' || opts.surfaceTextureSource === 'wms-geology' || opts.surfaceTextureSource === 'wms-shadow') && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                              <span style={{ fontSize: '10px', color: '#94a3b8' }}>{lang === 'sk' ? 'Rozlíšenie WMS' : 'WMS Resolution'}</span>
+                              <select 
+                                value={opts.surfaceWmsResolution} 
+                                onChange={(e) => setOpts(p => ({ ...p, surfaceWmsResolution: parseInt(e.target.value) }))}
+                                style={{ background: '#1e293b', color: 'white', border: '1px solid #334155', borderRadius: '4px', fontSize: '10px', padding: '1px 4px', outline: 'none' }}
+                              >
+                                <option value="512">512px ({lang === 'sk' ? 'Rýchle' : 'Fast'})</option>
+                                <option value="1024">1024px</option>
+                                <option value="2048">2048px (Std)</option>
+                                <option value="4096">4096px (High)</option>
+                              </select>
+                            </div>
+                          )}
+
+                          {opts.surfaceTextureSource === 'custom' && (
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              <button 
+                                onClick={() => textureFileInputRef.current?.click()}
+                                style={{ flex: 1, padding: '4px', fontSize: '10px', background: 'rgba(59,130,246,0.2)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '4px', color: '#93c5fd', cursor: 'pointer' }}
+                              >
+                                <span className="material-symbols-outlined" style={{ fontSize: '12px', verticalAlign: 'middle', marginRight: '4px' }}>upload</span>
+                                {lang === 'sk' ? 'Nahrať JPG/PNG' : 'Upload JPG/PNG'}
+                              </button>
+                              {opts.surfaceTextureUrl && (
+                                <button 
+                                  onClick={() => setOpts(p => ({ ...p, surfaceTextureUrl: null }))}
+                                  className="btn-mini" style={{ color: '#f87171' }}
+                                >✕</button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
                         <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '8px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>tune</span>
                           {lang === 'sk' ? 'KALIBRÁCIA TEXTÚRY' : 'TEXTURE CALIBRATION'}
@@ -2777,6 +2888,13 @@ export default function App() {
                           <button onClick={() => shiftTexture(0, -0.5)} className="btn-mini" title="Dole">↓</button>
                         </div>
 
+                        <button 
+                          onClick={() => setOpts(p => ({ ...p, surfaceTextureOffset: { x: 0, y: 0 } }))}
+                          style={{ width: '100%', marginBottom: '10px', background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: '#94a3b8', fontSize: '9px', padding: '2px 0', cursor: 'pointer' }}
+                        >
+                          {lang === 'sk' ? 'Reset posunu textúry' : 'Reset texture offset'}
+                        </button>
+
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span style={{ fontSize: '10px', color: '#94a3b8' }}>{lang === 'sk' ? 'Súbor .txt (Therion)' : 'Therion .txt calib'}</span>
                           <button onClick={() => calibFileInputRef.current?.click()} className="btn-mini" style={{ color: '#fbbf24', borderColor: 'rgba(251,191,36,0.3)', padding: '2px 8px' }}>
@@ -2791,6 +2909,7 @@ export default function App() {
                           </div>
                         )}
                         <input type="file" ref={calibFileInputRef} onChange={handleCalibFile} accept=".txt" style={{ display: 'none' }} />
+                        <input type="file" ref={textureFileInputRef} onChange={handleTextureFile} accept="image/*" style={{ display: 'none' }} />
                       </div>
                     )}
                     
@@ -2834,6 +2953,47 @@ export default function App() {
                         style={{ width: '100%', marginTop: '6px', background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: '#94a3b8', fontSize: '9px', padding: '2px 0', cursor: 'pointer' }}
                       >
                         {lang === 'sk' ? 'Resetovať polohu' : 'Reset position'}
+                      </button>
+                    </div>
+
+                    {/* Kalibrácia Povrchu (DMR) voči svetu/modelu */}
+                    <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(30,41,59,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '8px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>terrain</span>
+                        {lang === 'sk' ? 'KALIBRÁCIA POVRCHU (X, Y, Z)' : 'SURFACE CALIBRATION (X, Y, Z)'}
+                      </div>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div style={{ fontSize: '9px', color: '#64748b', textAlign: 'center' }}>X</div>
+                          <div style={{ display: 'flex', gap: '2px' }}>
+                            <button onClick={() => setOpts(p => ({ ...p, surfaceOffset: { ...p.surfaceOffset, x: p.surfaceOffset.x - 0.5 } }))} className="btn-mini">-</button>
+                            <button onClick={() => setOpts(p => ({ ...p, surfaceOffset: { ...p.surfaceOffset, x: p.surfaceOffset.x + 0.5 } }))} className="btn-mini">+</button>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div style={{ fontSize: '9px', color: '#64748b', textAlign: 'center' }}>Y</div>
+                          <div style={{ display: 'flex', gap: '2px' }}>
+                            <button onClick={() => setOpts(p => ({ ...p, surfaceOffset: { ...p.surfaceOffset, y: p.surfaceOffset.y - 0.5 } }))} className="btn-mini">-</button>
+                            <button onClick={() => setOpts(p => ({ ...p, surfaceOffset: { ...p.surfaceOffset, y: p.surfaceOffset.y + 0.5 } }))} className="btn-mini">+</button>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div style={{ fontSize: '9px', color: '#64748b', textAlign: 'center' }}>Z (alt)</div>
+                          <div style={{ display: 'flex', gap: '2px' }}>
+                            <button onClick={() => setOpts(p => ({ ...p, surfaceOffset: { ...p.surfaceOffset, z: p.surfaceOffset.z - 0.5 } }))} className="btn-mini">-</button>
+                            <button onClick={() => setOpts(p => ({ ...p, surfaceOffset: { ...p.surfaceOffset, z: p.surfaceOffset.z + 0.5 } }))} className="btn-mini">+</button>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '9px', color: '#64748b', marginTop: '6px', textAlign: 'center', fontFamily: 'monospace' }}>
+                        {opts.surfaceOffset.x.toFixed(1)}, {opts.surfaceOffset.y.toFixed(1)}, {opts.surfaceOffset.z.toFixed(1)}m
+                      </div>
+                      <button 
+                        onClick={() => setOpts(p => ({ ...p, surfaceOffset: { x: 0, y: 0, z: 0 } }))}
+                        style={{ width: '100%', marginTop: '6px', background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: '#94a3b8', fontSize: '9px', padding: '2px 0', cursor: 'pointer' }}
+                      >
+                        {lang === 'sk' ? 'Reset kalibrácie povrchu' : 'Reset surface calibration'}
                       </button>
                     </div>
 

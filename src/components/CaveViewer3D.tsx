@@ -397,6 +397,7 @@ export interface ViewerOptions {
   showSurfaceMesh:     boolean
   showSurfaceMeshWire: boolean
   showSurfaceTexture:  boolean
+  surfaceTextureSource: 'custom' | 'wms-orto' | 'wms-geology' | 'wms-shadow' | 'none'
   surfaceTextureUrl?:  string | null
   showSurfaceNetwork:  boolean
   showContours:        boolean
@@ -409,8 +410,11 @@ export interface ViewerOptions {
   showVegetation:      boolean
   showGround:          boolean
   showCaveLiDAR:       boolean
+  surfaceTextureOpacity: number
+  surfaceWmsResolution: number
   surfaceTextureOffset: { x: number, y: number }
   surfaceTextureScale:  { x: number, y: number }
+  surfaceOffset:        { x: number, y: number, z: number }
   surfaceTextureCalibration?: {
     p1: { x: number, y: number, lat: number, lon: number },
     p2: { x: number, y: number, lat: number, lon: number }
@@ -461,8 +465,10 @@ export interface ViewerOptions {
 const ModernGizmo = ({ visible, modelScale }: { visible: boolean, modelScale: number }) => {
   if (!visible) return null;
   
-  // Prispôsobíme hrúbku čiar mierke, aby ostali moderné a tenké
-  const tubeWidth = modelScale * 0.0001; 
+  // Hrúbka čiar musí byť konzistentná vizuálne.
+  // Použijeme vzorec, ktorý zabezpečí, že na veľkých modeloch nebudú čiary obrovské,
+  // ale na malých ostanú dostatočne hrubé.
+  const tubeWidth = 0.001 + 0.015 / Math.max(1, modelScale); 
 
   return (
     <group scale={modelScale} renderOrder={999}>
@@ -1723,7 +1729,8 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
     uDtmDim:      { value: [1.0, 1.0] },
     uCalib0:      { value: new THREE.Vector4(0,0,0,0) },
     uCalib1:      { value: new THREE.Vector4(0,0,0,0) },
-    uCenterOffset: { value: [surface.centerOffset.x, surface.centerOffset.y] }
+    uCenterOffset: { value: [surface.centerOffset.x, surface.centerOffset.y] },
+    uTextureOpacity: { value: 1.0 }
   }), []);
 
   useEffect(() => {
@@ -1732,18 +1739,34 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
     const calib = props.options.surfaceTextureCalibration;
     const dtmWidth = (surface.dtm.samples - 1) * Math.abs(surface.dtm.calib.xx || 1);
     const dtmHeight = (surface.dtm.lines - 1) * Math.abs(surface.dtm.calib.yy || 1);
+    
+    const source = props.options.surfaceTextureSource || 'custom';
+    const isWms = source === 'wms-orto' || source === 'wms-geology' || source === 'wms-shadow';
+    const canCalib = (isCustom && calib) || (isWms && !!surface.sjtskBbox);
 
     textureUniforms.uIsLoxBitmap.value = (hasBitmapCalib && !isCustom) ? 1.0 : 0.0;
-    textureUniforms.uHasCalib.value    = (isCustom && calib) ? 1.0 : 0.0;
+    textureUniforms.uHasCalib.value    = canCalib ? 1.0 : 0.0;
     textureUniforms.uImgSize.value     = (imgSize && imgSize[0] > 1) ? imgSize : [1.0, 1.0];
     textureUniforms.uTexOffset.value   = [props.options.surfaceTextureOffset.x, props.options.surfaceTextureOffset.y];
     textureUniforms.uDtmDim.value      = [dtmWidth, dtmHeight];
     
-    if (calib) {
+    if (isWms && surface.sjtskBbox) {
+      const parts = surface.sjtskBbox.split(',').map(Number);
+      if (parts.length === 4) {
+        // uCalib0: minx, miny, maxx, maxy
+        textureUniforms.uCalib0.value.set(parts[0], parts[1], parts[2], parts[3]);
+        const aspect = surface.sjtskAspect || 1.0;
+        const texWidth = props.options.surfaceWmsResolution || 2048;
+        const texHeight = Math.max(256, Math.round(texWidth * aspect));
+        // uCalib1: px_min, py_min, px_max, py_max
+        textureUniforms.uCalib1.value.set(0, 0, texWidth, texHeight);
+      }
+    } else if (calib) {
       textureUniforms.uCalib0.value.set(calib.p1.mx, calib.p1.my, calib.p2.mx, calib.p2.my);
       textureUniforms.uCalib1.value.set(calib.p1.x, calib.p1.y, calib.p2.x, calib.p2.y);
     }
-  }, [textureUniforms, surface, imgSize, props.options.surfaceTextureOffset, props.options.surfaceTextureCalibration, props.surfaceTextureUrl]);
+    textureUniforms.uTextureOpacity.value = props.options.surfaceTextureOpacity ?? 1.0;
+  }, [textureUniforms, surface, imgSize, props.options.surfaceTextureOffset, props.options.surfaceTextureCalibration, props.surfaceTextureUrl, props.options.surfaceTextureOpacity, props.options.surfaceTextureSource, props.options.surfaceWmsResolution]);
 
   if (!geo) return null;
 
@@ -1788,6 +1811,7 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
               shader.uniforms.uCalib0 = textureUniforms.uCalib0;
               shader.uniforms.uCalib1 = textureUniforms.uCalib1;
               shader.uniforms.uCenterOffset = textureUniforms.uCenterOffset;
+              shader.uniforms.uTextureOpacity = textureUniforms.uTextureOpacity;
               
               if (imgSizeUniformRef) {
                 imgSizeUniformRef.current.push(shader.uniforms.uImgSize);
@@ -1831,6 +1855,7 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
                 uniform vec2 uTexOffset;
                 uniform vec2 uDtmDim;
                 uniform float uHasCalib;
+                uniform float uTextureOpacity;
                 ${shader.fragmentShader}
               `.replace(
                 '#include <map_fragment>',
@@ -1854,6 +1879,7 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
                     // Mimo orezania textúry — necháme pôvodnú diffuse farbu
                   } else {
                     vec4 texelColor = texture2D( map, finalUv );
+                    texelColor.a *= uTextureOpacity;
                     diffuseColor *= texelColor;
                   }
                 #endif
@@ -1902,7 +1928,29 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, ...props }: any) => 
   const imgSizeUniformRef = useRef<{ value: [number, number] }[]>([])
 
   useEffect(() => {
-    const url = props.surfaceTextureUrl || surface.bitmapUrl
+    const source = props.options.surfaceTextureSource || 'custom';
+    let url: string | null = null;
+
+    if (source === 'custom') {
+      url = props.surfaceTextureUrl || surface.bitmapUrl;
+    } else if (surface.sjtskBbox) {
+      const bbox = surface.sjtskBbox;
+      const aspect = surface.sjtskAspect || 1.0;
+      const texWidth = props.options.surfaceWmsResolution || 2048;
+      const texHeight = Math.max(256, Math.round(texWidth * aspect));
+
+      if (source === 'wms-geology') {
+        // Geologická mapa ŠGÚDŠ (WMS 1.1.1 pre ArcGIS, EPSG:5514)
+        url = `/wms-proxy/geology?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=0&STYLES=&SRS=EPSG:5514&BBOX=${bbox}&WIDTH=${texWidth}&HEIGHT=${texHeight}&FORMAT=image/png&TRANSPARENT=TRUE`;
+      } else if (source === 'wms-orto') {
+        // ZBGIS Ortofoto — via proxy (CORS bypass), vrstva 1
+        url = `/wms-proxy/orto?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=1&STYLES=&CRS=EPSG:5514&BBOX=${bbox}&WIDTH=${texWidth}&HEIGHT=${texHeight}&FORMAT=image/jpeg`;
+      } else if (source === 'wms-shadow') {
+        // ZBGIS DMR Tieňovaný reliéf — vrstva 18 (číselné pomenovanie vrstvy v zbgis_wms)
+        url = `/wms-proxy/shadow?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=18&STYLES=&CRS=EPSG:5514&BBOX=${bbox}&WIDTH=${texWidth}&HEIGHT=${texHeight}&FORMAT=image/png&TRANSPARENT=TRUE`;
+      }
+    }
+
     if (!url) {
       setTexture(null)
       return
@@ -1925,7 +1973,7 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, ...props }: any) => 
     return () => {
       if (texture) texture.dispose()
     }
-  }, [surface.bitmapUrl, props.surfaceTextureUrl])
+  }, [surface.bitmapUrl, props.surfaceTextureUrl, props.options.surfaceTextureSource, props.options.surfaceWmsResolution])
 
   const hoverGeo = useMemo(() => new THREE.SphereGeometry(0.25, 8, 8), [])
   const hoverMat = useMemo(() => new THREE.MeshBasicMaterial({ color: "#ef4444", depthTest: false }), [])
@@ -1941,7 +1989,8 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, ...props }: any) => 
   if (!props.showMesh && !props.showMeshWire && !props.showTexture && !props.showNetwork && !props.showContours) return null
 
   return (
-    <group
+    <group 
+      position={[props.options.surfaceOffset?.x || 0, props.options.surfaceOffset?.z || 0, -(props.options.surfaceOffset?.y || 0)]}
       onClick={(e: any) => {
         if (props.onSurfaceClick && e.point) {
           e.stopPropagation()

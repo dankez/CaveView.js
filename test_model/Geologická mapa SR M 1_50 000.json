@@ -1,0 +1,26 @@
+[
+  {
+    "Názov zdroja": "Geologická mapa SR M 1:50 000",
+    "Druh zdroja": "inspire-datasets-and-series",
+    "Obsah zdroja": "Mapa poskytuje základné informácie o geologickej stavbe územia Slovenska. Medzi základné činnosti Štátneho geologického ústavu Dionýza Štúra (ŠGÚDŠ) patrí aj zostavovanie a publikovanie geologických máp a textových vysvetliviek k nim. Mapa vznikla spojením regionálnych geologických máp M 1:50 000, ktoré majú svoju špecifickú legendu, platnú pre daný región. Preto bolo nutné vytvoriť spoločnú jednotnú legendu platnú pre celé územie a urobiť prevodníky do nej.\nGeologická mapa ponúkajú vedeckej, ale aj širokej laickej verejnosti možnosť oboznámiť sa s horninami, po ktorých chodíme alebo na ktorých sa pestujú poľnohospodárske plodiny.\nMapa obsahuje 3 datasety - bodový, líniový a plošný.\n",
+    "Obmedzenie verejného prístupu": "Neuplatňujú sa žiadne podmienky",
+    "Podmienky uplatňované na prístup a použitie": "Verejne prístupné data bez obmedzenia pri publikovaní s copyrightom.",
+    "Jedinečný identifikátor zdroja": "07366823-fc45-42c5-a174-c2d6657e427d",
+    "Zodpovedná organizácia": "Vlastník - Štátny geologický ústav Dionýza Štúra Bratislava, Mlynská dolina 1, 817 04 Bratislava 11, Slovenská republika, miroslav.antalik@geology.sk",
+    "Kľúčové slová": "Geológia|EGDI",
+    "Dátum uverjnenia/poslednej revízie/vytvorenie zdroja": "Revízia: 2021-06-23",
+    "Početnosť údržby a aktualizácie": null,
+    "Kódovanie znakov": "utf8",
+    "Priestorové rozlíšenie": "http://inspire.ec.europa.eu/metadata-codelist/SpatialScope/national",
+    "Služby prezerania": "https://ags.geology.sk/arcgis/services/WebServices/GM50/MapServer/WMSServer?request=GetCapabilities&service=WMS",
+    "Služby sťahovania údajov": "https://ags.geology.sk/arcgis/services/WebServices/GM50/MapServer/WFSServer?request=GetCapabilities&service=WFS",
+    "Iné elektronické adresy zdroja": "",
+    "Distribučný formát": "Názov: vnd.shp, Verzia: 9.2",
+    "Pôvod": "Dielo vzniklo spojením prevažne regionálnych geologických máp M 1:50 000. Bola vytvorená jednotná legenda platná pre celé územie SR, legenda otvoreného typu umožňujúcou budúce opravy a zohľadňujúce súčasný stav poznania a geologického mapovania územia SR.",
+    "Súlad so špecifikáciou INSPIRE": null,
+    "Kontaktné miesto pre metaúdaje": "Kontaktné miesto - Štátny geologický ústav Dionýza Štúra Bratislava, Mlynská dolina 1, 817 04 Bratislava 11, Slovenská republika, miroslav.antalik@geology.sk",
+    "Jazyk metaúdajov": "slovenský",
+    "Dátum metaúdajov": "2025-05-28",
+    "Identifikátor metaúdajového záznamu": "https://data.gov.sk/set/data/gmd/07366823-fc45-42c5-a174-c2d6657e427d"
+  }
+]

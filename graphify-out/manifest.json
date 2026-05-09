@@ -1,199 +1,830 @@
 {
-  "/home/dankez/cave3d/CaveView-modernized/rollup.config.mjs": 1776280433.1706715,
-  "/home/dankez/cave3d/CaveView-modernized/test-merge.mjs": 1777201521.7377317,
-  "/home/dankez/cave3d/CaveView-modernized/rollup.graph.mjs": 1776280433.1706715,
-  "/home/dankez/cave3d/CaveView-modernized/rollup-babel.config.mjs": 1776280433.1706715,
-  "/home/dankez/cave3d/CaveView-modernized/rollup-gl.mjs": 1776280433.1706715,
-  "/home/dankez/cave3d/CaveView-modernized/vite.config.ts": 1777201521.7387316,
-  "/home/dankez/cave3d/CaveView-modernized/inspect_lox.ts": 1777201521.1537378,
-  "/home/dankez/cave3d/CaveView-modernized/playwright.config.ts": 1777201521.1847374,
-  "/home/dankez/cave3d/CaveView-modernized/eslint.config.js": 1777201521.1537378,
-  "/home/dankez/cave3d/CaveView-modernized/src/App.tsx": 1777550733.2400281,
-  "/home/dankez/cave3d/CaveView-modernized/src/main.tsx": 1776409952.8888268,
-  "/home/dankez/cave3d/CaveView-modernized/src/parsers/th2Parser.ts": 1777201521.7377317,
-  "/home/dankez/cave3d/CaveView-modernized/src/parsers/parser.worker.ts": 1777201521.7377317,
-  "/home/dankez/cave3d/CaveView-modernized/src/parsers/caveParser.ts": 1777542621.2914574,
-  "/home/dankez/cave3d/CaveView-modernized/src/parsers/__tests__/caveParser.test.ts": 1777201521.7377317,
-  "/home/dankez/cave3d/CaveView-modernized/src/i18n/de.ts": 1777540822.7344706,
-  "/home/dankez/cave3d/CaveView-modernized/src/i18n/sk.ts": 1777537083.9662254,
-  "/home/dankez/cave3d/CaveView-modernized/src/i18n/fr.ts": 1777540815.7135456,
-  "/home/dankez/cave3d/CaveView-modernized/src/i18n/index.ts": 1777201521.7367318,
-  "/home/dankez/cave3d/CaveView-modernized/src/i18n/en.ts": 1777537079.664246,
-  "/home/dankez/cave3d/CaveView-modernized/src/test/setup.ts": 1777201521.7377317,
-  "/home/dankez/cave3d/CaveView-modernized/src/types/index.ts": 1776409952.8888268,
-  "/home/dankez/cave3d/CaveView-modernized/src/components/CalibrationModal.tsx": 1777201521.713732,
-  "/home/dankez/cave3d/CaveView-modernized/src/components/CaveViewer3D.tsx": 1777551048.1611173,
-  "/home/dankez/cave3d/CaveView-modernized/src/core/constants.ts": 1776409952.8878267,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/CV2Plugins.js": 1776409952.8108265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/CV2.js": 1776409952.8108265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/Three.js": 1776409952.8108265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/HUD.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/CursorControl.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/AngleScale.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/HudObject.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/ScaleBar.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/LinearScale.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/CompassControl.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/Orb.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/AHIControl.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/ProgressDial.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/CursorScale.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/Scale.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/AHI.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/Compass.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/Control.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/WorkerLoader.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/SurveyDataCollector.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/CaveLoader.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/FileLoader.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/svx3dLoader.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/TerrainMeshLoader.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/HeightMapLoader.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/pltLoader.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/loxLoader.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/DistanceFieldPlugin.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/ARPlugin.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/Three.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/OSFilePlugin.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/LocationPlugin.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/distanceField/DistanceFieldShader.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/distanceField/FullScreenQuad.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/distanceField/DistanceFieldFilterPass.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/distanceField/DistanceFieldPass.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/distanceField/DistanceFieldFilterShader.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/EntrancePointMaterial.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/DepthMaterial.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/WaterMaterial.js": 1776409952.8138266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/Line2Material.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/SurveyLineMaterial.js": 1777201521.1807375,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/Materials.js": 1777461675.2779534,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/GlyphMaterial.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/WallMaterial.js": 1776409952.8138266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/StationMaterial.js": 1777201521.1807375,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/HypsometricMaterial.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/ContourMaterial.js": 1777462221.39721,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/GlyphAtlas.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/CloudPointsMaterial.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/TerrainOverlayMaterial.js": 1776409952.8138266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/CursorMaterial.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/DepthMapMaterial.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/DepthCursorMaterial.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/MissingMaterial.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/CommonTerrainMaterial.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/HeightMaterial.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/ExtendedPointsMaterial.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/ClusterMaterial.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/PopupMaterial.js": 1776409952.8128264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/shaders/Shaders.js": 1776409952.8138266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/LoxTerrainGeometry.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/EPSG4326TileSet.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/CommonTerrain.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/TerrainTileGeometry.js": 1776589322.1074197,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/HeightLookup.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/FlatTileGeometry.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/Overlay.js": 1776589322.1074197,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/WebTerrain.js": 1776589322.1084197,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/Tile.js": 1776589322.1074197,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/TerrainMeshGeometry.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/LoxTerrain.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/EPSG3857TileSet.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/LineSegments2.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/GlyphStringGeometry.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/lib.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/ColourCache.js": 1776409952.8108265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/defaultTheme.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/CommonAttributes.js": 1776409952.8108265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/LineSegmentsGeometry.js": 1777201521.1657376,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/GLTFExporter.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/unpackRGBA.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/Cfg.js": 1776409952.8108265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/Tree.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/ModelSource.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/TextureLookup.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/RenderUtils.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/GlyphString.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/SurveyColourMapper.js": 1777201521.1677377,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/Colours.js": 1776409952.8108265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/SurveyBox.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/StationPosition.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/constants.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/WorkerPool.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/TextureCache.js": 1776409952.8118265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/public/Segment.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/public/PublicFactory.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/public/Station.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/public/Leg.js": 1776409952.8148265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/StationPopup.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/TracePanel.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/RoutePanel.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/HelpPage.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/CaveViewUI.js": 1776589322.1084197,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/Panel.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/StationDistancePopup.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/ExportPage.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/KeyboardControls.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/CanvasPopup.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/StationNameLabel.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SurfacePage.js": 1777462255.663851,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SegmentPopup.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/ImagePopup.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/Page.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/FileSelector.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/Popup.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SelectionPage.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SelectionTreePage.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/PointerControls.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SelectionCommonPage.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/EditPage.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SettingsPage.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/OrbitControls.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/Frame.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/InfoPage.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Survey.js": 1777201521.1827376,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Snapshot.js": 1776409952.8168266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Entrances.js": 1776409952.8168266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Grid.js": 1776409952.8168266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/ViewState.js": 1776409952.8168266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Segments.js": 1776409952.8168266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/PointIndicator.js": 1776409952.8168266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/StationLabels.js": 1777201521.1817374,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/CameraMove.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/SurveyMetadata.js": 1776409952.8168266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Selection.js": 1776409952.8168266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/CaveViewer.js": 1777461721.04547,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/StationMarkers.js": 1776409952.8168266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Stations.js": 1777201521.1827376,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Legs.js": 1777201521.1817374,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Routes.js": 1776409952.8168266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/DyeTraces.js": 1776409952.8168266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/ClusterMarkers.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/LightingManager.js": 1776409952.8168266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/AnaglyphEffect.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Point.js": 1776409952.8168266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/ExportGltf.js": 1776409952.8168266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/CameraManager.js": 1776409952.8158264,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Marker.js": 1776409952.8168266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/walls/buildModels.js": 1776409952.8168266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/walls/buildCrossSections.js": 1776409952.8168266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/walls/WallBuilders.js": 1776409952.8168266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/walls/buildScraps.js": 1776409952.8168266,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/walls/Walls.js": 1777201521.1827376,
-  "/home/dankez/cave3d/CaveView-modernized/tools/chroma.min.js": 1776280433.1706715,
-  "/home/dankez/cave3d/CaveView-modernized/tools/makeColours.js": 1776280433.1706715,
-  "/home/dankez/cave3d/CaveView-modernized/e2e/bigmodel.spec.ts": 1777201521.148738,
-  "/home/dankez/cave3d/CaveView-modernized/e2e/caveview.spec.ts": 1777367659.6238391,
-  "/home/dankez/cave3d/CaveView-modernized/index.html": 1777367640.5700412,
-  "/home/dankez/cave3d/CaveView-modernized/README.md": 1777551264.5196195,
-  "/home/dankez/cave3d/CaveView-modernized/BLOG_DRAFT.md": 1777564573.9556322,
-  "/home/dankez/cave3d/CaveView-modernized/agents.md": 1777201521.1427379,
-  "/home/dankez/cave3d/CaveView-modernized/scratch.md": 1776280433.1706715,
-  "/home/dankez/cave3d/CaveView-modernized/DOC_SHARE.md": 1777367601.13146,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/images/logo-alpha.svg": 1776409952.8108265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/images/logo.svg": 1776409952.8108265,
-  "/home/dankez/cave3d/CaveView-modernized/legacy/images/disc.svg": 1776409952.8108265,
-  "/home/dankez/cave3d/CaveView-modernized/public/assets/cave_limestone.png": 1777201521.2167373,
-  "/home/dankez/cave3d/CaveView-modernized/public/assets/cave_granite.png": 1777201521.2077372,
-  "/home/dankez/cave3d/CaveView-modernized/public/assets/caver_crawling.png": 1777201521.2527368,
-  "/home/dankez/cave3d/CaveView-modernized/public/assets/cave_rock.png": 1777201521.2357368,
-  "/home/dankez/cave3d/CaveView-modernized/public/assets/caver_standing.png": 1777201521.2637367
+  "/home/dankez/cave3d/CaveView-modernized/rollup.config.mjs": {
+    "mtime": 1776280433.1706715,
+    "hash": "cf27d523e9330d9eac7e40f216c9c729"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/test-merge.mjs": {
+    "mtime": 1777201521.7377317,
+    "hash": "e99ff4fe13e6889743e82b3b71b646d3"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/rollup.graph.mjs": {
+    "mtime": 1776280433.1706715,
+    "hash": "8c9989e45ed9c396d194fff4a30c4b42"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/rollup-babel.config.mjs": {
+    "mtime": 1776280433.1706715,
+    "hash": "713dfaee0dd64425b02311cb4bb6aee6"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/rollup-gl.mjs": {
+    "mtime": 1776280433.1706715,
+    "hash": "1a4fb1c9680cdea7a78ffe64450eacda"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/vite.config.ts": {
+    "mtime": 1778309403.852712,
+    "hash": "b4425202f8f7015aa52b5e7c35384345"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/inspect_lox.ts": {
+    "mtime": 1777201521.1537378,
+    "hash": "23b480ba483577eb756295f923b7bacd"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/playwright.config.ts": {
+    "mtime": 1777201521.1847374,
+    "hash": "7f579284ed09a58d14a15d6538b11ec8"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/parseTest.ts": {
+    "mtime": 1778175284.1489606,
+    "hash": "f73035793bc69cd59e6cbfaa5080f878"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/eslint.config.js": {
+    "mtime": 1777201521.1537378,
+    "hash": "f64a794c1e6de761989d542f6d493cbc"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/vite-env.d.ts": {
+    "mtime": 1777624679.4486542,
+    "hash": "e15f4c9754927c9219958cbbcf4537b4"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/App.tsx": {
+    "mtime": 1778309431.2564254,
+    "hash": "c41aea59f121cb869eec2b8a4fe704e5"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/main.tsx": {
+    "mtime": 1776409952.8888268,
+    "hash": "6ae1d7f14c4f267fbb8a816063c4d248"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/parsers/th2Parser.ts": {
+    "mtime": 1777201521.7377317,
+    "hash": "554c1d623f0940445dbda4a5b86d9e5c"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/parsers/tiffParser.ts": {
+    "mtime": 1778173993.38281,
+    "hash": "5990df5f07f22d7c9852d011d1e8f742"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/parsers/parser.worker.ts": {
+    "mtime": 1778142441.5757043,
+    "hash": "e9436c535b0c0373f2faa1fcc0676b98"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/parsers/caveParser.ts": {
+    "mtime": 1778179205.1345701,
+    "hash": "17ed4461a8efab5dba4f2afea0d1d2c9"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/parsers/__tests__/caveParser.test.ts": {
+    "mtime": 1777201521.7377317,
+    "hash": "db1755e56ff832691b6b1544b98b86a3"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/i18n/de.ts": {
+    "mtime": 1778092251.6213071,
+    "hash": "db8d19a4ff0ee4f20a8947825ffae8a3"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/i18n/sk.ts": {
+    "mtime": 1778092057.3522112,
+    "hash": "bb465250da8c0b1746dae26785f654ef"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/i18n/fr.ts": {
+    "mtime": 1778092183.024982,
+    "hash": "3d386984601342ba964e6b56b5814203"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/i18n/index.ts": {
+    "mtime": 1777201521.7367318,
+    "hash": "fe8379cea7f18f48709bbcc7aacac98e"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/i18n/en.ts": {
+    "mtime": 1778092064.5211413,
+    "hash": "861fb80979972a12c3219aeca4c21aa8"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/test/setup.ts": {
+    "mtime": 1777201521.7377317,
+    "hash": "2738192d873926416ef65845370f4713"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/types/index.ts": {
+    "mtime": 1776409952.8888268,
+    "hash": "53f9c4e8a6c4275f86624dc5bdd356a9"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/utils/surfaceReconstruction.ts": {
+    "mtime": 1778142441.5857043,
+    "hash": "096c8bd08673f2219bfbca6ab329c5c3"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/components/CalibrationModal.tsx": {
+    "mtime": 1777201521.713732,
+    "hash": "604ac718a40d9d35f68c242f99a0763a"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/components/CaveViewer3D.tsx": {
+    "mtime": 1778309419.637547,
+    "hash": "628a692b7a59c6a51f1a4d8646858918"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/core/constants.ts": {
+    "mtime": 1776409952.8878267,
+    "hash": "e4f797092a42bd1f051236d1eddcd356"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/CV2Plugins.js": {
+    "mtime": 1776409952.8108265,
+    "hash": "4493691219b2a8654819bd6efe6ebfce"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/CV2.js": {
+    "mtime": 1776409952.8108265,
+    "hash": "ebd836624427968312e693c6785ee35b"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/Three.js": {
+    "mtime": 1776409952.8108265,
+    "hash": "fc0e54cc4683ff83bbf197f53f026a97"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/HUD.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "62c4f3fbb172cca435f7c468ed25e2ca"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/CursorControl.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "5c23bd107b5098f6bc73b3e346d2480f"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/AngleScale.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "be450bf8edf2848ff31e255e273185cd"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/HudObject.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "88043be70b33bb49cefc18bd32840c1f"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/ScaleBar.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "f2ff1f35ce3e9bc4b22861f6c6415c31"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/LinearScale.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "1b4cc6fe066bf29a6312fdaf9854c15e"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/CompassControl.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "df0b9d1282364ab3be736a3b70cff005"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/Orb.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "acdf02eedb3a362655116c08178511c0"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/AHIControl.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "be74bff3dee23e041507ec339eb20f7c"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/ProgressDial.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "79ece4a2aca613639f71331bddfdaf00"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/CursorScale.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "527847d424f28b3aaf97a1d0f86627d3"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/Scale.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "1eca8a76828daeb7d4fe6f0691beb3ef"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/AHI.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "710fc5ce1006fa30993bc2730ad0ffe8"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/Compass.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "72d6a81ece4a08aafeab4d5820c9b834"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/Control.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "97cf4a15a39874ef675d2c80bdeb2db8"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/WorkerLoader.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "fd88614c70e3bc83359b7757b24404d5"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/SurveyDataCollector.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "dd23666f53d46088dedd59700f2cd31c"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/CaveLoader.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "99940570d1e6b5345c054b62307f89fc"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/FileLoader.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "899aa0936a126aa572978ff577414cb3"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/svx3dLoader.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "1fae6a00c24d1b7778d7e0d38dce409f"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/TerrainMeshLoader.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "a1f89078d75947ea671cbad313611be9"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/HeightMapLoader.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "69240a2aa094703686527b0920f7b6f4"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/pltLoader.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "cbf68fa849d87e6e766b98c590acce8a"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/loxLoader.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "392a18b79504ceacafd21f5096e7df52"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/DistanceFieldPlugin.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "1bcd3dd057e5001694a3e682d56e71e1"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/ARPlugin.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "24436e5099fad99fa2762248f10ebd5f"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/Three.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "64a527873d17ec97e984b2ff28040772"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/OSFilePlugin.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "63b60a4fe353c0a8c6b81c8b6555deb6"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/LocationPlugin.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "43455c35875e0a300ac5d81baa650555"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/distanceField/DistanceFieldShader.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "fe3b6ca340932d89f8ea011a359800f7"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/distanceField/FullScreenQuad.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "49d0125bc711d02a0a2b72604c5e715d"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/distanceField/DistanceFieldFilterPass.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "9b1552d9ae7f1ae029724785b25a2037"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/distanceField/DistanceFieldPass.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "6c7ece7deab7265b46cc66926de3d787"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/distanceField/DistanceFieldFilterShader.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "43bbb52a2b7be7eb1189b60279a0ef64"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/EntrancePointMaterial.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "6ed9b2eeb2163f9fce297388ba20aa3d"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/DepthMaterial.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "771945ef27e5ba5d6d8fc3175b7a110d"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/WaterMaterial.js": {
+    "mtime": 1776409952.8138266,
+    "hash": "1d225ff20b7c6661499ea4853e486f80"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/Line2Material.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "e7654af11981a20af7f66b3359410f0d"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/SurveyLineMaterial.js": {
+    "mtime": 1777201521.1807375,
+    "hash": "1f935315d47d5924e1cf1033d9cbde16"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/Materials.js": {
+    "mtime": 1777461675.2779534,
+    "hash": "27a203b049b9c966062b4a3b91d7c4f1"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/GlyphMaterial.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "9bff34b53f158930b5f5c67b76619831"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/WallMaterial.js": {
+    "mtime": 1776409952.8138266,
+    "hash": "7d094f568cd9b3a52b71928192b9ed1d"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/StationMaterial.js": {
+    "mtime": 1777201521.1807375,
+    "hash": "a49d422c8275f5806f6b0e89c6d117cc"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/HypsometricMaterial.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "c0556e20ee47a309461da02981fa13e1"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/ContourMaterial.js": {
+    "mtime": 1777462221.39721,
+    "hash": "398fc6ffed1451b33d391b8352a7dbca"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/GlyphAtlas.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "a9dda08f81a738239a564b9c928f379b"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/CloudPointsMaterial.js": {
+    "mtime": 1777728503.6761427,
+    "hash": "392e996878a5835c45b535ccf67420a4"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/TerrainOverlayMaterial.js": {
+    "mtime": 1776409952.8138266,
+    "hash": "6813147271065e34bf5db7985e92f761"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/CursorMaterial.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "b53ed5beaa99fd1c09e1702c77b89347"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/DepthMapMaterial.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "c8d331e30547bfca5ceb95ef59298af0"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/DepthCursorMaterial.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "cb840bfeaf56b57edaded6efeeec613d"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/MissingMaterial.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "ff396070866c65b2baa75aec02401b68"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/CommonTerrainMaterial.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "9a840deed6c2e44519d09ccade566f39"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/HeightMaterial.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "249a51ff754ccf4443371315e77cba2c"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/ExtendedPointsMaterial.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "8ec43a2bc02894d599d616340c5a65d9"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/ClusterMaterial.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "3ea55f7702e824206d0aa704ef4541f7"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/PopupMaterial.js": {
+    "mtime": 1776409952.8128264,
+    "hash": "813173b6eb66594d9ea79d702923c109"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/shaders/Shaders.js": {
+    "mtime": 1776409952.8138266,
+    "hash": "79bfa6fd3e0a70c32decfe7e8a633589"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/LoxTerrainGeometry.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "0f018a615b258dbbc78382c0c7e5c02c"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/EPSG4326TileSet.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "7d06bb18bed8b276018a208dc75336a3"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/CommonTerrain.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "6f486d51b458f40f0118d246d7010cb2"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/TerrainTileGeometry.js": {
+    "mtime": 1776589322.1074197,
+    "hash": "e0bbbbb9985abc8218e98e59c35c84ea"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/HeightLookup.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "96df6e38feb652a3b85c5c3e97294b2d"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/FlatTileGeometry.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "ca6d0071d8c9c7d4236285502d130593"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/Overlay.js": {
+    "mtime": 1776589322.1074197,
+    "hash": "0d8aa952a3276f69504ac3a3185d22cf"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/WebTerrain.js": {
+    "mtime": 1776589322.1084197,
+    "hash": "e74371b799251e9a46d09e730dfa4d5a"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/Tile.js": {
+    "mtime": 1776589322.1074197,
+    "hash": "793056c342badb131edfeb2945019065"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/TerrainMeshGeometry.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "76a61c1af19bfed8964555894640bba3"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/LoxTerrain.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "1930962bfea2a387988149b2e920cf36"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/EPSG3857TileSet.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "ab2c3baf0e48d69ca70497c18f94eec8"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/LineSegments2.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "fa53df0647fbe55ec907375e54c57c86"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/GlyphStringGeometry.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "ee91feff015198ce0eaaa0f2344a82d8"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/lib.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "1fa63ac4a34afe6a8120d961a8143954"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/ColourCache.js": {
+    "mtime": 1776409952.8108265,
+    "hash": "e9812c681aec4408f927d9aea4071a91"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/defaultTheme.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "df99da452a59656d29ed2512d27c8240"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/CommonAttributes.js": {
+    "mtime": 1776409952.8108265,
+    "hash": "73ef587076fc7b284fd6dab6471bd6e4"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/LineSegmentsGeometry.js": {
+    "mtime": 1777201521.1657376,
+    "hash": "cad1cdb77224283da777b42f80cb3384"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/GLTFExporter.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "b0b8ae7d98f186f87e64d4417926e030"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/unpackRGBA.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "ff1b439693ab7c870a1a9795d8f81318"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/Cfg.js": {
+    "mtime": 1776409952.8108265,
+    "hash": "77549e8bcd044f91557360a67241afc1"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/Tree.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "0426a0135600ef2171bdcc5a53bf8516"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/ModelSource.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "3812250e8efe1d12106f72a4bb734442"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/TextureLookup.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "c3b7ff15937caf67ba82e1c0b815a72e"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/RenderUtils.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "0471d990c76659edea4af76c094f7e1e"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/GlyphString.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "303c32b78264c4a10f435a5c1815963b"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/SurveyColourMapper.js": {
+    "mtime": 1777201521.1677377,
+    "hash": "9693429c2a09deaee1e6fe6b593d2a48"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/Colours.js": {
+    "mtime": 1776409952.8108265,
+    "hash": "80aeed265091763f90b2719b70025f1f"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/SurveyBox.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "519499b85933bc3e27af4a13da4aeca4"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/StationPosition.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "e4f8662d27b4ac2273a4d44912dc0375"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/constants.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "a35886763798b9a69db633e773071ac1"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/WorkerPool.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "b995395ed924b6ad234df923d90447e7"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/TextureCache.js": {
+    "mtime": 1776409952.8118265,
+    "hash": "46a260d2378776c6083a2331720577a9"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/public/Segment.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "6a2131270a868b5f7b3e2bb81e57bc14"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/public/PublicFactory.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "c91ba3c87c2e61630d5838d1197635f9"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/public/Station.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "9341e1246a31692ca34d49499aea3703"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/public/Leg.js": {
+    "mtime": 1776409952.8148265,
+    "hash": "02ee2c13ad286bee0d81f0d5462c81df"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/StationPopup.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "e65fac1e042e9eb9fab5b2b062140d1d"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/TracePanel.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "f1ba004a3801237d0f989f00bb6d28e1"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/RoutePanel.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "e3a4afafc65237ab6ae48518357c6f07"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/HelpPage.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "9f428e7d0945be19c27c614318b7860f"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/CaveViewUI.js": {
+    "mtime": 1776589322.1084197,
+    "hash": "d7fd12c23fb93f667e28e038f586f4da"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/Panel.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "910600bf995ab4da3b0c63a4819a971e"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/StationDistancePopup.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "c0b56ece4c0a2b519a1ee746593c2fcb"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/ExportPage.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "506d176143cf8c08be5a57cd4fe0bae8"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/KeyboardControls.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "16e1efd47a725de2a0b2b0c74f628301"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/CanvasPopup.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "71894490c165126af4925f93cf163746"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/StationNameLabel.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "da21d0bfee6dead0d89db3334e8c859f"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SurfacePage.js": {
+    "mtime": 1777462255.663851,
+    "hash": "b485d3cfb8df883af73aba76f871a9ca"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SegmentPopup.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "7a7ab3d403ebae57708a225cc6f7eb57"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/ImagePopup.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "97f8b507dd2b675760ca6d0eb9c78396"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/Page.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "0cf194e1210e565b67154e6a47b94812"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/FileSelector.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "43a407805f3ea4ba1e28bcfd9e1a3698"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/Popup.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "0560dac6f7d94fcaa36a9e6fb46e6e0a"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SelectionPage.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "5df3eb3a08ce49851dff3503c82ff102"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SelectionTreePage.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "942178cb87847f47c356d0539b5ffa7c"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/PointerControls.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "a4ae57f122ed3fa6a9d2ee1a9d4760e3"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SelectionCommonPage.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "7eba5f009d5461cb9299f9dd3f720757"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/EditPage.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "6337ccad488db6827f8999cb2cc8a17f"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SettingsPage.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "ee64dbd73b07df451760e056d968142d"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/OrbitControls.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "2885bfa2ae231c59255212c0e9239e94"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/Frame.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "8aa96bc7c362b45469675db120ba5d9b"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/InfoPage.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "39470dc126953ebad1ffe5f6124c46a2"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Survey.js": {
+    "mtime": 1777201521.1827376,
+    "hash": "9eae9d1c26e2d0011a038ddeb47800c9"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Snapshot.js": {
+    "mtime": 1776409952.8168266,
+    "hash": "17eea6350e1c9fb5449381ddbf3faf88"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Entrances.js": {
+    "mtime": 1776409952.8168266,
+    "hash": "69d9c475a185970ee09e47becc428dba"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Grid.js": {
+    "mtime": 1776409952.8168266,
+    "hash": "4daef3b692a23a1c80aa4b1baaca1e88"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/ViewState.js": {
+    "mtime": 1776409952.8168266,
+    "hash": "06079d3701e399d8b9386081c6d204b6"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Segments.js": {
+    "mtime": 1776409952.8168266,
+    "hash": "1a3b604d1b504d82e81c5c673e9fb681"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/PointIndicator.js": {
+    "mtime": 1776409952.8168266,
+    "hash": "18c6ca0bc51e326908d7d9591642014e"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/StationLabels.js": {
+    "mtime": 1777201521.1817374,
+    "hash": "4967dd52f6d3a4484637ddd99fdcbfbc"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/CameraMove.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "253c6056c682cc012aa2d3d68d155799"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/SurveyMetadata.js": {
+    "mtime": 1776409952.8168266,
+    "hash": "ca5fd5955815f4ea7508828f5496e9c2"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Selection.js": {
+    "mtime": 1776409952.8168266,
+    "hash": "c7cdafac3058028ba5305d5c5149fa17"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/CaveViewer.js": {
+    "mtime": 1777461721.04547,
+    "hash": "1f78a6ae718a92bd5ab591d78088550e"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/StationMarkers.js": {
+    "mtime": 1776409952.8168266,
+    "hash": "903f5131ea08d3f3f4c122ab3f418340"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Stations.js": {
+    "mtime": 1777201521.1827376,
+    "hash": "1201a7be245a6910ce485dbecbaf942c"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Legs.js": {
+    "mtime": 1777201521.1817374,
+    "hash": "c8467c908ef5e9d563b3944bf196c84b"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Routes.js": {
+    "mtime": 1776409952.8168266,
+    "hash": "87ccb563c85edcb470710873f5f8c563"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/DyeTraces.js": {
+    "mtime": 1776409952.8168266,
+    "hash": "f4840b87f58c8e568a1b21fd62a1c44c"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/ClusterMarkers.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "f39a437253355e7874018017967dd3ee"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/LightingManager.js": {
+    "mtime": 1776409952.8168266,
+    "hash": "8e710d7da815db1ea81c714928c23965"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/AnaglyphEffect.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "641cd18b7fc4c60c878c045c57d9e11c"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Point.js": {
+    "mtime": 1776409952.8168266,
+    "hash": "dbbb1b63b08802bc87e6f6724100383a"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/ExportGltf.js": {
+    "mtime": 1776409952.8168266,
+    "hash": "14cc90446a77b416c742989931f7894e"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/CameraManager.js": {
+    "mtime": 1776409952.8158264,
+    "hash": "ab90385eabe3b75839c7aa13d0089617"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Marker.js": {
+    "mtime": 1776409952.8168266,
+    "hash": "4a8dd1f2475ed1edb0ef4ee021f84942"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/walls/buildModels.js": {
+    "mtime": 1777728462.682631,
+    "hash": "f9c48c432940cd3edeb56a129a8990a9"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/walls/buildCrossSections.js": {
+    "mtime": 1776409952.8168266,
+    "hash": "0f8e7576df2e6a3d5f00a0b324ed5a73"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/walls/WallBuilders.js": {
+    "mtime": 1776409952.8168266,
+    "hash": "189f5041e1c859d6b552a6fa470cfbee"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/walls/buildScraps.js": {
+    "mtime": 1776409952.8168266,
+    "hash": "0900790efab0b9d44a607806ab7ccd79"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/walls/Walls.js": {
+    "mtime": 1777201521.1827376,
+    "hash": "e1054797a754b11fe6f2377ca5247e13"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/tools/chroma.min.js": {
+    "mtime": 1776280433.1706715,
+    "hash": "e766d3f5e75c65ca501135eabdca2c9f"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/tools/makeColours.js": {
+    "mtime": 1776280433.1706715,
+    "hash": "4b62e101dbc4e1d72530958d0b8f8c68"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/scratch/test_proj4.js": {
+    "mtime": 1777970016.5038202,
+    "hash": "5e7173424ef1b31ce71756f9dc5d1a07"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/e2e/bigmodel.spec.ts": {
+    "mtime": 1777201521.148738,
+    "hash": "26f4221806ea3b2fbd36c822ef6b723a"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/e2e/caveview.spec.ts": {
+    "mtime": 1777367659.6238391,
+    "hash": "f1a44788a0de2e69cc00bb90e42b5b93"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/index.html": {
+    "mtime": 1777586097.977669,
+    "hash": "0b1aa3fc2813dd8497d8a286088d8535"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/README.md": {
+    "mtime": 1778175599.986619,
+    "hash": "94cef84e87c76948dacadc2176a2f7ad"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/ALGORITHMS.md": {
+    "mtime": 1778142441.5157049,
+    "hash": "8fd9cc7d055fe73f8211189f20f9dafc"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/BLOG_DRAFT.md": {
+    "mtime": 1777564573.9556322,
+    "hash": "c1870c04c463048a48a5e9923c4381b5"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/CHANGELOG.md": {
+    "mtime": 1778143202.0169895,
+    "hash": "3e30cc43c0db4ec0950d831bbecd8f00"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/agents.md": {
+    "mtime": 1777201521.1427379,
+    "hash": "17d97ec55a736b38933357a590a72a02"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/scratch.md": {
+    "mtime": 1776280433.1706715,
+    "hash": "9915027def59c1b2379df691433dc479"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/DOC_SHARE.md": {
+    "mtime": 1777367601.13146,
+    "hash": "2056d63bee80616393d0513ed7719703"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/AGENTS.md": {
+    "mtime": 1777585327.0354273,
+    "hash": "8ee39dcfe68a23b3797b02648930d699"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/GEMINI.md": {
+    "mtime": 1777585309.8565907,
+    "hash": "8ee39dcfe68a23b3797b02648930d699"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/public/privacy.html": {
+    "mtime": 1777640815.9362934,
+    "hash": "30c1af7a72f6192e4390b5b6a248d42c"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/images/logo-alpha.svg": {
+    "mtime": 1776409952.8108265,
+    "hash": "f7468bde0ef9cd0a6caf41870407512a"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/images/logo.svg": {
+    "mtime": 1776409952.8108265,
+    "hash": "bbf3e568e8b4e31eb150c908ce7ed75e"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/legacy/images/disc.svg": {
+    "mtime": 1776409952.8108265,
+    "hash": "3dd7c799cdc42b11f35bbf135dd4d65b"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/public/assets/cave_limestone.png": {
+    "mtime": 1777201521.2167373,
+    "hash": "01c7a7aad43dbd04901d8457e3ef8fdc"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/public/assets/cave_granite.png": {
+    "mtime": 1777201521.2077372,
+    "hash": "13611a3b9866e815a4073ff805fbdc31"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/public/assets/caver_crawling.png": {
+    "mtime": 1777201521.2527368,
+    "hash": "2504163006ad0ace2c7a2e266ab5529a"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/public/assets/cave_rock.png": {
+    "mtime": 1777201521.2357368,
+    "hash": "75a9aa16c5819e8bc3ddfe93de78fcb0"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/public/assets/caver_standing.png": {
+    "mtime": 1777201521.2637367,
+    "hash": "02d6cd476f470cba428ca02079da2789"
+  }
 }

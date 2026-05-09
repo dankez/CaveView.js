@@ -43,6 +43,10 @@ export interface CaveSurface {
   bitmapUrl: string | null
   /** Optional calibration for the bitmap, if different from DTM */
   bitmapCalib?: Calibration | null
+  /** Real-world S-JTSK bounding box for WMS fetching */
+  sjtskBbox?: string
+  /** Aspect ratio of the S-JTSK bounding box */
+  sjtskAspect?: number
   /** Same centering offset as applied to all cave coords */
   centerOffset: Vec3
   /** Real-world bounds of the terrain data (provided by tiffParser) */
