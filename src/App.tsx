@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, Suspense, useMemo } from 'react'
 import proj4 from 'proj4'
-import { fetchAltitudeFromZbgis } from './utils/geoUtils'
+import { fetchAltitudeFromZbgis, wgs84ToJtsk } from './utils/geoUtils'
 import { parseLox, parseSvx, parsePlt, parsePly } from './parsers/caveParser'
 import type { ParsedCave, CaveSurface, Vec3 } from './parsers/caveParser'
 import { parseGeoTiff } from './parsers/tiffParser'
@@ -118,7 +118,7 @@ function tryJtskToWgs84(x: number, y: number): { lat: number; lon: number; epsg:
   // Easting (x) je typicky od -900000 do -150000 
   // Northing (y) je typicky od -1350000 do -900000
   if (x > -950000 && x < -150000 && y > -1350000 && y < -900000) {
-    const sjtskDef = "+proj=krovak +lat_0=49.5 +lon_0=24.83333333333333 +alpha=30.28813972222222 +k=0.9999 +x_0=0 +y_0=0 +ellps=bessel +towgs84=589,76,480,0,0,0,0 +units=m +no_defs"
+    const sjtskDef = "+proj=krovak +lat_0=49.5 +lon_0=24.83333333333333 +alpha=30.28813972222222 +k=0.9999 +x_0=0 +y_0=0 +ellps=bessel +towgs84=570.8,85.7,462.8,4.998,1.587,5.261,3.56 +units=m +no_defs"
     try {
       const wgs = proj4(sjtskDef, "WGS84", [x, y])
       if (wgs && wgs.length === 2) return { lat: wgs[1], lon: wgs[0], epsg: 'S-JTSK Křovák' }
@@ -1027,8 +1027,8 @@ export default function App() {
       screenX, screenY,
       pos: {
         x: origX - (cave.centerOffset?.x || 0),
-        y: altitude - (cave.centerOffset?.z || 0),
-        z: -(origY - (cave.centerOffset?.y || 0))
+        y: origY - (cave.centerOffset?.y || 0),
+        z: altitude - (cave.centerOffset?.z || 0)
       },
       centerX: cave.centerOffset?.x || 0, centerY: cave.centerOffset?.y || 0, centerZ: cave.centerOffset?.z || 0
     }
@@ -1059,29 +1059,79 @@ export default function App() {
   const handleUpdateGps = useCallback((stIdx: number, lat: number, lon: number, alt: number) => {
     if (!cave) return
     
+    // 1. Získaj cieľovú polohu v JTSK
+    const jtsk = wgs84ToJtsk(lat, lon)
+    if (!jtsk) return
+    const [tx, ty] = jtsk
+
+    // Získaj referenčný bod (buď stanica, alebo klik na terén/PLY)
+    let refPos: Vec3 | null = null
+    if (stIdx >= 0 && cave.stationLabels[stIdx]) {
+      refPos = cave.stationLabels[stIdx].pos
+    } else {
+      const sel = selectedStations.find(s => s.idx === stIdx)
+      if (sel) refPos = sel.pos
+    }
+    if (!refPos) return
+
+    // 2. Vypočítaj nový globálny offset modelu (georeferencovanie)
+    // origX = pos.x + offset.x -> offset.x = targetX - pos.x
+    // origY = pos.y + offset.y -> offset.y = targetY - pos.y
+    // alt   = pos.z + offset.z -> offset.z = altitude - pos.z
+    const newOffsetX = tx - refPos.x
+    const newOffsetY = ty - refPos.y
+    const newOffsetZ = alt - refPos.z
+    const newCenterOffset = { x: newOffsetX, y: newOffsetY, z: newOffsetZ }
+
     setCave(prev => {
       if (!prev) return null
-      const newStationLabels = [...prev.stationLabels]
-      if (newStationLabels[stIdx]) {
-        newStationLabels[stIdx] = {
-          ...newStationLabels[stIdx],
-          gps: { lat, lon, epsg: 'Manual' },
-          altitude: alt
+      
+      // 3. Prepočítaj VŠETKY stationLabels (georeferencujeme celý model)
+      const newStationLabels = prev.stationLabels.map(sl => {
+        const ox = sl.pos.x + newOffsetX
+        const oy = sl.pos.y + newOffsetY
+        const newAlt = sl.pos.z + newOffsetZ
+        const newGps = tryJtskToWgs84(ox, oy)
+        return {
+          ...sl,
+          gps: newGps || null,
+          altitude: newAlt
         }
+      })
+
+      // 4. Aktualizuj povrchy (surfaces)
+      const newSurfaces = prev.surfaces.map(s => ({
+        ...s,
+        centerOffset: newCenterOffset
+      }))
+
+      return { 
+        ...prev, 
+        centerOffset: newCenterOffset, 
+        stationLabels: newStationLabels,
+        surfaces: newSurfaces
       }
-      return { ...prev, stationLabels: newStationLabels }
     })
     
-    // Aktualizácia výberu aby sa karta hneď prekreslila
-    setSelectedStations(prev => {
-      return prev.map(s => {
-        if (s.idx === stIdx) {
-          return { ...s, gps: { lat, lon, epsg: 'Manual' }, altitude: alt }
-        }
-        return s
-      })
-    })
-  }, [cave])
+    // 5. Aktualizácia vybraných staníc pre okamžitú odozvu v UI
+    setSelectedStations(prev => prev.map(s => {
+      const ox = s.pos.x + newOffsetX
+      const oy = s.pos.y + newOffsetY
+      const altNew = s.pos.z + newOffsetZ
+      const gpsNew = tryJtskToWgs84(ox, oy)
+      
+      return { 
+        ...s, 
+        origX: ox, 
+        origY: oy, 
+        altitude: altNew, 
+        gps: gpsNew || null,
+        centerX: newOffsetX,
+        centerY: newOffsetY,
+        centerZ: newOffsetZ
+      }
+    }))
+  }, [cave, selectedStations])
 
   const stationMeta = new Map<number, { name: string; z: number; isEntrance?: boolean }>()
   const findStationByName = (name: string): SelStation | null => {

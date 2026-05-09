@@ -33,6 +33,12 @@ export const fr = {
     finalizing: "Finalisation du modèle...",
     parsing_model: "Analyse du modèle...",
     done: "Terminé",
+    edit: "Modifier",
+    add: "Ajouter",
+    apply: "Appliquer",
+    cancel: "Annuler",
+    fetchAltitude: "Récupérer l'altitude (ZBGIS)",
+    loadingAltitude: "Chargement...",
   },
   welcome: {
     sub: "Visualiseur de levés spéléo 3D",
