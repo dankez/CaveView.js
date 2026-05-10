@@ -9,7 +9,7 @@
       "source_file": "rollup.config.mjs",
       "source_location": "L1",
       "id": "rollup_config_mjs",
-      "community": 39,
+      "community": 40,
       "norm_label": "rollup.config.mjs"
     },
     {
@@ -18,7 +18,7 @@
       "source_file": "test-merge.mjs",
       "source_location": "L1",
       "id": "test_merge_mjs",
-      "community": 107,
+      "community": 103,
       "norm_label": "test-merge.mjs"
     },
     {
@@ -27,7 +27,7 @@
       "source_file": "rollup.graph.mjs",
       "source_location": "L1",
       "id": "rollup_graph_mjs",
-      "community": 39,
+      "community": 40,
       "norm_label": "rollup.graph.mjs"
     },
     {
@@ -36,7 +36,7 @@
       "source_file": "rollup-babel.config.mjs",
       "source_location": "L1",
       "id": "rollup_babel_config_mjs",
-      "community": 39,
+      "community": 40,
       "norm_label": "rollup-babel.config.mjs"
     },
     {
@@ -45,7 +45,7 @@
       "source_file": "rollup-gl.mjs",
       "source_location": "L1",
       "id": "rollup_gl_mjs",
-      "community": 39,
+      "community": 40,
       "norm_label": "rollup-gl.mjs"
     },
     {
@@ -54,7 +54,7 @@
       "source_file": "rollup-gl.mjs",
       "source_location": "L2",
       "id": "caveview_modernized_rollup_gl_glconstants",
-      "community": 39,
+      "community": 40,
       "norm_label": "glconstants()"
     },
     {
@@ -63,7 +63,7 @@
       "source_file": "rollup-gl.mjs",
       "source_location": "L208",
       "id": "caveview_modernized_rollup_gl_glslstrip",
-      "community": 39,
+      "community": 40,
       "norm_label": "glslstrip()"
     },
     {
@@ -72,7 +72,7 @@
       "source_file": "rollup-gl.mjs",
       "source_location": "L221",
       "id": "caveview_modernized_rollup_gl_glsl",
-      "community": 39,
+      "community": 40,
       "norm_label": "glsl()"
     },
     {
@@ -81,7 +81,7 @@
       "source_file": "rollup-gl.mjs",
       "source_location": "L231",
       "id": "caveview_modernized_rollup_gl_glslthree",
-      "community": 39,
+      "community": 40,
       "norm_label": "glslthree()"
     },
     {
@@ -90,7 +90,7 @@
       "source_file": "vite.config.ts",
       "source_location": "L1",
       "id": "vite_config_ts",
-      "community": 108,
+      "community": 104,
       "norm_label": "vite.config.ts"
     },
     {
@@ -99,7 +99,7 @@
       "source_file": "inspect_lox.ts",
       "source_location": "L1",
       "id": "inspect_lox_ts",
-      "community": 109,
+      "community": 105,
       "norm_label": "inspect_lox.ts"
     },
     {
@@ -108,7 +108,7 @@
       "source_file": "playwright.config.ts",
       "source_location": "L1",
       "id": "playwright_config_ts",
-      "community": 110,
+      "community": 106,
       "norm_label": "playwright.config.ts"
     },
     {
@@ -117,7 +117,7 @@
       "source_file": "parseTest.ts",
       "source_location": "L1",
       "id": "parsetest_ts",
-      "community": 111,
+      "community": 107,
       "norm_label": "parsetest.ts"
     },
     {
@@ -126,7 +126,7 @@
       "source_file": "src/vite-env.d.ts",
       "source_location": "L1",
       "id": "src_vite_env_d_ts",
-      "community": 112,
+      "community": 108,
       "norm_label": "vite-env.d.ts"
     },
     {
@@ -144,7 +144,7 @@
       "source_file": "src/App.tsx",
       "source_location": "L10",
       "id": "src_app_errorboundary",
-      "community": 64,
+      "community": 65,
       "norm_label": "errorboundary"
     },
     {
@@ -153,7 +153,7 @@
       "source_file": "src/App.tsx",
       "source_location": "L11",
       "id": "src_app_errorboundary_constructor",
-      "community": 64,
+      "community": 65,
       "norm_label": ".constructor()"
     },
     {
@@ -162,7 +162,7 @@
       "source_file": "src/App.tsx",
       "source_location": "L12",
       "id": "src_app_errorboundary_getderivedstatefromerror",
-      "community": 64,
+      "community": 65,
       "norm_label": ".getderivedstatefromerror()"
     },
     {
@@ -171,7 +171,7 @@
       "source_file": "src/App.tsx",
       "source_location": "L13",
       "id": "src_app_errorboundary_render",
-      "community": 64,
+      "community": 65,
       "norm_label": ".render()"
     },
     {
@@ -297,7 +297,7 @@
       "source_file": "src/App.tsx",
       "source_location": "L650",
       "id": "src_app_app",
-      "community": 61,
+      "community": 62,
       "norm_label": "app()"
     },
     {
@@ -306,7 +306,7 @@
       "source_file": "src/main.tsx",
       "source_location": "L1",
       "id": "src_main_tsx",
-      "community": 113,
+      "community": 109,
       "norm_label": "main.tsx"
     },
     {
@@ -315,7 +315,7 @@
       "source_file": "src/parsers/th2Parser.ts",
       "source_location": "L1",
       "id": "src_parsers_th2parser_ts",
-      "community": 97,
+      "community": 93,
       "norm_label": "th2parser.ts"
     },
     {
@@ -324,7 +324,7 @@
       "source_file": "src/parsers/th2Parser.ts",
       "source_location": "L8",
       "id": "parsers_th2parser_parseth2",
-      "community": 97,
+      "community": 93,
       "norm_label": "parseth2()"
     },
     {
@@ -369,7 +369,7 @@
       "source_file": "src/parsers/caveParser.ts",
       "source_location": "L1",
       "id": "src_parsers_caveparser_ts",
-      "community": 22,
+      "community": 23,
       "norm_label": "caveparser.ts"
     },
     {
@@ -378,7 +378,7 @@
       "source_file": "src/parsers/caveParser.ts",
       "source_location": "L5",
       "id": "parsers_caveparser_vec3",
-      "community": 22,
+      "community": 23,
       "norm_label": "vec3"
     },
     {
@@ -387,7 +387,7 @@
       "source_file": "src/parsers/caveParser.ts",
       "source_location": "L7",
       "id": "parsers_caveparser_segment",
-      "community": 22,
+      "community": 23,
       "norm_label": "segment"
     },
     {
@@ -396,7 +396,7 @@
       "source_file": "src/parsers/caveParser.ts",
       "source_location": "L13",
       "id": "parsers_caveparser_scrap",
-      "community": 22,
+      "community": 23,
       "norm_label": "scrap"
     },
     {
@@ -405,7 +405,7 @@
       "source_file": "src/parsers/caveParser.ts",
       "source_location": "L19",
       "id": "parsers_caveparser_stationlabel",
-      "community": 22,
+      "community": 23,
       "norm_label": "stationlabel"
     },
     {
@@ -414,7 +414,7 @@
       "source_file": "src/parsers/caveParser.ts",
       "source_location": "L29",
       "id": "parsers_caveparser_calibration",
-      "community": 22,
+      "community": 23,
       "norm_label": "calibration"
     },
     {
@@ -423,7 +423,7 @@
       "source_file": "src/parsers/caveParser.ts",
       "source_location": "L35",
       "id": "parsers_caveparser_cavesurface",
-      "community": 22,
+      "community": 23,
       "norm_label": "cavesurface"
     },
     {
@@ -432,7 +432,7 @@
       "source_file": "src/parsers/caveParser.ts",
       "source_location": "L61",
       "id": "parsers_caveparser_parsedcave",
-      "community": 22,
+      "community": 23,
       "norm_label": "parsedcave"
     },
     {
@@ -441,7 +441,7 @@
       "source_file": "src/parsers/caveParser.ts",
       "source_location": "L84",
       "id": "parsers_caveparser_parselox",
-      "community": 22,
+      "community": 23,
       "norm_label": "parselox()"
     },
     {
@@ -450,7 +450,7 @@
       "source_file": "src/parsers/caveParser.ts",
       "source_location": "L321",
       "id": "parsers_caveparser_parsesvx",
-      "community": 22,
+      "community": 23,
       "norm_label": "parsesvx()"
     },
     {
@@ -459,7 +459,7 @@
       "source_file": "src/parsers/caveParser.ts",
       "source_location": "L422",
       "id": "parsers_caveparser_parseplt",
-      "community": 22,
+      "community": 23,
       "norm_label": "parseplt()"
     },
     {
@@ -468,7 +468,7 @@
       "source_file": "src/parsers/caveParser.ts",
       "source_location": "L451",
       "id": "parsers_caveparser_parseply",
-      "community": 22,
+      "community": 23,
       "norm_label": "parseply()"
     },
     {
@@ -477,7 +477,7 @@
       "source_file": "src/parsers/caveParser.ts",
       "source_location": "L682",
       "id": "parsers_caveparser_classifylidar",
-      "community": 22,
+      "community": 23,
       "norm_label": "classifylidar()"
     },
     {
@@ -486,7 +486,7 @@
       "source_file": "src/parsers/caveParser.ts",
       "source_location": "L721",
       "id": "parsers_caveparser_buildresult",
-      "community": 22,
+      "community": 23,
       "norm_label": "buildresult()"
     },
     {
@@ -495,7 +495,7 @@
       "source_file": "src/parsers/__tests__/caveParser.test.ts",
       "source_location": "L1",
       "id": "src_parsers_tests_caveparser_test_ts",
-      "community": 114,
+      "community": 110,
       "norm_label": "caveparser.test.ts"
     },
     {
@@ -504,7 +504,7 @@
       "source_file": "src/i18n/de.ts",
       "source_location": "L1",
       "id": "src_i18n_de_ts",
-      "community": 99,
+      "community": 95,
       "norm_label": "de.ts"
     },
     {
@@ -513,7 +513,7 @@
       "source_file": "src/i18n/de.ts",
       "source_location": "L1",
       "id": "i18n_de_de",
-      "community": 99,
+      "community": 95,
       "norm_label": "de"
     },
     {
@@ -522,7 +522,7 @@
       "source_file": "src/i18n/sk.ts",
       "source_location": "L1",
       "id": "src_i18n_sk_ts",
-      "community": 100,
+      "community": 96,
       "norm_label": "sk.ts"
     },
     {
@@ -531,7 +531,7 @@
       "source_file": "src/i18n/sk.ts",
       "source_location": "L1",
       "id": "i18n_sk_sk",
-      "community": 100,
+      "community": 96,
       "norm_label": "sk"
     },
     {
@@ -540,7 +540,7 @@
       "source_file": "src/i18n/fr.ts",
       "source_location": "L1",
       "id": "src_i18n_fr_ts",
-      "community": 101,
+      "community": 97,
       "norm_label": "fr.ts"
     },
     {
@@ -549,7 +549,7 @@
       "source_file": "src/i18n/fr.ts",
       "source_location": "L1",
       "id": "i18n_fr_fr",
-      "community": 101,
+      "community": 97,
       "norm_label": "fr"
     },
     {
@@ -558,7 +558,7 @@
       "source_file": "src/i18n/index.ts",
       "source_location": "L1",
       "id": "src_i18n_index_ts",
-      "community": 61,
+      "community": 62,
       "norm_label": "index.ts"
     },
     {
@@ -567,7 +567,7 @@
       "source_file": "src/i18n/index.ts",
       "source_location": "L14",
       "id": "i18n_index_getbrowserlanguage",
-      "community": 61,
+      "community": 62,
       "norm_label": "getbrowserlanguage()"
     },
     {
@@ -576,7 +576,7 @@
       "source_file": "src/i18n/index.ts",
       "source_location": "L25",
       "id": "i18n_index_gettranslation",
-      "community": 61,
+      "community": 62,
       "norm_label": "gettranslation()"
     },
     {
@@ -585,7 +585,7 @@
       "source_file": "src/i18n/en.ts",
       "source_location": "L1",
       "id": "src_i18n_en_ts",
-      "community": 102,
+      "community": 98,
       "norm_label": "en.ts"
     },
     {
@@ -594,7 +594,7 @@
       "source_file": "src/i18n/en.ts",
       "source_location": "L1",
       "id": "i18n_en_en",
-      "community": 102,
+      "community": 98,
       "norm_label": "en"
     },
     {
@@ -603,7 +603,7 @@
       "source_file": "src/test/setup.ts",
       "source_location": "L1",
       "id": "src_test_setup_ts",
-      "community": 115,
+      "community": 111,
       "norm_label": "setup.ts"
     },
     {
@@ -612,7 +612,7 @@
       "source_file": "src/types/index.ts",
       "source_location": "L1",
       "id": "src_types_index_ts",
-      "community": 116,
+      "community": 112,
       "norm_label": "index.ts"
     },
     {
@@ -621,7 +621,7 @@
       "source_file": "src/utils/geoUtils.ts",
       "source_location": "L1",
       "id": "src_utils_geoutils_ts",
-      "community": 62,
+      "community": 63,
       "norm_label": "geoutils.ts"
     },
     {
@@ -630,7 +630,7 @@
       "source_file": "src/utils/geoUtils.ts",
       "source_location": "L9",
       "id": "utils_geoutils_wgs84tojtsk",
-      "community": 62,
+      "community": 63,
       "norm_label": "wgs84tojtsk()"
     },
     {
@@ -639,7 +639,7 @@
       "source_file": "src/utils/geoUtils.ts",
       "source_location": "L22",
       "id": "utils_geoutils_jtsktowgs84",
-      "community": 62,
+      "community": 63,
       "norm_label": "jtsktowgs84()"
     },
     {
@@ -648,7 +648,7 @@
       "source_file": "src/utils/geoUtils.ts",
       "source_location": "L36",
       "id": "utils_geoutils_fetchaltitudefromzbgis",
-      "community": 62,
+      "community": 63,
       "norm_label": "fetchaltitudefromzbgis()"
     },
     {
@@ -657,7 +657,7 @@
       "source_file": "src/utils/XyzTileDownloader.ts",
       "source_location": "L1",
       "id": "src_utils_xyztiledownloader_ts",
-      "community": 41,
+      "community": 44,
       "norm_label": "xyztiledownloader.ts"
     },
     {
@@ -666,7 +666,7 @@
       "source_file": "src/utils/XyzTileDownloader.ts",
       "source_location": "L8",
       "id": "utils_xyztiledownloader_progress",
-      "community": 41,
+      "community": 44,
       "norm_label": "progress"
     },
     {
@@ -675,7 +675,7 @@
       "source_file": "src/utils/XyzTileDownloader.ts",
       "source_location": "L16",
       "id": "utils_xyztiledownloader_lon2tile",
-      "community": 41,
+      "community": 44,
       "norm_label": "lon2tile()"
     },
     {
@@ -684,7 +684,7 @@
       "source_file": "src/utils/XyzTileDownloader.ts",
       "source_location": "L23",
       "id": "utils_xyztiledownloader_lat2tile",
-      "community": 41,
+      "community": 44,
       "norm_label": "lat2tile()"
     },
     {
@@ -693,7 +693,7 @@
       "source_file": "src/utils/XyzTileDownloader.ts",
       "source_location": "L38",
       "id": "utils_xyztiledownloader_tile2lon",
-      "community": 41,
+      "community": 44,
       "norm_label": "tile2lon()"
     },
     {
@@ -702,7 +702,7 @@
       "source_file": "src/utils/XyzTileDownloader.ts",
       "source_location": "L45",
       "id": "utils_xyztiledownloader_tile2lat",
-      "community": 41,
+      "community": 44,
       "norm_label": "tile2lat()"
     },
     {
@@ -711,7 +711,7 @@
       "source_file": "src/utils/XyzTileDownloader.ts",
       "source_location": "L53",
       "id": "utils_xyztiledownloader_downloadtiledxyz",
-      "community": 41,
+      "community": 44,
       "norm_label": "downloadtiledxyz()"
     },
     {
@@ -720,7 +720,7 @@
       "source_file": "src/utils/WmsTileDownloader.ts",
       "source_location": "L1",
       "id": "src_utils_wmstiledownloader_ts",
-      "community": 65,
+      "community": 66,
       "norm_label": "wmstiledownloader.ts"
     },
     {
@@ -729,7 +729,7 @@
       "source_file": "src/utils/WmsTileDownloader.ts",
       "source_location": "L8",
       "id": "utils_wmstiledownloader_tilecache",
-      "community": 65,
+      "community": 66,
       "norm_label": "tilecache"
     },
     {
@@ -738,7 +738,7 @@
       "source_file": "src/utils/WmsTileDownloader.ts",
       "source_location": "L51",
       "id": "utils_wmstiledownloader_downloadprogress",
-      "community": 65,
+      "community": 66,
       "norm_label": "downloadprogress"
     },
     {
@@ -747,7 +747,7 @@
       "source_file": "src/utils/WmsTileDownloader.ts",
       "source_location": "L57",
       "id": "utils_wmstiledownloader_downloadtiledwms",
-      "community": 65,
+      "community": 66,
       "norm_label": "downloadtiledwms()"
     },
     {
@@ -945,7 +945,7 @@
       "source_file": "src/components/CaveViewer3D.tsx",
       "source_location": "L609",
       "id": "components_caveviewer3d_elevcolor",
-      "community": 42,
+      "community": 45,
       "norm_label": "elevcolor()"
     },
     {
@@ -954,7 +954,7 @@
       "source_file": "src/components/CaveViewer3D.tsx",
       "source_location": "L626",
       "id": "components_caveviewer3d_normz",
-      "community": 42,
+      "community": 45,
       "norm_label": "normz()"
     },
     {
@@ -990,7 +990,7 @@
       "source_file": "src/components/CaveViewer3D.tsx",
       "source_location": "L746",
       "id": "components_caveviewer3d_segstogeowithcolors",
-      "community": 42,
+      "community": 45,
       "norm_label": "segstogeowithcolors()"
     },
     {
@@ -1062,7 +1062,7 @@
       "source_file": "src/components/CaveViewer3D.tsx",
       "source_location": "L1101",
       "id": "components_caveviewer3d_applytaubinsmoothing",
-      "community": 42,
+      "community": 45,
       "norm_label": "applytaubinsmoothing()"
     },
     {
@@ -1071,7 +1071,7 @@
       "source_file": "src/components/CaveViewer3D.tsx",
       "source_location": "L1151",
       "id": "components_caveviewer3d_computeangleweightednormals",
-      "community": 42,
+      "community": 45,
       "norm_label": "computeangleweightednormals()"
     },
     {
@@ -1080,7 +1080,7 @@
       "source_file": "src/components/CaveViewer3D.tsx",
       "source_location": "L1184",
       "id": "components_caveviewer3d_buildscrapsgeo",
-      "community": 42,
+      "community": 45,
       "norm_label": "buildscrapsgeo()"
     },
     {
@@ -1107,7 +1107,7 @@
       "source_file": "src/components/CaveViewer3D.tsx",
       "source_location": "L1538",
       "id": "components_caveviewer3d_buildterraintiledata",
-      "community": 42,
+      "community": 45,
       "norm_label": "buildterraintiledata()"
     },
     {
@@ -1242,7 +1242,7 @@
       "source_file": "src/core/constants.ts",
       "source_location": "L1",
       "id": "src_core_constants_ts",
-      "community": 117,
+      "community": 113,
       "norm_label": "constants.ts"
     },
     {
@@ -1251,7 +1251,7 @@
       "source_file": "legacy/js/CV2Plugins.js",
       "source_location": "L1",
       "id": "legacy_js_cv2plugins_js",
-      "community": 118,
+      "community": 114,
       "norm_label": "cv2plugins.js"
     },
     {
@@ -1260,7 +1260,7 @@
       "source_file": "legacy/js/CV2.js",
       "source_location": "L1",
       "id": "legacy_js_cv2_js",
-      "community": 119,
+      "community": 115,
       "norm_label": "cv2.js"
     },
     {
@@ -1269,7 +1269,7 @@
       "source_file": "legacy/js/Three.js",
       "source_location": "L1",
       "id": "legacy_js_three_js",
-      "community": 120,
+      "community": 116,
       "norm_label": "three.js"
     },
     {
@@ -1278,7 +1278,7 @@
       "source_file": "legacy/js/hud/HUD.js",
       "source_location": "L1",
       "id": "legacy_js_hud_hud_js",
-      "community": 26,
+      "community": 27,
       "norm_label": "hud.js"
     },
     {
@@ -1287,7 +1287,7 @@
       "source_file": "legacy/js/hud/HUD.js",
       "source_location": "L19",
       "id": "hud_hud_hud",
-      "community": 26,
+      "community": 27,
       "norm_label": "hud()"
     },
     {
@@ -1350,7 +1350,7 @@
       "source_file": "legacy/js/hud/HudObject.js",
       "source_location": "L1",
       "id": "legacy_js_hud_hudobject_js",
-      "community": 29,
+      "community": 42,
       "norm_label": "hudobject.js"
     },
     {
@@ -1359,7 +1359,7 @@
       "source_file": "legacy/js/hud/HudObject.js",
       "source_location": "L3",
       "id": "hud_hudobject_hudobject",
-      "community": 29,
+      "community": 42,
       "norm_label": "hudobject"
     },
     {
@@ -1368,7 +1368,7 @@
       "source_file": "legacy/js/hud/HudObject.js",
       "source_location": "L7",
       "id": "hud_hudobject_hudobject_constructor",
-      "community": 29,
+      "community": 42,
       "norm_label": ".constructor()"
     },
     {
@@ -1377,7 +1377,7 @@
       "source_file": "legacy/js/hud/HudObject.js",
       "source_location": "L16",
       "id": "hud_hudobject_hudobject_getcommonring",
-      "community": 29,
+      "community": 42,
       "norm_label": ".getcommonring()"
     },
     {
@@ -1386,7 +1386,7 @@
       "source_file": "legacy/js/hud/ScaleBar.js",
       "source_location": "L1",
       "id": "legacy_js_hud_scalebar_js",
-      "community": 24,
+      "community": 88,
       "norm_label": "scalebar.js"
     },
     {
@@ -1395,7 +1395,7 @@
       "source_file": "legacy/js/hud/ScaleBar.js",
       "source_location": "L4",
       "id": "hud_scalebar_bargeometry",
-      "community": 24,
+      "community": 88,
       "norm_label": "bargeometry"
     },
     {
@@ -1404,7 +1404,7 @@
       "source_file": "legacy/js/hud/ScaleBar.js",
       "source_location": "L6",
       "id": "hud_scalebar_bargeometry_constructor",
-      "community": 24,
+      "community": 88,
       "norm_label": ".constructor()"
     },
     {
@@ -1773,7 +1773,7 @@
       "source_file": "legacy/js/hud/AHI.js",
       "source_location": "L23",
       "id": "hud_ahi_ahi_constructor",
-      "community": 29,
+      "community": 42,
       "norm_label": ".constructor()"
     },
     {
@@ -1791,7 +1791,7 @@
       "source_file": "legacy/js/hud/Compass.js",
       "source_location": "L1",
       "id": "legacy_js_hud_compass_js",
-      "community": 29,
+      "community": 42,
       "norm_label": "compass.js"
     },
     {
@@ -1800,7 +1800,7 @@
       "source_file": "legacy/js/hud/Compass.js",
       "source_location": "L20",
       "id": "hud_compass_compass",
-      "community": 29,
+      "community": 42,
       "norm_label": "compass"
     },
     {
@@ -1809,7 +1809,7 @@
       "source_file": "legacy/js/hud/Compass.js",
       "source_location": "L22",
       "id": "hud_compass_compass_constructor",
-      "community": 29,
+      "community": 42,
       "norm_label": ".constructor()"
     },
     {
@@ -1899,7 +1899,7 @@
       "source_file": "legacy/js/loaders/WorkerLoader.js",
       "source_location": "L1",
       "id": "legacy_js_loaders_workerloader_js",
-      "community": 53,
+      "community": 54,
       "norm_label": "workerloader.js"
     },
     {
@@ -1908,7 +1908,7 @@
       "source_file": "legacy/js/loaders/WorkerLoader.js",
       "source_location": "L1",
       "id": "loaders_workerloader_workerloader",
-      "community": 53,
+      "community": 54,
       "norm_label": "workerloader"
     },
     {
@@ -1917,7 +1917,7 @@
       "source_file": "legacy/js/loaders/WorkerLoader.js",
       "source_location": "L3",
       "id": "loaders_workerloader_workerloader_constructor",
-      "community": 53,
+      "community": 54,
       "norm_label": ".constructor()"
     },
     {
@@ -1926,7 +1926,7 @@
       "source_file": "legacy/js/loaders/WorkerLoader.js",
       "source_location": "L10",
       "id": "loaders_workerloader_workerloader_load",
-      "community": 53,
+      "community": 54,
       "norm_label": ".load()"
     },
     {
@@ -1935,7 +1935,7 @@
       "source_file": "legacy/js/loaders/WorkerLoader.js",
       "source_location": "L53",
       "id": "loaders_workerloader_workerloader_abort",
-      "community": 53,
+      "community": 54,
       "norm_label": ".abort()"
     },
     {
@@ -2034,7 +2034,7 @@
       "source_file": "legacy/js/loaders/CaveLoader.js",
       "source_location": "L1",
       "id": "legacy_js_loaders_caveloader_js",
-      "community": 44,
+      "community": 47,
       "norm_label": "caveloader.js"
     },
     {
@@ -2043,7 +2043,7 @@
       "source_file": "legacy/js/loaders/CaveLoader.js",
       "source_location": "L10",
       "id": "loaders_caveloader_caveloader",
-      "community": 44,
+      "community": 47,
       "norm_label": "caveloader"
     },
     {
@@ -2052,7 +2052,7 @@
       "source_file": "legacy/js/loaders/CaveLoader.js",
       "source_location": "L12",
       "id": "loaders_caveloader_caveloader_constructor",
-      "community": 44,
+      "community": 47,
       "norm_label": ".constructor()"
     },
     {
@@ -2061,7 +2061,7 @@
       "source_file": "legacy/js/loaders/CaveLoader.js",
       "source_location": "L27",
       "id": "loaders_caveloader_caveloader_reset",
-      "community": 44,
+      "community": 47,
       "norm_label": ".reset()"
     },
     {
@@ -2070,7 +2070,7 @@
       "source_file": "legacy/js/loaders/CaveLoader.js",
       "source_location": "L36",
       "id": "loaders_caveloader_caveloader_gethandler",
-      "community": 44,
+      "community": 47,
       "norm_label": ".gethandler()"
     },
     {
@@ -2088,7 +2088,7 @@
       "source_file": "legacy/js/loaders/CaveLoader.js",
       "source_location": "L89",
       "id": "loaders_caveloader_caveloader_loadfile",
-      "community": 44,
+      "community": 47,
       "norm_label": ".loadfile()"
     },
     {
@@ -2097,7 +2097,7 @@
       "source_file": "legacy/js/loaders/CaveLoader.js",
       "source_location": "L111",
       "id": "loaders_caveloader_caveloader_progresstotal",
-      "community": 44,
+      "community": 47,
       "norm_label": ".progresstotal()"
     },
     {
@@ -2106,7 +2106,7 @@
       "source_file": "legacy/js/loaders/FileLoader.js",
       "source_location": "L1",
       "id": "legacy_js_loaders_fileloader_js",
-      "community": 59,
+      "community": 60,
       "norm_label": "fileloader.js"
     },
     {
@@ -2115,7 +2115,7 @@
       "source_file": "legacy/js/loaders/FileLoader.js",
       "source_location": "L3",
       "id": "loaders_fileloader_fileloader",
-      "community": 59,
+      "community": 60,
       "norm_label": "fileloader"
     },
     {
@@ -2124,7 +2124,7 @@
       "source_file": "legacy/js/loaders/FileLoader.js",
       "source_location": "L5",
       "id": "loaders_fileloader_fileloader_constructor",
-      "community": 59,
+      "community": 60,
       "norm_label": ".constructor()"
     },
     {
@@ -2133,7 +2133,7 @@
       "source_file": "legacy/js/loaders/FileLoader.js",
       "source_location": "L12",
       "id": "loaders_fileloader_fileloader_load",
-      "community": 59,
+      "community": 60,
       "norm_label": ".load()"
     },
     {
@@ -2142,7 +2142,7 @@
       "source_file": "legacy/js/loaders/FileLoader.js",
       "source_location": "L143",
       "id": "loaders_fileloader_fileloader_abort",
-      "community": 59,
+      "community": 60,
       "norm_label": ".abort()"
     },
     {
@@ -2358,7 +2358,7 @@
       "source_file": "legacy/js/plugins/DistanceFieldPlugin.js",
       "source_location": "L1",
       "id": "legacy_js_plugins_distancefieldplugin_js",
-      "community": 48,
+      "community": 49,
       "norm_label": "distancefieldplugin.js"
     },
     {
@@ -2367,7 +2367,7 @@
       "source_file": "legacy/js/plugins/DistanceFieldPlugin.js",
       "source_location": "L6",
       "id": "plugins_distancefieldplugin_distancelookup",
-      "community": 48,
+      "community": 49,
       "norm_label": "distancelookup"
     },
     {
@@ -2376,7 +2376,7 @@
       "source_file": "legacy/js/plugins/DistanceFieldPlugin.js",
       "source_location": "L12",
       "id": "plugins_distancefieldplugin_distancelookup_constructor",
-      "community": 48,
+      "community": 49,
       "norm_label": ".constructor()"
     },
     {
@@ -2385,7 +2385,7 @@
       "source_file": "legacy/js/plugins/DistanceFieldPlugin.js",
       "source_location": "L20",
       "id": "plugins_distancefieldplugin_distancelookup_lookup",
-      "community": 48,
+      "community": 49,
       "norm_label": ".lookup()"
     },
     {
@@ -2394,7 +2394,7 @@
       "source_file": "legacy/js/plugins/DistanceFieldPlugin.js",
       "source_location": "L28",
       "id": "plugins_distancefieldplugin_distancefieldplugin",
-      "community": 48,
+      "community": 49,
       "norm_label": "distancefieldplugin"
     },
     {
@@ -2403,7 +2403,7 @@
       "source_file": "legacy/js/plugins/DistanceFieldPlugin.js",
       "source_location": "L30",
       "id": "plugins_distancefieldplugin_distancefieldplugin_constructor",
-      "community": 48,
+      "community": 49,
       "norm_label": ".constructor()"
     },
     {
@@ -2412,7 +2412,7 @@
       "source_file": "legacy/js/plugins/ARPlugin.js",
       "source_location": "L1",
       "id": "legacy_js_plugins_arplugin_js",
-      "community": 54,
+      "community": 55,
       "norm_label": "arplugin.js"
     },
     {
@@ -2421,7 +2421,7 @@
       "source_file": "legacy/js/plugins/ARPlugin.js",
       "source_location": "L2",
       "id": "plugins_arplugin_arplugin",
-      "community": 54,
+      "community": 55,
       "norm_label": "arplugin"
     },
     {
@@ -2430,7 +2430,7 @@
       "source_file": "legacy/js/plugins/ARPlugin.js",
       "source_location": "L4",
       "id": "plugins_arplugin_arplugin_constructor",
-      "community": 54,
+      "community": 55,
       "norm_label": ".constructor()"
     },
     {
@@ -2439,7 +2439,7 @@
       "source_file": "legacy/js/plugins/ARPlugin.js",
       "source_location": "L133",
       "id": "plugins_arplugin_arbutton",
-      "community": 54,
+      "community": 55,
       "norm_label": "arbutton"
     },
     {
@@ -2448,7 +2448,7 @@
       "source_file": "legacy/js/plugins/ARPlugin.js",
       "source_location": "L135",
       "id": "plugins_arplugin_arbutton_createbutton",
-      "community": 54,
+      "community": 55,
       "norm_label": ".createbutton()"
     },
     {
@@ -2457,7 +2457,7 @@
       "source_file": "legacy/js/plugins/Three.js",
       "source_location": "L1",
       "id": "legacy_js_plugins_three_js",
-      "community": 121,
+      "community": 117,
       "norm_label": "three.js"
     },
     {
@@ -2493,7 +2493,7 @@
       "source_file": "legacy/js/plugins/LocationPlugin.js",
       "source_location": "L1",
       "id": "legacy_js_plugins_locationplugin_js",
-      "community": 55,
+      "community": 56,
       "norm_label": "locationplugin.js"
     },
     {
@@ -2502,7 +2502,7 @@
       "source_file": "legacy/js/plugins/LocationPlugin.js",
       "source_location": "L3",
       "id": "plugins_locationplugin_locationsource",
-      "community": 55,
+      "community": 56,
       "norm_label": "locationsource"
     },
     {
@@ -2511,7 +2511,7 @@
       "source_file": "legacy/js/plugins/LocationPlugin.js",
       "source_location": "L5",
       "id": "plugins_locationplugin_locationsource_constructor",
-      "community": 55,
+      "community": 56,
       "norm_label": ".constructor()"
     },
     {
@@ -2520,7 +2520,7 @@
       "source_file": "legacy/js/plugins/LocationPlugin.js",
       "source_location": "L104",
       "id": "plugins_locationplugin_locationplugin",
-      "community": 55,
+      "community": 56,
       "norm_label": "locationplugin"
     },
     {
@@ -2529,7 +2529,7 @@
       "source_file": "legacy/js/plugins/LocationPlugin.js",
       "source_location": "L106",
       "id": "plugins_locationplugin_locationplugin_constructor",
-      "community": 55,
+      "community": 56,
       "norm_label": ".constructor()"
     },
     {
@@ -2538,7 +2538,7 @@
       "source_file": "legacy/js/plugins/distanceField/DistanceFieldShader.js",
       "source_location": "L1",
       "id": "legacy_js_plugins_distancefield_distancefieldshader_js",
-      "community": 122,
+      "community": 118,
       "norm_label": "distancefieldshader.js"
     },
     {
@@ -2547,7 +2547,7 @@
       "source_file": "legacy/js/plugins/distanceField/FullScreenQuad.js",
       "source_location": "L1",
       "id": "legacy_js_plugins_distancefield_fullscreenquad_js",
-      "community": 49,
+      "community": 50,
       "norm_label": "fullscreenquad.js"
     },
     {
@@ -2556,7 +2556,7 @@
       "source_file": "legacy/js/plugins/distanceField/FullScreenQuad.js",
       "source_location": "L11",
       "id": "distancefield_fullscreenquad_fullscreenquad",
-      "community": 49,
+      "community": 50,
       "norm_label": "fullscreenquad"
     },
     {
@@ -2565,7 +2565,7 @@
       "source_file": "legacy/js/plugins/distanceField/FullScreenQuad.js",
       "source_location": "L13",
       "id": "distancefield_fullscreenquad_fullscreenquad_constructor",
-      "community": 49,
+      "community": 50,
       "norm_label": ".constructor()"
     },
     {
@@ -2574,7 +2574,7 @@
       "source_file": "legacy/js/plugins/distanceField/FullScreenQuad.js",
       "source_location": "L19",
       "id": "distancefield_fullscreenquad_fullscreenquad_dispose",
-      "community": 49,
+      "community": 50,
       "norm_label": ".dispose()"
     },
     {
@@ -2583,7 +2583,7 @@
       "source_file": "legacy/js/plugins/distanceField/FullScreenQuad.js",
       "source_location": "L25",
       "id": "distancefield_fullscreenquad_fullscreenquad_render",
-      "community": 49,
+      "community": 50,
       "norm_label": ".render()"
     },
     {
@@ -2592,7 +2592,7 @@
       "source_file": "legacy/js/plugins/distanceField/FullScreenQuad.js",
       "source_location": "L31",
       "id": "distancefield_fullscreenquad_fullscreenquad_material",
-      "community": 49,
+      "community": 50,
       "norm_label": ".material()"
     },
     {
@@ -2601,7 +2601,7 @@
       "source_file": "legacy/js/plugins/distanceField/DistanceFieldFilterPass.js",
       "source_location": "L1",
       "id": "legacy_js_plugins_distancefield_distancefieldfilterpass_js",
-      "community": 60,
+      "community": 61,
       "norm_label": "distancefieldfilterpass.js"
     },
     {
@@ -2610,7 +2610,7 @@
       "source_file": "legacy/js/plugins/distanceField/DistanceFieldFilterPass.js",
       "source_location": "L5",
       "id": "distancefield_distancefieldfilterpass_distancefieldfilterpass",
-      "community": 60,
+      "community": 61,
       "norm_label": "distancefieldfilterpass"
     },
     {
@@ -2619,7 +2619,7 @@
       "source_file": "legacy/js/plugins/distanceField/DistanceFieldFilterPass.js",
       "source_location": "L7",
       "id": "distancefield_distancefieldfilterpass_distancefieldfilterpass_constructor",
-      "community": 60,
+      "community": 61,
       "norm_label": ".constructor()"
     },
     {
@@ -2628,7 +2628,7 @@
       "source_file": "legacy/js/plugins/distanceField/DistanceFieldFilterPass.js",
       "source_location": "L23",
       "id": "distancefield_distancefieldfilterpass_distancefieldfilterpass_render",
-      "community": 60,
+      "community": 61,
       "norm_label": ".render()"
     },
     {
@@ -2637,7 +2637,7 @@
       "source_file": "legacy/js/plugins/distanceField/DistanceFieldFilterPass.js",
       "source_location": "L33",
       "id": "distancefield_distancefieldfilterpass_distancefieldfilterpass_dispose",
-      "community": 60,
+      "community": 61,
       "norm_label": ".dispose()"
     },
     {
@@ -2646,7 +2646,7 @@
       "source_file": "legacy/js/plugins/distanceField/DistanceFieldPass.js",
       "source_location": "L1",
       "id": "legacy_js_plugins_distancefield_distancefieldpass_js",
-      "community": 26,
+      "community": 27,
       "norm_label": "distancefieldpass.js"
     },
     {
@@ -2655,7 +2655,7 @@
       "source_file": "legacy/js/plugins/distanceField/DistanceFieldPass.js",
       "source_location": "L6",
       "id": "distancefield_distancefieldpass_distancefieldpass",
-      "community": 26,
+      "community": 27,
       "norm_label": "distancefieldpass"
     },
     {
@@ -2664,7 +2664,7 @@
       "source_file": "legacy/js/plugins/distanceField/DistanceFieldPass.js",
       "source_location": "L8",
       "id": "distancefield_distancefieldpass_distancefieldpass_constructor",
-      "community": 26,
+      "community": 27,
       "norm_label": ".constructor()"
     },
     {
@@ -2673,7 +2673,7 @@
       "source_file": "legacy/js/plugins/distanceField/DistanceFieldPass.js",
       "source_location": "L41",
       "id": "distancefield_distancefieldpass_distancefieldpass_render",
-      "community": 26,
+      "community": 27,
       "norm_label": ".render()"
     },
     {
@@ -2682,7 +2682,7 @@
       "source_file": "legacy/js/plugins/distanceField/DistanceFieldPass.js",
       "source_location": "L62",
       "id": "distancefield_distancefieldpass_distancefieldpass_dispose",
-      "community": 26,
+      "community": 27,
       "norm_label": ".dispose()"
     },
     {
@@ -2691,7 +2691,7 @@
       "source_file": "legacy/js/plugins/distanceField/DistanceFieldFilterShader.js",
       "source_location": "L1",
       "id": "legacy_js_plugins_distancefield_distancefieldfiltershader_js",
-      "community": 123,
+      "community": 119,
       "norm_label": "distancefieldfiltershader.js"
     },
     {
@@ -2700,7 +2700,7 @@
       "source_file": "legacy/js/materials/EntrancePointMaterial.js",
       "source_location": "L1",
       "id": "legacy_js_materials_entrancepointmaterial_js",
-      "community": 29,
+      "community": 24,
       "norm_label": "entrancepointmaterial.js"
     },
     {
@@ -2709,7 +2709,7 @@
       "source_file": "legacy/js/materials/EntrancePointMaterial.js",
       "source_location": "L3",
       "id": "materials_entrancepointmaterial_entrancepointmaterial",
-      "community": 29,
+      "community": 24,
       "norm_label": "entrancepointmaterial"
     },
     {
@@ -2718,7 +2718,7 @@
       "source_file": "legacy/js/materials/EntrancePointMaterial.js",
       "source_location": "L5",
       "id": "materials_entrancepointmaterial_entrancepointmaterial_constructor",
-      "community": 29,
+      "community": 24,
       "norm_label": ".constructor()"
     },
     {
@@ -2727,7 +2727,7 @@
       "source_file": "legacy/js/materials/DepthMaterial.js",
       "source_location": "L1",
       "id": "legacy_js_materials_depthmaterial_js",
-      "community": 91,
+      "community": 19,
       "norm_label": "depthmaterial.js"
     },
     {
@@ -2736,7 +2736,7 @@
       "source_file": "legacy/js/materials/DepthMaterial.js",
       "source_location": "L4",
       "id": "materials_depthmaterial_depthmaterial",
-      "community": 91,
+      "community": 19,
       "norm_label": "depthmaterial"
     },
     {
@@ -2745,7 +2745,7 @@
       "source_file": "legacy/js/materials/DepthMaterial.js",
       "source_location": "L6",
       "id": "materials_depthmaterial_depthmaterial_constructor",
-      "community": 91,
+      "community": 19,
       "norm_label": ".constructor()"
     },
     {
@@ -2781,7 +2781,7 @@
       "source_file": "legacy/js/materials/Line2Material.js",
       "source_location": "L1",
       "id": "legacy_js_materials_line2material_js",
-      "community": 66,
+      "community": 67,
       "norm_label": "line2material.js"
     },
     {
@@ -2790,7 +2790,7 @@
       "source_file": "legacy/js/materials/Line2Material.js",
       "source_location": "L24",
       "id": "materials_line2material_line2material",
-      "community": 66,
+      "community": 67,
       "norm_label": "line2material"
     },
     {
@@ -2799,7 +2799,7 @@
       "source_file": "legacy/js/materials/Line2Material.js",
       "source_location": "L28",
       "id": "materials_line2material_line2material_constructor",
-      "community": 66,
+      "community": 67,
       "norm_label": ".constructor()"
     },
     {
@@ -2808,7 +2808,7 @@
       "source_file": "legacy/js/materials/Line2Material.js",
       "source_location": "L230",
       "id": "materials_line2material_line2material_dispose",
-      "community": 66,
+      "community": 67,
       "norm_label": ".dispose()"
     },
     {
@@ -2817,7 +2817,7 @@
       "source_file": "legacy/js/materials/SurveyLineMaterial.js",
       "source_location": "L1",
       "id": "legacy_js_materials_surveylinematerial_js",
-      "community": 58,
+      "community": 59,
       "norm_label": "surveylinematerial.js"
     },
     {
@@ -2826,7 +2826,7 @@
       "source_file": "legacy/js/materials/SurveyLineMaterial.js",
       "source_location": "L6",
       "id": "materials_surveylinematerial_surveylinematerial",
-      "community": 58,
+      "community": 59,
       "norm_label": "surveylinematerial"
     },
     {
@@ -2835,7 +2835,7 @@
       "source_file": "legacy/js/materials/SurveyLineMaterial.js",
       "source_location": "L8",
       "id": "materials_surveylinematerial_surveylinematerial_constructor",
-      "community": 58,
+      "community": 59,
       "norm_label": ".constructor()"
     },
     {
@@ -2844,7 +2844,7 @@
       "source_file": "legacy/js/materials/SurveyLineMaterial.js",
       "source_location": "L145",
       "id": "materials_surveylinematerial_surveylinematerial_setcursor",
-      "community": 58,
+      "community": 59,
       "norm_label": ".setcursor()"
     },
     {
@@ -2853,7 +2853,7 @@
       "source_file": "legacy/js/materials/SurveyLineMaterial.js",
       "source_location": "L165",
       "id": "materials_surveylinematerial_surveylinematerial_getcursor",
-      "community": 58,
+      "community": 59,
       "norm_label": ".getcursor()"
     },
     {
@@ -2925,7 +2925,7 @@
       "source_file": "legacy/js/materials/WallMaterial.js",
       "source_location": "L1",
       "id": "legacy_js_materials_wallmaterial_js",
-      "community": 24,
+      "community": 87,
       "norm_label": "wallmaterial.js"
     },
     {
@@ -2934,7 +2934,7 @@
       "source_file": "legacy/js/materials/WallMaterial.js",
       "source_location": "L4",
       "id": "materials_wallmaterial_wallmaterial",
-      "community": 24,
+      "community": 87,
       "norm_label": "wallmaterial"
     },
     {
@@ -2943,7 +2943,7 @@
       "source_file": "legacy/js/materials/WallMaterial.js",
       "source_location": "L6",
       "id": "materials_wallmaterial_wallmaterial_constructor",
-      "community": 24,
+      "community": 87,
       "norm_label": ".constructor()"
     },
     {
@@ -3033,7 +3033,7 @@
       "source_file": "legacy/js/materials/GlyphAtlas.js",
       "source_location": "L1",
       "id": "legacy_js_materials_glyphatlas_js",
-      "community": 67,
+      "community": 68,
       "norm_label": "glyphatlas.js"
     },
     {
@@ -3042,7 +3042,7 @@
       "source_file": "legacy/js/materials/GlyphAtlas.js",
       "source_location": "L3",
       "id": "materials_glyphatlas_glyphatlas",
-      "community": 67,
+      "community": 68,
       "norm_label": "glyphatlas"
     },
     {
@@ -3051,7 +3051,7 @@
       "source_file": "legacy/js/materials/GlyphAtlas.js",
       "source_location": "L5",
       "id": "materials_glyphatlas_glyphatlas_constructor",
-      "community": 67,
+      "community": 68,
       "norm_label": ".constructor()"
     },
     {
@@ -3060,7 +3060,7 @@
       "source_file": "legacy/js/materials/GlyphAtlas.js",
       "source_location": "L113",
       "id": "materials_glyphatlas_glyphatlascache",
-      "community": 67,
+      "community": 68,
       "norm_label": "glyphatlascache()"
     },
     {
@@ -3096,7 +3096,7 @@
       "source_file": "legacy/js/materials/CursorMaterial.js",
       "source_location": "L1",
       "id": "legacy_js_materials_cursormaterial_js",
-      "community": 56,
+      "community": 57,
       "norm_label": "cursormaterial.js"
     },
     {
@@ -3105,7 +3105,7 @@
       "source_file": "legacy/js/materials/CursorMaterial.js",
       "source_location": "L4",
       "id": "materials_cursormaterial_cursormaterial",
-      "community": 56,
+      "community": 57,
       "norm_label": "cursormaterial"
     },
     {
@@ -3114,7 +3114,7 @@
       "source_file": "legacy/js/materials/CursorMaterial.js",
       "source_location": "L6",
       "id": "materials_cursormaterial_cursormaterial_constructor",
-      "community": 56,
+      "community": 57,
       "norm_label": ".constructor()"
     },
     {
@@ -3123,7 +3123,7 @@
       "source_file": "legacy/js/materials/CursorMaterial.js",
       "source_location": "L33",
       "id": "materials_cursormaterial_cursormaterial_setcursor",
-      "community": 56,
+      "community": 57,
       "norm_label": ".setcursor()"
     },
     {
@@ -3132,7 +3132,7 @@
       "source_file": "legacy/js/materials/CursorMaterial.js",
       "source_location": "L43",
       "id": "materials_cursormaterial_cursormaterial_getcursor",
-      "community": 56,
+      "community": 57,
       "norm_label": ".getcursor()"
     },
     {
@@ -3168,7 +3168,7 @@
       "source_file": "legacy/js/materials/DepthCursorMaterial.js",
       "source_location": "L1",
       "id": "legacy_js_materials_depthcursormaterial_js",
-      "community": 57,
+      "community": 58,
       "norm_label": "depthcursormaterial.js"
     },
     {
@@ -3177,7 +3177,7 @@
       "source_file": "legacy/js/materials/DepthCursorMaterial.js",
       "source_location": "L4",
       "id": "materials_depthcursormaterial_depthcursormaterial",
-      "community": 57,
+      "community": 58,
       "norm_label": "depthcursormaterial"
     },
     {
@@ -3186,7 +3186,7 @@
       "source_file": "legacy/js/materials/DepthCursorMaterial.js",
       "source_location": "L6",
       "id": "materials_depthcursormaterial_depthcursormaterial_constructor",
-      "community": 57,
+      "community": 58,
       "norm_label": ".constructor()"
     },
     {
@@ -3195,7 +3195,7 @@
       "source_file": "legacy/js/materials/DepthCursorMaterial.js",
       "source_location": "L43",
       "id": "materials_depthcursormaterial_depthcursormaterial_setcursor",
-      "community": 57,
+      "community": 58,
       "norm_label": ".setcursor()"
     },
     {
@@ -3204,7 +3204,7 @@
       "source_file": "legacy/js/materials/DepthCursorMaterial.js",
       "source_location": "L53",
       "id": "materials_depthcursormaterial_depthcursormaterial_getcursor",
-      "community": 57,
+      "community": 58,
       "norm_label": ".getcursor()"
     },
     {
@@ -3303,7 +3303,7 @@
       "source_file": "legacy/js/materials/HeightMaterial.js",
       "source_location": "L1",
       "id": "legacy_js_materials_heightmaterial_js",
-      "community": 92,
+      "community": 19,
       "norm_label": "heightmaterial.js"
     },
     {
@@ -3312,7 +3312,7 @@
       "source_file": "legacy/js/materials/HeightMaterial.js",
       "source_location": "L4",
       "id": "materials_heightmaterial_heightmaterial",
-      "community": 92,
+      "community": 19,
       "norm_label": "heightmaterial"
     },
     {
@@ -3321,7 +3321,7 @@
       "source_file": "legacy/js/materials/HeightMaterial.js",
       "source_location": "L6",
       "id": "materials_heightmaterial_heightmaterial_constructor",
-      "community": 92,
+      "community": 19,
       "norm_label": ".constructor()"
     },
     {
@@ -3411,7 +3411,7 @@
       "source_file": "legacy/js/materials/shaders/Shaders.js",
       "source_location": "L1",
       "id": "legacy_js_materials_shaders_shaders_js",
-      "community": 124,
+      "community": 120,
       "norm_label": "shaders.js"
     },
     {
@@ -3420,7 +3420,7 @@
       "source_file": "legacy/js/terrain/LoxTerrainGeometry.js",
       "source_location": "L1",
       "id": "legacy_js_terrain_loxterraingeometry_js",
-      "community": 68,
+      "community": 69,
       "norm_label": "loxterraingeometry.js"
     },
     {
@@ -3429,7 +3429,7 @@
       "source_file": "legacy/js/terrain/LoxTerrainGeometry.js",
       "source_location": "L11",
       "id": "terrain_loxterraingeometry_loxterraingeometry",
-      "community": 68,
+      "community": 69,
       "norm_label": "loxterraingeometry"
     },
     {
@@ -3438,7 +3438,7 @@
       "source_file": "legacy/js/terrain/LoxTerrainGeometry.js",
       "source_location": "L13",
       "id": "terrain_loxterraingeometry_loxterraingeometry_constructor",
-      "community": 68,
+      "community": 69,
       "norm_label": ".constructor()"
     },
     {
@@ -3447,7 +3447,7 @@
       "source_file": "legacy/js/terrain/LoxTerrainGeometry.js",
       "source_location": "L121",
       "id": "terrain_loxterraingeometry_loxterraingeometry_setupuvs",
-      "community": 68,
+      "community": 69,
       "norm_label": ".setupuvs()"
     },
     {
@@ -3456,7 +3456,7 @@
       "source_file": "legacy/js/terrain/EPSG4326TileSet.js",
       "source_location": "L1",
       "id": "legacy_js_terrain_epsg4326tileset_js",
-      "community": 40,
+      "community": 41,
       "norm_label": "epsg4326tileset.js"
     },
     {
@@ -3465,7 +3465,7 @@
       "source_file": "legacy/js/terrain/EPSG4326TileSet.js",
       "source_location": "L4",
       "id": "terrain_epsg4326tileset_epsg4326tileset",
-      "community": 40,
+      "community": 41,
       "norm_label": "epsg4326tileset"
     },
     {
@@ -3474,7 +3474,7 @@
       "source_file": "legacy/js/terrain/EPSG4326TileSet.js",
       "source_location": "L25",
       "id": "terrain_epsg4326tileset_epsg4326tileset_constructor",
-      "community": 40,
+      "community": 41,
       "norm_label": ".constructor()"
     },
     {
@@ -3483,7 +3483,7 @@
       "source_file": "legacy/js/terrain/EPSG4326TileSet.js",
       "source_location": "L71",
       "id": "terrain_epsg4326tileset_epsg4326tileset_workerscript",
-      "community": 40,
+      "community": 41,
       "norm_label": ".workerscript()"
     },
     {
@@ -3492,7 +3492,7 @@
       "source_file": "legacy/js/terrain/EPSG4326TileSet.js",
       "source_location": "L77",
       "id": "terrain_epsg4326tileset_epsg4326tileset_gettilesets",
-      "community": 40,
+      "community": 41,
       "norm_label": ".gettilesets()"
     },
     {
@@ -3501,7 +3501,7 @@
       "source_file": "legacy/js/terrain/EPSG4326TileSet.js",
       "source_location": "L83",
       "id": "terrain_epsg4326tileset_epsg4326tileset_getscreenattribution",
-      "community": 40,
+      "community": 41,
       "norm_label": ".getscreenattribution()"
     },
     {
@@ -3510,7 +3510,7 @@
       "source_file": "legacy/js/terrain/EPSG4326TileSet.js",
       "source_location": "L105",
       "id": "terrain_epsg4326tileset_epsg4326tileset_getcoverage",
-      "community": 40,
+      "community": 41,
       "norm_label": ".getcoverage()"
     },
     {
@@ -3519,7 +3519,7 @@
       "source_file": "legacy/js/terrain/EPSG4326TileSet.js",
       "source_location": "L140",
       "id": "terrain_epsg4326tileset_epsg4326tileset_gettilespec",
-      "community": 40,
+      "community": 41,
       "norm_label": ".gettilespec()"
     },
     {
@@ -3528,7 +3528,7 @@
       "source_file": "legacy/js/terrain/CommonTerrain.js",
       "source_location": "L1",
       "id": "legacy_js_terrain_commonterrain_js",
-      "community": 25,
+      "community": 26,
       "norm_label": "commonterrain.js"
     },
     {
@@ -3537,7 +3537,7 @@
       "source_file": "legacy/js/terrain/CommonTerrain.js",
       "source_location": "L7",
       "id": "terrain_commonterrain_commonterrain",
-      "community": 25,
+      "community": 26,
       "norm_label": "commonterrain"
     },
     {
@@ -3546,7 +3546,7 @@
       "source_file": "legacy/js/terrain/CommonTerrain.js",
       "source_location": "L9",
       "id": "terrain_commonterrain_commonterrain_constructor",
-      "community": 25,
+      "community": 26,
       "norm_label": ".constructor()"
     },
     {
@@ -3555,7 +3555,7 @@
       "source_file": "legacy/js/terrain/CommonTerrain.js",
       "source_location": "L34",
       "id": "terrain_commonterrain_commonterrain_removed",
-      "community": 25,
+      "community": 26,
       "norm_label": ".removed()"
     },
     {
@@ -3564,7 +3564,7 @@
       "source_file": "legacy/js/terrain/CommonTerrain.js",
       "source_location": "L36",
       "id": "terrain_commonterrain_commonterrain_getopacity",
-      "community": 25,
+      "community": 26,
       "norm_label": ".getopacity()"
     },
     {
@@ -3573,7 +3573,7 @@
       "source_file": "legacy/js/terrain/CommonTerrain.js",
       "source_location": "L42",
       "id": "terrain_commonterrain_commonterrain_setopacity",
-      "community": 25,
+      "community": 26,
       "norm_label": ".setopacity()"
     },
     {
@@ -3582,7 +3582,7 @@
       "source_file": "legacy/js/terrain/CommonTerrain.js",
       "source_location": "L48",
       "id": "terrain_commonterrain_commonterrain_commonremoved",
-      "community": 19,
+      "community": 21,
       "norm_label": ".commonremoved()"
     },
     {
@@ -3591,7 +3591,7 @@
       "source_file": "legacy/js/terrain/CommonTerrain.js",
       "source_location": "L58",
       "id": "terrain_commonterrain_commonterrain_checkterrainshadingmodes",
-      "community": 25,
+      "community": 26,
       "norm_label": ".checkterrainshadingmodes()"
     },
     {
@@ -3600,7 +3600,7 @@
       "source_file": "legacy/js/terrain/CommonTerrain.js",
       "source_location": "L98",
       "id": "terrain_commonterrain_commonterrain_setup",
-      "community": 25,
+      "community": 26,
       "norm_label": ".setup()"
     },
     {
@@ -3609,7 +3609,7 @@
       "source_file": "legacy/js/terrain/CommonTerrain.js",
       "source_location": "L153",
       "id": "terrain_commonterrain_commonterrain_setshadingmode",
-      "community": 19,
+      "community": 21,
       "norm_label": ".setshadingmode()"
     },
     {
@@ -3618,7 +3618,7 @@
       "source_file": "legacy/js/terrain/CommonTerrain.js",
       "source_location": "L232",
       "id": "terrain_commonterrain_commonterrain_setvisibility",
-      "community": 25,
+      "community": 26,
       "norm_label": ".setvisibility()"
     },
     {
@@ -3627,7 +3627,7 @@
       "source_file": "legacy/js/terrain/CommonTerrain.js",
       "source_location": "L248",
       "id": "terrain_commonterrain_commonterrain_showattribution",
-      "community": 25,
+      "community": 26,
       "norm_label": ".showattribution()"
     },
     {
@@ -3636,7 +3636,7 @@
       "source_file": "legacy/js/terrain/CommonTerrain.js",
       "source_location": "L262",
       "id": "terrain_commonterrain_commonterrain_hideattribution",
-      "community": 25,
+      "community": 26,
       "norm_label": ".hideattribution()"
     },
     {
@@ -3645,7 +3645,7 @@
       "source_file": "legacy/js/terrain/CommonTerrain.js",
       "source_location": "L279",
       "id": "terrain_commonterrain_commonterrain_applydatumshift",
-      "community": 25,
+      "community": 26,
       "norm_label": ".applydatumshift()"
     },
     {
@@ -3654,7 +3654,7 @@
       "source_file": "legacy/js/terrain/CommonTerrain.js",
       "source_location": "L299",
       "id": "terrain_commonterrain_commonterrain_computeboundingbox",
-      "community": 25,
+      "community": 26,
       "norm_label": ".computeboundingbox()"
     },
     {
@@ -3672,7 +3672,7 @@
       "source_file": "legacy/js/terrain/CommonTerrain.js",
       "source_location": "L323",
       "id": "terrain_commonterrain_commonterrain_fitsurface",
-      "community": 19,
+      "community": 21,
       "norm_label": "._fitsurface()"
     },
     {
@@ -3708,7 +3708,7 @@
       "source_file": "legacy/js/terrain/HeightLookup.js",
       "source_location": "L1",
       "id": "legacy_js_terrain_heightlookup_js",
-      "community": 69,
+      "community": 70,
       "norm_label": "heightlookup.js"
     },
     {
@@ -3717,7 +3717,7 @@
       "source_file": "legacy/js/terrain/HeightLookup.js",
       "source_location": "L3",
       "id": "terrain_heightlookup_heightlookup",
-      "community": 69,
+      "community": 70,
       "norm_label": "heightlookup"
     },
     {
@@ -3726,7 +3726,7 @@
       "source_file": "legacy/js/terrain/HeightLookup.js",
       "source_location": "L7",
       "id": "terrain_heightlookup_heightlookup_constructor",
-      "community": 69,
+      "community": 70,
       "norm_label": ".constructor()"
     },
     {
@@ -3735,7 +3735,7 @@
       "source_file": "legacy/js/terrain/HeightLookup.js",
       "source_location": "L15",
       "id": "terrain_heightlookup_heightlookup_lookup",
-      "community": 69,
+      "community": 70,
       "norm_label": ".lookup()"
     },
     {
@@ -3834,7 +3834,7 @@
       "source_file": "legacy/js/terrain/Overlay.js",
       "source_location": "L93",
       "id": "terrain_overlay_overlay_gettile",
-      "community": 43,
+      "community": 46,
       "norm_label": ".gettile()"
     },
     {
@@ -3942,7 +3942,7 @@
       "source_file": "legacy/js/terrain/WebTerrain.js",
       "source_location": "L317",
       "id": "terrain_webterrain_webterrain_tileset",
-      "community": 43,
+      "community": 46,
       "norm_label": ".tileset()"
     },
     {
@@ -3969,7 +3969,7 @@
       "source_file": "legacy/js/terrain/WebTerrain.js",
       "source_location": "L397",
       "id": "terrain_webterrain_webterrain_removed",
-      "community": 19,
+      "community": 21,
       "norm_label": ".removed()"
     },
     {
@@ -3996,7 +3996,7 @@
       "source_file": "legacy/js/terrain/WebTerrain.js",
       "source_location": "L557",
       "id": "terrain_webterrain_webterrain_getheights",
-      "community": 37,
+      "community": 38,
       "norm_label": ".getheights()"
     },
     {
@@ -4005,7 +4005,7 @@
       "source_file": "legacy/js/terrain/WebTerrain.js",
       "source_location": "L616",
       "id": "terrain_webterrain_webterrain_fitsurface",
-      "community": 19,
+      "community": 21,
       "norm_label": ".fitsurface()"
     },
     {
@@ -4176,7 +4176,7 @@
       "source_file": "legacy/js/terrain/Tile.js",
       "source_location": "L256",
       "id": "terrain_tile_tile_setoverlay",
-      "community": 43,
+      "community": 46,
       "norm_label": ".setoverlay()"
     },
     {
@@ -4221,7 +4221,7 @@
       "source_file": "legacy/js/terrain/LoxTerrain.js",
       "source_location": "L1",
       "id": "legacy_js_terrain_loxterrain_js",
-      "community": 19,
+      "community": 21,
       "norm_label": "loxterrain.js"
     },
     {
@@ -4230,7 +4230,7 @@
       "source_file": "legacy/js/terrain/LoxTerrain.js",
       "source_location": "L7",
       "id": "terrain_loxterrain_loxtile",
-      "community": 19,
+      "community": 21,
       "norm_label": "loxtile"
     },
     {
@@ -4239,7 +4239,7 @@
       "source_file": "legacy/js/terrain/LoxTerrain.js",
       "source_location": "L11",
       "id": "terrain_loxterrain_loxtile_constructor",
-      "community": 19,
+      "community": 21,
       "norm_label": ".constructor()"
     },
     {
@@ -4257,7 +4257,7 @@
       "source_file": "legacy/js/terrain/LoxTerrain.js",
       "source_location": "L74",
       "id": "terrain_loxterrain_loxtile_removed",
-      "community": 19,
+      "community": 21,
       "norm_label": ".removed()"
     },
     {
@@ -4266,7 +4266,7 @@
       "source_file": "legacy/js/terrain/LoxTerrain.js",
       "source_location": "L91",
       "id": "terrain_loxterrain_loxterrain",
-      "community": 19,
+      "community": 21,
       "norm_label": "loxterrain"
     },
     {
@@ -4275,7 +4275,7 @@
       "source_file": "legacy/js/terrain/LoxTerrain.js",
       "source_location": "L96",
       "id": "terrain_loxterrain_loxterrain_constructor",
-      "community": 19,
+      "community": 21,
       "norm_label": ".constructor()"
     },
     {
@@ -4284,7 +4284,7 @@
       "source_file": "legacy/js/terrain/LoxTerrain.js",
       "source_location": "L121",
       "id": "terrain_loxterrain_loxterrain_setoverlay",
-      "community": 19,
+      "community": 21,
       "norm_label": ".setoverlay()"
     },
     {
@@ -4293,7 +4293,7 @@
       "source_file": "legacy/js/terrain/LoxTerrain.js",
       "source_location": "L149",
       "id": "terrain_loxterrain_loxterrain_removed",
-      "community": 19,
+      "community": 21,
       "norm_label": ".removed()"
     },
     {
@@ -4302,7 +4302,7 @@
       "source_file": "legacy/js/terrain/LoxTerrain.js",
       "source_location": "L157",
       "id": "terrain_loxterrain_loxterrain_setmaterial",
-      "community": 19,
+      "community": 21,
       "norm_label": ".setmaterial()"
     },
     {
@@ -4311,7 +4311,7 @@
       "source_file": "legacy/js/terrain/LoxTerrain.js",
       "source_location": "L163",
       "id": "terrain_loxterrain_loxterrain_fitsurface",
-      "community": 19,
+      "community": 21,
       "norm_label": ".fitsurface()"
     },
     {
@@ -4320,7 +4320,7 @@
       "source_file": "legacy/js/terrain/EPSG3857TileSet.js",
       "source_location": "L1",
       "id": "legacy_js_terrain_epsg3857tileset_js",
-      "community": 37,
+      "community": 38,
       "norm_label": "epsg3857tileset.js"
     },
     {
@@ -4329,7 +4329,7 @@
       "source_file": "legacy/js/terrain/EPSG3857TileSet.js",
       "source_location": "L3",
       "id": "terrain_epsg3857tileset_epsg3857tileset",
-      "community": 37,
+      "community": 38,
       "norm_label": "epsg3857tileset"
     },
     {
@@ -4338,7 +4338,7 @@
       "source_file": "legacy/js/terrain/EPSG3857TileSet.js",
       "source_location": "L23",
       "id": "terrain_epsg3857tileset_epsg3857tileset_constructor",
-      "community": 37,
+      "community": 38,
       "norm_label": ".constructor()"
     },
     {
@@ -4347,7 +4347,7 @@
       "source_file": "legacy/js/terrain/EPSG3857TileSet.js",
       "source_location": "L37",
       "id": "terrain_epsg3857tileset_epsg3857tileset_workerscript",
-      "community": 37,
+      "community": 38,
       "norm_label": ".workerscript()"
     },
     {
@@ -4356,7 +4356,7 @@
       "source_file": "legacy/js/terrain/EPSG3857TileSet.js",
       "source_location": "L43",
       "id": "terrain_epsg3857tileset_epsg3857tileset_gettilesets",
-      "community": 37,
+      "community": 38,
       "norm_label": ".gettilesets()"
     },
     {
@@ -4365,7 +4365,7 @@
       "source_file": "legacy/js/terrain/EPSG3857TileSet.js",
       "source_location": "L49",
       "id": "terrain_epsg3857tileset_epsg3857tileset_getscreenattribution",
-      "community": 37,
+      "community": 38,
       "norm_label": ".getscreenattribution()"
     },
     {
@@ -4392,7 +4392,7 @@
       "source_file": "legacy/js/terrain/EPSG3857TileSet.js",
       "source_location": "L130",
       "id": "terrain_epsg3857tileset_epsg3857tileset_findtile",
-      "community": 37,
+      "community": 38,
       "norm_label": ".findtile()"
     },
     {
@@ -4518,7 +4518,7 @@
       "source_file": "legacy/js/core/lib.js",
       "source_location": "L1",
       "id": "legacy_js_core_lib_js",
-      "community": 43,
+      "community": 46,
       "norm_label": "lib.js"
     },
     {
@@ -4527,7 +4527,7 @@
       "source_file": "legacy/js/core/lib.js",
       "source_location": "L3",
       "id": "core_lib_replaceextension",
-      "community": 43,
+      "community": 46,
       "norm_label": "replaceextension()"
     },
     {
@@ -4536,7 +4536,7 @@
       "source_file": "legacy/js/core/lib.js",
       "source_location": "L11",
       "id": "core_lib_dataurl",
-      "community": 43,
+      "community": 46,
       "norm_label": "dataurl()"
     },
     {
@@ -4599,7 +4599,7 @@
       "source_file": "legacy/js/core/defaultTheme.js",
       "source_location": "L1",
       "id": "legacy_js_core_defaulttheme_js",
-      "community": 125,
+      "community": 121,
       "norm_label": "defaulttheme.js"
     },
     {
@@ -4608,7 +4608,7 @@
       "source_file": "legacy/js/core/CommonAttributes.js",
       "source_location": "L1",
       "id": "legacy_js_core_commonattributes_js",
-      "community": 126,
+      "community": 122,
       "norm_label": "commonattributes.js"
     },
     {
@@ -5283,7 +5283,7 @@
       "source_file": "legacy/js/core/Cfg.js",
       "source_location": "L13",
       "id": "core_cfg_cfg_constructor",
-      "community": 33,
+      "community": 19,
       "norm_label": ".constructor()"
     },
     {
@@ -5292,7 +5292,7 @@
       "source_file": "legacy/js/core/Cfg.js",
       "source_location": "L35",
       "id": "core_cfg_cfg_setlanguage",
-      "community": 33,
+      "community": 19,
       "norm_label": ".setlanguage()"
     },
     {
@@ -5301,7 +5301,7 @@
       "source_file": "legacy/js/core/Cfg.js",
       "source_location": "L76",
       "id": "core_cfg_cfg_value",
-      "community": 33,
+      "community": 19,
       "norm_label": ".value()"
     },
     {
@@ -5328,7 +5328,7 @@
       "source_file": "legacy/js/core/Cfg.js",
       "source_location": "L115",
       "id": "core_cfg_cfg_themevalue",
-      "community": 29,
+      "community": 24,
       "norm_label": ".themevalue()"
     },
     {
@@ -5337,7 +5337,7 @@
       "source_file": "legacy/js/core/Cfg.js",
       "source_location": "L138",
       "id": "core_cfg_cfg_themeangle",
-      "community": 89,
+      "community": 24,
       "norm_label": ".themeangle()"
     },
     {
@@ -5526,7 +5526,7 @@
       "source_file": "legacy/js/core/RenderUtils.js",
       "source_location": "L1",
       "id": "legacy_js_core_renderutils_js",
-      "community": 35,
+      "community": 36,
       "norm_label": "renderutils.js"
     },
     {
@@ -5535,7 +5535,7 @@
       "source_file": "legacy/js/core/RenderUtils.js",
       "source_location": "L4",
       "id": "core_renderutils_renderutils",
-      "community": 35,
+      "community": 36,
       "norm_label": "renderutils"
     },
     {
@@ -5544,7 +5544,7 @@
       "source_file": "legacy/js/core/RenderUtils.js",
       "source_location": "L6",
       "id": "core_renderutils_renderutils_constructor",
-      "community": 35,
+      "community": 36,
       "norm_label": ".constructor()"
     },
     {
@@ -5553,7 +5553,7 @@
       "source_file": "legacy/js/core/RenderUtils.js",
       "source_location": "L8",
       "id": "core_renderutils_renderutils_rendertargettocanvas",
-      "community": 35,
+      "community": 36,
       "norm_label": ".rendertargettocanvas()"
     },
     {
@@ -5562,7 +5562,7 @@
       "source_file": "legacy/js/core/RenderUtils.js",
       "source_location": "L48",
       "id": "core_renderutils_renderutils_makeplancamera",
-      "community": 35,
+      "community": 36,
       "norm_label": ".makeplancamera()"
     },
     {
@@ -5571,7 +5571,7 @@
       "source_file": "legacy/js/core/RenderUtils.js",
       "source_location": "L72",
       "id": "core_renderutils_renderutils_makerendertarget",
-      "community": 35,
+      "community": 36,
       "norm_label": ".makerendertarget()"
     },
     {
@@ -5580,7 +5580,7 @@
       "source_file": "legacy/js/core/RenderUtils.js",
       "source_location": "L81",
       "id": "core_renderutils_renderutils_maketexturelookup",
-      "community": 35,
+      "community": 36,
       "norm_label": ".maketexturelookup()"
     },
     {
@@ -5742,7 +5742,7 @@
       "source_file": "legacy/js/core/Colours.js",
       "source_location": "L1",
       "id": "legacy_js_core_colours_js",
-      "community": 127,
+      "community": 123,
       "norm_label": "colours.js"
     },
     {
@@ -5841,7 +5841,7 @@
       "source_file": "legacy/js/core/constants.js",
       "source_location": "L1",
       "id": "legacy_js_core_constants_js",
-      "community": 128,
+      "community": 124,
       "norm_label": "constants.js"
     },
     {
@@ -5850,7 +5850,7 @@
       "source_file": "legacy/js/core/WorkerPool.js",
       "source_location": "L1",
       "id": "legacy_js_core_workerpool_js",
-      "community": 36,
+      "community": 37,
       "norm_label": "workerpool.js"
     },
     {
@@ -5859,7 +5859,7 @@
       "source_file": "legacy/js/core/WorkerPool.js",
       "source_location": "L3",
       "id": "core_workerpool_workerpool",
-      "community": 36,
+      "community": 37,
       "norm_label": "workerpool"
     },
     {
@@ -5868,7 +5868,7 @@
       "source_file": "legacy/js/core/WorkerPool.js",
       "source_location": "L9",
       "id": "core_workerpool_workerpool_constructor",
-      "community": 36,
+      "community": 37,
       "norm_label": ".constructor()"
     },
     {
@@ -5886,7 +5886,7 @@
       "source_file": "legacy/js/core/WorkerPool.js",
       "source_location": "L33",
       "id": "core_workerpool_workerpool_getworker",
-      "community": 36,
+      "community": 37,
       "norm_label": ".getworker()"
     },
     {
@@ -5895,7 +5895,7 @@
       "source_file": "legacy/js/core/WorkerPool.js",
       "source_location": "L55",
       "id": "core_workerpool_workerpool_putworker",
-      "community": 36,
+      "community": 37,
       "norm_label": ".putworker()"
     },
     {
@@ -5904,7 +5904,7 @@
       "source_file": "legacy/js/core/WorkerPool.js",
       "source_location": "L84",
       "id": "core_workerpool_workerpool_runworker",
-      "community": 36,
+      "community": 37,
       "norm_label": ".runworker()"
     },
     {
@@ -5913,7 +5913,7 @@
       "source_file": "legacy/js/core/WorkerPool.js",
       "source_location": "L102",
       "id": "core_workerpool_workerpool_queuework",
-      "community": 36,
+      "community": 37,
       "norm_label": ".queuework()"
     },
     {
@@ -5922,7 +5922,7 @@
       "source_file": "legacy/js/core/WorkerPool.js",
       "source_location": "L115",
       "id": "core_workerpool_workerpool_dispose",
-      "community": 36,
+      "community": 37,
       "norm_label": ".dispose()"
     },
     {
@@ -5931,7 +5931,7 @@
       "source_file": "legacy/js/core/WorkerPool.js",
       "source_location": "L127",
       "id": "core_workerpool_workerpoolcache",
-      "community": 36,
+      "community": 37,
       "norm_label": "workerpoolcache"
     },
     {
@@ -5976,7 +5976,7 @@
       "source_file": "legacy/js/public/Segment.js",
       "source_location": "L1",
       "id": "legacy_js_public_segment_js",
-      "community": 50,
+      "community": 51,
       "norm_label": "segment.js"
     },
     {
@@ -5985,7 +5985,7 @@
       "source_file": "legacy/js/public/Segment.js",
       "source_location": "L1",
       "id": "public_segment_segment",
-      "community": 50,
+      "community": 51,
       "norm_label": "segment"
     },
     {
@@ -5994,7 +5994,7 @@
       "source_file": "legacy/js/public/Segment.js",
       "source_location": "L3",
       "id": "public_segment_segment_constructor",
-      "community": 50,
+      "community": 51,
       "norm_label": ".constructor()"
     },
     {
@@ -6003,7 +6003,7 @@
       "source_file": "legacy/js/public/Segment.js",
       "source_location": "L12",
       "id": "public_segment_segment_length",
-      "community": 50,
+      "community": 51,
       "norm_label": ".length()"
     },
     {
@@ -6012,7 +6012,7 @@
       "source_file": "legacy/js/public/Segment.js",
       "source_location": "L18",
       "id": "public_segment_segment_directdistance",
-      "community": 50,
+      "community": 51,
       "norm_label": ".directdistance()"
     },
     {
@@ -6021,7 +6021,7 @@
       "source_file": "legacy/js/public/PublicFactory.js",
       "source_location": "L1",
       "id": "legacy_js_public_publicfactory_js",
-      "community": 45,
+      "community": 35,
       "norm_label": "publicfactory.js"
     },
     {
@@ -6030,7 +6030,7 @@
       "source_file": "legacy/js/public/PublicFactory.js",
       "source_location": "L5",
       "id": "public_publicfactory_publicfactory",
-      "community": 45,
+      "community": 35,
       "norm_label": "publicfactory"
     },
     {
@@ -6039,7 +6039,7 @@
       "source_file": "legacy/js/public/PublicFactory.js",
       "source_location": "L12",
       "id": "public_publicfactory_publicfactory_constructor",
-      "community": 45,
+      "community": 35,
       "norm_label": ".constructor()"
     },
     {
@@ -6048,7 +6048,7 @@
       "source_file": "legacy/js/public/PublicFactory.js",
       "source_location": "L18",
       "id": "public_publicfactory_publicfactory_getstation",
-      "community": 45,
+      "community": 35,
       "norm_label": ".getstation()"
     },
     {
@@ -6057,7 +6057,7 @@
       "source_file": "legacy/js/public/PublicFactory.js",
       "source_location": "L33",
       "id": "public_publicfactory_publicfactory_getleg",
-      "community": 45,
+      "community": 35,
       "norm_label": ".getleg()"
     },
     {
@@ -6066,7 +6066,7 @@
       "source_file": "legacy/js/public/PublicFactory.js",
       "source_location": "L48",
       "id": "public_publicfactory_publicfactory_getsegment",
-      "community": 45,
+      "community": 35,
       "norm_label": ".getsegment()"
     },
     {
@@ -6075,7 +6075,7 @@
       "source_file": "legacy/js/public/Station.js",
       "source_location": "L1",
       "id": "legacy_js_public_station_js",
-      "community": 23,
+      "community": 25,
       "norm_label": "station.js"
     },
     {
@@ -6084,7 +6084,7 @@
       "source_file": "legacy/js/public/Station.js",
       "source_location": "L3",
       "id": "public_station_station",
-      "community": 23,
+      "community": 25,
       "norm_label": "station"
     },
     {
@@ -6093,7 +6093,7 @@
       "source_file": "legacy/js/public/Station.js",
       "source_location": "L5",
       "id": "public_station_station_constructor",
-      "community": 23,
+      "community": 25,
       "norm_label": ".constructor()"
     },
     {
@@ -6102,7 +6102,7 @@
       "source_file": "legacy/js/public/Station.js",
       "source_location": "L14",
       "id": "public_station_station_id",
-      "community": 23,
+      "community": 25,
       "norm_label": ".id()"
     },
     {
@@ -6111,7 +6111,7 @@
       "source_file": "legacy/js/public/Station.js",
       "source_location": "L20",
       "id": "public_station_station_name",
-      "community": 23,
+      "community": 25,
       "norm_label": ".name()"
     },
     {
@@ -6120,7 +6120,7 @@
       "source_file": "legacy/js/public/Station.js",
       "source_location": "L26",
       "id": "public_station_station_coordinates",
-      "community": 50,
+      "community": 51,
       "norm_label": ".coordinates()"
     },
     {
@@ -6138,7 +6138,7 @@
       "source_file": "legacy/js/public/Station.js",
       "source_location": "L39",
       "id": "public_station_station_connectioncount",
-      "community": 23,
+      "community": 25,
       "norm_label": ".connectioncount()"
     },
     {
@@ -6147,7 +6147,7 @@
       "source_file": "legacy/js/public/Station.js",
       "source_location": "L45",
       "id": "public_station_station_isentrance",
-      "community": 23,
+      "community": 25,
       "norm_label": ".isentrance()"
     },
     {
@@ -6165,7 +6165,7 @@
       "source_file": "legacy/js/public/Station.js",
       "source_location": "L57",
       "id": "public_station_station_shortestpathdistance",
-      "community": 23,
+      "community": 25,
       "norm_label": ".shortestpathdistance()"
     },
     {
@@ -6174,7 +6174,7 @@
       "source_file": "legacy/js/public/Station.js",
       "source_location": "L63",
       "id": "public_station_station_message",
-      "community": 23,
+      "community": 25,
       "norm_label": ".message()"
     },
     {
@@ -6183,7 +6183,7 @@
       "source_file": "legacy/js/public/Station.js",
       "source_location": "L69",
       "id": "public_station_station_islinked",
-      "community": 23,
+      "community": 25,
       "norm_label": ".islinked()"
     },
     {
@@ -6210,7 +6210,7 @@
       "source_file": "legacy/js/public/Leg.js",
       "source_location": "L1",
       "id": "legacy_js_public_leg_js",
-      "community": 71,
+      "community": 43,
       "norm_label": "leg.js"
     },
     {
@@ -6219,7 +6219,7 @@
       "source_file": "legacy/js/public/Leg.js",
       "source_location": "L3",
       "id": "public_leg_leg",
-      "community": 71,
+      "community": 43,
       "norm_label": "leg"
     },
     {
@@ -6228,7 +6228,7 @@
       "source_file": "legacy/js/public/Leg.js",
       "source_location": "L5",
       "id": "public_leg_leg_constructor",
-      "community": 23,
+      "community": 25,
       "norm_label": ".constructor()"
     },
     {
@@ -6237,7 +6237,7 @@
       "source_file": "legacy/js/public/Leg.js",
       "source_location": "L20",
       "id": "public_leg_leg_start",
-      "community": 71,
+      "community": 43,
       "norm_label": ".start()"
     },
     {
@@ -6246,7 +6246,7 @@
       "source_file": "legacy/js/public/Leg.js",
       "source_location": "L26",
       "id": "public_leg_leg_end",
-      "community": 71,
+      "community": 43,
       "norm_label": ".end()"
     },
     {
@@ -6255,7 +6255,7 @@
       "source_file": "legacy/js/public/Leg.js",
       "source_location": "L31",
       "id": "public_leg_leg_length",
-      "community": 46,
+      "community": 43,
       "norm_label": ".length()"
     },
     {
@@ -6273,7 +6273,7 @@
       "source_file": "legacy/js/public/Leg.js",
       "source_location": "L43",
       "id": "public_leg_leg_segment",
-      "community": 45,
+      "community": 35,
       "norm_label": ".segment()"
     },
     {
@@ -6282,7 +6282,7 @@
       "source_file": "legacy/js/ui/StationPopup.js",
       "source_location": "L1",
       "id": "legacy_js_ui_stationpopup_js",
-      "community": 23,
+      "community": 25,
       "norm_label": "stationpopup.js"
     },
     {
@@ -6291,7 +6291,7 @@
       "source_file": "legacy/js/ui/StationPopup.js",
       "source_location": "L3",
       "id": "ui_stationpopup_stationpopup",
-      "community": 23,
+      "community": 25,
       "norm_label": "stationpopup"
     },
     {
@@ -6300,7 +6300,7 @@
       "source_file": "legacy/js/ui/StationPopup.js",
       "source_location": "L5",
       "id": "ui_stationpopup_stationpopup_constructor",
-      "community": 23,
+      "community": 25,
       "norm_label": ".constructor()"
     },
     {
@@ -6408,7 +6408,7 @@
       "source_file": "legacy/js/ui/Panel.js",
       "source_location": "L1",
       "id": "legacy_js_ui_panel_js",
-      "community": 51,
+      "community": 52,
       "norm_label": "panel.js"
     },
     {
@@ -6417,7 +6417,7 @@
       "source_file": "legacy/js/ui/Panel.js",
       "source_location": "L1",
       "id": "ui_panel_panel",
-      "community": 51,
+      "community": 52,
       "norm_label": "panel"
     },
     {
@@ -6426,7 +6426,7 @@
       "source_file": "legacy/js/ui/Panel.js",
       "source_location": "L3",
       "id": "ui_panel_panel_constructor",
-      "community": 51,
+      "community": 52,
       "norm_label": ".constructor()"
     },
     {
@@ -6444,7 +6444,7 @@
       "source_file": "legacy/js/ui/Panel.js",
       "source_location": "L26",
       "id": "ui_panel_panel_adddynamic",
-      "community": 51,
+      "community": 52,
       "norm_label": ".adddynamic()"
     },
     {
@@ -6453,7 +6453,7 @@
       "source_file": "legacy/js/ui/Panel.js",
       "source_location": "L34",
       "id": "ui_panel_panel_setvisibility",
-      "community": 51,
+      "community": 52,
       "norm_label": ".setvisibility()"
     },
     {
@@ -6525,7 +6525,7 @@
       "source_file": "legacy/js/ui/KeyboardControls.js",
       "source_location": "L1",
       "id": "legacy_js_ui_keyboardcontrols_js",
-      "community": 93,
+      "community": 89,
       "norm_label": "keyboardcontrols.js"
     },
     {
@@ -6534,7 +6534,7 @@
       "source_file": "legacy/js/ui/KeyboardControls.js",
       "source_location": "L12",
       "id": "ui_keyboardcontrols_clampedinc",
-      "community": 93,
+      "community": 89,
       "norm_label": "clampedinc()"
     },
     {
@@ -6543,7 +6543,7 @@
       "source_file": "legacy/js/ui/KeyboardControls.js",
       "source_location": "L30",
       "id": "ui_keyboardcontrols_keyboardcontrols",
-      "community": 93,
+      "community": 89,
       "norm_label": "keyboardcontrols()"
     },
     {
@@ -6624,7 +6624,7 @@
       "source_file": "legacy/js/ui/StationNameLabel.js",
       "source_location": "L1",
       "id": "legacy_js_ui_stationnamelabel_js",
-      "community": 70,
+      "community": 71,
       "norm_label": "stationnamelabel.js"
     },
     {
@@ -6633,7 +6633,7 @@
       "source_file": "legacy/js/ui/StationNameLabel.js",
       "source_location": "L4",
       "id": "ui_stationnamelabel_stationnamelabel",
-      "community": 70,
+      "community": 71,
       "norm_label": "stationnamelabel"
     },
     {
@@ -6642,7 +6642,7 @@
       "source_file": "legacy/js/ui/StationNameLabel.js",
       "source_location": "L6",
       "id": "ui_stationnamelabel_stationnamelabel_constructor",
-      "community": 70,
+      "community": 71,
       "norm_label": ".constructor()"
     },
     {
@@ -6651,7 +6651,7 @@
       "source_file": "legacy/js/ui/StationNameLabel.js",
       "source_location": "L18",
       "id": "ui_stationnamelabel_stationnamelabel_close",
-      "community": 70,
+      "community": 71,
       "norm_label": ".close()"
     },
     {
@@ -6687,7 +6687,7 @@
       "source_file": "legacy/js/ui/SegmentPopup.js",
       "source_location": "L1",
       "id": "legacy_js_ui_segmentpopup_js",
-      "community": 46,
+      "community": 35,
       "norm_label": "segmentpopup.js"
     },
     {
@@ -6696,7 +6696,7 @@
       "source_file": "legacy/js/ui/SegmentPopup.js",
       "source_location": "L6",
       "id": "ui_segmentpopup_segmentpopup",
-      "community": 46,
+      "community": 35,
       "norm_label": "segmentpopup"
     },
     {
@@ -6705,7 +6705,7 @@
       "source_file": "legacy/js/ui/SegmentPopup.js",
       "source_location": "L8",
       "id": "ui_segmentpopup_segmentpopup_constructor",
-      "community": 46,
+      "community": 35,
       "norm_label": ".constructor()"
     },
     {
@@ -6714,7 +6714,7 @@
       "source_file": "legacy/js/ui/ImagePopup.js",
       "source_location": "L1",
       "id": "legacy_js_ui_imagepopup_js",
-      "community": 87,
+      "community": 33,
       "norm_label": "imagepopup.js"
     },
     {
@@ -6723,7 +6723,7 @@
       "source_file": "legacy/js/ui/ImagePopup.js",
       "source_location": "L5",
       "id": "ui_imagepopup_imagepopup",
-      "community": 87,
+      "community": 33,
       "norm_label": "imagepopup"
     },
     {
@@ -6732,7 +6732,7 @@
       "source_file": "legacy/js/ui/ImagePopup.js",
       "source_location": "L7",
       "id": "ui_imagepopup_imagepopup_constructor",
-      "community": 87,
+      "community": 33,
       "norm_label": ".constructor()"
     },
     {
@@ -6993,7 +6993,7 @@
       "source_file": "legacy/js/ui/Page.js",
       "source_location": "L675",
       "id": "ui_page_page_dispose",
-      "community": 26,
+      "community": 27,
       "norm_label": ".dispose()"
     },
     {
@@ -7209,7 +7209,7 @@
       "source_file": "legacy/js/ui/SelectionCommonPage.js",
       "source_location": "L1",
       "id": "legacy_js_ui_selectioncommonpage_js",
-      "community": 94,
+      "community": 90,
       "norm_label": "selectioncommonpage.js"
     },
     {
@@ -7218,7 +7218,7 @@
       "source_file": "legacy/js/ui/SelectionCommonPage.js",
       "source_location": "L4",
       "id": "ui_selectioncommonpage_selectioncommonpage",
-      "community": 94,
+      "community": 90,
       "norm_label": "selectioncommonpage"
     },
     {
@@ -7236,7 +7236,7 @@
       "source_file": "legacy/js/ui/SelectionCommonPage.js",
       "source_location": "L380",
       "id": "ui_selectioncommonpage_selectioncommonpage_selectnode",
-      "community": 94,
+      "community": 90,
       "norm_label": ".selectnode()"
     },
     {
@@ -7299,7 +7299,7 @@
       "source_file": "legacy/js/ui/OrbitControls.js",
       "source_location": "L1",
       "id": "legacy_js_ui_orbitcontrols_js",
-      "community": 46,
+      "community": 43,
       "norm_label": "orbitcontrols.js"
     },
     {
@@ -7308,7 +7308,7 @@
       "source_file": "legacy/js/ui/OrbitControls.js",
       "source_location": "L28",
       "id": "ui_orbitcontrols_orbitcontrols",
-      "community": 46,
+      "community": 43,
       "norm_label": "orbitcontrols"
     },
     {
@@ -7317,7 +7317,7 @@
       "source_file": "legacy/js/ui/OrbitControls.js",
       "source_location": "L30",
       "id": "ui_orbitcontrols_orbitcontrols_constructor",
-      "community": 46,
+      "community": 43,
       "norm_label": ".constructor()"
     },
     {
@@ -7326,7 +7326,7 @@
       "source_file": "legacy/js/ui/Frame.js",
       "source_location": "L1",
       "id": "legacy_js_ui_frame_js",
-      "community": 38,
+      "community": 39,
       "norm_label": "frame.js"
     },
     {
@@ -7335,7 +7335,7 @@
       "source_file": "legacy/js/ui/Frame.js",
       "source_location": "L1",
       "id": "ui_frame_frame",
-      "community": 38,
+      "community": 39,
       "norm_label": "frame"
     },
     {
@@ -7344,7 +7344,7 @@
       "source_file": "legacy/js/ui/Frame.js",
       "source_location": "L5",
       "id": "ui_frame_frame_constructor",
-      "community": 38,
+      "community": 39,
       "norm_label": ".constructor()"
     },
     {
@@ -7353,7 +7353,7 @@
       "source_file": "legacy/js/ui/Frame.js",
       "source_location": "L13",
       "id": "ui_frame_frame_reset",
-      "community": 38,
+      "community": 39,
       "norm_label": ".reset()"
     },
     {
@@ -7389,7 +7389,7 @@
       "source_file": "legacy/js/ui/Frame.js",
       "source_location": "L99",
       "id": "ui_frame_frame_setparent",
-      "community": 38,
+      "community": 39,
       "norm_label": ".setparent()"
     },
     {
@@ -7398,7 +7398,7 @@
       "source_file": "legacy/js/ui/Frame.js",
       "source_location": "L106",
       "id": "ui_frame_frame_setcontrolsvisibility",
-      "community": 51,
+      "community": 52,
       "norm_label": ".setcontrolsvisibility()"
     },
     {
@@ -7407,7 +7407,7 @@
       "source_file": "legacy/js/ui/Frame.js",
       "source_location": "L119",
       "id": "ui_frame_frame_clear",
-      "community": 38,
+      "community": 39,
       "norm_label": ".clear()"
     },
     {
@@ -7416,7 +7416,7 @@
       "source_file": "legacy/js/ui/Frame.js",
       "source_location": "L135",
       "id": "ui_frame_frame_addfullscreenbutton",
-      "community": 38,
+      "community": 39,
       "norm_label": ".addfullscreenbutton()"
     },
     {
@@ -7425,7 +7425,7 @@
       "source_file": "legacy/js/ui/Frame.js",
       "source_location": "L178",
       "id": "ui_frame_frame_addlistener",
-      "community": 38,
+      "community": 39,
       "norm_label": ".addlistener()"
     },
     {
@@ -7434,7 +7434,7 @@
       "source_file": "legacy/js/ui/Frame.js",
       "source_location": "L190",
       "id": "ui_frame_frame_handlechange",
-      "community": 38,
+      "community": 39,
       "norm_label": ".handlechange()"
     },
     {
@@ -7686,7 +7686,7 @@
       "source_file": "legacy/js/viewer/Survey.js",
       "source_location": "L692",
       "id": "viewer_survey_survey_getmodelsurfacefromwgs84",
-      "community": 37,
+      "community": 38,
       "norm_label": ".getmodelsurfacefromwgs84()"
     },
     {
@@ -7920,7 +7920,7 @@
       "source_file": "legacy/js/viewer/Snapshot.js",
       "source_location": "L1",
       "id": "legacy_js_viewer_snapshot_js",
-      "community": 35,
+      "community": 36,
       "norm_label": "snapshot.js"
     },
     {
@@ -7929,7 +7929,7 @@
       "source_file": "legacy/js/viewer/Snapshot.js",
       "source_location": "L3",
       "id": "viewer_snapshot_snapshot",
-      "community": 35,
+      "community": 36,
       "norm_label": "snapshot"
     },
     {
@@ -7938,7 +7938,7 @@
       "source_file": "legacy/js/viewer/Snapshot.js",
       "source_location": "L5",
       "id": "viewer_snapshot_snapshot_constructor",
-      "community": 35,
+      "community": 36,
       "norm_label": ".constructor()"
     },
     {
@@ -8046,7 +8046,7 @@
       "source_file": "legacy/js/viewer/ViewState.js",
       "source_location": "L1",
       "id": "legacy_js_viewer_viewstate_js",
-      "community": 88,
+      "community": 19,
       "norm_label": "viewstate.js"
     },
     {
@@ -8055,7 +8055,7 @@
       "source_file": "legacy/js/viewer/ViewState.js",
       "source_location": "L6",
       "id": "viewer_viewstate_viewstate",
-      "community": 88,
+      "community": 19,
       "norm_label": "viewstate"
     },
     {
@@ -8064,7 +8064,7 @@
       "source_file": "legacy/js/viewer/ViewState.js",
       "source_location": "L44",
       "id": "viewer_viewstate_viewstate_constructor",
-      "community": 88,
+      "community": 19,
       "norm_label": ".constructor()"
     },
     {
@@ -8100,7 +8100,7 @@
       "source_file": "legacy/js/viewer/PointIndicator.js",
       "source_location": "L1",
       "id": "legacy_js_viewer_pointindicator_js",
-      "community": 90,
+      "community": 33,
       "norm_label": "pointindicator.js"
     },
     {
@@ -8109,7 +8109,7 @@
       "source_file": "legacy/js/viewer/PointIndicator.js",
       "source_location": "L6",
       "id": "viewer_pointindicator_pointindicator",
-      "community": 90,
+      "community": 33,
       "norm_label": "pointindicator"
     },
     {
@@ -8118,7 +8118,7 @@
       "source_file": "legacy/js/viewer/PointIndicator.js",
       "source_location": "L8",
       "id": "viewer_pointindicator_pointindicator_constructor",
-      "community": 90,
+      "community": 33,
       "norm_label": ".constructor()"
     },
     {
@@ -8271,7 +8271,7 @@
       "source_file": "legacy/js/viewer/SurveyMetadata.js",
       "source_location": "L81",
       "id": "viewer_surveymetadata_surveymetadata_geturl",
-      "community": 43,
+      "community": 46,
       "norm_label": ".geturl()"
     },
     {
@@ -8397,7 +8397,7 @@
       "source_file": "legacy/js/viewer/StationMarkers.js",
       "source_location": "L61",
       "id": "viewer_stationmarkers_stationmarkers_setvisibility",
-      "community": 26,
+      "community": 27,
       "norm_label": ".setvisibility()"
     },
     {
@@ -9081,7 +9081,7 @@
       "source_file": "legacy/js/viewer/LightingManager.js",
       "source_location": "L1",
       "id": "legacy_js_viewer_lightingmanager_js",
-      "community": 89,
+      "community": 24,
       "norm_label": "lightingmanager.js"
     },
     {
@@ -9090,7 +9090,7 @@
       "source_file": "legacy/js/viewer/LightingManager.js",
       "source_location": "L4",
       "id": "viewer_lightingmanager_lightingmanager",
-      "community": 89,
+      "community": 24,
       "norm_label": "lightingmanager()"
     },
     {
@@ -9099,7 +9099,7 @@
       "source_file": "legacy/js/viewer/AnaglyphEffect.js",
       "source_location": "L1",
       "id": "legacy_js_viewer_anaglypheffect_js",
-      "community": 26,
+      "community": 27,
       "norm_label": "anaglypheffect.js"
     },
     {
@@ -9108,7 +9108,7 @@
       "source_file": "legacy/js/viewer/AnaglyphEffect.js",
       "source_location": "L24",
       "id": "viewer_anaglypheffect_anaglypheffect",
-      "community": 26,
+      "community": 27,
       "norm_label": "anaglypheffect()"
     },
     {
@@ -9117,7 +9117,7 @@
       "source_file": "legacy/js/viewer/Point.js",
       "source_location": "L1",
       "id": "legacy_js_viewer_point_js",
-      "community": 95,
+      "community": 91,
       "norm_label": "point.js"
     },
     {
@@ -9126,7 +9126,7 @@
       "source_file": "legacy/js/viewer/Point.js",
       "source_location": "L3",
       "id": "viewer_point_point",
-      "community": 95,
+      "community": 91,
       "norm_label": "point"
     },
     {
@@ -9135,7 +9135,7 @@
       "source_file": "legacy/js/viewer/Point.js",
       "source_location": "L7",
       "id": "viewer_point_point_constructor",
-      "community": 95,
+      "community": 91,
       "norm_label": ".constructor()"
     },
     {
@@ -9144,7 +9144,7 @@
       "source_file": "legacy/js/viewer/ExportGltf.js",
       "source_location": "L1",
       "id": "legacy_js_viewer_exportgltf_js",
-      "community": 33,
+      "community": 19,
       "norm_label": "exportgltf.js"
     },
     {
@@ -9153,7 +9153,7 @@
       "source_file": "legacy/js/viewer/ExportGltf.js",
       "source_location": "L4",
       "id": "viewer_exportgltf_exportgltf",
-      "community": 33,
+      "community": 19,
       "norm_label": "exportgltf"
     },
     {
@@ -9162,7 +9162,7 @@
       "source_file": "legacy/js/viewer/ExportGltf.js",
       "source_location": "L6",
       "id": "viewer_exportgltf_exportgltf_constructor",
-      "community": 33,
+      "community": 19,
       "norm_label": ".constructor()"
     },
     {
@@ -9171,7 +9171,7 @@
       "source_file": "legacy/js/viewer/CameraManager.js",
       "source_location": "L1",
       "id": "legacy_js_viewer_cameramanager_js",
-      "community": 26,
+      "community": 27,
       "norm_label": "cameramanager.js"
     },
     {
@@ -9180,7 +9180,7 @@
       "source_file": "legacy/js/viewer/CameraManager.js",
       "source_location": "L21",
       "id": "viewer_cameramanager_cameramanager",
-      "community": 26,
+      "community": 27,
       "norm_label": "cameramanager()"
     },
     {
@@ -9342,7 +9342,7 @@
       "source_file": "tools/chroma.min.js",
       "source_location": "L1",
       "id": "tools_chroma_min_js",
-      "community": 103,
+      "community": 99,
       "norm_label": "chroma.min.js"
     },
     {
@@ -9351,7 +9351,7 @@
       "source_file": "tools/chroma.min.js",
       "source_location": "L32",
       "id": "tools_chroma_min_a",
-      "community": 103,
+      "community": 99,
       "norm_label": "a()"
     },
     {
@@ -9603,7 +9603,7 @@
       "source_file": "test_model/map-downloader-for-therion-main/vite.config.ts",
       "source_location": "L1",
       "id": "test_model_map_downloader_for_therion_main_vite_config_ts",
-      "community": 104,
+      "community": 100,
       "norm_label": "vite.config.ts"
     },
     {
@@ -9612,7 +9612,7 @@
       "source_file": "test_model/map-downloader-for-therion-main/vite.config.ts",
       "source_location": "L6",
       "id": "map_downloader_for_therion_main_vite_config_env",
-      "community": 104,
+      "community": 100,
       "norm_label": "env"
     },
     {
@@ -9828,7 +9828,7 @@
       "source_file": "e2e/bigmodel.spec.ts",
       "source_location": "L1",
       "id": "e2e_bigmodel_spec_ts",
-      "community": 129,
+      "community": 125,
       "norm_label": "bigmodel.spec.ts"
     },
     {
@@ -9837,7 +9837,7 @@
       "source_file": "e2e/caveview.spec.ts",
       "source_location": "L1",
       "id": "e2e_caveview_spec_ts",
-      "community": 105,
+      "community": 101,
       "norm_label": "caveview.spec.ts"
     },
     {
@@ -9846,7 +9846,7 @@
       "source_file": "e2e/caveview.spec.ts",
       "source_location": "L57",
       "id": "e2e_caveview_spec_togglesidebaritem",
-      "community": 105,
+      "community": 101,
       "norm_label": "togglesidebaritem()"
     },
     {
@@ -10143,7 +10143,7 @@
       "source_file": "ALGORITHMS.md",
       "source_location": "L1",
       "id": "algorithms_md",
-      "community": 27,
+      "community": 28,
       "norm_label": "algorithms.md"
     },
     {
@@ -10152,7 +10152,7 @@
       "source_file": "ALGORITHMS.md",
       "source_location": "L1",
       "id": "caveview_modernized_algorithms_technick_dokument_cia_algoritmov_lochviewer",
-      "community": 27,
+      "community": 28,
       "norm_label": "technicka dokumentacia algoritmov lochviewer"
     },
     {
@@ -10161,7 +10161,7 @@
       "source_file": "ALGORITHMS.md",
       "source_location": "L5",
       "id": "caveview_modernized_algorithms_1_rekon_trukcia_povrchu_surface_reconstruction",
-      "community": 27,
+      "community": 28,
       "norm_label": "1. rekonstrukcia povrchu (surface reconstruction)"
     },
     {
@@ -10170,7 +10170,7 @@
       "source_file": "ALGORITHMS.md",
       "source_location": "L9",
       "id": "caveview_modernized_algorithms_1_1_surface_nets_dual_contouring",
-      "community": 27,
+      "community": 28,
       "norm_label": "1.1 surface nets (dual contouring)"
     },
     {
@@ -10179,7 +10179,7 @@
       "source_file": "ALGORITHMS.md",
       "source_location": "L16",
       "id": "caveview_modernized_algorithms_1_2_silk_fabric_smoothing_laplacian",
-      "community": 27,
+      "community": 28,
       "norm_label": "1.2 silk/fabric smoothing (laplacian)"
     },
     {
@@ -10188,7 +10188,7 @@
       "source_file": "ALGORITHMS.md",
       "source_location": "L23",
       "id": "caveview_modernized_algorithms_1_3_taubin_smoothing_volume_preserving",
-      "community": 27,
+      "community": 28,
       "norm_label": "1.3 taubin smoothing (volume preserving)"
     },
     {
@@ -10197,7 +10197,7 @@
       "source_file": "ALGORITHMS.md",
       "source_location": "L31",
       "id": "caveview_modernized_algorithms_1_4_dilation_bulge_model_offset",
-      "community": 27,
+      "community": 28,
       "norm_label": "1.4 dilation / bulge (model offset)"
     },
     {
@@ -10206,7 +10206,7 @@
       "source_file": "ALGORITHMS.md",
       "source_location": "L40",
       "id": "caveview_modernized_algorithms_2_spracovanie_a_interakcia",
-      "community": 27,
+      "community": 28,
       "norm_label": "2. spracovanie a interakcia"
     },
     {
@@ -10215,7 +10215,7 @@
       "source_file": "ALGORITHMS.md",
       "source_location": "L42",
       "id": "caveview_modernized_algorithms_2_1_lidar_raycasting_lod_level_of_detail",
-      "community": 27,
+      "community": 28,
       "norm_label": "2.1 lidar raycasting & lod (level of detail)"
     },
     {
@@ -10224,7 +10224,7 @@
       "source_file": "ALGORITHMS.md",
       "source_location": "L48",
       "id": "caveview_modernized_algorithms_2_2_re_im_merania_a_gating_interakcie",
-      "community": 27,
+      "community": 28,
       "norm_label": "2.2 rezim merania a gating interakcie"
     },
     {
@@ -10233,7 +10233,7 @@
       "source_file": "ALGORITHMS.md",
       "source_location": "L54",
       "id": "caveview_modernized_algorithms_2_2_vertik_lne_profilovanie_clipping",
-      "community": 27,
+      "community": 28,
       "norm_label": "2.2 vertikalne profilovanie (clipping)"
     },
     {
@@ -10242,7 +10242,7 @@
       "source_file": "ALGORITHMS.md",
       "source_location": "L62",
       "id": "caveview_modernized_algorithms_4_pou_vate_sk_rozhranie_ui",
-      "community": 27,
+      "community": 28,
       "norm_label": "4. pouzivatelske rozhranie (ui)"
     },
     {
@@ -10251,7 +10251,7 @@
       "source_file": "ALGORITHMS.md",
       "source_location": "L64",
       "id": "caveview_modernized_algorithms_4_1_adapt_vny_rota_n_gizmo_adaptive_rotation_gizmo",
-      "community": 27,
+      "community": 28,
       "norm_label": "4.1 adaptivny rotacny gizmo (adaptive rotation gizmo)"
     },
     {
@@ -10260,7 +10260,7 @@
       "source_file": "BLOG_DRAFT.md",
       "source_location": "L1",
       "id": "blog_draft_md",
-      "community": 21,
+      "community": 22,
       "norm_label": "blog_draft.md"
     },
     {
@@ -10269,7 +10269,7 @@
       "source_file": "BLOG_DRAFT.md",
       "source_location": "L1",
       "id": "caveview_modernized_blog_draft_lochviewer_ke_jaskyne_v_prehliada_i_kone_ne_nesekaj_ani_po_tre_om_pive",
-      "community": 21,
+      "community": 22,
       "norm_label": "lochviewer: ked jaskyne v prehliadaci konecne nesekaju (ani po tretom pive) \ud83c\udfd4\ufe0f\ud83d\udd26"
     },
     {
@@ -10278,7 +10278,7 @@
       "source_file": "BLOG_DRAFT.md",
       "source_location": "L9",
       "id": "caveview_modernized_blog_draft_pre_o_sme_to_prekopali_okrem_toho_e_ma_to_bav",
-      "community": 21,
+      "community": 22,
       "norm_label": "preco sme to prekopali? (okrem toho, ze ma to bavi)"
     },
     {
@@ -10287,7 +10287,7 @@
       "source_file": "BLOG_DRAFT.md",
       "source_location": "L15",
       "id": "caveview_modernized_blog_draft_o_je_nov_a_pre_o_je_to_pecka",
-      "community": 21,
+      "community": 22,
       "norm_label": "co je nove a preco je to \"pecka\"?"
     },
     {
@@ -10296,7 +10296,7 @@
       "source_file": "BLOG_DRAFT.md",
       "source_location": "L17",
       "id": "caveview_modernized_blog_draft_1_vrstevnice_ktor_v_m_kone_ne_nie_o_povedia",
-      "community": 21,
+      "community": 22,
       "norm_label": "\ud83c\udfd4\ufe0f 1. vrstevnice, ktore vam konecne nieco povedia"
     },
     {
@@ -10305,7 +10305,7 @@
       "source_file": "BLOG_DRAFT.md",
       "source_location": "L23",
       "id": "caveview_modernized_blog_draft_2_mapy_a_povrchy_s_profesion_lnou_presnos_ou",
-      "community": 21,
+      "community": 22,
       "norm_label": "\ud83d\uddfa\ufe0f 2. mapy a povrchy s profesionalnou presnostou"
     },
     {
@@ -10314,7 +10314,7 @@
       "source_file": "BLOG_DRAFT.md",
       "source_location": "L30",
       "id": "caveview_modernized_blog_draft_3_merania_pre_t_ch_o_chc_ma_v_etko_pod_kontrolou",
-      "community": 21,
+      "community": 22,
       "norm_label": "\ud83d\udcd0 3. merania (pre tych, co chcu mat vsetko pod kontrolou)"
     },
     {
@@ -10323,7 +10323,7 @@
       "source_file": "BLOG_DRAFT.md",
       "source_location": "L36",
       "id": "caveview_modernized_blog_draft_4_filmov_t_dio_priamo_v_prehliada_i",
-      "community": 21,
+      "community": 22,
       "norm_label": "\ud83c\udfa5 4. filmove studio priamo v prehliadaci"
     },
     {
@@ -10332,7 +10332,7 @@
       "source_file": "BLOG_DRAFT.md",
       "source_location": "L39",
       "id": "caveview_modernized_blog_draft_5_mobiln_verzia_pre_jaskynn_ch_nom_dov",
-      "community": 21,
+      "community": 22,
       "norm_label": "\ud83d\udcf1 5. mobilna verzia (pre jaskynnych nomadov)"
     },
     {
@@ -10341,7 +10341,7 @@
       "source_file": "BLOG_DRAFT.md",
       "source_location": "L42",
       "id": "caveview_modernized_blog_draft_6_zdie_anie_ako_u_prof_kov_embed",
-      "community": 21,
+      "community": 22,
       "norm_label": "\ud83d\udd17 6. zdielanie ako u profikov (embed)"
     },
     {
@@ -10350,7 +10350,7 @@
       "source_file": "BLOG_DRAFT.md",
       "source_location": "L49",
       "id": "caveview_modernized_blog_draft_7_jaskyniar_so_svetlom_a_orez_van_m",
-      "community": 21,
+      "community": 22,
       "norm_label": "\ud83d\udc64 7. jaskyniar so svetlom a orezavanim"
     },
     {
@@ -10359,7 +10359,7 @@
       "source_file": "BLOG_DRAFT.md",
       "source_location": "L55",
       "id": "caveview_modernized_blog_draft_8_rezy_jasky_ou_clipping_vidie_dovn_tra_nikdy_nebolo_jednoduch_ie",
-      "community": 21,
+      "community": 22,
       "norm_label": "\u2702\ufe0f 8. rezy jaskynou (clipping) \u2013 vidiet dovnutra nikdy nebolo jednoduchsie"
     },
     {
@@ -10368,7 +10368,7 @@
       "source_file": "BLOG_DRAFT.md",
       "source_location": "L66",
       "id": "caveview_modernized_blog_draft_farebn_legendy_a_vizu_lne_r_dlo",
-      "community": 21,
+      "community": 22,
       "norm_label": "farebne legendy a \"vizualne zradlo\""
     },
     {
@@ -10377,7 +10377,7 @@
       "source_file": "BLOG_DRAFT.md",
       "source_location": "L69",
       "id": "caveview_modernized_blog_draft_iv_uk_ka_na_z_ver_vysk_aj_si_to",
-      "community": 21,
+      "community": 22,
       "norm_label": "ziva ukazka na zaver (vyskusaj si to!)"
     },
     {
@@ -10386,7 +10386,7 @@
       "source_file": "BLOG_DRAFT.md",
       "source_location": "L73",
       "id": "caveview_modernized_blog_draft_codeblock_1",
-      "community": 21,
+      "community": 22,
       "norm_label": "code:html (<iframe src=\"https://loch.sss.sk/?model=https://vasadomena.s)"
     },
     {
@@ -10557,7 +10557,7 @@
       "source_file": "AGENTS.md",
       "source_location": "L1",
       "id": "agents_md",
-      "community": 52,
+      "community": 53,
       "norm_label": "agents.md"
     },
     {
@@ -10566,7 +10566,7 @@
       "source_file": "agents.md",
       "source_location": "L1",
       "id": "caveview_modernized_agents_role_speleological_software_engineer",
-      "community": 52,
+      "community": 53,
       "norm_label": "role: speleological software engineer"
     },
     {
@@ -10575,7 +10575,7 @@
       "source_file": "agents.md",
       "source_location": "L3",
       "id": "caveview_modernized_agents_project_goal",
-      "community": 52,
+      "community": 53,
       "norm_label": "project goal"
     },
     {
@@ -10584,7 +10584,7 @@
       "source_file": "agents.md",
       "source_location": "L6",
       "id": "caveview_modernized_agents_core_requirements_striktn_pravidl",
-      "community": 52,
+      "community": 53,
       "norm_label": "core requirements (striktne pravidla)"
     },
     {
@@ -10593,7 +10593,7 @@
       "source_file": "agents.md",
       "source_location": "L21",
       "id": "caveview_modernized_agents_aktu_lny_stav_current_progress",
-      "community": 52,
+      "community": 53,
       "norm_label": "aktualny stav (current progress)"
     },
     {
@@ -10602,7 +10602,7 @@
       "source_file": "scratch.md",
       "source_location": "L1",
       "id": "scratch_md",
-      "community": 96,
+      "community": 92,
       "norm_label": "scratch.md"
     },
     {
@@ -10611,7 +10611,7 @@
       "source_file": "scratch.md",
       "source_location": "L1",
       "id": "caveview_modernized_scratch_new_features",
-      "community": 96,
+      "community": 92,
       "norm_label": "new features"
     },
     {
@@ -10620,7 +10620,7 @@
       "source_file": "scratch.md",
       "source_location": "L14",
       "id": "caveview_modernized_scratch_bug_fixes",
-      "community": 96,
+      "community": 92,
       "norm_label": "bug fixes"
     },
     {
@@ -10629,7 +10629,7 @@
       "source_file": "DOC_SHARE.md",
       "source_location": "L1",
       "id": "doc_share_md",
-      "community": 47,
+      "community": 48,
       "norm_label": "doc_share.md"
     },
     {
@@ -10638,7 +10638,7 @@
       "source_file": "DOC_SHARE.md",
       "source_location": "L1",
       "id": "caveview_modernized_doc_share_lochviewer_syst_m_zdie_ania_a_vkladania_embed",
-      "community": 47,
+      "community": 48,
       "norm_label": "\ud83d\udd17 lochviewer - system zdielania a vkladania (embed)"
     },
     {
@@ -10647,7 +10647,7 @@
       "source_file": "DOC_SHARE.md",
       "source_location": "L5",
       "id": "caveview_modernized_doc_share_hlavn_funkcie",
-      "community": 47,
+      "community": 48,
       "norm_label": "\ud83d\ude80 hlavne funkcie"
     },
     {
@@ -10656,7 +10656,7 @@
       "source_file": "DOC_SHARE.md",
       "source_location": "L13",
       "id": "caveview_modernized_doc_share_parametre_url_adresy",
-      "community": 47,
+      "community": 48,
       "norm_label": "\ud83d\udee0\ufe0f parametre url adresy"
     },
     {
@@ -10665,7 +10665,7 @@
       "source_file": "DOC_SHARE.md",
       "source_location": "L28",
       "id": "caveview_modernized_doc_share_pr_klad_vlo_enia_do_str_nky",
-      "community": 47,
+      "community": 48,
       "norm_label": "\ud83d\udce6 priklad vlozenia do stranky"
     },
     {
@@ -10674,7 +10674,7 @@
       "source_file": "DOC_SHARE.md",
       "source_location": "L30",
       "id": "caveview_modernized_doc_share_codeblock_1",
-      "community": 47,
+      "community": 48,
       "norm_label": "code:html (<iframe)"
     },
     {
@@ -10683,7 +10683,7 @@
       "source_file": "DOC_SHARE.md",
       "source_location": "L41",
       "id": "caveview_modernized_doc_share_d_le_it_upozornenie_cors",
-      "community": 47,
+      "community": 48,
       "norm_label": "\u26a0\ufe0f dolezite upozornenie (cors)"
     },
     {
@@ -10692,7 +10692,7 @@
       "source_file": "AGENTS.md",
       "source_location": "L1",
       "id": "caveview_modernized_agents_graphify",
-      "community": 52,
+      "community": 53,
       "norm_label": "graphify"
     },
     {
@@ -10701,7 +10701,7 @@
       "source_file": "GEMINI.md",
       "source_location": "L1",
       "id": "gemini_md",
-      "community": 106,
+      "community": 102,
       "norm_label": "gemini.md"
     },
     {
@@ -10710,7 +10710,7 @@
       "source_file": "GEMINI.md",
       "source_location": "L1",
       "id": "caveview_modernized_gemini_graphify",
-      "community": 106,
+      "community": 102,
       "norm_label": "graphify"
     },
     {
@@ -10719,7 +10719,7 @@
       "source_file": "test_model/map-downloader-for-therion-main/README.md",
       "source_location": "L1",
       "id": "test_model_map_downloader_for_therion_main_readme_md",
-      "community": 28,
+      "community": 29,
       "norm_label": "readme.md"
     },
     {
@@ -10728,7 +10728,7 @@
       "source_file": "test_model/map-downloader-for-therion-main/README.md",
       "source_location": "L1",
       "id": "map_downloader_for_therion_main_readme_dankez_downloader_freemap_tile_downloader",
-      "community": 28,
+      "community": 29,
       "norm_label": "dankez downloader (freemap tile downloader)"
     },
     {
@@ -10737,7 +10737,7 @@
       "source_file": "test_model/map-downloader-for-therion-main/README.md",
       "source_location": "L7",
       "id": "map_downloader_for_therion_main_readme_slovensk_verzia",
-      "community": 28,
+      "community": 29,
       "norm_label": "\ud83c\uddf8\ud83c\uddf0 slovenska verzia"
     },
     {
@@ -10746,7 +10746,7 @@
       "source_file": "test_model/map-downloader-for-therion-main/README.md",
       "source_location": "L9",
       "id": "map_downloader_for_therion_main_readme_k_ov_vlastnosti",
-      "community": 28,
+      "community": 29,
       "norm_label": "klucove vlastnosti"
     },
     {
@@ -10755,7 +10755,7 @@
       "source_file": "test_model/map-downloader-for-therion-main/README.md",
       "source_location": "L20",
       "id": "map_downloader_for_therion_main_readme_novinky_vo_verzii_0_1",
-      "community": 28,
+      "community": 29,
       "norm_label": "\u2728 novinky vo verzii 0.1"
     },
     {
@@ -10764,7 +10764,7 @@
       "source_file": "test_model/map-downloader-for-therion-main/README.md",
       "source_location": "L24",
       "id": "map_downloader_for_therion_main_readme_nov_funkcie",
-      "community": 28,
+      "community": 29,
       "norm_label": "nove funkcie"
     },
     {
@@ -10773,7 +10773,7 @@
       "source_file": "test_model/map-downloader-for-therion-main/README.md",
       "source_location": "L28",
       "id": "map_downloader_for_therion_main_readme_postrehy_a_vylep_enia",
-      "community": 28,
+      "community": 29,
       "norm_label": "postrehy a vylepsenia"
     },
     {
@@ -10782,7 +10782,7 @@
       "source_file": "test_model/map-downloader-for-therion-main/README.md",
       "source_location": "L35",
       "id": "map_downloader_for_therion_main_readme_english_version",
-      "community": 28,
+      "community": 29,
       "norm_label": "\ud83c\uddec\ud83c\udde7 english version"
     },
     {
@@ -10791,7 +10791,7 @@
       "source_file": "test_model/map-downloader-for-therion-main/README.md",
       "source_location": "L37",
       "id": "map_downloader_for_therion_main_readme_freemap_tile_downloader",
-      "community": 28,
+      "community": 29,
       "norm_label": "freemap tile downloader"
     },
     {
@@ -10800,7 +10800,7 @@
       "source_file": "test_model/map-downloader-for-therion-main/README.md",
       "source_location": "L41",
       "id": "map_downloader_for_therion_main_readme_key_features",
-      "community": 28,
+      "community": 29,
       "norm_label": "key features"
     },
     {
@@ -10809,7 +10809,7 @@
       "source_file": "test_model/map-downloader-for-therion-main/README.md",
       "source_location": "L52",
       "id": "map_downloader_for_therion_main_readme_what_s_new_in_version_0_1",
-      "community": 28,
+      "community": 29,
       "norm_label": "\u2728 what's new in version 0.1"
     },
     {
@@ -10818,7 +10818,7 @@
       "source_file": "test_model/map-downloader-for-therion-main/README.md",
       "source_location": "L56",
       "id": "map_downloader_for_therion_main_readme_new_features",
-      "community": 28,
+      "community": 29,
       "norm_label": "new features"
     },
     {
@@ -10827,7 +10827,7 @@
       "source_file": "test_model/map-downloader-for-therion-main/README.md",
       "source_location": "L60",
       "id": "map_downloader_for_therion_main_readme_insights_and_improvements",
-      "community": 28,
+      "community": 29,
       "norm_label": "insights and improvements"
     },
     {
@@ -10835,7 +10835,7 @@
       "file_type": "code",
       "source_file": "eslint.config.js",
       "source_location": "L1",
-      "community": 130,
+      "community": 126,
       "norm_label": "eslint.config.js",
       "id": "eslint_config_js"
     },
@@ -10934,7 +10934,7 @@
       "file_type": "code",
       "source_file": "src/App.tsx",
       "source_location": "L938",
-      "community": 98,
+      "community": 94,
       "norm_label": "findstationbyname()",
       "id": "src_app_findstationbyname"
     },
@@ -10943,7 +10943,7 @@
       "file_type": "code",
       "source_file": "src/App.tsx",
       "source_location": "L965",
-      "community": 98,
+      "community": 94,
       "norm_label": "execmanualmeasure()",
       "id": "src_app_execmanualmeasure"
     },
@@ -10997,7 +10997,7 @@
       "file_type": "code",
       "source_file": "src/App.tsx",
       "source_location": "L1417",
-      "community": 63,
+      "community": 64,
       "norm_label": "encodestate()",
       "id": "src_app_encodestate"
     },
@@ -11015,7 +11015,7 @@
       "file_type": "code",
       "source_file": "src/App.tsx",
       "source_location": "L1503",
-      "community": 63,
+      "community": 64,
       "norm_label": "getshareurl()",
       "id": "src_app_getshareurl"
     },
@@ -11024,7 +11024,7 @@
       "file_type": "code",
       "source_file": "src/App.tsx",
       "source_location": "L1517",
-      "community": 63,
+      "community": 64,
       "norm_label": "getiframecode()",
       "id": "src_app_getiframecode"
     },
@@ -11033,7 +11033,7 @@
       "file_type": "code",
       "source_file": "src/App.tsx",
       "source_location": "L1522",
-      "community": 63,
+      "community": 64,
       "norm_label": "handlecopyshare()",
       "id": "src_app_handlecopyshare"
     },
@@ -31080,5 +31080,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "f1135922483eeb9419254767b7dc5a19aacc1c11"
+  "built_at_commit": "856e8d7ff6a24db21ad0def8715de785bd9c8009"
 }

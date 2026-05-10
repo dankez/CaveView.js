@@ -54,7 +54,8 @@ export async function downloadTiledXyz(
     urlPattern: string,
     sjtskBbox: string,
     format: string = 'image/jpeg',
-    onProgress?: (p: Progress) => void
+    onProgress?: (p: Progress) => void,
+    forceZoom?: number
 ): Promise<string> {
     const parts = sjtskBbox.split(',').map(Number);
     // Expand BBOX slightly to ensure coverage (as requested by user previously)
@@ -81,14 +82,17 @@ export async function downloadTiledXyz(
     const south = Math.min(p1[1], p2[1]);
     const north = Math.max(p1[1], p2[1]);
 
-    // Adaptive zoom based on model size
-    const maxMeters = Math.max(w, h);
-    let zoom = 16;
-    if (maxMeters < 500) zoom = 18;
-    else if (maxMeters < 1500) zoom = 17;
-    
-    // ZBGIS Orto supports up to 19
-    if (urlPattern.includes('Ortofoto') && maxMeters < 300) zoom = 19;
+    // Adaptive zoom based on model size or forced zoom
+    let zoom = forceZoom;
+    if (!zoom) {
+        const maxMeters = Math.max(w, h);
+        zoom = 16;
+        if (maxMeters < 500) zoom = 18;
+        else if (maxMeters < 1500) zoom = 17;
+        
+        // ZBGIS Orto supports up to 19, but user noted max is 18
+        if (urlPattern.includes('Ortofoto') && maxMeters < 300) zoom = 18;
+    }
 
     const xMin = lon2tile(west, zoom);
     const xMax = lon2tile(east, zoom);

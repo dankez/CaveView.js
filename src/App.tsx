@@ -3029,10 +3029,10 @@ export default function App() {
                                 onChange={(e) => setOpts(p => ({ ...p, surfaceWmsResolution: parseInt(e.target.value) }))}
                                 style={{ background: '#1e293b', color: 'white', border: '1px solid #334155', borderRadius: '4px', fontSize: '10px', padding: '1px 4px', outline: 'none' }}
                               >
-                                <option value="512">512px ({lang === 'sk' ? 'Rýchle' : 'Fast'})</option>
-                                <option value="1024">1024px</option>
-                                <option value="2048">2048px (Std)</option>
-                                <option value="4096">4096px (High)</option>
+                                <option value="512">{lang === 'sk' ? 'Zoom 15 (Nízka)' : 'Zoom 15 (Low)'}</option>
+                                <option value="1024">{lang === 'sk' ? 'Zoom 16 (Stredná)' : 'Zoom 16 (Med)'}</option>
+                                <option value="2048">{lang === 'sk' ? 'Zoom 17 (Vysoká)' : 'Zoom 17 (High)'}</option>
+                                <option value="4096">{lang === 'sk' ? 'Zoom 18 (Max)' : 'Zoom 18 (Max)'}</option>
                               </select>
                             </div>
                           )}

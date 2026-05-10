@@ -5,12 +5,12 @@
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1234 nodes · 1986 edges · 131 communities (60 shown, 71 thin omitted)
+- 1234 nodes · 1986 edges · 127 communities (61 shown, 66 thin omitted)
 - Extraction: 70% EXTRACTED · 30% INFERRED · 0% AMBIGUOUS · INFERRED: 605 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `f1135922`
+- Built from commit: `856e8d7f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -54,7 +54,7 @@
 - [[_COMMUNITY_Community 36|Community 36]]
 - [[_COMMUNITY_Community 37|Community 37]]
 - [[_COMMUNITY_Community 38|Community 38]]
-- [[_COMMUNITY_Community 40|Community 40]]
+- [[_COMMUNITY_Community 39|Community 39]]
 - [[_COMMUNITY_Community 41|Community 41]]
 - [[_COMMUNITY_Community 42|Community 42]]
 - [[_COMMUNITY_Community 43|Community 43]]
@@ -102,20 +102,16 @@
 - [[_COMMUNITY_Community 86|Community 86]]
 - [[_COMMUNITY_Community 87|Community 87]]
 - [[_COMMUNITY_Community 88|Community 88]]
-- [[_COMMUNITY_Community 89|Community 89]]
 - [[_COMMUNITY_Community 90|Community 90]]
 - [[_COMMUNITY_Community 91|Community 91]]
 - [[_COMMUNITY_Community 92|Community 92]]
 - [[_COMMUNITY_Community 94|Community 94]]
 - [[_COMMUNITY_Community 95|Community 95]]
 - [[_COMMUNITY_Community 96|Community 96]]
+- [[_COMMUNITY_Community 97|Community 97]]
 - [[_COMMUNITY_Community 98|Community 98]]
-- [[_COMMUNITY_Community 99|Community 99]]
 - [[_COMMUNITY_Community 100|Community 100]]
-- [[_COMMUNITY_Community 101|Community 101]]
 - [[_COMMUNITY_Community 102|Community 102]]
-- [[_COMMUNITY_Community 104|Community 104]]
-- [[_COMMUNITY_Community 106|Community 106]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `Survey` - 49 edges
@@ -139,7 +135,7 @@
 - `App()` --calls--> `getBrowserLanguage()`  [EXTRACTED]
   src/App.tsx → src/i18n/index.ts
 
-## Communities (131 total, 71 thin omitted)
+## Communities (127 total, 66 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.05
@@ -205,66 +201,70 @@ Nodes (4): CommonTerrainMaterial, ContourMaterial, HypsometricMaterial, TerrainO
 Cohesion: 0.17
 Nodes (3): ModelSource, CaveViewUI(), FileSelector
 
-### Community 21 - "Community 21"
+### Community 19 - "Community 19"
+Cohesion: 0.14
+Nodes (4): DepthMaterial, HeightMaterial, ExportGltf, ViewState
+
+### Community 22 - "Community 22"
 Cohesion: 0.13
 Nodes (14): 🏔️ 1. Vrstevnice, ktoré vám konečne niečo povedia, 🗺️ 2. Mapy a povrchy s profesionálnou presnosťou, 📐 3. Merania (pre tých, čo chcú mať všetko pod kontrolou), 🎥 4. Filmové štúdio priamo v prehliadači, 📱 5. Mobilná verzia (pre jaskynných nomádov), 🔗 6. Zdieľanie ako u profíkov (Embed), 👤 7. Jaskyniar so svetlom a orezávaním, ✂️ 8. Rezy jaskyňou (Clipping) – Vidieť dovnútra nikdy nebolo jednoduchšie (+6 more)
 
-### Community 22 - "Community 22"
+### Community 23 - "Community 23"
 Cohesion: 0.18
 Nodes (12): buildResult(), Calibration, CaveSurface, ParsedCave, parseLox(), parsePlt(), parsePly(), parseSvx() (+4 more)
 
 ### Community 24 - "Community 24"
-Cohesion: 0.17
-Nodes (3): Cfg, BarGeometry, WallMaterial
+Cohesion: 0.19
+Nodes (3): Cfg, EntrancePointMaterial, LightingManager()
 
-### Community 26 - "Community 26"
+### Community 27 - "Community 27"
 Cohesion: 0.18
 Nodes (4): DistanceFieldPass, HUD(), AnaglyphEffect(), CameraManager()
 
-### Community 27 - "Community 27"
+### Community 28 - "Community 28"
 Cohesion: 0.15
 Nodes (12): 1.1 Surface Nets (Dual Contouring), 1.2 Silk/Fabric Smoothing (Laplacian), 1.3 Taubin Smoothing (Volume Preserving), 1.4 Dilation / Bulge (Model Offset), 1. Rekonštrukcia povrchu (Surface Reconstruction), 2.1 LiDAR Raycasting & LOD (Level of Detail), 2.2 Režim merania a Gating interakcie, 2.2 Vertikálne profilovanie (Clipping) (+4 more)
 
-### Community 28 - "Community 28"
+### Community 29 - "Community 29"
 Cohesion: 0.15
 Nodes (12): DankeZ Downloader (Freemap Tile Downloader), 🇬🇧 English version, Freemap Tile Downloader, Insights and Improvements, Kľúčové Vlastnosti, Key Features, New Features, Nové Funkcie (+4 more)
 
-### Community 29 - "Community 29"
-Cohesion: 0.2
-Nodes (3): Compass, HudObject, EntrancePointMaterial
+### Community 33 - "Community 33"
+Cohesion: 0.18
+Nodes (3): TextureCache, ImagePopup, PointIndicator
 
-### Community 41 - "Community 41"
+### Community 44 - "Community 44"
 Cohesion: 0.38
 Nodes (4): downloadTiledXyz(), lat2tile(), lon2tile(), Progress
 
-### Community 42 - "Community 42"
+### Community 45 - "Community 45"
 Cohesion: 0.38
 Nodes (7): applyTaubinSmoothing(), buildScrapsGeo(), buildTerrainTileData(), computeAngleWeightedNormals(), elevColor(), normZ(), segsToGeoWithColors()
 
-### Community 47 - "Community 47"
+### Community 48 - "Community 48"
 Cohesion: 0.29
 Nodes (6): code:html (<iframe), ⚠️ Dôležité upozornenie (CORS), 🚀 Hlavné funkcie, 🔗 LochViewer - Systém zdieľania a vkladania (Embed), 🛠️ Parametre URL adresy, 📦 Príklad vloženia do stránky
 
-### Community 52 - "Community 52"
+### Community 53 - "Community 53"
 Cohesion: 0.33
 Nodes (5): Aktuálny stav (Current Progress), Core Requirements (Striktné pravidlá), graphify, Project Goal, Role: Speleological Software Engineer
 
-### Community 61 - "Community 61"
+### Community 62 - "Community 62"
 Cohesion: 0.5
 Nodes (3): getBrowserLanguage(), getTranslation(), App()
 
-### Community 63 - "Community 63"
+### Community 64 - "Community 64"
 Cohesion: 0.5
 Nodes (4): encodeState(), getIframeCode(), getShareUrl(), handleCopyShare()
 
-### Community 65 - "Community 65"
+### Community 66 - "Community 66"
 Cohesion: 0.5
 Nodes (3): DownloadProgress, downloadTiledWms(), TileCache
 
 ## Knowledge Gaps
 - **106 isolated node(s):** `AppState`, `LoadedFile`, `SUPPORTED`, `MemoizedStatusBadge`, `Scrap` (+101 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **71 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **66 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -273,7 +273,7 @@ _Questions this graph is uniquely positioned to answer:_
   _High betweenness centrality (0.037) - this node is a cross-community bridge._
 - **Why does `Stations` connect `Community 7` to `Community 1`, `Community 20`, `Community 9`?**
   _High betweenness centrality (0.032) - this node is a cross-community bridge._
-- **Why does `parsePly()` connect `Community 22` to `Community 8`, `Community 0`, `Community 20`?**
+- **Why does `parsePly()` connect `Community 23` to `Community 8`, `Community 0`, `Community 20`?**
   _High betweenness centrality (0.023) - this node is a cross-community bridge._
 - **What connects `AppState`, `LoadedFile`, `SUPPORTED` to the rest of the system?**
   _106 weakly-connected nodes found - possible documentation gaps or missing edges._

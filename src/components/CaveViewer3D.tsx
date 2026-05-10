@@ -1754,7 +1754,7 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
     
     if (isWms && wmsInfo) {
       textureUniforms.uCalib0.value.set(wmsInfo.minX, wmsInfo.minY, wmsInfo.maxX, wmsInfo.maxY);
-      textureUniforms.uCalib1.value.set(0, 0, wmsInfo.texWidth, wmsInfo.texHeight);
+      textureUniforms.uCalib1.value.set(0, 0, imgSize[0] || wmsInfo.texWidth, imgSize[1] || wmsInfo.texHeight);
     } else if (calib) {
       textureUniforms.uCalib0.value.set(calib.p1.mx, calib.p1.my, calib.p2.mx, calib.p2.my);
       textureUniforms.uCalib1.value.set(calib.p1.x, calib.p1.y, calib.p2.x, calib.p2.y);
@@ -1988,9 +1988,17 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, ...props }: any) => 
 
       if (isXyz) {
         const format = source === 'wms-shadow' ? 'image/png' : 'image/jpeg';
+        
+        // Map WMS Resolution selection to ZBGIS XYZ zoom levels
+        let zoomLevel = 16;
+        if (props.options.surfaceWmsResolution <= 512) zoomLevel = 15;
+        else if (props.options.surfaceWmsResolution <= 1024) zoomLevel = 16;
+        else if (props.options.surfaceWmsResolution <= 2048) zoomLevel = 17;
+        else zoomLevel = 18;
+
         downloadTiledXyz(url!, surface.sjtskBbox, format, (p) => {
           setWmsProgress(Math.round((p.current / p.total) * 100));
-        }).then(dataUrl => {
+        }, zoomLevel).then(dataUrl => {
           const loader = new THREE.TextureLoader();
           loader.load(dataUrl, (t) => {
             t.colorSpace = THREE.SRGBColorSpace;
