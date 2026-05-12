@@ -1,3 +1,4 @@
+import { tryUtmToWgs84, tryJtskToWgs84 } from "../utils/coords";
 /**
  * Cave file parsers for .lox (Therion), .3d (Survex), .plt (Compass)
  */
@@ -760,16 +761,30 @@ function buildResult(
 
   // Build station labels — use original z for altitude
   const stationLabels: StationLabel[] = isLiDAR ? [] : centeredStations.map((pos, i) => {
+
     const lookupId = stationIds ? stationIds[i] : i
     const meta = stationMeta.get(lookupId)
     let n = meta?.name ?? `S${i}`
     if (!/[a-zA-Z0-9]/.test(n)) n = ''
+
+    const origX = pos.x + cx;
+    const origY = pos.y + cy;
+    let gps = null;
+    try {
+      gps = tryUtmToWgs84(origX, origY) || tryJtskToWgs84(origX, origY) || null;
+    } catch (e) {
+      console.warn("GPS calculation failed for station", n, e);
+    }
+
     return {
+
       pos,
       name:     n,
       altitude: meta?.z        ?? (pos.z + cz),   // original altitude in metres
       isEntrance: meta?.isEntrance,
       fullLabel:  meta?.fullLabel
+    ,
+      gps
     }
   })
 
