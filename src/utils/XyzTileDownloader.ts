@@ -4,6 +4,7 @@ import proj4 from 'proj4';
 // Let's use the user's provided proj4 string.
 proj4.defs('EPSG:5514', '+proj=krovak +lat_0=49.5 +lon_0=24.83333333333333 +alpha=30.28813972222222 +k=0.9999 +x_0=0 +y_0=0 +ellps=bessel +towgs84=570.8,85.7,462.8,4.998,1.587,5.261,3.56 +units=m +no_defs');
 proj4.defs('EPSG:4326', '+proj=longlat +datum=WGS84 +no_defs');
+proj4.defs('EPSG:3857', '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs');
 
 const TILE_SIZE = 256;
 
@@ -113,10 +114,20 @@ export async function downloadTiledXyz(
     let current = 0;
 
     const fetchTile = async (tx: number, ty: number) => {
-        const url = urlPattern
+        let url = urlPattern
             .replace('{z}', zoom.toString())
             .replace('{x}', tx.toString())
             .replace('{y}', ty.toString());
+        
+        if (url.includes('{bbox}')) {
+            // Calculate tile bbox in EPSG:3857
+            const bl = tileToGps(tx, ty + 1, zoom);
+            const tr = tileToGps(tx + 1, ty, zoom);
+            const bl3857 = proj4('EPSG:4326', 'EPSG:3857').forward([bl.lon, bl.lat]);
+            const tr3857 = proj4('EPSG:4326', 'EPSG:3857').forward([tr.lon, tr.lat]);
+            const bboxStr = `${bl3857[0]},${bl3857[1]},${tr3857[0]},${tr3857[1]}`;
+            url = url.replace('{bbox}', bboxStr);
+        }
         
         try {
             const resp = await fetch(url);

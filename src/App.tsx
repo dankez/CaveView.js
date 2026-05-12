@@ -2947,6 +2947,7 @@ export default function App() {
                               <option value="custom">{lang === 'sk' ? 'Súbor (JPG/PNG/Lox)' : 'Custom File (JPG/PNG/Lox)'}</option>
                               <option value="wms-orto">XYZ Scraping: Ortofotomapa (ZBGIS)</option>
                               <option value="wms-shadow">XYZ Scraping: DMR Tieňovaný reliéf</option>
+                              <option value="wms-geology">XYZ Scraping: Geologická mapa (ŠGÚDŠ)</option>
                               <option value="none">{lang === 'sk' ? 'Vypnutá' : 'None'}</option>
                             </select>
                           </div>
@@ -2964,7 +2965,7 @@ export default function App() {
                             </div>
                           </div>
 
-                          {(opts.surfaceTextureSource === 'wms-orto' || opts.surfaceTextureSource === 'wms-shadow') && (
+                          {(opts.surfaceTextureSource === 'wms-orto' || opts.surfaceTextureSource === 'wms-shadow' || opts.surfaceTextureSource === 'wms-geology') && (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                               <span style={{ fontSize: '10px', color: '#94a3b8' }}>{lang === 'sk' ? 'Rozlíšenie WMS' : 'WMS Resolution'}</span>
                               <select 
