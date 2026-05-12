@@ -6,7 +6,7 @@ import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh'
 import { reconstructSurface } from '../utils/surfaceReconstruction'
 
-import { downloadTiledXyz } from '../utils/XyzTileDownloader'
+import { downloadTiledXyz, downloadWmsImage } from '../utils/XyzTileDownloader'
 import type { ParsedCave, CaveSurface, Segment } from '../parsers/caveParser'
 import type { SelStation } from '../App'
 
@@ -399,7 +399,7 @@ export interface ViewerOptions {
   showSurfaceMesh:     boolean
   showSurfaceMeshWire: boolean
   showSurfaceTexture:  boolean
-  surfaceTextureSource: 'custom' | 'wms-orto' | 'wms-geology' | 'wms-shadow' | 'none'
+  surfaceTextureSource: 'custom' | 'wms-orto' | 'wms-orto-freemap' | 'wms-geology' | 'wms-shadow' | 'none'
   surfaceTextureUrl?:  string | null
   showSurfaceNetwork:  boolean
   showContours:        boolean
@@ -1743,8 +1743,8 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
     
     const source = props.options.surfaceTextureSource || 'custom';
     const isCustom = source === 'custom';
-    const isXyz = source === 'wms-orto' || source === 'wms-shadow';
-    const canCalib = (isCustom && calib) || (isXyz && !!surface.sjtskBbox && !!xyzCalib);
+    const isWmsXyz = source === 'wms-orto' || source === 'wms-shadow' || source === 'wms-geology' || source === 'wms-orto-freemap';
+    const canCalib = (isCustom && calib) || (isWmsXyz && !!surface.sjtskBbox && !!xyzCalib);
 
     textureUniforms.uIsLoxBitmap.value = (hasBitmapCalib && !isCustom) ? 1.0 : 0.0;
     
@@ -1759,7 +1759,7 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
     if (isCustom && calib) {
       textureUniforms.uCalib0.value.set(calib.p1.mx, calib.p1.my, calib.p2.mx, calib.p2.my);
       textureUniforms.uCalib1.value.set(calib.p1.x, calib.p1.y, calib.p2.x, calib.p2.y);
-    } else if (isXyz && xyzCalib) {
+    } else if (isWmsXyz && xyzCalib) {
       textureUniforms.uCalib0.value.set(xyzCalib[0], xyzCalib[1], xyzCalib[2], xyzCalib[3]);
       textureUniforms.uCalib1.value.set(0, 0, imgSize[0], imgSize[1]);
     }
@@ -1943,8 +1943,10 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, ...p
         url = `/xyz-proxy/zbgis/Ortofoto/MapServer/tile/{z}/{y}/{x}?blankTile=false`;
       } else if (source === 'wms-shadow') {
         url = `/xyz-proxy/zbgis/LLS_DMR5/MapServer/tile/{z}/{y}/{x}?blankTile=false`;
+      } else if (source === 'wms-orto-freemap') {
+        url = `/xyz-proxy/freemap-orto/{z}/{x}/{y}.jpg`;
       } else if (source === 'wms-geology') {
-        url = `https://ags.geology.sk/arcgis/services/WebServices/GM50/MapServer/WMSServer?service=WMS&request=GetMap&layers=0%2C1%2C2&styles=&format=image%2Fjpeg&transparent=false&version=1.3.0&width=256&height=256&crs=EPSG%3A3857&bbox={bbox}`;
+        url = `/wms-proxy/geology/arcgis/services/WebServices/GM50/MapServer/WMSServer?service=WMS&request=GetMap&layers=0%2C1%2C2&styles=&format=image%2Fjpeg&transparent=false&version=1.3.0&width={width}&height={height}&crs=EPSG%3A3857&bbox={bbox}`;
       }
     }
 
@@ -1952,28 +1954,36 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, ...p
       return;
     }
 
-    const isXyz = source === 'wms-orto' || source === 'wms-shadow' || source === 'wms-geology';
+    const isWmsXyz = source === 'wms-orto' || source === 'wms-shadow' || source === 'wms-geology' || source === 'wms-orto-freemap';
 
-    if (isXyz && surface.sjtskBbox) {
+    if (isWmsXyz && surface.sjtskBbox) {
       setWmsLoading(true);
       setWmsProgress(0);
       onStatusChange?.({ msg: 'Sťahujem mapové podklady...', type: 'progress', progress: 0 });
       
-      // Map WMS Resolution selection to ZBGIS XYZ zoom levels
+      const format = source === 'wms-shadow' ? 'image/png' : 'image/jpeg';
+
+      let downloadPromise;
+      // Map WMS Resolution selection to ZBGIS/Freemap XYZ zoom levels
       let zoomLevel = 16;
       if (props.options.surfaceWmsResolution <= 512) zoomLevel = 15;
       else if (props.options.surfaceWmsResolution <= 1024) zoomLevel = 16;
       else if (props.options.surfaceWmsResolution <= 2048) zoomLevel = 17;
       else zoomLevel = 18;
 
-      const format = source === 'wms-shadow' ? 'image/png' : 'image/jpeg';
-
-      downloadTiledXyz(url!, surface.sjtskBbox, format, (p) => {
+      downloadPromise = downloadTiledXyz(url, surface.sjtskBbox, format, (p) => {
         if (!isActive) return;
         const progress = Math.round((p.current / p.total) * 100);
         setWmsProgress(progress);
-        onStatusChange?.({ msg: 'Sťahujem mapové podklady (ZBGIS)...', type: 'progress', progress });
-      }, zoomLevel).then(result => {
+        
+        let provider = 'ZBGIS';
+        if (source.includes('freemap')) provider = 'Freemap';
+        if (source.includes('geology')) provider = 'ŠGÚDŠ';
+        
+        onStatusChange?.({ msg: `Sťahujem mapové podklady (${provider})...`, type: 'progress', progress });
+      }, zoomLevel);
+
+      downloadPromise.then(result => {
         if (!isActive) return;
         
         const loader = new THREE.TextureLoader();
@@ -1998,6 +2008,7 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, ...p
           
           setWmsLoading(false);
           onStatusChange?.({ msg: 'Mapové podklady úspešne načítané', type: 'success' });
+          if (props.onTextureReady) props.onTextureReady(result.dataUrl, result.sjtskBbox);
           setTimeout(() => { if (isActive) onStatusChange?.(null); }, 3000);
         });
       }).catch(err => {
@@ -2245,6 +2256,7 @@ interface Props {
   onProcessingStart?: (info: string) => void
   onProcessingEnd?: () => void
   onStatusChange?: (status: { msg: string; type: 'info' | 'error' | 'success' | 'progress'; progress?: number } | null) => void
+  onTextureReady?: (dataUrl: string, bbox: string) => void
   manualConnection?: { p1: {x:number, y:number, z:number}, p2: {x:number, y:number, z:number} } | null
   placedCaver?: { pos: [number, number, number], pose: 'standing' | 'crawling' } | null
   fitTrigger?: number
