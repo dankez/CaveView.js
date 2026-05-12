@@ -13,7 +13,9 @@ LochViewer je moderný webový 3D prehliadač speleologických dát.
 - **Three.js & React-Three-Fiber (R3F)**: 3D renderovanie pomocou WebGL.
 - **React-Three-Drei**: Pomocné nástroje pre R3F (ovládanie kamery, HTML v 3D).
 - **Three-Mesh-BVH**: Zrýchlenie kolízií a výpočtov (napr. meranie hĺbky nadložia).
-- **Proj4js**: Transformácie súradnícových systémov (UTM, S-JTSK na WGS84).
+- **Proj4js & coords.ts**: Transformácie súradnícových systémov (UTM, S-JTSK na WGS84). Všetka geodetická logika je centralizovaná v `src/utils/coords.ts`.
+- **XYZ Tile Streaming**: Integrácia sťahovania ortofotomáp v reálnom čase.
+
 
 ### 🏗 Architektúra
 - **Web Workers**: Parsovanie binárnych súborov prebieha na samostatnom vlákne (`parser.worker.ts`), aby sa nezasekávalo používateľské rozhranie.
@@ -38,7 +40,9 @@ LochViewer je moderný webový 3D prehliadač speleologických dát.
 - **Three.js & React-Three-Fiber (R3F)**: WebGL-based 3D rendering.
 - **React-Three-Drei**: Helper utilities for R3F (camera controls, HTML in 3D).
 - **Three-Mesh-BVH**: Acceleration for collisions and calculations (e.g., depth measurement).
-- **Proj4js**: Coordinate system transformations (UTM, S-JTSK to WGS84).
+- **Proj4js & coords.ts**: Coordinate system transformations (UTM, S-JTSK to WGS84). Geodetic logic is centralized in `src/utils/coords.ts`.
+- **XYZ Tile Streaming**: Real-time integration of orthophoto and terrain tiles.
+
 
 ### 🏗 Architecture
 - **Web Workers**: Binary file parsing is offloaded to a background thread (`parser.worker.ts`) to maintain UI responsiveness.

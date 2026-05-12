@@ -5,7 +5,7 @@ import * as THREE from 'three'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh'
 import { reconstructSurface } from '../utils/surfaceReconstruction'
-import { downloadTiledWms } from '../utils/WmsTileDownloader'
+
 import { downloadTiledXyz } from '../utils/XyzTileDownloader'
 import type { ParsedCave, CaveSurface, Segment } from '../parsers/caveParser'
 import type { SelStation } from '../App'
@@ -1621,7 +1621,7 @@ function buildTerrainTileData(surface: CaveSurface, colStart: number, rowStart: 
 // ─── Terrain surface mesh (všetky módy) ──────────────────────────────────────
 const TILE_SIZE = 128; // Počet vrcholov na hranu dlaždice
 
-const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCount, imgSize, imgSizeUniformRef, wmsInfo, ...props }: any) => {
+const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCount, imgSize, imgSizeUniformRef, xyzCalib, ...props }: any) => {
   const [geo, setGeo] = useState<THREE.BufferGeometry | null>(null);
 
   useEffect(() => {
@@ -1736,31 +1736,36 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
   }), []);
 
   useEffect(() => {
-    const isCustom = !!props.surfaceTextureUrl;
     const hasBitmapCalib = !!surface.bitmapCalib;
     const calib = props.options.surfaceTextureCalibration;
     const dtmWidth = (surface.dtm.samples - 1) * Math.abs(surface.dtm.calib.xx || 1);
     const dtmHeight = (surface.dtm.lines - 1) * Math.abs(surface.dtm.calib.yy || 1);
     
     const source = props.options.surfaceTextureSource || 'custom';
-    const isWms = source === 'wms-orto' || source === 'wms-geology' || source === 'wms-shadow';
-    const canCalib = (isCustom && calib) || (isWms && !!surface.sjtskBbox);
+    const isCustom = source === 'custom';
+    const isXyz = source === 'wms-orto' || source === 'wms-shadow';
+    const canCalib = (isCustom && calib) || (isXyz && !!surface.sjtskBbox && !!xyzCalib);
 
     textureUniforms.uIsLoxBitmap.value = (hasBitmapCalib && !isCustom) ? 1.0 : 0.0;
+    
+    // For XYZ, we set uHasCalib to 1.0 here, but uCalib0/1 are set async when texture is loaded.
+    // For custom, we set it based on calib.
     textureUniforms.uHasCalib.value    = canCalib ? 1.0 : 0.0;
+    
     textureUniforms.uImgSize.value     = (imgSize && imgSize[0] > 1) ? imgSize : [1.0, 1.0];
     textureUniforms.uTexOffset.value   = [props.options.surfaceTextureOffset.x, props.options.surfaceTextureOffset.y];
     textureUniforms.uDtmDim.value      = [dtmWidth, dtmHeight];
     
-    if (isWms && wmsInfo) {
-      textureUniforms.uCalib0.value.set(wmsInfo.minX, wmsInfo.minY, wmsInfo.maxX, wmsInfo.maxY);
-      textureUniforms.uCalib1.value.set(0, 0, imgSize[0] || wmsInfo.texWidth, imgSize[1] || wmsInfo.texHeight);
-    } else if (calib) {
+    if (isCustom && calib) {
       textureUniforms.uCalib0.value.set(calib.p1.mx, calib.p1.my, calib.p2.mx, calib.p2.my);
       textureUniforms.uCalib1.value.set(calib.p1.x, calib.p1.y, calib.p2.x, calib.p2.y);
+    } else if (isXyz && xyzCalib) {
+      textureUniforms.uCalib0.value.set(xyzCalib[0], xyzCalib[1], xyzCalib[2], xyzCalib[3]);
+      textureUniforms.uCalib1.value.set(0, 0, imgSize[0], imgSize[1]);
     }
+
     textureUniforms.uTextureOpacity.value = props.options.surfaceTextureOpacity ?? 1.0;
-  }, [textureUniforms, surface, imgSize, wmsInfo, props.options.surfaceTextureOffset, props.options.surfaceTextureCalibration, props.surfaceTextureUrl, props.options.surfaceTextureOpacity, props.options.surfaceTextureSource, props.options.surfaceWmsResolution]);
+  }, [textureUniforms, surface, imgSize, xyzCalib, props.options.surfaceTextureOffset, props.options.surfaceTextureCalibration, props.surfaceTextureUrl, props.options.surfaceTextureOpacity, props.options.surfaceTextureSource, props.options.surfaceWmsResolution]);
 
   if (!geo) return null;
 
@@ -1901,7 +1906,7 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
   );
 });
 
-const TerrainMesh = React.memo(({ surface, isMeasuringMode, ...props }: any) => {
+const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, ...props }: any) => {
   const { samples, lines } = surface.dtm;
   
   const tiles = useMemo(() => {
@@ -1920,145 +1925,89 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, ...props }: any) => 
   const [imgSize, setImgSize] = useState<[number, number]>([1, 1])
   const [wmsLoading, setWmsLoading] = useState(false);
   const [wmsProgress, setWmsProgress] = useState(0);
-  // Ref na shader uniforms pre dynamickú aktualizáciu bez rekompilácie
+  const [xyzCalib, setXyzCalib] = useState<number[] | null>(null);
   const imgSizeUniformRef = useRef<{ value: [number, number] }[]>([])
 
-  const wmsInfo = useMemo(() => {
-    if (!surface.sjtskBbox) return null;
-    const aspect = surface.sjtskAspect || 1.0;
-    
-    const modelWidthMeters = (surface.dtm.samples - 1) * Math.abs(surface.dtm.calib.xx || 1);
-    const modelHeightMeters = (surface.dtm.lines - 1) * Math.abs(surface.dtm.calib.yy || 1);
-    const maxDim = Math.max(modelWidthMeters, modelHeightMeters);
-
-    let targetMetersPerPixel = 1.0;
-    if (maxDim < 400) targetMetersPerPixel = 0.5;      // Zoom 18
-    else if (maxDim < 1000) targetMetersPerPixel = 0.8; 
-    else if (maxDim > 3000) targetMetersPerPixel = 2.0;
-
-    let texWidth = props.options.surfaceWmsResolution || Math.round(modelWidthMeters / targetMetersPerPixel);
-    texWidth = Math.min(4096, Math.max(1024, texWidth));
-    const texHeight = Math.round(texWidth * aspect);
-
-    const parts = surface.sjtskBbox.split(',').map(Number);
-    const w = parts[2] - parts[0];
-    const h = parts[3] - parts[1];
-    const pad = 0.25;
-    const minX = parts[0] - w * pad;
-    const minY = parts[1] - h * pad;
-    const maxX = parts[2] + w * pad;
-    const maxY = parts[3] + h * pad;
-    const expandedBbox = `${minX},${minY},${maxX},${maxY}`;
-
-    return { expandedBbox, texWidth, texHeight, minX, minY, maxX, maxY };
-  }, [surface.sjtskBbox, surface.dtm, surface.sjtskAspect, props.options.surfaceWmsResolution]);
 
   useEffect(() => {
+    let isActive = true;
+    setTexture(null);
+
     const source = props.options.surfaceTextureSource || 'custom';
     let url: string | null = null;
 
     if (source === 'custom') {
       url = props.surfaceTextureUrl || surface.bitmapUrl;
-    } else if (wmsInfo) {
-      const { expandedBbox, texWidth, texHeight } = wmsInfo;
-
-      if (source === 'wms-geology') {
-        url = `/wms-proxy/geology?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=0&STYLES=&SRS=EPSG:5514&BBOX=${expandedBbox}&WIDTH=${texWidth}&HEIGHT=${texHeight}&FORMAT=image/png&TRANSPARENT=TRUE`;
-      } else if (source === 'wms-orto') {
-        // Switching to XYZ scraping as requested
+    } else {
+      if (source === 'wms-orto') {
         url = `/xyz-proxy/zbgis/Ortofoto/MapServer/tile/{z}/{y}/{x}?blankTile=false`;
       } else if (source === 'wms-shadow') {
-        // Switching to XYZ scraping as requested (DMR5)
         url = `/xyz-proxy/zbgis/LLS_DMR5/MapServer/tile/{z}/{y}/{x}?blankTile=false`;
       }
     }
 
     if (!url) {
-      setTexture(null)
-      return
+      return;
     }
 
-    const isWms = source !== 'custom';
+    const isXyz = source === 'wms-orto' || source === 'wms-shadow';
 
-    if (isWms && surface.sjtskBbox) {
+    if (isXyz && surface.sjtskBbox) {
       setWmsLoading(true);
       setWmsProgress(0);
+      onStatusChange?.({ msg: 'Sťahujem mapové podklady (ZBGIS)...', type: 'progress', progress: 0 });
       
-      const isXyz = source === 'wms-orto' || source === 'wms-shadow';
+      // Map WMS Resolution selection to ZBGIS XYZ zoom levels
+      let zoomLevel = 16;
+      if (props.options.surfaceWmsResolution <= 512) zoomLevel = 15;
+      else if (props.options.surfaceWmsResolution <= 1024) zoomLevel = 16;
+      else if (props.options.surfaceWmsResolution <= 2048) zoomLevel = 17;
+      else zoomLevel = 18;
 
-      if (isXyz) {
-        const format = source === 'wms-shadow' ? 'image/png' : 'image/jpeg';
-        
-        // Map WMS Resolution selection to ZBGIS XYZ zoom levels
-        let zoomLevel = 16;
-        if (props.options.surfaceWmsResolution <= 512) zoomLevel = 15;
-        else if (props.options.surfaceWmsResolution <= 1024) zoomLevel = 16;
-        else if (props.options.surfaceWmsResolution <= 2048) zoomLevel = 17;
-        else zoomLevel = 18;
+      const format = source === 'wms-shadow' ? 'image/png' : 'image/jpeg';
 
-        downloadTiledXyz(url!, surface.sjtskBbox, format, (p) => {
-          setWmsProgress(Math.round((p.current / p.total) * 100));
-        }, zoomLevel).then(dataUrl => {
-          const loader = new THREE.TextureLoader();
-          loader.load(dataUrl, (t) => {
-            t.colorSpace = THREE.SRGBColorSpace;
-            t.minFilter = THREE.LinearFilter;
-            t.magFilter = THREE.LinearFilter;
-            t.needsUpdate = true;
-            setTexture(t);
-            
-            // Note: imgSize is used for resolution-dependent effects.
-            // Since we might have scaled the canvas, we should update it.
-            const img = t.image;
-            if (img) {
-              const newSize: [number, number] = [img.width, img.height];
-              setImgSize(newSize);
-              for (const u of imgSizeUniformRef.current) u.value = newSize;
-            }
-            
-            setWmsLoading(false);
-          });
-        }).catch(err => {
-          console.error("XYZ Scraping failed:", err);
-          setWmsLoading(false);
-        });
-      } else {
-        // Preserve other parameters like FORMAT and TRANSPARENT for WMS (Geology)
-        const baseUrl = url!
-          .replace(/&BBOX=[^&]*/, '')
-          .replace(/&WIDTH=[^&]*/, '')
-          .replace(/&HEIGHT=[^&]*/, '');
+      downloadTiledXyz(url!, surface.sjtskBbox, format, (p) => {
+        if (!isActive) return;
+        const progress = Math.round((p.current / p.total) * 100);
+        setWmsProgress(progress);
+        onStatusChange?.({ msg: 'Sťahujem mapové podklady (ZBGIS)...', type: 'progress', progress });
+      }, zoomLevel).then(result => {
+        if (!isActive) return;
         
-        const formatMatch = url!.match(/FORMAT=([^&]*)/);
-        const format = formatMatch ? formatMatch[1] : 'image/jpeg';
-        
-        if (!wmsInfo) return;
-        downloadTiledWms(baseUrl, surface.sjtskBbox, wmsInfo.texWidth, wmsInfo.texHeight, format, (p) => {
-          setWmsProgress(Math.round((p.current / p.total) * 100));
-        }).then(dataUrl => {
-          const loader = new THREE.TextureLoader();
-          loader.load(dataUrl, (t) => {
-            t.colorSpace = THREE.SRGBColorSpace;
-            t.needsUpdate = true;
-            setTexture(t);
-            const newSize: [number, number] = [wmsInfo!.texWidth, wmsInfo!.texHeight];
+        const loader = new THREE.TextureLoader();
+        loader.load(result.dataUrl, (t) => {
+          if (!isActive) return;
+          t.colorSpace = THREE.SRGBColorSpace;
+          t.minFilter = THREE.LinearFilter;
+          t.magFilter = THREE.LinearFilter;
+          t.needsUpdate = true;
+          setTexture(t);
+          
+          const img = t.image;
+          if (img) {
+            const newSize: [number, number] = [img.width, img.height];
             setImgSize(newSize);
             for (const u of imgSizeUniformRef.current) u.value = newSize;
-            setWmsLoading(false);
-          });
-        }).catch(err => {
-          console.error("Tiled WMS failed, falling back to direct load:", err);
-          const loader = new THREE.TextureLoader();
-          loader.load(url!, (t) => {
-            t.colorSpace = THREE.SRGBColorSpace;
-            setTexture(t);
-            setWmsLoading(false);
-          });
+          }
+          
+          // CRITICAL: Update the UV calibration using the EXACT BBOX from the downloaded image!
+          const [ex0, ey0, ex1, ey1] = result.sjtskBbox.split(',').map(Number);
+          setXyzCalib([ex0, ey0, ex1, ey1]);
+          
+          setWmsLoading(false);
+          onStatusChange?.({ msg: 'Mapové podklady úspešne načítané', type: 'success' });
+          setTimeout(() => { if (isActive) onStatusChange?.(null); }, 3000);
         });
-      }
+      }).catch(err => {
+        if (!isActive) return;
+        console.error("XYZ Scraping failed:", err);
+        setWmsLoading(false);
+        onStatusChange?.({ msg: 'Chyba: Nepodarilo sa stiahnuť mapové podklady', type: 'error' });
+      });
     } else {
       const loader = new THREE.TextureLoader()
       loader.load(url, (t) => {
+        if (!isActive) return;
         t.colorSpace = THREE.SRGBColorSpace
         t.flipY = true 
         t.needsUpdate = true
@@ -2071,8 +2020,9 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, ...props }: any) => 
       })
     }
     return () => {
+      isActive = false;
     }
-  }, [surface.bitmapUrl, props.surfaceTextureUrl, props.options.surfaceTextureSource, props.options.surfaceWmsResolution, surface.sjtskBbox, wmsInfo])
+  }, [surface.bitmapUrl, props.surfaceTextureUrl, props.options.surfaceTextureSource, props.options.surfaceWmsResolution, surface.sjtskBbox])
 
   const hoverGeo = useMemo(() => new THREE.SphereGeometry(0.25, 8, 8), [])
   const hoverMat = useMemo(() => new THREE.MeshBasicMaterial({ color: "#ef4444", depthTest: false }), [])
@@ -2114,7 +2064,7 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, ...props }: any) => 
           key={`${tile.colStart}-${tile.rowStart}-${imgSize[0]}x${imgSize[1]}`} 
           surface={surface} {...tile} {...props} 
           texture={texture} imgSize={imgSize} 
-          wmsInfo={wmsInfo}
+          xyzCalib={xyzCalib}
           imgSizeUniformRef={imgSizeUniformRef}
         />
       ))}
@@ -2292,6 +2242,7 @@ interface Props {
   onCameraUpdate?: (data: { dist: number, fov: number, height: number }) => void
   onProcessingStart?: (info: string) => void
   onProcessingEnd?: () => void
+  onStatusChange?: (status: { msg: string; type: 'info' | 'error' | 'success' | 'progress'; progress?: number } | null) => void
   manualConnection?: { p1: {x:number, y:number, z:number}, p2: {x:number, y:number, z:number} } | null
   placedCaver?: { pos: [number, number, number], pose: 'standing' | 'crawling' } | null
   fitTrigger?: number
@@ -2392,7 +2343,7 @@ function EntranceMarkers({ cave, options }: { cave: ParsedCave, options: ViewerO
 
 const CaveViewer3D = ({ 
   cave, options: o, onStationClick, onSurfaceClick, onBackgroundClick, onMoveStateChange, onCameraUpdate, 
-  onProcessingStart, onProcessingEnd, manualConnection, placedCaver, fitTrigger, selectedStations, activeProfilePoints,
+  onProcessingStart, onProcessingEnd, onStatusChange, manualConnection, placedCaver, fitTrigger, selectedStations, activeProfilePoints,
   contourInterval, minorInterval, isMeasuringMode
 }: Props) => {
   const [isMoving, setIsMoving] = useState(false)
@@ -2543,6 +2494,7 @@ const CaveViewer3D = ({
           surfaceColor={o.surfaceColor}
           colorTerrainWire={o.colorTerrainWire}
           onSurfaceClick={onSurfaceClick}
+          onStatusChange={onStatusChange}
           isMoving={isMoving}
           options={o}
           clippingPlanes={compositeClippingPlanes}

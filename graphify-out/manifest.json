@@ -28,8 +28,8 @@
     "hash": "23b480ba483577eb756295f923b7bacd"
   },
   "/home/dankez/cave3d/CaveView-modernized/playwright.config.ts": {
-    "mtime": 1777201521.1847374,
-    "hash": "7f579284ed09a58d14a15d6538b11ec8"
+    "mtime": 1778571744.450511,
+    "hash": "86211a98527655e999e3f3e031357ee9"
   },
   "/home/dankez/cave3d/CaveView-modernized/parseTest.ts": {
     "mtime": 1778175284.1489606,
@@ -44,8 +44,8 @@
     "hash": "e15f4c9754927c9219958cbbcf4537b4"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/App.tsx": {
-    "mtime": 1778345451.2345152,
-    "hash": "d7be3c98d56469d511b015bf2c856e3b"
+    "mtime": 1778571827.2056506,
+    "hash": "22fb72f60b21a239fb9a3cda9449dd60"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/main.tsx": {
     "mtime": 1776409952.8888268,
@@ -64,8 +64,8 @@
     "hash": "e9436c535b0c0373f2faa1fcc0676b98"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/parsers/caveParser.ts": {
-    "mtime": 1778179205.1345701,
-    "hash": "17ed4461a8efab5dba4f2afea0d1d2c9"
+    "mtime": 1778571744.4655108,
+    "hash": "a8873ef36d62e5c8182a140bc05e6455"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/parsers/__tests__/caveParser.test.ts": {
     "mtime": 1777201521.7377317,
@@ -104,12 +104,12 @@
     "hash": "4be655486057837033b14a0b69e2e7fe"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/utils/XyzTileDownloader.ts": {
-    "mtime": 1778338592.374232,
-    "hash": "7dd1fc64eedd1eb4653725e3dffa7eeb"
+    "mtime": 1778571827.2066505,
+    "hash": "c12a16f3c0fd50890978ae1f102d326e"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/utils/WmsTileDownloader.ts": {
-    "mtime": 1778319413.1497734,
-    "hash": "563d9e8ea3e7fed5a45a7ad9305d77ad"
+  "/home/dankez/cave3d/CaveView-modernized/src/utils/coords.ts": {
+    "mtime": 1778571744.466511,
+    "hash": "0f1f4580194295335a27a1194a4e9ad5"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/utils/surfaceReconstruction.ts": {
     "mtime": 1778142441.5857043,
@@ -120,8 +120,8 @@
     "hash": "604ac718a40d9d35f68c242f99a0763a"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/components/CaveViewer3D.tsx": {
-    "mtime": 1778338656.3863726,
-    "hash": "af5f5eb23298d16fb92b9ff9dfc554ac"
+    "mtime": 1778571827.2066505,
+    "hash": "b60bf51cacd43d1e76da2d27eea9b721"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/core/constants.ts": {
     "mtime": 1776409952.8878267,
@@ -816,12 +816,12 @@
     "hash": "5e7173424ef1b31ce71756f9dc5d1a07"
   },
   "/home/dankez/cave3d/CaveView-modernized/e2e/bigmodel.spec.ts": {
-    "mtime": 1777201521.148738,
-    "hash": "26f4221806ea3b2fbd36c822ef6b723a"
+    "mtime": 1778571744.449511,
+    "hash": "76d744330484f776edb025c453866c48"
   },
   "/home/dankez/cave3d/CaveView-modernized/e2e/caveview.spec.ts": {
-    "mtime": 1777367659.6238391,
-    "hash": "f1a44788a0de2e69cc00bb90e42b5b93"
+    "mtime": 1778571744.450511,
+    "hash": "f996d6c1df1f7b866dd23f6dfcd87d6d"
   },
   "/home/dankez/cave3d/CaveView-modernized/index.html": {
     "mtime": 1777586097.977669,

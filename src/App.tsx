@@ -630,6 +630,7 @@ export default function App() {
   const [isModelMoving, setIsModelMoving] = useState(false)
   const [cameraData, setCameraData] = useState<{ dist: number, fov: number, height: number } | null>(null)
   const [processingInfo, setProcessingInfo] = useState<string | null>(null)
+  const [appStatus, setAppStatus] = useState<{ msg: string; type: 'info' | 'error' | 'success' | 'progress'; progress?: number } | null>(null)
   const [currentTheme, setCurrentTheme] = useState<string>('precision')
   const surfNextId = useRef(1)
 
@@ -1352,10 +1353,8 @@ export default function App() {
         newSurface.sjtskAspect = Math.abs(bboxY2 - bboxY1) / Math.abs(bboxX2 - bboxX1);
         
         // Default initially to orthophoto
-        const texWidth = 2048;
-        const texHeight = Math.max(256, Math.round(texWidth * newSurface.sjtskAspect));
-        newSurface.bitmapUrl = `/wms-proxy/orto?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=1&STYLES=&CRS=EPSG:5514&BBOX=${newSurface.sjtskBbox}&WIDTH=${texWidth}&HEIGHT=${texHeight}&FORMAT=image/jpeg`;
-        console.log('[TIFF] Attached WMS Orthophoto:', newSurface.bitmapUrl);
+        // We no longer attach WMS here. The user must select WMS in the UI.
+        newSurface.bitmapUrl = null;
       }
 
       if (!cave) {
@@ -1875,7 +1874,15 @@ export default function App() {
         .tb-logo{font-size:1rem;font-weight:700;color:#63b3ed;white-space:nowrap}
         .tb-file{font-size:.77rem;color:#718096;background:rgba(255,255,255,.05);padding:.22rem .65rem;border-radius:6px;border:1px solid rgba(255,255,255,.08);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         .tb-badge{font-size:.7rem;font-weight:700;padding:.2rem .5rem;border-radius:4px;background:rgba(99,179,237,.15);color:#63b3ed;border:1px solid rgba(99,179,237,.3)}
-        .tb-space{flex:1}
+        .tb-space{flex:1; display: flex; align-items: center; justify-content: center;}
+        .status-bar { display: flex; align-items: center; gap: 10px; background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 2px 10px; max-width: 500px; min-width: 200px; height: 30px; margin: 0 10px; transition: all 0.3s ease; overflow: hidden; }
+        .status-msg { font-size: 11px; font-weight: 600; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; display: flex; align-items: center; gap: 6px; }
+        .status-msg .material-symbols-outlined { font-size: 14px; }
+        .status-progress-bg { width: 80px; height: 5px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; overflow: hidden; flex-shrink: 0; }
+        .status-progress-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #818cf8); box-shadow: 0 0 8px rgba(59, 130, 246, 0.5); transition: width 0.3s ease; }
+        .status-error { color: #fca5a5 !important; border-color: rgba(239, 68, 68, 0.3) !important; background: rgba(239, 68, 68, 0.1) !important; }
+        .status-success { color: #6ee7b7 !important; border-color: rgba(16, 185, 129, 0.3) !important; background: rgba(16, 185, 129, 0.1) !important; }
+        .status-progress { color: #93c5fd !important; }
         .tb-stat{font-size:.75rem;color:#4a5568}
         .btn-back{display:flex;align-items:center;gap:.4rem;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#a0aec0;border-radius:8px;padding:.38rem .85rem;font-size:.78rem;font-weight:500;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap}
         .btn-back:hover{background:rgba(255,255,255,.1);color:#e2e8f0}
@@ -2227,7 +2234,29 @@ export default function App() {
                 ))}
               </div>
 
-              <div className="tb-space" />
+              <div className="tb-space">
+                {appStatus && (
+                  <div className={`status-bar status-${appStatus.type} hide-mobile`}>
+                    <div className="status-msg">
+                      {appStatus.type === 'error' && <span className="material-symbols-outlined" style={{ color: '#ef4444' }}>error</span>}
+                      {appStatus.type === 'progress' && <span className="material-symbols-outlined" style={{ animation: 'spin 2s linear infinite' }}>sync</span>}
+                      {appStatus.type === 'success' && <span className="material-symbols-outlined" style={{ color: '#10b981' }}>check_circle</span>}
+                      {appStatus.type === 'info' && <span className="material-symbols-outlined">info</span>}
+                      {appStatus.msg}
+                    </div>
+                    {appStatus.progress !== undefined && (
+                      <div className="status-progress-bg">
+                        <div className="status-progress-fill" style={{ width: `${appStatus.progress}%` }} />
+                      </div>
+                    )}
+                    {appStatus.type !== 'progress' && (
+                      <button onClick={() => setAppStatus(null)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px', padding: '0 4px', display: 'flex', alignItems: 'center' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>close</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {isRecording && (
                 <div className="recording-status hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(239, 68, 68, 0.15)', padding: '4px 12px', borderRadius: '20px', border: '1px solid rgba(239, 68, 68, 0.3)', marginRight: '10px' }}>
@@ -2328,6 +2357,7 @@ export default function App() {
                       minorInterval={contourLevels.minor}
                       onProcessingStart={setProcessingInfo}
                       onProcessingEnd={() => setProcessingInfo(null)}
+                      onStatusChange={setAppStatus}
                       fitTrigger={fitTrigger}
                       selectedStations={selectedStations}
                       activeProfilePoints={activeProfilePoints}
@@ -2915,9 +2945,8 @@ export default function App() {
                               style={{ background: '#1e293b', color: 'white', border: '1px solid #334155', borderRadius: '4px', fontSize: '10px', padding: '2px 4px', outline: 'none' }}
                             >
                               <option value="custom">{lang === 'sk' ? 'Súbor (JPG/PNG/Lox)' : 'Custom File (JPG/PNG/Lox)'}</option>
-                              <option value="wms-orto">WMS: Ortofotomapa (ZBGIS)</option>
-                              <option value="wms-geology">WMS: Geologická mapa (ŠGÚDŠ)</option>
-                              <option value="wms-shadow">WMS: DMR Tieňovaný reliéf (ZBGIS)</option>
+                              <option value="wms-orto">XYZ Scraping: Ortofotomapa (ZBGIS)</option>
+                              <option value="wms-shadow">XYZ Scraping: DMR Tieňovaný reliéf</option>
                               <option value="none">{lang === 'sk' ? 'Vypnutá' : 'None'}</option>
                             </select>
                           </div>
@@ -2935,7 +2964,7 @@ export default function App() {
                             </div>
                           </div>
 
-                          {(opts.surfaceTextureSource === 'wms-orto' || opts.surfaceTextureSource === 'wms-geology' || opts.surfaceTextureSource === 'wms-shadow') && (
+                          {(opts.surfaceTextureSource === 'wms-orto' || opts.surfaceTextureSource === 'wms-shadow') && (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                               <span style={{ fontSize: '10px', color: '#94a3b8' }}>{lang === 'sk' ? 'Rozlíšenie WMS' : 'WMS Resolution'}</span>
                               <select 

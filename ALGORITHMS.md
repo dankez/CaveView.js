@@ -51,17 +51,13 @@ Implementovali sme striktnú logiku filtrovania udalostí na ochranu pred náhod
 - **Polygon Filtering**: V komponente `ClickableStations` sú povolené len stanice s príznakom `isPolygon` (t.j. stanice s menom z LOX/PLT).
 - **Measurement Mode**: Aktivuje všetky vrstvy a umožní presné meranie vzdialeností a súradníc na ľubovoľnom povrchu.
 
-### 2.2 Vertikálne profilovanie (Clipping)
+### 2.3 Vertikálne profilovanie (Clipping)
 V LochViewer implementujeme analytické rezanie cez `clippingPlanes`.
 - **Rovnica roviny**:
   $$ax + by + cz + d = 0$$
   Pre profilový rez definujeme normálu roviny pomocou dvoch vybraných bodov (meracích staníc) a vertikálneho vektora.
 
----
-
-## 4. Používateľské rozhranie (UI)
-
-### 4.1 Adaptívny Rotačný Gizmo (Adaptive Rotation Gizmo)
+### 2.4 Adaptívny Rotačný Gizmo (Adaptive Rotation Gizmo)
 Nový vizuálny nástroj pre presnú orientáciu v 3D priestore.
 - **Geometria**: Skladá sa z troch torusov (prstencov) a valcov pre každú os ($x, y, z$).
 - **Dynamické škálovanie**: Gizmo automaticky prispôsobuje svoju veľkosť podľa celkových rozmerov modelu (diagonála bounding boxu).
@@ -71,4 +67,48 @@ Nový vizuálny nástroj pre presnú orientáciu v 3D priestore.
 - **Tenké línie**: Hrúbka čiar je normalizovaná voči mierke modelu ($S \cdot 10^{-4}$), čo zabezpečuje konzistentný "premium" vzhľad.
 
 ---
-*Dokumentácia verzie: release-2026-05-06-03*
+
+## 3. Georeferencovanie a Transformácie
+Spracovanie rôznych súradnicových systémov pre správne pasovanie jaskyne a terénu.
+
+### 3.1 UTM (Universal Transverse Mercator)
+Konverzia metrických súradníc na WGS84 stupne (lat/lon).
+- **Zóny**: Aplikácia automaticky deteguje zóny 33N a 34N (Slovensko), pričom podporuje celý rozsah 1-60.
+- **Vzorec**: Používa sa Krügerova séria pre výpočet meridiánového oblúka a následnú transformáciu na sféroid WGS84.
+
+### 3.2 S-JTSK (Krovák)
+Špeciálna kónická konformná projekcia používaná v SR/ČR.
+- **Implementácia**: Používa `proj4js` s definíciou EPSG:5514. 
+- **Heuristika**: Ak sú súradnice v rozsahu záporných hodnôt (typické pre Therion .lox v našom regióne), aplikácia automaticky skúša Krovákovu projekciu.
+
+---
+
+## 4. Terénny XYZ Scraping a Interpolácia
+Sťahovanie a vizualizácia externých ortofotomáp a DMR5 modelov.
+
+### 4.1 XYZ Tile Downloader
+Sťahovanie dlaždíc v pyramídovom systéme (napr. Google/Bing maps štýl).
+- **Vzorec pre súradnice dlaždice (z lat/lon)**:
+  $$x = \lfloor \frac{lon + 180}{360} \cdot 2^z \rfloor$$
+  $$y = \lfloor (1 - \frac{\ln(\tan(lat \cdot \frac{\pi}{180}) + \frac{1}{\cos(lat \cdot \frac{\pi}{180})})}{\pi}) \cdot 2^{z-1} \rfloor$$
+  kde $z$ je úroveň priblíženia (zoom level).
+
+### 4.2 Bilineárna interpolácia výšky
+Pre výpočet presnej výšky bodu medzi bodmi rastra DTM/GeoTIFF.
+- **Vzorec**:
+  $$z = z_{00}(1-f_c)(1-f_r) + z_{10}f_c(1-f_r) + z_{01}(1-f_c)f_r + z_{11}f_cf_r$$
+  kde $f_c, f_r$ sú relatívne pozície (0-1) v rámci bunky rastra.
+
+---
+
+## 5. Manuálna Kalibrácia Polohy
+Umožňuje používateľovi korigovať nesprávne exportované dáta priamo v UI.
+
+### 5.1 Shift Transfomácia (X, Y, Z)
+Lineárny posun celého jaskynného systému (vrátane staníc a mračien bodov).
+- **Matematicky**: $P_{new} = P_{old} + O$, kde $O$ je vektor offsetu $[x, y, z]$.
+- **Krok**: 0.5 metra pre jemné doladenie v reálnom čase.
+
+---
+*Dokumentácia verzie: release-2026-05-12-01*
+

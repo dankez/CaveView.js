@@ -1,5 +1,19 @@
 # Changelog
 
+## [release-2026-05-12-01] - 2026-05-12
+### Refaktoring & Optimalizácia (v1.6.0)
+- **Koordináty & Moduly:** Presun funkcií `tryUtmToWgs84` a `tryJtskToWgs84` do dedikovaného modulu `src/utils/coords.ts` pre lepšiu znovupoužiteľnosť a čistotu kódu v `App.tsx`.
+- **Výkon parsovania:** Optimalizácia parsovania `CaveData` a stabilizácia E2E testov pre veľké modely.
+- **Oprava XYZ Scrapingu:** Vyriešený bug v UV mapovaní a stabilizácia sťahovača XYZ dlaždíc pre ortofotomapy.
+
+## [release-2026-05-09-1] - 2026-05-09
+### Georeferencovanie & XYZ Scraping (v1.5.0)
+- **XYZ Scraping:** Integrácia sťahovania ortofotomáp a DMR5 dát pomocou XYZ dlaždíc pre realistické povrchy.
+- **Manuálna GPS kalibrácia:** Pridané rozhranie pre manuálne zadávanie GPS súradníc staníc a sťahovanie nadmorskej výšky zo ZBGIS.
+- **Stabilita:** Vyriešené chyby v `CaveViewer3D` týkajúce sa rozsahu premenných `texWidth`/`texHeight`.
+- **WMS optimalizácia:** Zrýchlená vizualizácia WMS terénov a úprava hrúbky rotačného gizma.
+
+
 ## [release-2026-05-07-01] - 2026-05-07
 ### Branding & Signature (v1.4.3)
 - **Rebranding:** Premenovanie skratky aplikácie v lište z `CV 3D` na `LV 3D` (LochViewer).

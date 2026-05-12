@@ -1,4 +1,4 @@
-# LochViewer - Modernized Speleological Viewer (v1.5.0)
+# LochViewer - Modernized Speleological Viewer (v1.6.0)
 
 [🇸🇰 Slovenská verzia nižšie / Slovak version below](#slovenská-verzia)
 
@@ -25,17 +25,19 @@ LochViewer prioritizes user security and data protection. An independent securit
 - **Clipping Support**: The caver is fully integrated into the clipping plane system.
 - **Dynamic Calibration**: The caver moves synchronously with the cave during X, Y, Z calibration.
 
-### 📐 Position Calibration
+### 📐 Position Calibration & Manual GPS
 - **Interactive Model Shift**: Manually shift the cave model (traverse, stations, walls) relative to a fixed surface in X, Y, and Z axes.
 - **Fine-tuning (0.5m)**: Calibration works in 0.5-meter steps for maximum precision when fitting the cave under the terrain.
+- **Manual GPS Entry**: New UI for manual assignment of WGS84 coordinates to any survey station.
+- **Altitude Fetching**: Integrated ZBGIS API to automatically retrieve ground elevation based on assigned GPS coordinates.
 
-### 🌍 High-Precision Custom Surfaces (GeoTIFF)
+### 🌎 World-Class Surfaces & XYZ Scraping
+- **XYZ Tile Integration**: Seamlessly fetch Orthophoto and Digital Terrain Models (DMR5) using a pyramid tile system (XYZ).
 - **Standalone Surface Layers**: Import external terrain data from GeoTIFF (.tif/.tiff) files as additional layers.
 - **World File Support (.tfw)**: Automatic georeferencing using sidecar .tfw files for perfect spatial alignment.
-- **Automatic CRS Reprojection**: Intelligently transforms S-JTSK Krovak terrain coordinate matrices into the cave model's GPS/UTM coordinate system, aligning the terrain perfectly without any manual positioning.
-- **Full Fidelity**: Surface meshes are generated with pixel-to-vertex precision, maintaining the full quality of the original DTM/DEM.
-- **Tiled Rendering**: Optimized rendering pipeline using tiled meshes to handle high-resolution terrain without performance drops.
-- **Drag & Drop Workflow**: Support for simultaneous drag-and-drop of TIFF + TFW pairs.
+- **Automatic CRS Reprojection**: Intelligently transforms S-JTSK Krovak terrain coordinate matrices into the cave model's GPS/UTM coordinate system.
+- **Tiled Rendering**: Optimized rendering pipeline handling high-resolution terrain via XYZ streaming.
+
 
 ### ☁️ LiDAR & Point Cloud Support (.ply)
 - **High-Performance Parser**: Native binary PLY parser supporting millions of vertices with RGB color data.
@@ -91,7 +93,7 @@ LochViewer prioritizes user security and data protection. An independent securit
 
 ---
 <a name="slovenská-verzia"></a>
-# LochViewer - Modernizovaný Speleologický Prehliadač (v1.5.0)
+# LochViewer - Modernizovaný Speleologický Prehliadač (v1.6.0)
 
 Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémov, postavená na technológiách React, Three.js a React-Three-Fiber.
 
@@ -116,17 +118,19 @@ LochViewer kladie veľký dôraz na bezpečnosť používateľov a ochranu dát.
 - **Podpora pre rezy (Clipping)**: Jaskyniar je plne integrovaný do systému orezávania. Pri použití rezov (profilov) sa postava správne oreže spolu s okolím.
 - **Dynamická kalibrácia**: Jaskyniar sa pohybuje synchrónne s jaskyňou pri nastavovaní X, Y, Z kalibrácie.
 
-### 📐 Kalibrácia polohy jaskyne
+### 📐 Kalibrácia polohy a manuálne GPS
 - **Interaktívny posun modelu**: Možnosť manuálne posúvať jaskynný model (polygonový ťah, stanice, steny) voči fixnému povrchu v osiach X, Y a Z.
 - **Jemné doladenie (0.5m)**: Kalibrácia prebieha v krokoch po 0.5 metra pre maximálnu presnosť pri pasovaní jaskyne pod terén.
+- **Manuálne GPS**: Nové rozhranie pre priradenie WGS84 súradníc ktorejkoľvek meracej stanici.
+- **Sťahovanie výšok**: Integrácia API ZBGIS pre automatické získanie nadmorskej výšky terénu podľa GPS polohy.
 
-### 🌍 Externé povrchy vo vysokej kvalite (GeoTIFF)
+### 🌎 Špičkové povrchy a XYZ Scraping
+- **Integrácia XYZ dlaždíc**: Plynulé sťahovanie ortofotomáp a DMR5 modelov pomocou pyramídového systému (XYZ).
 - **Samostatné vrstvy povrchu**: Importujte externé topografické dáta z GeoTIFF (.tif/.tiff) súborov ako dodatočné vrstvy.
 - **Podpora World súborov (.tfw)**: Automatické georeferencovanie pomocou sprievodných .tfw súborov.
-- **Automatická reprojekcia (CRS)**: Aplikácia inteligentne prepočítava S-JTSK (Krovak) súradnice terénu do GPS/UTM súradníc jaskyne. Povrch a model tak perfektne lícujú bez akejkoľvek potreby manuálneho posúvania.
-- **Plná kvalita (Fidelity)**: Povrchové siete sú generované s presnosťou pixel-na-bod, čím zachovávajú plnú kvalitu pôvodného DTM/DEM.
-- **Dlaždicové renderovanie**: Optimalizovaná vykresľovacia pipeline využívajúca dlaždicové (tiled) siete pre prácu s modelmi vo vysokom rozlíšení.
-- **Plynulý workflow**: Podpora pre simultánne pretiahnutie (drag & drop) párov TIFF + TFW.
+- **Automatická reprojekcia (CRS)**: Aplikácia inteligentne prepočítava S-JTSK (Krovak) súradnice terénu do GPS/UTM súradníc jaskyne.
+- **Dlaždicové renderovanie**: Optimalizovaná vykresľovacia pipeline využívajúca XYZ streaming pre prácu s modelmi vo vysokom rozlíšení.
+
 
 ### ☁️ Podpora LiDAR a mračien bodov (.ply)
 - **Vysokovýkonný parser**: Natívny binárny PLY parser s podporou miliónov bodov vrátane RGB farieb.
