@@ -631,6 +631,7 @@ export default function App() {
   const [cameraData, setCameraData] = useState<{ dist: number, fov: number, height: number } | null>(null)
   const [processingInfo, setProcessingInfo] = useState<string | null>(null)
   const [appStatus, setAppStatus] = useState<{ msg: string; type: 'info' | 'error' | 'success' | 'progress'; progress?: number } | null>(null)
+  const [downloadableTexture, setDownloadableTexture] = useState<{ dataUrl: string, bbox: string } | null>(null)
   const [currentTheme, setCurrentTheme] = useState<string>('precision')
   const surfNextId = useRef(1)
 
@@ -842,6 +843,25 @@ export default function App() {
         z: p.caveCalibrationOffset.z + dz 
       }
     }))
+  }
+
+  const downloadGeneratedTexture = () => {
+    if (!downloadableTexture) return;
+    const { dataUrl, bbox } = downloadableTexture;
+
+    // Download Image
+    const aImg = document.createElement('a');
+    aImg.href = dataUrl;
+    aImg.download = `povrch_textura_${opts.surfaceTextureSource}.jpg`;
+    aImg.click();
+
+    // Create a .txt file with calibration bbox data
+    const calibText = `S-JTSK Bounding Box (Krovak EPSG:5514)\nminX, minY, maxX, maxY\n${bbox}\n\nTento súbor sa dá neskôr použiť na ručnú kalibráciu pre tento vygenerovaný JPG v CaveViewer aplikácii.`;
+    const blob = new Blob([calibText], { type: 'text/plain;charset=utf-8' });
+    const aTxt = document.createElement('a');
+    aTxt.href = URL.createObjectURL(blob);
+    aTxt.download = `povrch_textura_${opts.surfaceTextureSource}_calib.txt`;
+    aTxt.click();
   }
 
   const handleCalibFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2223,6 +2243,31 @@ export default function App() {
               <MemoizedStatusBadge isMoving={isModelMoving} />
               <span className="tb-badge hide-mobile">{loadedFile?.ext?.replace('.', '')?.toUpperCase()}</span>
               
+              {downloadableTexture && (
+                <button
+                  onClick={downloadGeneratedTexture}
+                  style={{
+                    marginLeft: '8px',
+                    padding: '4px 12px',
+                    background: '#2563eb',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                  }}
+                  title={lang === 'sk' ? "Stiahnuť textúru ako JPG a kalibračný súbor" : "Download Texture as JPG with Calibration"}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>download</span>
+                  {lang === 'sk' ? 'Textúra JPG' : 'Texture JPG'}
+                </button>
+              )}
+
               <div className="hide-mobile-flex" style={{ display: 'flex', gap: '4px', background: '#0f172a', padding: '2px', borderRadius: '6px', border: '1px solid #1e293b' }}>
                 {(['classic', 'precision', 'light'] as const).map(th => (
                   <button key={th} onClick={() => applyTheme(th as any)}
@@ -2358,6 +2403,7 @@ export default function App() {
                       onProcessingStart={setProcessingInfo}
                       onProcessingEnd={() => setProcessingInfo(null)}
                       onStatusChange={setAppStatus}
+                      onTextureReady={(dataUrl, bbox) => setDownloadableTexture({ dataUrl, bbox })}
                       fitTrigger={fitTrigger}
                       selectedStations={selectedStations}
                       activeProfilePoints={activeProfilePoints}
@@ -2942,11 +2988,13 @@ export default function App() {
                             <select 
                               value={opts.surfaceTextureSource} 
                               onChange={(e) => setOpts(p => ({ ...p, surfaceTextureSource: e.target.value as any }))}
-                              style={{ background: '#1e293b', color: 'white', border: '1px solid #334155', borderRadius: '4px', fontSize: '10px', padding: '2px 4px', outline: 'none' }}
+                              style={{ background: '#1e293b', color: 'white', border: '1px solid #334155', borderRadius: '4px', fontSize: '10px', padding: '2px 4px', outline: 'none', maxWidth: '200px' }}
                             >
                               <option value="custom">{lang === 'sk' ? 'Súbor (JPG/PNG/Lox)' : 'Custom File (JPG/PNG/Lox)'}</option>
-                              <option value="wms-orto">XYZ Scraping: Ortofotomapa (ZBGIS)</option>
-                              <option value="wms-shadow">XYZ Scraping: DMR Tieňovaný reliéf</option>
+                              <option value="wms-orto">Ortofotomapa (ZBGIS)</option>
+                              <option value="wms-orto-freemap">Ortofotomapa (Freemap)</option>
+                              <option value="wms-shadow">DMR Tieňovaný reliéf</option>
+                              <option value="wms-geology">Geologická mapa (ŠGÚDŠ)</option>
                               <option value="none">{lang === 'sk' ? 'Vypnutá' : 'None'}</option>
                             </select>
                           </div>
@@ -2964,7 +3012,7 @@ export default function App() {
                             </div>
                           </div>
 
-                          {(opts.surfaceTextureSource === 'wms-orto' || opts.surfaceTextureSource === 'wms-shadow') && (
+                          {(opts.surfaceTextureSource === 'wms-orto' || opts.surfaceTextureSource === 'wms-shadow' || opts.surfaceTextureSource === 'wms-geology' || opts.surfaceTextureSource === 'wms-orto-freemap') && (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                               <span style={{ fontSize: '10px', color: '#94a3b8' }}>{lang === 'sk' ? 'Rozlíšenie WMS' : 'WMS Resolution'}</span>
                               <select 
