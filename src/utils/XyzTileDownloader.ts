@@ -31,10 +31,73 @@ const metersPerPixel = (lat: number, zoom: number): number => {
     return (2 * Math.PI * 6378137 / TILE_SIZE) * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
 };
 
+proj4.defs('EPSG:3857', '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs');
+
 export interface DownloadResult {
     dataUrl: string;
     // The exact bounding box in S-JTSK of the stitched image!
     sjtskBbox: string; 
+}
+
+export async function downloadWmsImage(
+    urlPattern: string,
+    sjtskBbox: string, // S-JTSK bounding box
+    width: number,
+    height: number,
+    format: string = 'image/jpeg',
+    onProgress?: (p: Progress) => void
+): Promise<DownloadResult> {
+    const parts = sjtskBbox.split(',').map(Number);
+    // Expand by 150 meters to ensure the texture is always larger than the 3D model
+    const margin = 150;
+    const minX = parts[0] - margin;
+    const minY = parts[1] - margin;
+    const maxX = parts[2] + margin;
+    const maxY = parts[3] + margin;
+
+    // Convert corners to EPSG:3857 (Web Mercator) since WMS uses crs=EPSG:3857
+    const blGps = proj4('EPSG:5514', 'EPSG:4326').forward([minX, minY]);
+    const trGps = proj4('EPSG:5514', 'EPSG:4326').forward([maxX, maxY]);
+
+    // We update the BBox string to reflect the newly expanded area for exact calibration
+    const expandedSjtskBbox = `${minX},${minY},${maxX},${maxY}`;
+
+    const bl3857 = proj4('EPSG:4326', 'EPSG:3857').forward(blGps);
+    const tr3857 = proj4('EPSG:4326', 'EPSG:3857').forward(trGps);
+
+    // The bounding box in EPSG:3857
+    const bbox3857 = `${Math.min(bl3857[0], tr3857[0])},${Math.min(bl3857[1], tr3857[1])},${Math.max(bl3857[0], tr3857[0])},${Math.max(bl3857[1], tr3857[1])}`;
+
+    const url = urlPattern
+        .replace('{bbox}', bbox3857)
+        .replace('{width}', width.toString())
+        .replace('{height}', height.toString());
+
+    if (onProgress) onProgress({ current: 0, total: 1 });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#cccccc';
+    ctx.fillRect(0, 0, width, height);
+
+    try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`WMS fetch failed: ${resp.statusText}`);
+        const blob = await resp.blob();
+        const img = await createImageBitmap(blob);
+        ctx.drawImage(img, 0, 0, width, height);
+    } catch (e) {
+        console.warn(`Failed to fetch WMS image`, e);
+    } finally {
+        if (onProgress) onProgress({ current: 1, total: 1 });
+    }
+
+    return {
+        dataUrl: canvas.toDataURL(format, format === 'image/jpeg' ? 0.85 : 1.0),
+        sjtskBbox: expandedSjtskBbox // Bbox is updated to the expanded one!
+    };
 }
 
 export async function downloadTiledXyz(
