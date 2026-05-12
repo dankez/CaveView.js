@@ -2987,7 +2987,10 @@ export default function App() {
                             </div>
                             <select 
                               value={opts.surfaceTextureSource} 
-                              onChange={(e) => setOpts(p => ({ ...p, surfaceTextureSource: e.target.value as any }))}
+                              onChange={(e) => {
+                                setDownloadableTexture(null);
+                                setOpts(p => ({ ...p, surfaceTextureSource: e.target.value as any }));
+                              }}
                               style={{ background: '#1e293b', color: 'white', border: '1px solid #334155', borderRadius: '4px', fontSize: '10px', padding: '2px 4px', outline: 'none', maxWidth: '200px' }}
                             >
                               <option value="custom">{lang === 'sk' ? 'Súbor (JPG/PNG/Lox)' : 'Custom File (JPG/PNG/Lox)'}</option>
