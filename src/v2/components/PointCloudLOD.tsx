@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { useThree, useFrame } from '@react-three/fiber';
 
 const vertexShader = `
+#include <clipping_planes_pars_vertex>
+
 attribute vec3 color;
 attribute float intensity;
 
@@ -20,14 +22,21 @@ void main() {
 
     // Size attenuation
     gl_PointSize = pointSize * (1000.0 / -mvPosition.z);
+
+    vViewPosition = - mvPosition.xyz;
+    #include <clipping_planes_vertex>
 }
 `;
 
 const fragmentShader = `
+#include <clipping_planes_pars_fragment>
+
 varying vec3 vColor;
 varying float vIntensity;
 
 void main() {
+    #include <clipping_planes_fragment>
+
     vec2 pc = gl_PointCoord - 0.5;
     if (dot(pc, pc) > 0.25) discard; // Circular points
 
@@ -48,7 +57,7 @@ interface ChunkData {
   };
 }
 
-export const PointCloudLOD: React.FC<{ url: string; pointSize?: number }> = ({ url, pointSize = 1.0 }) => {
+export const PointCloudLOD: React.FC<{ url: string; pointSize?: number; clippingPlanes?: THREE.Plane[] }> = ({ url, pointSize = 1.0, clippingPlanes = [] }) => {
   const [chunks, setChunks] = useState<Map<string, { points: THREE.Points; bounds: THREE.Box3 }>>(new Map());
   const { camera } = useThree();
   const workerRef = useRef<Worker | null>(null);
@@ -78,7 +87,9 @@ export const PointCloudLOD: React.FC<{ url: string; pointSize?: number }> = ({ u
           vertexColors: true,
           transparent: true,
           depthWrite: true,
-          depthTest: true
+          depthTest: true,
+          clipping: true,
+          clippingPlanes: clippingPlanes
         });
 
         const points = new THREE.Points(geometry, material);
@@ -105,7 +116,16 @@ export const PointCloudLOD: React.FC<{ url: string; pointSize?: number }> = ({ u
     return () => {
       worker.terminate();
     };
-  }, [url, pointSize]);
+  }, [url, pointSize, clippingPlanes]);
+
+  useEffect(() => {
+    chunks.forEach(chunk => {
+      const material = chunk.points.material as THREE.ShaderMaterial;
+      material.uniforms.pointSize.value = pointSize;
+      material.clippingPlanes = clippingPlanes;
+      material.needsUpdate = true;
+    });
+  }, [pointSize, clippingPlanes, chunks]);
 
   useFrame(() => {
     const frustum = new THREE.Frustum();

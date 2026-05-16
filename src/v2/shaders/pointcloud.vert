@@ -1,3 +1,5 @@
+#include <clipping_planes_pars_vertex>
+
 attribute vec3 color;
 attribute float intensity;
 
@@ -15,4 +17,7 @@ void main() {
 
     // Size attenuation
     gl_PointSize = pointSize * (1000.0 / -mvPosition.z);
+
+    vViewPosition = - mvPosition.xyz;
+    #include <clipping_planes_vertex>
 }

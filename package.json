@@ -24,6 +24,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "three": "^0.164.0",
+    "three-geo": "^1.4.5",
     "three-mesh-bvh": "^0.9.9"
   },
   "devDependencies": {

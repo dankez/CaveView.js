@@ -698,6 +698,12 @@ export default function App() {
     showVegetation:      true,
     showGround:          true,
     showCaveLiDAR:       true,
+    // Mapbox Terrain
+    showMapboxTerrain:   false,
+    mapboxToken:         import.meta.env.VITE_MAPBOX_TOKEN || '',
+    mapboxTerrainZoom:   13,
+    mapboxTerrainRadius: 2.0,
+    mapboxTerrainOpacity: 0.5,
     surfaceTextureOffset: { x: 0, y: 0 },
     surfaceTextureScale:  { x: 1, y: 1 },
     surfaceTextureCalibration: null,

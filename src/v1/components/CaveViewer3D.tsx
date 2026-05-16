@@ -412,6 +412,12 @@ export interface ViewerOptions {
   showVegetation:      boolean
   showGround:          boolean
   showCaveLiDAR:       boolean
+  // Mapbox Terrain
+  showMapboxTerrain:   boolean
+  mapboxToken:         string
+  mapboxTerrainZoom:   number
+  mapboxTerrainRadius: number
+  mapboxTerrainOpacity: number
   surfaceTextureOpacity: number
   surfaceWmsResolution: number
   surfaceTextureOffset: { x: number, y: number }
