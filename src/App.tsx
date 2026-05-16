@@ -1,11 +1,11 @@
 import React, { useState, useRef, useCallback, useEffect, Suspense, useMemo } from 'react'
 import proj4 from 'proj4'
-import { fetchAltitudeFromZbgis, wgs84ToJtsk } from './utils/geoUtils'
-import { parseLox, parseSvx, parsePlt, parsePly } from './parsers/caveParser'
-import type { ParsedCave, CaveSurface, Vec3 } from './parsers/caveParser'
-import { tryUtmToWgs84, tryJtskToWgs84 } from "./utils/coords";
-import { parseGeoTiff } from './parsers/tiffParser'
-import CaveViewer3D, { ViewerOptions } from './components/CaveViewer3D'
+import { fetchAltitudeFromZbgis, wgs84ToJtsk } from '@shared/utils/geoUtils'
+import { parseLox, parseSvx, parsePlt, parsePly } from '@v1/parsers/caveParser'
+import type { ParsedCave, CaveSurface, Vec3 } from '@v1/parsers/caveParser'
+import { tryUtmToWgs84, tryJtskToWgs84 } from "@shared/utils/coords";
+import { parseGeoTiff } from '@v1/parsers/tiffParser'
+import CaveViewer3D, { ViewerOptions } from '@v1/components/CaveViewer3D'
 
 // ─── Error Boundary ───────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -27,7 +27,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   }
 }
 
-import { getBrowserLanguage, getTranslation, Language, languages } from './i18n'
+import { getBrowserLanguage, getTranslation, Language, languages } from '@shared/i18n'
 
 // ── Google Drive Config (Vymeň za tvoje reálne kľúče v .env súbore) ──
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
@@ -633,6 +633,8 @@ export default function App() {
   const [appStatus, setAppStatus] = useState<{ msg: string; type: 'info' | 'error' | 'success' | 'progress'; progress?: number } | null>(null)
   const [downloadableTexture, setDownloadableTexture] = useState<{ dataUrl: string, bbox: string } | null>(null)
   const [currentTheme, setCurrentTheme] = useState<string>('precision')
+
+
   const surfNextId = useRef(1)
 
   const contourLevels = useMemo(() => {
@@ -736,6 +738,10 @@ export default function App() {
     excludeModelFromClipping: false,
     caveCalibrationOffset: { x: 0, y: 0, z: 0 }
   })
+
+  useEffect(() => {
+    setDownloadableTexture(null);
+  }, [opts.surfaceTextureSource, opts.surfaceWmsResolution]);
 
   // ─── DEFINÍCIA ŠABLÓN ────────────────────────────────────────────────────────
   const THEMES = {
@@ -1151,7 +1157,7 @@ export default function App() {
 
   const runParserWorker = useCallback((buffer: ArrayBuffer, ext: string, onProgress: (msg: string) => void): Promise<ParsedCave> => {
     return new Promise((resolve, reject) => {
-      const worker = new Worker(new URL('./parsers/parser.worker.ts', import.meta.url), { type: 'module' });
+      const worker = new Worker(new URL('./v1/parsers/parser.worker.ts', import.meta.url), { type: 'module' });
       worker.onmessage = (e) => {
         if (e.data.type === 'done') resolve(e.data.cave);
         else if (e.data.type === 'progress') onProgress(e.data.message);
@@ -2319,6 +2325,33 @@ export default function App() {
                     STOP
                   </button>
                 </div>
+              )}
+
+              {downloadableTexture && (
+                <button
+                  className="btn-back hide-mobile-flex"
+                  style={{
+                    background: 'rgba(16,185,129,0.1)',
+                    color: '#10b981',
+                    borderColor: 'rgba(16,185,129,0.3)',
+                    marginRight: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = downloadableTexture.dataUrl;
+                    link.download = `surface_map_${opts.surfaceTextureSource}.jpg`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  title={lang === 'sk' ? 'Stiahnuť textúru povrchu' : 'Download surface texture'}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px', display: 'block' }}>download</span>
+                  <span>{lang === 'sk' ? 'Uložiť mapu' : 'Save Map'}</span>
+                </button>
               )}
 
               <button
