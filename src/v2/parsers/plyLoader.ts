@@ -75,6 +75,7 @@ export class PLYLoader {
 
     const points = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
+    const normals = new Float32Array(count * 3);
     const intensity = new Float32Array(count);
 
     const propIdx = {
@@ -84,6 +85,9 @@ export class PLYLoader {
       r: header.properties.find(p => p.name === 'red' || p.name === 'r' || p.name === 'diffuse_red'),
       g: header.properties.find(p => p.name === 'green' || p.name === 'g' || p.name === 'diffuse_green'),
       b: header.properties.find(p => p.name === 'blue' || p.name === 'b' || p.name === 'diffuse_blue'),
+      nx: header.properties.find(p => p.name === 'nx' || p.name === 'normal_x'),
+      ny: header.properties.find(p => p.name === 'ny' || p.name === 'normal_y'),
+      nz: header.properties.find(p => p.name === 'nz' || p.name === 'normal_z'),
       i: header.properties.find(p => p.name === 'intensity' || p.name === 'i' || p.name === 'scalar_Intensity'),
     };
 
@@ -100,6 +104,10 @@ export class PLYLoader {
       } else {
         colors[i*3] = 1; colors[i*3+1] = 1; colors[i*3+2] = 1;
       }
+
+      if (propIdx.nx) normals[i*3] = dv.getFloat32(offset + propIdx.nx.offset, true);
+      if (propIdx.ny) normals[i*3+1] = dv.getFloat32(offset + propIdx.ny.offset, true);
+      if (propIdx.nz) normals[i*3+2] = dv.getFloat32(offset + propIdx.nz.offset, true);
       
       if (propIdx.i) {
         if (propIdx.i.type === 'float' || propIdx.i.type === 'float32') {
@@ -110,6 +118,6 @@ export class PLYLoader {
       }
     }
 
-    return { points, colors, intensity, vertexCount: count };
+    return { points, colors, normals, intensity, vertexCount: count };
   }
 }
