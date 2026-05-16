@@ -7,8 +7,9 @@ import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-
 import { reconstructSurface } from '@shared/utils/surfaceReconstruction'
 
 import { downloadTiledXyz, downloadWmsImage, type DownloadResult, type Progress } from '@shared/utils/XyzTileDownloader'
-import type { ParsedCave, CaveSurface, Segment } from '@v1/parsers/caveParser'
+import type { ParsedCave, StationLabel, CaveSurface, Segment } from '@v1/parsers/caveParser'
 import type { SelStation } from '../../App'
+import type { ViewerOptions } from '@shared/types'
 
 // ─── BVH Initialization ───────────────────────────────────────────────────────
 // @ts-ignore
@@ -254,7 +255,7 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
     //   Ak nie je natívna, použijeme VŠETKY body (strop aj steny).
     let reconstructionPoints = cave.points;
     const hasNativeClasses = cave.pointClassification && 
-      Array.from(cave.pointClassification).some(c => c > 1);
+      Array.from(cave.pointClassification).some((c: number) => c > 1);
     
     if (hasNativeClasses && cave.pointClassification) {
       // Natívna klasifikácia: vylúč len jednoznačný vonkajší terén
@@ -360,114 +361,6 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
   );
 })
 
-// ─── ViewerOptions ────────────────────────────────────────────────────────────
-export interface ViewerOptions {
-  // Survey
-  showSplay:           boolean
-  // Stations
-  showStations:        boolean
-  showStationNames:    boolean
-  showStationAlt:      boolean
-  showEntrances:       boolean
-  showEntranceLabels:  boolean
-  // Grid
-  showGrid:            boolean
-  colorGrid:           string
-  colorBoundingBox:    string
-  showBoundingBox:     boolean
-  // Cave scraps (walls)
-  showScraps:          boolean
-  scrapsOpacity:       number
-  scrapsSolid:         boolean
-  scrapsWireframe:     boolean
-  scrapsAltitude:      boolean
-  scrapsIntensity:     boolean
-  scrapsClassification: boolean
-  smoothScraps:        boolean
-  accurateScraps:      boolean
-  showRenderCave:      boolean
-  caveTexture:         'limestone' | 'dolomite' | 'grey_limestone'
-  renderOpacity:       number
-  organicLevel:        number
-  organicVoxelSize:     number   // Debug / Tuning: veľkosť voxlu
-  organicDilation:      number   // Debug / Tuning: sila dilatácie (bulge)
-  // Cave traverse
-  showTraverse:        boolean
-  traverseRadius:      number
-  traverseAltitude:    boolean
-  // Terrain surface
-  showSurfaceMesh:     boolean
-  showSurfaceMeshWire: boolean
-  showSurfaceTexture:  boolean
-  surfaceTextureSource: 'custom' | 'wms-orto' | 'wms-orto-freemap' | 'wms-geology' | 'wms-shadow' | 'none'
-  surfaceTextureUrl?:  string | null
-  showSurfaceNetwork:  boolean
-  showContours:        boolean
-  showContourLabels:  boolean
-  contourColor:        string
-  contourColor10:      string
-  surfaceOpacity:      number
-  surfaceColor:        string
-  // LiDAR Layers
-  showVegetation:      boolean
-  showGround:          boolean
-  showCaveLiDAR:       boolean
-  // Mapbox Terrain
-  showMapboxTerrain:   boolean
-  mapboxToken:         string
-  mapboxTerrainZoom:   number
-  mapboxTerrainRadius: number
-  mapboxTerrainOpacity: number
-  surfaceTextureOpacity: number
-  surfaceWmsResolution: number
-  surfaceTextureOffset: { x: number, y: number }
-  surfaceTextureScale:  { x: number, y: number }
-  surfaceOffset:        { x: number, y: number, z: number }
-  surfaceTextureCalibration?: {
-    p1: { x: number, y: number, lat: number, lon: number },
-    p2: { x: number, y: number, lat: number, lon: number }
-  } | null
-  placedCaver:         { pos: [number, number, number], pose: 'standing' | 'crawling' } | null
-  // Colors
-  colorBackground:   string
-  colorBackground2?:  string
-  colorSplay:          string
-  colorTraverse:       string
-  colorScraps:         string
-  colorScrapsWire:     string
-  colorStations:       string
-  colorStationNames:   string
-  colorStationAlt:     string
-  colorTerrainWire:    string
-  // Clipping
-  showClipping:        boolean
-  clippingHeight:      number
-  showProfileClipping: boolean
-  profileClipFlip:     boolean
-  profileClipOffset:   number
-  showClippingEdges:   boolean
-  showSurfaceClippingEdges: boolean
-  colorClippingEdges:  string
-  colorSurfaceClippingEdges: string
-  useSurfaceNet:       boolean
-  clippingPlanes?:     any[]
-  showGizmo:           boolean
-
-  // Floor Map
-  floorMapSvg:         string | null
-  floorMapTh2:         any | null  // Parsed Th2Scrap[]
-  floorMapOpacity:     number
-  manualMatches:       { src: { x: number; y: number }; dst: { x: number; y: number } }[] | null
-  
-  // Cinematic
-  autoRotate:          boolean
-  autoRotateSpeed:     number
-  cinematicMode:       boolean
-  recordingDuration:   number
-  excludeModelFromClipping: boolean
-  caveCalibrationOffset: { x: number, y: number, z: number }
-}
-
 // ─── Modern Gizmo (Full circles, thin lines) ───
 // ─── Modern Gizmo (Full circles, thin lines) ───
 const ModernGizmo = ({ visible, modelScale }: { visible: boolean, modelScale: number }) => {
@@ -533,7 +426,7 @@ function ClickableStations({ cave, onStationClick, isMeasuringMode }: {
   const mesh = useMemo(() => {
     const im = new THREE.InstancedMesh(sphereGeo, mat, cave.stations.length)
     const dummy = new THREE.Object3D()
-    cave.stations.forEach((s, i) => {
+    cave.stations.forEach((s: any, i: number) => {
       dummy.position.set(s.x, s.z, -s.y)
       
       const lbl = cave.stationLabels?.[i]
@@ -681,7 +574,7 @@ function BoundingBox({ cave, show, options: o }: { cave: ParsedCave, show: boole
 
     const surfaceVisible = o.showSurfaceMesh || o.showSurfaceMeshWire || o.showSurfaceTexture || o.showSurfaceNetwork
     if (surfaceVisible && cave.surfaces) {
-      cave.surfaces.forEach(s => {
+      cave.surfaces.forEach((s: CaveSurface) => {
         const { dtm, centerOffset: cx } = s
         const { calib, data } = dtm
         
@@ -774,9 +667,9 @@ function segsToGeoWithColors(segs: Segment[], mnZ: number, mxZ: number) {
 const CYL_UP = new THREE.Vector3(0, 1, 0)
 
 function CaveLegs({ cave, showSplay, showAltitude, options: o, ...props }: { cave: ParsedCave; showSplay: boolean; showAltitude: boolean, options: ViewerOptions, clippingPlanes: any[] }) {
-  const caveSegs    = useMemo(() => cave.segments.filter(s => s.type === 'cave'),    [cave])
-  const splaySegs   = useMemo(() => cave.segments.filter(s => s.type === 'splay'),   [cave])
-  const surfaceSegs = useMemo(() => cave.segments.filter(s => s.type === 'surface'), [cave])
+  const caveSegs    = useMemo(() => cave.segments.filter((s: Segment) => s.type === 'cave'),    [cave])
+  const splaySegs   = useMemo(() => cave.segments.filter((s: Segment) => s.type === 'splay'),   [cave])
+  const surfaceSegs = useMemo(() => cave.segments.filter((s: Segment) => s.type === 'surface'), [cave])
   
   const zRange = useMemo(() => {
     let mn = Infinity, mx = -Infinity
@@ -831,7 +724,7 @@ function CaveLegs({ cave, showSplay, showAltitude, options: o, ...props }: { cav
 // ─── Cave traverse — polygonový ťah (InstancedMesh rúrky s altitude farbami) ──
 const CaveTraverse = React.memo(({ cave, radius, showAltitude, isMoving, ...props }: { cave: ParsedCave; radius: number; showAltitude: boolean, isMoving: boolean, clippingPlanes: any[] }) => {
   if (isMoving) return null 
-  const caveLegs = useMemo(() => cave.segments.filter(s => s.type === 'cave'), [cave])
+  const caveLegs = useMemo(() => cave.segments.filter((s: Segment) => s.type === 'cave'), [cave])
 
   const zRange = useMemo(() => {
     let mn = Infinity, mx = -Infinity
@@ -856,7 +749,7 @@ const CaveTraverse = React.memo(({ cave, radius, showAltitude, isMoving, ...prop
     const dummy = new THREE.Object3D()
     const [mnZ, mxZ] = zRange
 
-    caveLegs.forEach((seg, i) => {
+    caveLegs.forEach((seg: Segment, i: number) => {
       const from = new THREE.Vector3(seg.from.x, seg.from.z, -seg.from.y)
       const to   = new THREE.Vector3(seg.to.x,   seg.to.z,  -seg.to.y)
       const len  = from.distanceTo(to)
@@ -960,11 +853,11 @@ function Stations({ cave, options: o }: { cave: ParsedCave, options: ViewerOptio
 function StationLabels({ cave, showNames, showAltitudes, options: o }: { cave: ParsedCave; showNames: boolean; showAltitudes: boolean, options: ViewerOptions }) {
   if (!cave.stationLabels?.length) return null
   const labels = cave.stationLabels.length > 500
-    ? cave.stationLabels.filter((_, i) => i % Math.ceil(cave.stationLabels.length / 400) === 0)
+    ? cave.stationLabels.filter((_: any, i: number) => i % Math.ceil(cave.stationLabels.length / 400) === 0)
     : cave.stationLabels
   return (
     <>
-      {labels.map((sl, i) => (
+      {labels.map((sl: StationLabel, i: number) => (
         <Html key={i} position={[sl.pos.x, sl.pos.z + 0.8, -sl.pos.y]}
           style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }} occlude={false}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', userSelect: 'none' }}>
@@ -1340,7 +1233,7 @@ const CaveScraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitud
         const svgStations = parseSVGStations(options.floorMapSvg)
         const matches: any[] = []
         svgStations.forEach(ss => {
-          const caveS = cave.stationLabels.find(l => l.name === ss.name)
+          const caveS = cave.stationLabels.find((l: StationLabel) => l.name === ss.name)
           if (caveS) matches.push({ src: { x: caveS.pos.x, y: -caveS.pos.z }, dst: { x: ss.x, y: ss.y } })
         })
         if (matches.length >= 2) setFloorAffine(solveAffine(matches))
@@ -2349,12 +2242,12 @@ function EntranceMarkerItem({ ent, options }: { ent: any, options: ViewerOptions
 function EntranceMarkers({ cave, options }: { cave: ParsedCave, options: ViewerOptions }) {
   if (!options.showEntrances) return null
   
-  const entrances = cave.stationLabels.filter(l => l.isEntrance)
+  const entrances = cave.stationLabels.filter((l: StationLabel) => l.isEntrance)
   if (entrances.length === 0) return null
 
   return (
     <group>
-      {entrances.map((ent, i) => (
+      {entrances.map((ent: StationLabel, i: number) => (
         <EntranceMarkerItem key={ent.name + i} ent={ent} options={options} />
       ))}
     </group>
@@ -2497,7 +2390,7 @@ const CaveViewer3D = ({
       <directionalLight position={[0, -2, 0]}   intensity={0.05} />
  
       {/* ── Terrain (Fixed in world space) ── */}
-      {(o.showSurfaceMesh || o.showSurfaceMeshWire || o.showSurfaceTexture || o.showSurfaceNetwork || o.showContours) && cave.surfaces?.map((surf, i) => (
+      {(o.showSurfaceMesh || o.showSurfaceMeshWire || o.showSurfaceTexture || o.showSurfaceNetwork || o.showContours) && cave.surfaces?.map((surf: CaveSurface, i: number) => (
         <TerrainMesh
           key={i} surface={surf}
           showMesh={o.showSurfaceMesh}

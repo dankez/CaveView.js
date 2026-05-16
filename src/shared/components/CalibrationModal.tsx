@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import type { ParsedCave, StationLabel } from '@v1/parsers/caveParser';
+import type { ParsedCave, StationLabel } from '@shared/types';
 
 interface CalibrationPoint {
   svg: { x: number; y: number };

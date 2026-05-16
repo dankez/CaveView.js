@@ -1,5 +1,5 @@
 import { fromArrayBuffer } from 'geotiff';
-import { CaveSurface, Calibration, Vec3 } from './caveParser';
+import type { CaveSurface, Calibration, Vec3 } from '@shared/types';
 
 export async function parseGeoTiff(
   tifBuffer: ArrayBuffer,

@@ -1,84 +1,12 @@
 import { tryUtmToWgs84, tryJtskToWgs84 } from "@shared/utils/coords";
+import type { Vec3, Segment, Scrap, StationLabel, Calibration, CaveSurface, ParsedCave } from "@shared/types";
+export type { Vec3, Segment, Scrap, StationLabel, Calibration, CaveSurface, ParsedCave };
+
 /**
  * Cave file parsers for .lox (Therion), .3d (Survex), .plt (Compass)
  */
 
-export interface Vec3 { x: number; y: number; z: number }
-
-export interface Segment {
-  from: Vec3
-  to: Vec3
-  type: 'cave' | 'splay' | 'surface' | 'duplicate'
-}
-
-export interface Scrap {
-  vertices: Vec3[]
-  faces: number[][]
-}
-
-/** Per-station metadata for label display */
-export interface StationLabel {
-  pos: Vec3        // centered 3-D position (Three.js coords)
-  name: string     // station name from file
-  altitude: number // original Z (metres above sea level, before centering)
-  isEntrance?: boolean // true if identified as an entrance
-  fullLabel?: string   // more descriptive name (e.g. from comments)
-  gps?: { lat: number; lon: number; zone?: number; epsg?: string } | null
-}
-
-/** Calibration matrix that maps DTM grid (col i, row j) → world X/Y */
-export interface Calibration {
-  xOrigin: number; yOrigin: number
-  xx: number; xy: number; yx: number; yy: number
-}
-
-/** Parsed terrain surface (LOX type 5 + type 6) */
-export interface CaveSurface {
-  /** Width × Height elevation grid in metres (Float64, row-major) */
-  dtm: { data: Float64Array; samples: number; lines: number; calib: Calibration }
-  /** Raw bitmap data if extracted from file */
-  bitmapData?: Uint8Array | null
-  /** MIME type of bitmapData */
-  bitmapMimeType?: string | null
-  /** JPEG or PNG data-URL for the overlay texture (created in main thread), or null */
-  bitmapUrl: string | null
-  /** Optional calibration for the bitmap, if different from DTM */
-  bitmapCalib?: Calibration | null
-  /** Real-world S-JTSK bounding box for WMS fetching */
-  sjtskBbox?: string
-  /** Aspect ratio of the S-JTSK bounding box */
-  sjtskAspect?: number
-  /** Same centering offset as applied to all cave coords */
-  centerOffset: Vec3
-  /** Real-world bounds of the terrain data (provided by tiffParser) */
-  bounds?: {
-    minZ: number;
-    maxZ: number;
-    width: number;
-    height: number;
-  }
-}
-
-export interface ParsedCave {
-  segments:      Segment[]
-  stations:      Vec3[]
-  stationLabels: StationLabel[]
-  scraps:        Scrap[]
-  surfaces:      CaveSurface[]
-  bounds: { min: Vec3; max: Vec3; center: Vec3; size: Vec3 }
-  centerOffset:  Vec3        // offset applied when centering the model
-  stationCount:  number
-  segmentCount:  number
-  scrapCount:    number
-  pointCount:    number      // Added for point clouds
-  hasSurface:    boolean
-  points?:       Float32Array // Points as [x, y, z, ...]
-  pointColors?:  Float32Array // Points as [r, g, b, ...] (0-1)
-  pointNormals?: Float32Array // Points as [nx, ny, nz, ...]
-  pointIntensity?: Float32Array // Intensity values
-  pointClassification?: Uint8Array // Classification codes
-  isLiDAR?:      boolean      // Added for point clouds
-}
+// ─── Core interfaces removed, now imported from @shared/types ───
 
 // ─── LOX Parser ────────────────────────────────────────────────────────────────
 
@@ -790,7 +718,7 @@ function buildResult(
 
   const centeredScraps = scraps.map(sc => ({
     faces: sc.faces,
-    vertices: sc.vertices.map(v => ({ x: v.x - cx, y: v.y - cy, z: v.z - cz })),
+    vertices: sc.vertices.map((v: Vec3) => ({ x: v.x - cx, y: v.y - cy, z: v.z - cz })),
   }))
 
   const centerOffset: Vec3 = { x: cx, y: cy, z: cz }

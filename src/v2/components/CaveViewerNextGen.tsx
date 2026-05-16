@@ -3,8 +3,9 @@ import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls, GizmoHelper, GizmoViewport } from '@react-three/drei'
 import * as THREE from 'three'
 import { PointCloudLOD } from './PointCloudLOD'
-import type { ParsedCave } from '@v1/parsers/caveParser'
-import type { ViewerOptions } from '@v1/components/CaveViewer3D'
+import { EDLPass } from './EDLPass'
+import MapboxTerrain from './MapboxTerrain'
+import type { ParsedCave, ViewerOptions } from '@shared/types'
 import type { SelStation } from '../../App'
 
 interface Props {
@@ -62,10 +63,10 @@ const CaveViewerNextGen = ({
 
   // Calculate GPS center for Mapbox Terrain
   const gpsCenter = useMemo(() => {
-    const labelsWithGps = cave.stationLabels.filter(l => l.gps && l.gps.lat && l.gps.lon);
+    const labelsWithGps = cave.stationLabels.filter((l: any) => l.gps && l.gps.lat && l.gps.lon);
     if (labelsWithGps.length > 0) {
-      const avgLat = labelsWithGps.reduce((sum, l) => sum + l.gps!.lat, 0) / labelsWithGps.length;
-      const avgLon = labelsWithGps.reduce((sum, l) => sum + l.gps!.lon, 0) / labelsWithGps.length;
+      const avgLat = labelsWithGps.reduce((sum: number, l: any) => sum + l.gps!.lat, 0) / labelsWithGps.length;
+      const avgLon = labelsWithGps.reduce((sum: number, l: any) => sum + l.gps!.lon, 0) / labelsWithGps.length;
       return { lat: avgLat, lng: avgLon };
     }
     return null;
@@ -120,6 +121,8 @@ const CaveViewerNextGen = ({
       <SceneBackground texture={bgTexture} color={o.colorBackground} />
       <ambientLight intensity={0.5} />
       <pointLight position={[10, 10, 10]} />
+
+      <EDLPass strength={o.edlStrength || 1.0} radius={o.edlRadius || 1.0} />
 
       <group position={[
         o.caveCalibrationOffset?.x || 0, 

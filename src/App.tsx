@@ -2,10 +2,12 @@ import React, { useState, useRef, useCallback, useEffect, Suspense, useMemo } fr
 import proj4 from 'proj4'
 import { fetchAltitudeFromZbgis, wgs84ToJtsk } from '@shared/utils/geoUtils'
 import { parseLox, parseSvx, parsePlt, parsePly } from '@v1/parsers/caveParser'
-import type { ParsedCave, CaveSurface, Vec3 } from '@v1/parsers/caveParser'
 import { tryUtmToWgs84, tryJtskToWgs84 } from "@shared/utils/coords";
 import { parseGeoTiff } from '@v1/parsers/tiffParser'
-import CaveViewer3D, { ViewerOptions } from '@v1/components/CaveViewer3D'
+import CaveViewer3D from '@v1/components/CaveViewer3D'
+import CaveViewerNextGen from '@v2/components/CaveViewerNextGen'
+import type { ParsedCave, ViewerOptions, CaveSurface, StationLabel } from '@shared/types'
+import type { Vec3 } from '@v1/parsers/caveParser'
 
 // ─── Error Boundary ───────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -650,6 +652,7 @@ export default function App() {
     return { major: 100, minor: 25 };
   }, [cameraData])
   const [opts, setOpts] = useState<ViewerOptions>({
+    engine:              'v1',
     showSplay:           false,
     showStations:        true,
     showStationNames:    false,
@@ -701,9 +704,14 @@ export default function App() {
     // Mapbox Terrain
     showMapboxTerrain:   false,
     mapboxToken:         import.meta.env.VITE_MAPBOX_TOKEN || '',
-    mapboxTerrainZoom:   13,
-    mapboxTerrainRadius: 2.0,
-    mapboxTerrainOpacity: 0.5,
+    mapboxZoom:          13,
+    mapboxRadius:        2.0,
+    mapboxOpacity:       0.5,
+    // LiDAR V2 specific
+    pointCloudSize:      1.0,
+    edlStrength:         0.8,
+    edlRadius:           1.2,
+
     surfaceTextureOffset: { x: 0, y: 0 },
     surfaceTextureScale:  { x: 1, y: 1 },
     surfaceTextureCalibration: null,
@@ -1036,7 +1044,7 @@ export default function App() {
     const newOffsetZ = alt - refPos.z
     const newCenterOffset = { x: newOffsetX, y: newOffsetY, z: newOffsetZ }
 
-    setCave(prev => {
+    setCave((prev: ParsedCave | null) => {
       if (!prev) return null
       
       // 3. Prepočítaj VŠETKY stationLabels (georeferencujeme celý model)
@@ -1091,7 +1099,7 @@ export default function App() {
     if (!name) return null
     if (surfPointCache[name]) return surfPointCache[name]
     if (!cave) return null
-    const idx = cave.stationLabels.findIndex(sl => sl.name.toLowerCase() === name.toLowerCase())
+    const idx = cave.stationLabels.findIndex((sl: StationLabel) => sl.name.toLowerCase() === name.toLowerCase())
     if (idx === -1) return null
 
     const sl = cave.stationLabels[idx]
@@ -1181,7 +1189,7 @@ export default function App() {
   const processCaveData = useCallback((parsed: ParsedCave) => {
     let hasBitmap = false
     if (parsed.surfaces) {
-      parsed.surfaces.forEach(s => {
+      parsed.surfaces.forEach((s: CaveSurface) => {
         if (s.bitmapData && s.bitmapMimeType) {
           const blob = new Blob([s.bitmapData as any], { type: s.bitmapMimeType })
           s.bitmapUrl = URL.createObjectURL(blob)
@@ -1229,6 +1237,14 @@ export default function App() {
       handleTiffFile(file);
       return;
     }
+
+    // Auto-select engine v2 for large PLY files (> 50MB)
+    if (ext === '.ply' && file.size > 50 * 1024 * 1024) {
+      setOpts(prev => ({ ...prev, engine: 'v2' }))
+    } else {
+      setOpts(prev => ({ ...prev, engine: 'v1' }))
+    }
+
     setErrorMsg(null)
     setLoadedFile({ name: file.name, size: file.size, ext })
     setAppState('loading')
@@ -1289,6 +1305,13 @@ export default function App() {
       setLastLoadedBuffer(buf.slice(0)) 
       setProgress(60)
       setLoadedFile({ name: label, size: buf.byteLength, ext })
+
+      // Auto-select engine v2 for large PLY files (> 50MB)
+      if (ext === '.ply' && buf.byteLength > 50 * 1024 * 1024) {
+        setOpts(prev => ({ ...prev, engine: 'v2' }))
+      } else {
+        setOpts(prev => ({ ...prev, engine: 'v1' }))
+      }
       
       if (ext === '.tif' || ext === '.tiff') {
         let tfwText: string | null = null;
@@ -1462,7 +1485,7 @@ export default function App() {
         }
 
         // Add to existing cave
-        setCave(prev => {
+        setCave((prev: ParsedCave | null) => {
           if (!prev) return prev;
           return {
             ...prev,
@@ -2378,6 +2401,18 @@ export default function App() {
               </button>
               
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {/* Engine Switcher */}
+                <div className="hide-mobile-flex" style={{ display: 'flex', gap: '2px', background: 'rgba(30,41,59,0.5)', padding: '2px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  {(['v1', 'v2'] as const).map(e => (
+                    <button key={e} onClick={() => setOpts(prev => ({ ...prev, engine: e }))}
+                      style={{ padding: '4px 8px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer',
+                        background: opts.engine === e ? '#3b82f6' : 'transparent',
+                        color: opts.engine === e ? 'white' : '#94a3b8' }}>
+                      {e === 'v1' ? 'v1' : 'v2'}
+                    </button>
+                  ))}
+                </div>
+
                 <div className="hide-mobile-flex" style={{ display: 'flex', gap: '4px', background: 'rgba(30,41,59,0.5)', padding: '2px', borderRadius: '6px' }}>
                   {(['sk', 'en', 'fr', 'de'] as Language[]).map(l => (
                     <button key={l} onClick={() => setLang(l)}
@@ -2430,40 +2465,54 @@ export default function App() {
                   </div>
                 }>
                   <ErrorBoundary>
-                    <CaveViewer3D
-                      cave={cave}
-                      options={opts}
-                      onStationClick={handleStationClick}
-                      onSurfaceClick={handleSurfaceClick}
-                      onMoveStateChange={setIsModelMoving}
-                      onCameraUpdate={setCameraData}
-                      contourInterval={contourLevels.major}
-                      minorInterval={contourLevels.minor}
-                      onProcessingStart={setProcessingInfo}
-                      onProcessingEnd={() => setProcessingInfo(null)}
-                      onStatusChange={setAppStatus}
-                      onTextureReady={(dataUrl, bbox) => setDownloadableTexture({ dataUrl, bbox })}
-                      fitTrigger={fitTrigger}
-                      selectedStations={selectedStations}
-                      activeProfilePoints={activeProfilePoints}
-                      isMeasuringMode={isMeasuringMode}
-                      manualConnection={
-                        selectedStations.length === 2 && selectedStations[0] && selectedStations[1]
-                          ? {
-                              p1: { 
-                                x: selectedStations[0].origX - (cave.centerOffset?.x || 0), 
-                                y: selectedStations[0].origY - (cave.centerOffset?.y || 0), 
-                                z: selectedStations[0].altitude - (cave.centerOffset?.z || 0) 
-                              },
-                              p2: { 
-                                x: selectedStations[1].origX - (cave.centerOffset?.x || 0), 
-                                y: selectedStations[1].origY - (cave.centerOffset?.y || 0), 
-                                z: selectedStations[1].altitude - (cave.centerOffset?.z || 0) 
+                    {opts.engine === 'v1' ? (
+                      <CaveViewer3D
+                        cave={cave}
+                        options={opts}
+                        onStationClick={handleStationClick}
+                        onSurfaceClick={handleSurfaceClick}
+                        onMoveStateChange={setIsModelMoving}
+                        onCameraUpdate={setCameraData}
+                        contourInterval={contourLevels.major}
+                        minorInterval={contourLevels.minor}
+                        onProcessingStart={setProcessingInfo}
+                        onProcessingEnd={() => setProcessingInfo(null)}
+                        onStatusChange={setAppStatus}
+                        onTextureReady={(dataUrl, bbox) => setDownloadableTexture({ dataUrl, bbox })}
+                        fitTrigger={fitTrigger}
+                        selectedStations={selectedStations}
+                        activeProfilePoints={activeProfilePoints}
+                        isMeasuringMode={isMeasuringMode}
+                        manualConnection={
+                          selectedStations.length === 2 && selectedStations[0] && selectedStations[1]
+                            ? {
+                                p1: { 
+                                  x: selectedStations[0].origX - (cave.centerOffset?.x || 0), 
+                                  y: selectedStations[0].origY - (cave.centerOffset?.y || 0), 
+                                  z: selectedStations[0].altitude - (cave.centerOffset?.z || 0) 
+                                },
+                                p2: { 
+                                  x: selectedStations[1].origX - (cave.centerOffset?.x || 0), 
+                                  y: selectedStations[1].origY - (cave.centerOffset?.y || 0), 
+                                  z: selectedStations[1].altitude - (cave.centerOffset?.z || 0) 
+                                }
                               }
-                            }
-                          : null
-                      }
-                    />
+                            : null
+                        }
+                      />
+                    ) : (
+                      <CaveViewerNextGen
+                        cave={cave}
+                        options={opts}
+                        onStationClick={handleStationClick}
+                        onCameraUpdate={setCameraData}
+                        onStatusChange={setAppStatus}
+                        fitTrigger={fitTrigger}
+                        selectedStations={selectedStations}
+                        activeProfilePoints={activeProfilePoints}
+                        isMeasuringMode={isMeasuringMode}
+                      />
+                    )}
                   </ErrorBoundary>
                 </Suspense>
 
@@ -3635,3 +3684,4 @@ export default function App() {
     </>
   )
 }
+
