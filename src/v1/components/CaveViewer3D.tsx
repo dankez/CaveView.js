@@ -7,9 +7,18 @@ import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-
 import { reconstructSurface } from '@shared/utils/surfaceReconstruction'
 
 import { downloadTiledXyz, downloadWmsImage, type DownloadResult, type Progress } from '@shared/utils/XyzTileDownloader'
-import type { ParsedCave, StationLabel, CaveSurface, Segment } from '@v1/parsers/caveParser'
+import { 
+  Stations, 
+  StationLabels, 
+  CaveLegs, 
+  EntranceMarkers, 
+  Character3D, 
+  ManualConnection 
+} from '@shared/components/CaveSharedElements'
+import type { ParsedCave, StationLabel, CaveSurface, Segment } from '@shared/types'
 import type { SelStation } from '../../App'
 import type { ViewerOptions } from '@shared/types'
+
 
 // ─── BVH Initialization ───────────────────────────────────────────────────────
 // @ts-ignore
@@ -666,60 +675,7 @@ function segsToGeoWithColors(segs: Segment[], mnZ: number, mxZ: number) {
 // ─── Cave survey legs ─────────────────────────────────────────────────────────
 const CYL_UP = new THREE.Vector3(0, 1, 0)
 
-function CaveLegs({ cave, showSplay, showAltitude, options: o, ...props }: { cave: ParsedCave; showSplay: boolean; showAltitude: boolean, options: ViewerOptions, clippingPlanes: any[] }) {
-  const caveSegs    = useMemo(() => cave.segments.filter((s: Segment) => s.type === 'cave'),    [cave])
-  const splaySegs   = useMemo(() => cave.segments.filter((s: Segment) => s.type === 'splay'),   [cave])
-  const surfaceSegs = useMemo(() => cave.segments.filter((s: Segment) => s.type === 'surface'), [cave])
-  
-  const zRange = useMemo(() => {
-    let mn = Infinity, mx = -Infinity
-    for (const s of caveSegs) {
-      if (s.from.z < mn) mn = s.from.z; if (s.from.z > mx) mx = s.from.z
-      if (s.to.z   < mn) mn = s.to.z;   if (s.to.z   > mx) mx = s.to.z
-    }
-    return [mn, mx] as [number, number]
-  }, [caveSegs])
-
-  const caveGeo = useMemo(() => {
-    if (showAltitude) {
-      return segsToGeoWithColors(caveSegs, zRange[0], zRange[1])
-    }
-    return segsToGeo(caveSegs)
-  }, [caveSegs, showAltitude, zRange])
-
-  const splayGeo    = useMemo(() => segsToGeo(splaySegs),   [splaySegs])
-  const surfaceGeo  = useMemo(() => segsToGeo(surfaceSegs), [surfaceSegs])
-
-  useEffect(() => {
-    return () => {
-      caveGeo.dispose()
-      splayGeo.dispose()
-      surfaceGeo.dispose()
-    }
-  }, [caveGeo, splayGeo, surfaceGeo])
-
-  return (
-    <group renderOrder={10}>
-      <lineSegments geometry={caveGeo}>
-        <lineBasicMaterial 
-          color={o.colorTraverse} linewidth={2} vertexColors={showAltitude} 
-          transparent={false} depthTest={true} 
-          clippingPlanes={props.clippingPlanes}
-        />
-      </lineSegments>
-      {showSplay && splaySegs.length > 0 && (
-        <lineSegments geometry={splayGeo}>
-          <lineBasicMaterial color={o.colorSplay} transparent opacity={0.45} depthTest={true} />
-        </lineSegments>
-      )}
-      {surfaceSegs.length > 0 && (
-        <lineSegments geometry={surfaceGeo}>
-          <lineBasicMaterial color="#a0aec0" transparent opacity={0.6} depthTest={true} />
-        </lineSegments>
-      )}
-    </group>
-  )
-}
+// ─── CaveLegs moved to shared ───
 
 // ─── Cave traverse — polygonový ťah (InstancedMesh rúrky s altitude farbami) ──
 const CaveTraverse = React.memo(({ cave, radius, showAltitude, isMoving, ...props }: { cave: ParsedCave; radius: number; showAltitude: boolean, isMoving: boolean, clippingPlanes: any[] }) => {
@@ -799,84 +755,10 @@ const CaveTraverse = React.memo(({ cave, radius, showAltitude, isMoving, ...prop
 })
 
 // ─── Station dots ─────────────────────────────────────────────────────────────
-function Stations({ cave, options: o }: { cave: ParsedCave, options: ViewerOptions }) {
-  const geos = useMemo(() => {
-    let numPoly = 0, numSplay = 0
-    for (let i = 0; i < cave.stations.length; i++) {
-      const lbl = cave.stationLabels?.[i]
-      if (lbl && lbl.name !== '') numPoly++
-      else numSplay++
-    }
-
-    const pP = new Float32Array(numPoly * 3)
-    const pS = new Float32Array(numSplay * 3)
-    let idxP = 0, idxS = 0
-
-    for (let i = 0; i < cave.stations.length; i++) {
-      const s = cave.stations[i]
-      const lbl = cave.stationLabels?.[i]
-      if (lbl && lbl.name !== '') {
-        pP[idxP++] = s.x; pP[idxP++] = s.z; pP[idxP++] = -s.y;
-      } else {
-        pS[idxS++] = s.x; pS[idxS++] = s.z; pS[idxS++] = -s.y;
-      }
-    }
-    const gP = new THREE.BufferGeometry()
-    gP.setAttribute('position', new THREE.BufferAttribute(pP, 3))
-    const gS = new THREE.BufferGeometry()
-    gS.setAttribute('position', new THREE.BufferAttribute(pS, 3))
-    return { polyGeo: gP, splayGeo: gS }
-  }, [cave])
-
-  useEffect(() => {
-    return () => {
-      geos.polyGeo.dispose()
-      geos.splayGeo.dispose()
-    }
-  }, [geos])
-
-  return (
-    <group renderOrder={12}>
-      {/* Splay body */}
-      <points geometry={geos.splayGeo}>
-        <pointsMaterial color={o.colorStations} size={2} sizeAttenuation={false} depthTest={true} />
-      </points>
-      {/* Polygonové body */}
-      <points geometry={geos.polyGeo}>
-        <pointsMaterial color={o.colorStations} size={5} sizeAttenuation={false} depthTest={true} />
-      </points>
-    </group>
-  )
-}
+// ─── Stations moved to shared ───
 
 // ─── Station labels ───────────────────────────────────────────────────────────
-function StationLabels({ cave, showNames, showAltitudes, options: o }: { cave: ParsedCave; showNames: boolean; showAltitudes: boolean, options: ViewerOptions }) {
-  if (!cave.stationLabels?.length) return null
-  const labels = cave.stationLabels.length > 500
-    ? cave.stationLabels.filter((_: any, i: number) => i % Math.ceil(cave.stationLabels.length / 400) === 0)
-    : cave.stationLabels
-  return (
-    <>
-      {labels.map((sl: StationLabel, i: number) => (
-        <Html key={i} position={[sl.pos.x, sl.pos.z + 0.8, -sl.pos.y]}
-          style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }} occlude={false}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', userSelect: 'none' }}>
-            {showNames && sl.name !== '' && (
-              <span style={{ fontSize: '9px', fontFamily: 'Inter, monospace', color: o.colorStationNames, fontWeight: 600, textShadow: '0 0 3px #000,0 0 6px #000', lineHeight: 1.2 }}>
-                {sl.name}
-              </span>
-            )}
-            {showAltitudes && sl.name !== '' && (
-              <span style={{ fontSize: '8px', fontFamily: 'Inter, monospace', color: o.colorStationAlt, textShadow: '0 0 3px #000,0 0 5px #000', lineHeight: 1.2 }}>
-                {sl.altitude.toFixed(1)} m
-              </span>
-            )}
-          </div>
-        </Html>
-      ))}
-    </>
-  )
-}
+// ─── StationLabels moved to shared ───
 
 // ─── Contour Label Item (with dynamic scaling) ──────────────────────────────
 const ContourLabelItem = ({ pos, val, color, opacity }: any) => {
@@ -1998,84 +1880,8 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, ...p
 })
 
 // ─── Manual Connection Line (Ctrl+Click measuring) ────────────────────────────
-function ManualConnection({ p1, p2 }: { p1: {x:number, y:number, z:number}, p2: {x:number, y:number, z:number} }) {
-  const geo = useMemo(() => {
-    const pts = [
-      new THREE.Vector3(p1.x, p1.z, -p1.y),
-      new THREE.Vector3(p2.x, p2.z, -p2.y)
-    ]
-    const g = new THREE.BufferGeometry().setFromPoints(pts)
-    // Aby fungoval dashed material, treba vypočítať vzdialenosti v geometrii
-    const line = new THREE.Line(g)
-    line.computeLineDistances()
-    return g
-  }, [p1, p2])
-
-  useEffect(() => {
-    return () => geo.dispose()
-  }, [geo])
-
-  return (
-    // @ts-ignore R3F line extends correctly but conflicts with SVG line locally 
-    <line renderOrder={100} geometry={geo}>
-      <lineDashedMaterial color="#ef4444" dashSize={1} gapSize={0.5} linewidth={2} depthTest={false} />
-    </line>
-  )
-}
 
 // ─── 3D Jaskyniar (Mierka presne 1.8m) ──────────────────────────────────────
-function Character3D({ pos, pose, clippingPlanes }: { pos: [number, number, number], pose: 'standing' | 'crawling', clippingPlanes?: THREE.Plane[] }) {
-  const isStanding = pose === 'standing'
-  
-  return (
-    <group position={pos}>
-      {/* Svetlo jaskyniara - aby bol viditeľný v tme */}
-      <pointLight position={isStanding ? [0, 1.6, 0.2] : [0, 0.4, 0.4]} intensity={0.6} distance={10} color="#fffec8" />
-      
-      {/* Telo / Kombinéza */}
-      <mesh position={isStanding ? [0, 1.2, 0] : [0, 0.15, -0.4]}>
-        <boxGeometry args={isStanding ? [0.38, 0.6, 0.2] : [0.35, 0.3, 1.1]} />
-        <meshStandardMaterial color="#ef4444" emissive="#220000" clippingPlanes={clippingPlanes} />
-      </mesh>
-      
-      {/* Nohy */}
-      {isStanding && (
-        <mesh position={[0, 0.45, 0]}>
-          <boxGeometry args={[0.3, 0.9, 0.18]} />
-          <meshStandardMaterial color="#ef4444" emissive="#220000" clippingPlanes={clippingPlanes} />
-        </mesh>
-      )}
-
-      {/* Hlava */}
-      <mesh position={isStanding ? [0, 1.65, 0] : [0, 0.45, 0]}>
-        <sphereGeometry args={[0.1, 12, 12]} />
-        <meshStandardMaterial color="#ffdbac" clippingPlanes={clippingPlanes} />
-      </mesh>
-      
-      {/* Prilba */}
-      <mesh position={isStanding ? [0, 1.7, 0] : [0, 0.5, 0]}>
-        <sphereGeometry args={[0.12, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color="#f59e0b" side={THREE.DoubleSide} clippingPlanes={clippingPlanes} />
-      </mesh>
-      
-      {/* Čelovka */}
-      <mesh position={isStanding ? [0, 1.68, 0.1] : [0, 0.48, 0.1]}>
-        <boxGeometry args={[0.06, 0.04, 0.04]} />
-        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={2} clippingPlanes={clippingPlanes} />
-      </mesh>
-      
-      {/* Topánky */}
-      {isStanding ? (
-        <>
-          <mesh position={[-0.08, 0.05, 0.02]}><boxGeometry args={[0.12, 0.1, 0.22]} /><meshStandardMaterial color="#111111" clippingPlanes={clippingPlanes} /></mesh>
-          <mesh position={[0.08, 0.05, 0.02]}><boxGeometry args={[0.12, 0.1, 0.22]} /><meshStandardMaterial color="#111111" clippingPlanes={clippingPlanes} /></mesh>
-        </>
-      ) : (
-        <mesh position={[0, 0.05, -0.9]}><boxGeometry args={[0.3, 0.1, 0.15]} /><meshStandardMaterial color="#111111" clippingPlanes={clippingPlanes} /></mesh>
-      )}
-    </group>
-  )
-}
 
 function SceneBackground({ texture, color }: { texture: THREE.Texture | null, color: string }) {
   const { scene } = useThree()
@@ -2166,93 +1972,8 @@ interface Props {
   isMeasuringMode: boolean
 }
 
-function EntranceMarkerItem({ ent, options }: { ent: any, options: ViewerOptions }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const vec = useMemo(() => new THREE.Vector3(ent.pos.x, ent.pos.z, -ent.pos.y), [ent])
 
-  useFrame(({ camera }) => {
-    if (ref.current) {
-      const dist = camera.position.distanceTo(vec)
-      // Dynamické škálovanie podľa vzdialenosti kamery, ale s limitmi pre ideálnu čitateľnosť
-      const scale = Math.max(0.5, Math.min(2.5, 40 / dist))
-      ref.current.style.transform = `translateY(-50%) scale(${scale})`
-    }
-  })
-
-  return (
-    <group position={[ent.pos.x, ent.pos.z, -ent.pos.y]}>
-      {/* Vertical pin line */}
-      <mesh position={[0, 2, 0]}>
-        <cylinderGeometry args={[0.05, 0.05, 4]} />
-        <meshBasicMaterial color="#fbbf24" />
-      </mesh>
-
-      {/* Entrance Symbol and Label */}
-      <Html center zIndexRange={[100, 0]} position={[0, 4, 0]}>
-        <div ref={ref} style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          pointerEvents: 'none',
-          userSelect: 'none',
-          transformOrigin: 'bottom center',
-          transition: 'transform 0.1s ease-out'
-        }}>
-          {/* SVG Mountain Icon */}
-          <div style={{
-            background: 'linear-gradient(135deg, #f59e0b, #fbbf24)',
-            padding: '5px',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-            border: '2px solid white',
-            width: '28px',
-            height: '28px'
-          }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1e293b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-               <path d="M8 3l4 8 5-5 5 15H2L8 3z" />
-            </svg>
-          </div>
-          
-          {options.showEntranceLabels && (
-            <div style={{
-              marginTop: '6px',
-              background: 'rgba(15, 23, 42, 0.9)',
-              color: '#fbbf24',
-              padding: '3px 10px',
-              borderRadius: '6px',
-              fontSize: '12px',
-              fontWeight: 800,
-              whiteSpace: 'nowrap',
-              border: '1.5px solid rgba(251, 191, 36, 0.5)',
-              boxShadow: '0 4px 10px rgba(0,0,0,0.5)',
-              backdropFilter: 'blur(4px)'
-            }}>
-              {ent.fullLabel || ent.name}
-            </div>
-          )}
-        </div>
-      </Html>
-    </group>
-  )
-}
-
-function EntranceMarkers({ cave, options }: { cave: ParsedCave, options: ViewerOptions }) {
-  if (!options.showEntrances) return null
-  
-  const entrances = cave.stationLabels.filter((l: StationLabel) => l.isEntrance)
-  if (entrances.length === 0) return null
-
-  return (
-    <group>
-      {entrances.map((ent: StationLabel, i: number) => (
-        <EntranceMarkerItem key={ent.name + i} ent={ent} options={options} />
-      ))}
-    </group>
-  )
-}
+// ─── EntranceMarkers moved to shared ───
 
 const CaveViewer3D = ({ 
   cave, options: o, onStationClick, onSurfaceClick, onBackgroundClick, onMoveStateChange, onCameraUpdate, 

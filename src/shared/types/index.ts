@@ -188,6 +188,7 @@ export interface ViewerOptions {
   pointCloudSize:      number
   edlStrength:         number
   edlRadius:           number
+  pointCloudBrightness: number
   
   surfaceTextureOpacity: number
   surfaceWmsResolution: number

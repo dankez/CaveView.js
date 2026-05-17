@@ -79,16 +79,16 @@ export class PLYLoader {
     const intensity = new Float32Array(count);
 
     const propIdx = {
-      x: header.properties.find(p => p.name === 'x'),
-      y: header.properties.find(p => p.name === 'y'),
-      z: header.properties.find(p => p.name === 'z'),
-      r: header.properties.find(p => p.name === 'red' || p.name === 'r' || p.name === 'diffuse_red'),
-      g: header.properties.find(p => p.name === 'green' || p.name === 'g' || p.name === 'diffuse_green'),
-      b: header.properties.find(p => p.name === 'blue' || p.name === 'b' || p.name === 'diffuse_blue'),
-      nx: header.properties.find(p => p.name === 'nx' || p.name === 'normal_x'),
-      ny: header.properties.find(p => p.name === 'ny' || p.name === 'normal_y'),
-      nz: header.properties.find(p => p.name === 'nz' || p.name === 'normal_z'),
-      i: header.properties.find(p => p.name === 'intensity' || p.name === 'i' || p.name === 'scalar_Intensity'),
+      x: header.properties.find(p => p.name.toLowerCase() === 'x'),
+      y: header.properties.find(p => p.name.toLowerCase() === 'y'),
+      z: header.properties.find(p => p.name.toLowerCase() === 'z'),
+      r: header.properties.find(p => ['red', 'r', 'diffuse_red'].includes(p.name.toLowerCase())),
+      g: header.properties.find(p => ['green', 'g', 'diffuse_green'].includes(p.name.toLowerCase())),
+      b: header.properties.find(p => ['blue', 'b', 'diffuse_blue'].includes(p.name.toLowerCase())),
+      nx: header.properties.find(p => ['nx', 'normal_x', 'n_x'].includes(p.name.toLowerCase())),
+      ny: header.properties.find(p => ['ny', 'normal_y', 'n_y'].includes(p.name.toLowerCase())),
+      nz: header.properties.find(p => ['nz', 'normal_z', 'n_z'].includes(p.name.toLowerCase())),
+      i: header.properties.find(p => ['intensity', 'i', 'scalar_intensity', 'value'].includes(p.name.toLowerCase())),
     };
 
     for (let i = 0; i < count; i++) {

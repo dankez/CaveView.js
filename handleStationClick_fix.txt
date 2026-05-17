@@ -1,0 +1,59 @@
+  const handleStationClick = useCallback((idx: number, screenX: number, screenY: number, ctrlKey: boolean, point?: THREE.Vector3) => {
+    if (!cave) return
+    const now = Date.now()
+    if (idx >= 0 && now - lastClickRef.current.time < 300 && lastClickRef.current.idx === idx) {
+      return 
+    }
+    lastClickRef.current = { time: now, idx }
+
+    let sl: StationLabel | null = null;
+    let ox: number, oy: number, alt: number;
+    let name: string = '';
+
+    if (point) {
+      // Direct point from LiDAR (v2)
+      ox = point.x + (cave.centerOffset?.x || 0);
+      oy = -point.z + (cave.centerOffset?.y || 0); 
+      alt = point.y + (cave.centerOffset?.z || 0);
+      name = `P (${point.x.toFixed(1)}, ${point.y.toFixed(1)}, ${point.z.toFixed(1)})`;
+    } else {
+      sl = cave.stationLabels[idx];
+      if (!sl) return;
+      ox = sl.pos.x + (cave.centerOffset?.x || 0);
+      oy = sl.pos.y + (cave.centerOffset?.y || 0);
+      alt = sl.altitude;
+      name = sl.name;
+    }
+
+    // Filter interaction
+    const isPolygon = !point && sl && sl.name !== ''
+    if (!isMeasuringMode && !ctrlKey && !isPolygon) return
+
+    let gps: { lat: number; lon: number; zone?: number; epsg?: string } | null = null;
+    gps = tryUtmToWgs84(ox, oy);
+    if (!gps) {
+      gps = tryJtskToWgs84(ox, oy);
+    }
+
+    let distToSurf: number | null = null
+    if (cave.surfaces?.length > 0) {
+      const surf = cave.surfaces[0]
+      const zSurf = sampleDtmAt(surf, ox, oy)
+      if (zSurf !== null) distToSurf = zSurf - alt
+    }
+
+    const newSt: SelStation = { 
+      idx, name, origX: ox, origY: oy, altitude: alt, gps, distToSurf, screenX, screenY,
+      pos: point ? { x: point.x, y: -point.z, z: point.y } : sl!.pos,
+      centerX: cave.centerOffset.x, centerY: cave.centerOffset.y, centerZ: cave.centerOffset.z
+    }
+    
+    setSelectedStations(prev => {
+      if (!isMeasuringMode && !ctrlKey) return [newSt]
+      if (prev.length === 1 && (prev[0].origX !== newSt.origX || prev[0].origY !== newSt.origY)) {
+        return [prev[0], newSt]
+      }
+      return [newSt]
+    })
+    setShowStationCard(true)
+  }, [cave, isMeasuringMode]);

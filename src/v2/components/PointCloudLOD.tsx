@@ -10,18 +10,24 @@ attribute float intensity;
 
 varying vec3 vColor;
 varying float vIntensity;
+varying vec3 vNormal;
+varying vec3 vViewPosition;
 
 uniform float pointSize;
 
 void main() {
     vColor = color;
     vIntensity = intensity;
+    
+    // Transform normal to view space
+    vNormal = normalize(normalMatrix * normal);
 
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
     gl_Position = projectionMatrix * mvPosition;
 
-    // Size attenuation
-    gl_PointSize = pointSize * (1000.0 / -mvPosition.z);
+    // Point size attenuation
+    gl_PointSize = pointSize * (300.0 / -mvPosition.z);
+    gl_PointSize = clamp(gl_PointSize, 1.0, 32.0);
 
     vViewPosition = - mvPosition.xyz;
     #include <clipping_planes_vertex>
@@ -33,14 +39,37 @@ const fragmentShader = `
 
 varying vec3 vColor;
 varying float vIntensity;
+varying vec3 vNormal;
+varying vec3 vViewPosition;
+
+uniform float brightness;
 
 void main() {
     #include <clipping_planes_fragment>
 
-    vec2 pc = gl_PointCoord - 0.5;
-    if (dot(pc, pc) > 0.25) discard; // Circular points
+    // Square tiles
+    
+    // 1. Lighting calculation (Headlight effect)
+    vec3 lightDir = normalize(vec3(0.2, 0.2, 1.0));
+    float dotNL = dot(vNormal, lightDir);
+    
+    float diffuse = (length(vNormal) > 0.01) ? max(dotNL, 0.0) : 0.6;
+    
+    // 2. Intensity normalization
+    float brightIntensity = 0.5 + vIntensity * 0.5;
+    
+    // 3. Final Shading with dynamic brightness control
+    float ambient = 0.4 * brightness;
+    float light = ambient + diffuse * 0.6 * brightness;
+    
+    vec3 baseColor = (length(vColor) < 0.1 || length(vColor) > 1.8) ? vec3(0.85) : vColor;
+    
+    vec3 finalColor = baseColor * light * brightIntensity;
+    
+    // 4. Gamma correction influenced by brightness
+    finalColor = pow(finalColor, vec3(0.85 / clamp(brightness, 0.5, 2.0)));
 
-    gl_FragColor = vec4(vColor * vIntensity, 1.0);
+    gl_FragColor = vec4(finalColor, 1.0);
 }
 `;
 
@@ -57,7 +86,12 @@ interface ChunkData {
   };
 }
 
-export const PointCloudLOD: React.FC<{ url: string; pointSize?: number; clippingPlanes?: THREE.Plane[] }> = ({ url, pointSize = 1.0, clippingPlanes = [] }) => {
+export const PointCloudLOD: React.FC<{ 
+  url: string; 
+  pointSize?: number; 
+  brightness?: number;
+  clippingPlanes?: THREE.Plane[] 
+}> = ({ url, pointSize = 1.0, brightness = 1.0, clippingPlanes = [] }) => {
   const [chunks, setChunks] = useState<Map<string, { points: THREE.Points; bounds: THREE.Box3 }>>(new Map());
   const { camera } = useThree();
   const workerRef = useRef<Worker | null>(null);
@@ -76,23 +110,28 @@ export const PointCloudLOD: React.FC<{ url: string; pointSize?: number; clipping
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute('position', new THREE.BufferAttribute(chunk.points, 3));
         geometry.setAttribute('color', new THREE.BufferAttribute(chunk.colors, 3));
+        geometry.setAttribute('normal', new THREE.BufferAttribute(chunk.normals, 3));
         geometry.setAttribute('intensity', new THREE.BufferAttribute(chunk.intensity, 1));
+        geometry.computeBoundingSphere();
 
         const material = new THREE.ShaderMaterial({
           uniforms: {
-            pointSize: { value: pointSize }
+            pointSize: { value: pointSize },
+            brightness: { value: brightness }
           },
           vertexShader,
           fragmentShader,
-          vertexColors: true,
-          transparent: true,
+          transparent: false,
           depthWrite: true,
           depthTest: true,
           clipping: true,
-          clippingPlanes: clippingPlanes
+          clippingPlanes: clippingPlanes,
+          side: THREE.DoubleSide
         });
 
         const points = new THREE.Points(geometry, material);
+        points.frustumCulled = false;
+
         const box = new THREE.Box3(
           new THREE.Vector3(chunk.bounds.min.x, chunk.bounds.min.y, chunk.bounds.min.z),
           new THREE.Vector3(chunk.bounds.max.x, chunk.bounds.max.y, chunk.bounds.max.z)
@@ -116,16 +155,19 @@ export const PointCloudLOD: React.FC<{ url: string; pointSize?: number; clipping
     return () => {
       worker.terminate();
     };
-  }, [url, pointSize, clippingPlanes]);
+  }, [url]);
 
   useEffect(() => {
     chunks.forEach(chunk => {
       const material = chunk.points.material as THREE.ShaderMaterial;
-      material.uniforms.pointSize.value = pointSize;
+      if (material.uniforms) {
+        if (material.uniforms.pointSize) material.uniforms.pointSize.value = pointSize;
+        if (material.uniforms.brightness) material.uniforms.brightness.value = brightness;
+      }
       material.clippingPlanes = clippingPlanes;
       material.needsUpdate = true;
     });
-  }, [pointSize, clippingPlanes, chunks]);
+  }, [pointSize, brightness, clippingPlanes, chunks]);
 
   useFrame(() => {
     const frustum = new THREE.Frustum();
@@ -139,8 +181,8 @@ export const PointCloudLOD: React.FC<{ url: string; pointSize?: number; clipping
 
   return (
     <group>
-      {Array.from(chunks.values()).map((chunk) => (
-        <primitive key={chunk.points.uuid} object={chunk.points} />
+      {Array.from(chunks.values()).map((chunk, idx) => (
+        <primitive key={idx} object={chunk.points} />
       ))}
     </group>
   );

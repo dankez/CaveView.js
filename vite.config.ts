@@ -12,6 +12,15 @@ export default defineConfig({
       '@shared': path.resolve(__dirname, './src/shared'),
       '@v1': path.resolve(__dirname, './src/v1'),
       '@v2': path.resolve(__dirname, './src/v2'),
+      'THREE': 'three',
+    },
+  },
+  optimizeDeps: {
+    include: ['three-geo'],
+    esbuildOptions: {
+      define: {
+        global: 'globalThis',
+      },
     },
   },
   server: {

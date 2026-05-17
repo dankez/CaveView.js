@@ -5,6 +5,7 @@ attribute float intensity;
 
 varying vec3 vColor;
 varying float vIntensity;
+varying vec3 vViewPosition;
 
 uniform float pointSize;
 

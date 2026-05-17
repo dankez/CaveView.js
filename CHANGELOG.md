@@ -1,5 +1,15 @@
 # Changelog
 
+## [release-2026-05-16] - 2026-05-16
+### NextGen Engine & LiDAR LOD (v2.0.0)
+- **NextGen Engine (v2):** Predstavenie úplne nového vykresľovacieho motora optimalizovaného pre masívne LiDAR dáta a plynulý výkon.
+- **Octree LOD & Streaming:** Implementácia hierarchického priestorového indexovania, ktoré umožňuje plynulé prezeranie miliárd bodov bez preťaženia RAM/GPU.
+- **Eye-Dome Lighting (EDL):** Pridaný pokročilý post-processing shader pre mračná bodov, ktorý dodáva vizuálnu hĺbku a zvýrazňuje detaily stien (vzhľad podobný Potree).
+- **Mapbox 3D Terrain:** Integrácia `three-geo` pre automatické načítavanie satelitného 3D terénu nad jaskyňou na základe jej GPS polohy.
+- **Street View Navigácia:** Implementovaný plynulý "let" k bodu po dvojkliku s inteligentným odstupom od stien a históriou pohybu (Undo/Ctrl+Z).
+- **Architektonický Refaktoring:** Kód rozdelený na `v1` (Standard), `v2` (NextGen) a `shared` moduly. Zjednotené typy a rozhrania pre cross-engine kompatibilitu.
+- **Inteligentné Predvoľby:** Automatické nastavenie jasu a veľkosti bodov na základe hustoty nahrávaného modelu.
+
 ## [release-2026-05-12-01] - 2026-05-12
 ### Refaktoring & Optimalizácia (v1.6.0)
 - **Koordináty & Moduly:** Presun funkcií `tryUtmToWgs84` a `tryJtskToWgs84` do dedikovaného modulu `src/utils/coords.ts` pre lepšiu znovupoužiteľnosť a čistotu kódu v `App.tsx`.

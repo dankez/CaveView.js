@@ -1,3 +1,5 @@
+console.log('[Worker] Script loaded');
+
 import { PLYLoader } from './plyLoader';
 
 export interface Vec3 {
@@ -91,6 +93,7 @@ export class OctreeNode {
 
 self.onmessage = (event: MessageEvent) => {
   const { buffer } = event.data;
+  console.log('[Worker] Received buffer, size:', buffer?.byteLength);
   if (!buffer) return;
 
   try {
@@ -115,10 +118,18 @@ self.onmessage = (event: MessageEvent) => {
       max: { x: maxX, y: maxY, z: maxZ }
     });
 
-    // Build Octree
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const cz = (minZ + maxZ) / 2;
+
+    // Build Octree & find max intensity
+    let maxIntensity = 0;
     for (let i = 0; i < vertexCount; i++) {
+      if (intensity[i] > maxIntensity) maxIntensity = intensity[i];
       root.insert(i, points[i * 3], points[i * 3 + 1], points[i * 3 + 2], points);
     }
+
+    const intensityScale = maxIntensity > 1.0 ? 1.0 / maxIntensity : 1.0;
 
     // Stream nodes
     root.traverse((node) => {
@@ -130,25 +141,40 @@ self.onmessage = (event: MessageEvent) => {
 
         for (let i = 0; i < node.indices.length; i++) {
           const idx = node.indices[i];
-          nodePoints[i * 3] = points[idx * 3];
-          nodePoints[i * 3 + 1] = points[idx * 3 + 1];
-          nodePoints[i * 3 + 2] = points[idx * 3 + 2];
+          // CENTER THE POINTS!
+          nodePoints[i * 3] = points[idx * 3] - cx;
+          nodePoints[i * 3 + 1] = points[idx * 3 + 2] - cz; // Swap Y/Z to match Three.js (v1 logic: x, z, -y)
+          nodePoints[i * 3 + 2] = -(points[idx * 3 + 1] - cy);
           
           nodeColors[i * 3] = colors[idx * 3];
           nodeColors[i * 3 + 1] = colors[idx * 3 + 1];
           nodeColors[i * 3 + 2] = colors[idx * 3 + 2];
 
           nodeNormals[i * 3] = normals[idx * 3];
-          nodeNormals[i * 3 + 1] = normals[idx * 3 + 1];
-          nodeNormals[i * 3 + 2] = normals[idx * 3 + 2];
+          nodeNormals[i * 3 + 1] = normals[idx * 3 + 2];
+          nodeNormals[i * 3 + 2] = -normals[idx * 3 + 1];
           
-          nodeIntensity[i] = intensity[idx];
+          nodeIntensity[i] = intensity[idx] * intensityScale;
         }
+
+        const b = node.bounds;
+        const nodeBounds = {
+          min: { 
+            x: b.min.x - cx, 
+            y: b.min.z - cz, 
+            z: -(b.max.y - cy) 
+          },
+          max: { 
+            x: b.max.x - cx, 
+            y: b.max.z - cz, 
+            z: -(b.min.y - cy) 
+          }
+        };
 
         self.postMessage({
           type: 'POINTCLOUD_CHUNK',
           id: node.id,
-          bounds: node.bounds,
+          bounds: nodeBounds,
           points: nodePoints,
           colors: nodeColors,
           normals: nodeNormals,

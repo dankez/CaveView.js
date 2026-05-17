@@ -17,10 +17,13 @@ LochViewer je moderný webový 3D prehliadač speleologických dát.
 - **XYZ Tile Streaming**: Integrácia sťahovania ortofotomáp v reálnom čase.
 
 
-### 🏗 Architektúra
-- **Web Workers**: Parsovanie binárnych súborov prebieha na samostatnom vlákne (`parser.worker.ts`), aby sa nezasekávalo používateľské rozhranie.
-- **State Management**: Využíva React `useState` a `useMemo` pre efektívne aktualizácie 3D scény.
-- **Persistent States**: Nastavenia zobrazenia sa ukladajú priamo do URL parametrov, čo umožňuje okamžité zdieľanie presného náhľadu.
+### 🏗 Architektúra (v2.0+)
+Aplikácia využíva duálnu architektúru motorov (Dual-Engine) s čistým oddelením modulov:
+- **`src/v1/` (Standard Engine):** Optimalizovaný pre klasické speleologické dáta (.lox, .3d) a rekonštrukciu povrchov (Surface Nets).
+- **`src/v2/` (NextGen Engine):** Špeciálne navrhnutý pre masívne LiDAR mračná bodov. Využíva hierarchické **Octree LOD** indexovanie a streamovanie dát.
+- **`src/shared/`:** Centralizované úložisko pre zdieľané typy, UI komponenty a geodetickú logiku.
+- **Web Workers:** Binárne spracovanie a Octree rozklad prebiehajú na pozadí (`pointcloud.worker.ts`), čo umožňuje plynulé prezeranie modelov s miliónmi bodov.
+- **Post-Processing:** Implementácia **Eye-Dome Lighting (EDL)** pre realistickú hĺbku mračna bodov a integrácia `three-geo` pre dynamické 3D Mapbox povrchy.
 
 ### 📂 Podporované formáty
 - **.lox (Therion)**: Najlepšia podpora vrátane stien jaskyne, textúr a terénu.
@@ -44,10 +47,13 @@ LochViewer je moderný webový 3D prehliadač speleologických dát.
 - **XYZ Tile Streaming**: Real-time integration of orthophoto and terrain tiles.
 
 
-### 🏗 Architecture
-- **Web Workers**: Binary file parsing is offloaded to a background thread (`parser.worker.ts`) to maintain UI responsiveness.
-- **State Management**: Uses standard React `useState` and `useMemo` for efficient 3D scene updates.
-- **Persistent States**: Viewport settings are serialized into URL parameters, allowing instant sharing of the exact view.
+### 🏗 Architecture (v2.0+)
+The application uses a Dual-Engine architecture with clean module separation:
+- **`src/v1/` (Standard Engine):** Optimized for classic survey data (.lox, .3d) and surface reconstruction (Surface Nets).
+- **`src/v2/` (NextGen Engine):** Specifically designed for massive LiDAR point clouds. Utilizes hierarchical **Octree LOD** indexing and data streaming.
+- **`src/shared/`:** Centralized repository for shared types, UI components, and geodetic logic.
+- **Web Workers:** Binary processing and Octree decomposition are offloaded to background threads (`pointcloud.worker.ts`), enabling smooth viewing of models with millions of points.
+- **Post-Processing:** **Eye-Dome Lighting (EDL)** for realistic point cloud depth and `three-geo` integration for dynamic 3D Mapbox surfaces.
 
 ### 📂 Supported Formats
 - **.lox (Therion)**: Full support including cave walls, textures, and DTM terrain.

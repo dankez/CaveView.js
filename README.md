@@ -1,8 +1,31 @@
-# LochViewer - Modernized Speleological Viewer (v1.6.0)
+# LochViewer - Speleological Viewer (v2.0.0)
 
 [🇸🇰 Slovenská verzia nižšie / Slovak version below](#slovenská-verzia)
 
 A modern web application for 3D visualization and analysis of cave systems, built with React, Three.js, and React-Three-Fiber.
+
+## 🚀 Version 2.0: NextGen Engine
+The new **NextGen (v2)** engine represents a major leap in performance and visual quality, specifically designed for massive LiDAR data and real-world geographic context.
+
+### ☁️ LiDAR Octree LOD & Streaming
+- **Extreme Performance**: Handles models with millions of points (e.g., "Erna" with 6.2M pts) smoothly at 60 FPS.
+- **Spatial Octree Indexing**: Dynamically loads and renders only the parts of the cave currently visible to the camera.
+- **Web Worker Streaming**: File processing and indexing are offloaded to background threads, ensuring a lag-free UI.
+
+### 🎨 Advanced Visuals
+- **Eye-Dome Lighting (EDL)**: Custom post-processing shader that adds depth and structural clarity to point clouds, making them look like solid surfaces.
+- **Interactive Shading**: Adjust **Brightness** and **Point Size** in real-time to match the density of different scanner outputs.
+- **Normal-Based Shading**: Utilizes LiDAR normals for realistic "headlight" lighting from the viewer's perspective.
+
+### 🗺️ Geographic Context (Mapbox)
+- **3D Terrain Integration**: Automatically fetches and renders 3D satellite terrain from Mapbox using `three-geo` based on cave GPS coordinates.
+- **Hybrid X-Ray Mode**: View the cave model precisely positioned under a semi-transparent 3D surface.
+
+### ✈️ Pro Navigation
+- **Street View Flight**: Smoothly glide towards any point in the jaskyňa with a double-click.
+- **Navigation History (Undo)**: Seamlessly return to previous positions using a dedicated Undo button or **Ctrl+Z**.
+
+---
 
 ## 🔒 Security & Audit
 LochViewer prioritizes user security and data protection. An independent security audit (May 2026) confirmed:
@@ -93,9 +116,32 @@ LochViewer prioritizes user security and data protection. An independent securit
 
 ---
 <a name="slovenská-verzia"></a>
-# LochViewer - Modernizovaný Speleologický Prehliadač (v1.6.0)
+# LochViewer - Speleologický Prehliadač (v2.0.0)
 
 Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémov, postavená na technológiách React, Three.js a React-Three-Fiber.
+
+## 🚀 Verzia 2.0: NextGen Engine
+Nový engine **NextGen (v2)** predstavuje zásadný skok vo výkone a vizuálnej kvalite, navrhnutý špeciálne pre masívne LiDAR dáta a reálny geografický kontext.
+
+### ☁️ LiDAR Octree LOD a Streaming
+- **Extrémny výkon**: Plynule zvláda modely s miliónmi bodov (napr. „Erna“ s 6.2M bodmi) pri 60 FPS.
+- **Priestorové Octree indexovanie**: Dynamicky načítava a renderuje iba tie časti jaskyne, ktoré sú aktuálne v zornom poli kamery.
+- **Web Worker Streaming**: Spracovanie súborov prebieha na pozadí, vďaka čomu rozhranie zostáva bleskovo rýchle aj pri načítavaní gigabajtových dát.
+
+### 🎨 Pokročilý vizuál
+- **Eye-Dome Lighting (EDL)**: Špeciálny shader, ktorý dodáva mračnu bodov hĺbku a jasné kontúry, vďaka čomu model pôsobí ako pevný povrch.
+- **Interaktívne ladenie**: Upravte si **Jas** a **Veľkosť bodov** v reálnom čase podľa hustoty konkrétneho skenu.
+- **Tieňovanie podľa normál**: Využíva LiDARové normály pre realistické nasvietenie štýlom „čelovka“ z pohľadu diváka.
+
+### 🗺️ Geografický kontext (Mapbox)
+- **Integrácia 3D terénu**: Automaticky sťahuje a renderuje 3D satelitný terén z Mapboxu (pomocou `three-geo`) na základe GPS polohy jaskyne.
+- **Hybridný X-Ray mód**: Sledujte jaskynný model presne osadený pod polopriesvitným 3D povrchom kopca.
+
+### ✈️ Profesionálna navigácia
+- **Street View let**: Plynulý presun k akémukoľvek bodu v jaskyni pomocou dvojkliku.
+- **História pohybu (Undo)**: Možnosť vrátiť sa na predchádzajúcu pozíciu tlačidlom Späť alebo skratkou **Ctrl+Z**.
+
+---
 
 ## 🔒 Bezpečnosť a Audit
 LochViewer kladie veľký dôraz na bezpečnosť používateľov a ochranu dát. Nezávislý bezpečnostný audit (Máj 2026) potvrdil:

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, Suspense, useMemo } from 'react'
+import * as THREE from 'three'
 import proj4 from 'proj4'
 import { fetchAltitudeFromZbgis, wgs84ToJtsk } from '@shared/utils/geoUtils'
 import { parseLox, parseSvx, parsePlt, parsePly } from '@v1/parsers/caveParser'
@@ -709,6 +710,7 @@ export default function App() {
     mapboxOpacity:       0.5,
     // LiDAR V2 specific
     pointCloudSize:      1.0,
+    pointCloudBrightness: 1.2,
     edlStrength:         0.8,
     edlRadius:           1.2,
 
@@ -913,59 +915,65 @@ export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const lastClickRef = useRef<{time: number, idx: number}>({time: 0, idx: -1})
 
-  const handleStationClick = useCallback((idx: number, screenX: number, screenY: number, ctrlKey: boolean) => {
+  const handleStationClick = useCallback((idx: number, screenX: number, screenY: number, ctrlKey: boolean, point?: THREE.Vector3) => {
     if (!cave) return
     const now = Date.now()
-    if (now - lastClickRef.current.time < 300 && lastClickRef.current.idx === idx) {
-      return // Zamedzenie double-click bugu na ten istý bod
+    if (idx >= 0 && now - lastClickRef.current.time < 300 && lastClickRef.current.idx === idx) {
+      return 
     }
     lastClickRef.current = { time: now, idx }
 
-    const sl = cave.stationLabels[idx]
-    if (!sl) return
+    let sl: StationLabel | null = null;
+    let ox: number, oy: number, alt: number;
+    let name: string = '';
 
-    // Ak nie sme v režime merania a nie je CTRL, chytáme IBA polygonové body (majú meno)
-    const isPolygon = sl.name !== ''
+    if (point) {
+      // Direct point from LiDAR (v2)
+      ox = point.x + (cave.centerOffset?.x || 0);
+      oy = -point.z + (cave.centerOffset?.y || 0); 
+      alt = point.y + (cave.centerOffset?.z || 0);
+      name = `P (${point.x.toFixed(1)}, ${point.y.toFixed(1)}, ${point.z.toFixed(1)})`;
+    } else {
+      sl = cave.stationLabels[idx];
+      if (!sl) return;
+      ox = sl.pos.x + (cave.centerOffset?.x || 0);
+      oy = sl.pos.y + (cave.centerOffset?.y || 0);
+      alt = sl.altitude;
+      name = sl.name;
+    }
+
+    // Filter interaction
+    const isPolygon = !point && sl && sl.name !== ''
     if (!isMeasuringMode && !ctrlKey && !isPolygon) return
 
-    const origX = sl.pos.x + (cave.centerOffset?.x || 0)
-    const origY = sl.pos.y + (cave.centerOffset?.y || 0)
-    const altitude = sl.altitude
-
     let gps: { lat: number; lon: number; zone?: number; epsg?: string } | null = null;
-    gps = tryUtmToWgs84(origX, origY);
+    gps = tryUtmToWgs84(ox, oy);
     if (!gps) {
-      gps = tryJtskToWgs84(origX, origY);
+      gps = tryJtskToWgs84(ox, oy);
     }
 
     let distToSurf: number | null = null
     if (cave.surfaces?.length > 0) {
       const surf = cave.surfaces[0]
-      const zSurf = sampleDtmAt(surf, origX, origY)
-      if (zSurf !== null) distToSurf = zSurf - altitude
+      const zSurf = sampleDtmAt(surf, ox, oy)
+      if (zSurf !== null) distToSurf = zSurf - alt
     }
 
     const newSt: SelStation = { 
-      idx, name: sl.name, origX, origY, altitude, gps, distToSurf, screenX, screenY,
-      pos: sl.pos,
+      idx, name, origX: ox, origY: oy, altitude: alt, gps, distToSurf, screenX, screenY,
+      pos: point ? { x: point.x, y: -point.z, z: point.y } : sl!.pos,
       centerX: cave.centerOffset.x, centerY: cave.centerOffset.y, centerZ: cave.centerOffset.z
     }
     
     setSelectedStations(prev => {
-      // Ak meranie VYP a nie je stlačený CTRL, vždy vraciame len aktuálny bod
       if (!isMeasuringMode && !ctrlKey) return [newSt]
-
-      // Zjednodušené ovládanie:
-      // Ak máme už presne 1 bod, klik na ďalší ho nastaví ako druhý bod (bez ohľadu na CTRL).
-      if (prev.length === 1 && prev[0].idx !== newSt.idx) {
+      if (prev.length === 1 && (prev[0].origX !== newSt.origX || prev[0].origY !== newSt.origY)) {
         return [prev[0], newSt]
       }
-      // Ak nemáme nič, alebo máme už 2 body zmerané, resetujeme na 1 nový bod merania.
-      // Kliknutie na rovnaký bod (idx) slúži ako "zrušenie výberu" = vyberie ho len raz a začne sa od neho znova
       return [newSt]
     })
     setShowStationCard(true)
-  }, [cave, isMeasuringMode])
+  }, [cave, isMeasuringMode]);
 
   const handleSurfaceClick = useCallback((origX: number, origY: number, altitude: number, screenX: number, screenY: number, ctrlKey: boolean = false) => {
     if (!cave || (!isMeasuringMode && !ctrlKey)) return // Klik na terén berieme IBA v režime merania alebo s CTRL
@@ -1186,7 +1194,7 @@ export default function App() {
     });
   }, []);
 
-  const processCaveData = useCallback((parsed: ParsedCave) => {
+  const processCaveData = useCallback((parsed: ParsedCave, buffer?: ArrayBuffer) => {
     let hasBitmap = false
     if (parsed.surfaces) {
       parsed.surfaces.forEach((s: CaveSurface) => {
@@ -1198,8 +1206,13 @@ export default function App() {
       })
     }
 
-
     const isPLY = parsed.pointCount > 0
+
+    // NextGen support: Create Blob URL for point cloud data for PLY files
+    if (isPLY && buffer) {
+      const blob = new Blob([buffer], { type: 'application/octet-stream' });
+      parsed.pointCloudUrl = URL.createObjectURL(blob);
+    }
 
     setCave(parsed)
     setOpts(prev => {
@@ -1238,9 +1251,15 @@ export default function App() {
       return;
     }
 
-    // Auto-select engine v2 for large PLY files (> 50MB)
-    if (ext === '.ply' && file.size > 50 * 1024 * 1024) {
-      setOpts(prev => ({ ...prev, engine: 'v2' }))
+    // Auto-select engine v2 for large PLY files (> 50MB) and set smart defaults
+    if (ext === '.ply') {
+      const isLarge = file.size > 50 * 1024 * 1024;
+      setOpts(prev => ({ 
+        ...prev, 
+        engine: 'v2',
+        pointCloudSize: isLarge ? 0.3 : 0.5,
+        pointCloudBrightness: 1.2 
+      }))
     } else {
       setOpts(prev => ({ ...prev, engine: 'v1' }))
     }
@@ -1257,7 +1276,9 @@ export default function App() {
       setLastLoadedBuffer(buf.slice(0))
       setProgress(50)
 
-      const parsed = await runParserWorker(buf, ext, setLoadingStatus)
+      // We use a clone for the worker because it will be transferred
+      const workerBuf = buf.slice(0)
+      const parsed = await runParserWorker(workerBuf, ext, setLoadingStatus)
 
       setLoadingStatus('finalizing')
       setProgress(95)
@@ -1266,7 +1287,7 @@ export default function App() {
         throw new Error('Súbor neobsahuje žiadne merania, stanice ani mračno bodov.')
       }
 
-      processCaveData(parsed)
+      processCaveData(parsed, buf)
       setTimeout(() => { setProgress(100); setTimeout(() => setAppState('viewer'), 200) }, 100)
     } catch (e: any) {
       console.error(e)
@@ -1306,9 +1327,15 @@ export default function App() {
       setProgress(60)
       setLoadedFile({ name: label, size: buf.byteLength, ext })
 
-      // Auto-select engine v2 for large PLY files (> 50MB)
-      if (ext === '.ply' && buf.byteLength > 50 * 1024 * 1024) {
-        setOpts(prev => ({ ...prev, engine: 'v2' }))
+      // Auto-select engine v2 for large PLY files (> 50MB) and set smart defaults
+      if (ext === '.ply') {
+        const isLarge = buf.byteLength > 50 * 1024 * 1024;
+        setOpts(prev => ({ 
+          ...prev, 
+          engine: 'v2',
+          pointCloudSize: isLarge ? 0.3 : 0.5,
+          pointCloudBrightness: 1.2 
+        }))
       } else {
         setOpts(prev => ({ ...prev, engine: 'v1' }))
       }
@@ -1345,17 +1372,19 @@ export default function App() {
           stationCount: 0, segmentCount: 0, scrapCount: 0, pointCount: 0,
           hasSurface: true
         };
-        processCaveData(emptyCave);
+        processCaveData(emptyCave, buf);
         setAppState('viewer');
         return;
       }
 
-      const parsed = await runParserWorker(buf, ext, setLoadingStatus)
+      // We use a clone for the worker because it will be transferred
+      const workerBuf = buf.slice(0)
+      const parsed = await runParserWorker(workerBuf, ext, setLoadingStatus)
 
       if (parsed.segments.length === 0 && parsed.stations.length === 0 && parsed.pointCount === 0)
         throw new Error('Súbor neobsahuje žiadne dáta.')
       
-      processCaveData(parsed)
+      processCaveData(parsed, buf)
       setLoadingStatus('done')
       setProgress(100)
       setTimeout(() => setAppState('viewer'), 150)
@@ -1436,7 +1465,7 @@ export default function App() {
           stationCount: 0, segmentCount: 0, scrapCount: 0, pointCount: 0,
           hasSurface: true
         };
-        processCaveData(emptyCave);
+        processCaveData(emptyCave, tifBuf);
         setAppState('viewer');
       } else {
         // Automatic Reprojection (S-JTSK -> Cave CRS)
@@ -2413,6 +2442,26 @@ export default function App() {
                   ))}
                 </div>
 
+                {/* NextGen Navigation Controls */}
+                {opts.engine === 'v2' && (
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button 
+                      onClick={() => window.dispatchEvent(new CustomEvent('cave-navigation-undo'))}
+                      style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: '#fff', padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                      title="Undo Movement (Ctrl+Z)"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>undo</span>
+                    </button>
+                    <button 
+                      onClick={() => setFitTrigger(prev => prev + 1)}
+                      style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: '#fff', padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                      title="Fit to Screen"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>fit_screen</span>
+                    </button>
+                  </div>
+                )}
+
                 <div className="hide-mobile-flex" style={{ display: 'flex', gap: '4px', background: 'rgba(30,41,59,0.5)', padding: '2px', borderRadius: '6px' }}>
                   {(['sk', 'en', 'fr', 'de'] as Language[]).map(l => (
                     <button key={l} onClick={() => setLang(l)}
@@ -2885,6 +2934,40 @@ export default function App() {
                         </div>
 
 
+
+                        {/* ── LiDAR NEXTGEN (v2) ── */}
+                        {opts.engine === 'v2' && (
+                          <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 12 }}>
+                            <div className="s-label" style={{ color: '#818cf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>blur_on</span>
+                              {lang === 'sk' ? 'LIDAR NEXTGEN' : 'LiDAR NEXTGEN'}
+                            </div>
+                            
+                            {/* Point Size */}
+                            <div style={{ marginBottom: 12 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>{lang === 'sk' ? 'VEĽKOSŤ BODOV' : 'POINT SIZE'}</label>
+                                <span style={{ fontSize: 10, color: '#818cf8', fontWeight: 700 }}>{opts.pointCloudSize.toFixed(2)}</span>
+                              </div>
+                              <input type="range" min={0.1} max={5.0} step={0.1}
+                                value={opts.pointCloudSize}
+                                onChange={e => setOpts(p => ({ ...p, pointCloudSize: Number(e.target.value) }))}
+                                className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+                            </div>
+
+                            {/* Brightness */}
+                            <div style={{ marginBottom: 12 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>{lang === 'sk' ? 'JAS MODELU' : 'BRIGHTNESS'}</label>
+                                <span style={{ fontSize: 10, color: '#818cf8', fontWeight: 700 }}>{opts.pointCloudBrightness.toFixed(2)}</span>
+                              </div>
+                              <input type="range" min={0.1} max={3.0} step={0.1}
+                                value={opts.pointCloudBrightness}
+                                onChange={e => setOpts(p => ({ ...p, pointCloudBrightness: Number(e.target.value) }))}
+                                className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+                            </div>
+                          </div>
+                        )}
 
                         <div className="toggle-row">
                           <label className="toggle-label">{t('cave.render3d')}</label>
