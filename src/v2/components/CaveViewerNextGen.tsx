@@ -19,7 +19,7 @@ import type { ParsedCave, ViewerOptions, StationLabel } from '@shared/types'
 interface Props {
   cave: ParsedCave
   options: ViewerOptions
-  onStationClick: (idx: number, screenX: number, screenY: number, ctrlKey: boolean) => void
+  onStationClick: (idx: number, screenX: number, screenY: number, ctrlKey: boolean, point?: THREE.Vector3) => void
   onCameraUpdate?: (data: { dist: number, fov: number, height: number }) => void
   onStatusChange?: (status: { msg: string; type: 'info' | 'error' | 'success' | 'progress'; progress?: number } | null) => void
   fitTrigger?: number
@@ -174,7 +174,6 @@ const NavigationHandler = ({
     const intersects = raycaster.intersectObjects(scene.children, true);
     if (intersects.length > 0) {
       const point = intersects[0].point;
-      // NextGen measurement doesn't have station indices, but we can fake it or use coordinates
       onStationClick(-1, e.clientX, e.clientY, e.ctrlKey, point);
     }
   }, [camera, scene, raycaster, isMeasuringMode, onStationClick, gl]);
@@ -205,7 +204,6 @@ const CaveViewerNextGen = ({
   cave, options: o, onStationClick, onCameraUpdate, onStatusChange, fitTrigger, 
   selectedStations, activeProfilePoints, isMeasuringMode, manualConnection 
 }: Props) => {
-  console.log('[V2] Rendering CaveViewerNextGen', { pointCloudUrl: cave.pointCloudUrl });
   const [isMoving, setIsModelMoving] = useState(false)
   const controlsRef = useRef<any>(null);
 
@@ -260,6 +258,11 @@ const CaveViewerNextGen = ({
     return planes
   }, [o.showClipping, o.clippingHeight, o.showProfileClipping, o.profileClipFlip, o.profileClipOffset, activeProfilePoints, cave.centerOffset.z])
 
+  const caveClippingPlanes = useMemo(() => {
+    if (o.excludeModelFromClipping) return []
+    return compositeClippingPlanes
+  }, [o.excludeModelFromClipping, compositeClippingPlanes])
+
   return (
     <Canvas
       id="nextgen-cave-canvas"
@@ -291,23 +294,19 @@ const CaveViewerNextGen = ({
         o.caveCalibrationOffset?.z || 0, 
         -(o.caveCalibrationOffset?.y || 0)
       ]}>
-        {/* ── Survey Data in V2 ── */}
         <Stations cave={cave} options={o} />
         <CaveLegs cave={cave} options={o} showSplay={o.showSplay} showAltitude={o.traverseAltitude} clippingPlanes={compositeClippingPlanes} />
         <StationLabels cave={cave} options={o} showNames={o.showStationNames} showAltitudes={o.showStationAlt} />
         <EntranceMarkers cave={cave} options={o} />
 
-        {/* ── Measurements ── */}
         {selectedStations && selectedStations.length === 2 && (
           <ManualConnection p1={selectedStations[0]} p2={selectedStations[1]} />
         )}
 
-        {/* ── Jaskyniar ── */}
         {o.placedCaver && (
           <Character3D pos={o.placedCaver.pos} pose={o.placedCaver.pose} clippingPlanes={compositeClippingPlanes} />
         )}
 
-        {/* V2 Engine: Point Cloud LOD */}
         {cave.pointCloudUrl && (
           <PointCloudLOD 
             url={cave.pointCloudUrl} 
@@ -316,13 +315,13 @@ const CaveViewerNextGen = ({
             plasticity={o.pointCloudPlasticity || 1.0}
             colorMode={o.pointCloudColorMode || 'original'}
             customColor={o.pointCloudCustomColor || '#ffffff'}
+            highlightColor={o.colorClippingEdges || '#ff4444'}
             minZ={cave.bounds.min.z}
             maxZ={cave.bounds.max.z}
-            clippingPlanes={compositeClippingPlanes}
+            clippingPlanes={caveClippingPlanes}
           />
         )}
 
-        {/* Mapbox Terrain Context */}
         {gpsCenter && o.showMapboxTerrain && o.mapboxToken && (
           <MapboxTerrain 
             lat={gpsCenter.lat}

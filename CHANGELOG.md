@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.0.1] - 2026-05-17
+### Custom Farby & Analytické Rezy
+- **Vlastná farba (Color Picker):** Implementovaná možnosť manuálneho výberu farby mračna bodov v NextGen engine so zachovaním plného tieňovania.
+- **Ladenie plasticity:** Pridaný posuvník pre dynamickú kontrolu hĺbky tieňov a sýtosti detailov mračna.
+- **Zvýraznenie rezov:** Dynamické farebné zvýraznenie (Clipping Highlight) hrán rezov pre lepšiu orientáciu v rezoch.
+- **Synchronizácia s v1:** Plné prepojenie orezávacej logiky s nastaveniami "Vynechať jaskyňu z rezu" a farbou hrany z UI.
+- **Precízna hustota:** Jemnejší krok nastavenia veľkosti bodov (0.05) pre dokonalé vyladenie hustoty.
+- **Dokumentácia:** Vytvorený podrobný technický rozbor tieňovacej logiky v `docs/v2_SHADING_LOGIC.md`.
+
 ## [release-2026-05-16] - 2026-05-16
 ### NextGen Engine & LiDAR LOD (v2.0.0)
 - **NextGen Engine (v2):** Predstavenie úplne nového vykresľovacieho motora optimalizovaného pre masívne LiDAR dáta a plynulý výkon.

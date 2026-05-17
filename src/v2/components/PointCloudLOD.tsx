@@ -49,6 +49,7 @@ uniform float brightness;
 uniform float plasticity;
 uniform int colorMode; // 0: original, 1: elevation, 2: natural
 uniform vec3 customColor;
+uniform vec3 highlightColor;
 uniform float minZ;
 uniform float maxZ;
 
@@ -73,7 +74,22 @@ vec3 getElevationColor(float z) {
 }
 
 void main() {
-    #include <clipping_planes_fragment>
+    // 0. Manual Clipping with Highlight Logic
+    float minClipDist = 10000.0;
+    bool hasClip = false;
+
+    #if NUM_CLIPPING_PLANES > 0
+    for ( int i = 0; i < NUM_CLIPPING_PLANES; i ++ ) {
+        vec4 plane = clippingPlanes[ i ];
+        // Standard Three.js distance calculation in view space
+        float dist = dot(vViewPosition, plane.xyz) - plane.w;
+        
+        if ( dist > 0.0 ) discard; // Standard clipping discard
+        
+        minClipDist = min(minClipDist, abs(dist));
+        hasClip = true;
+    }
+    #endif
 
     // 1. Base color selection
     vec3 baseColor;
@@ -111,6 +127,12 @@ void main() {
     // 5. Gamma correction (The perfect 0.8)
     finalColor = pow(finalColor, vec3(0.8 / clamp(brightness, 0.5, 2.0)));
 
+    // 6. Highlight for Clipping Edges (using UI-selected color)
+    if (hasClip && minClipDist < 0.15) {
+        float highlightStrength = 1.0 - (minClipDist / 0.15);
+        finalColor = mix(finalColor, highlightColor, highlightStrength * 0.9);
+    }
+
     gl_FragColor = vec4(finalColor, 1.0);
 }
 `;
@@ -135,6 +157,7 @@ export const PointCloudLOD: React.FC<{
   plasticity?: number;
   colorMode?: 'original' | 'elevation' | 'natural';
   customColor?: string;
+  highlightColor?: string;
   minZ?: number;
   maxZ?: number;
   clippingPlanes?: THREE.Plane[] 
@@ -145,6 +168,7 @@ export const PointCloudLOD: React.FC<{
   plasticity = 1.0,
   colorMode = 'original',
   customColor = '#ffffff',
+  highlightColor = '#ff4444',
   minZ = -100,
   maxZ = 100,
   clippingPlanes = [] 
@@ -155,6 +179,7 @@ export const PointCloudLOD: React.FC<{
 
   const modeInt = colorMode === 'elevation' ? 1 : colorMode === 'natural' ? 2 : 0;
   const threeColor = useMemo(() => new THREE.Color(customColor), [customColor]);
+  const threeHighlightColor = useMemo(() => new THREE.Color(highlightColor), [highlightColor]);
 
   useEffect(() => {
     const worker = new Worker(new URL('../parsers/pointcloud.worker.ts', import.meta.url), {
@@ -181,6 +206,7 @@ export const PointCloudLOD: React.FC<{
             plasticity: { value: plasticity },
             colorMode: { value: modeInt },
             customColor: { value: threeColor },
+            highlightColor: { value: threeHighlightColor },
             minZ: { value: minZ },
             maxZ: { value: maxZ }
           },
@@ -231,13 +257,14 @@ export const PointCloudLOD: React.FC<{
         if (material.uniforms.plasticity) material.uniforms.plasticity.value = plasticity;
         if (material.uniforms.colorMode) material.uniforms.colorMode.value = modeInt;
         if (material.uniforms.customColor) material.uniforms.customColor.value = threeColor;
+        if (material.uniforms.highlightColor) material.uniforms.highlightColor.value = threeHighlightColor;
         if (material.uniforms.minZ) material.uniforms.minZ.value = minZ;
         if (material.uniforms.maxZ) material.uniforms.maxZ.value = maxZ;
       }
       material.clippingPlanes = clippingPlanes;
       material.needsUpdate = true;
     });
-  }, [pointSize, brightness, plasticity, colorMode, customColor, threeColor, minZ, maxZ, clippingPlanes, chunks]);
+  }, [pointSize, brightness, plasticity, colorMode, customColor, highlightColor, threeColor, threeHighlightColor, minZ, maxZ, clippingPlanes, chunks]);
 
   useFrame(() => {
     const frustum = new THREE.Frustum();
