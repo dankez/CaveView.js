@@ -711,6 +711,9 @@ export default function App() {
     // LiDAR V2 specific
     pointCloudSize:      1.0,
     pointCloudBrightness: 1.2,
+    pointCloudColorMode: 'original',
+    pointCloudCustomColor: '#b3a694',
+    pointCloudPlasticity: 1.0,
     edlStrength:         0.8,
     edlRadius:           1.2,
 
@@ -2949,7 +2952,7 @@ export default function App() {
                                 <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>{lang === 'sk' ? 'VEĽKOSŤ BODOV' : 'POINT SIZE'}</label>
                                 <span style={{ fontSize: 10, color: '#818cf8', fontWeight: 700 }}>{opts.pointCloudSize.toFixed(2)}</span>
                               </div>
-                              <input type="range" min={0.1} max={5.0} step={0.1}
+                              <input type="range" min={0.0} max={2.0} step={0.05}
                                 value={opts.pointCloudSize}
                                 onChange={e => setOpts(p => ({ ...p, pointCloudSize: Number(e.target.value) }))}
                                 className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
@@ -2966,6 +2969,66 @@ export default function App() {
                                 onChange={e => setOpts(p => ({ ...p, pointCloudBrightness: Number(e.target.value) }))}
                                 className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
                             </div>
+
+                            {/* Plasticity */}
+                            <div style={{ marginBottom: 12 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>{lang === 'sk' ? 'PLASTICITA' : 'PLASTICITY'}</label>
+                                <span style={{ fontSize: 10, color: '#818cf8', fontWeight: 700 }}>{opts.pointCloudPlasticity.toFixed(1)}</span>
+                              </div>
+                              <input type="range" min={0.5} max={2.5} step={0.1}
+                                value={opts.pointCloudPlasticity}
+                                onChange={e => setOpts(p => ({ ...p, pointCloudPlasticity: Number(e.target.value) }))}
+                                className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+                            </div>
+
+                            {/* Color Mode */}
+                            <div style={{ marginBottom: 12 }}>
+                              <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, display: 'block', marginBottom: 6 }}>
+                                {lang === 'sk' ? 'REŽIM FARIEB' : 'COLOR MODE'}
+                              </label>
+                              <div style={{ display: 'flex', gap: '4px' }}>
+                                {[
+                                  { id: 'original',  label: lang === 'sk' ? 'PLY' : 'Original' },
+                                  { id: 'elevation', label: lang === 'sk' ? 'Výška' : 'Elevation' },
+                                  { id: 'natural',   label: lang === 'sk' ? 'Vlastná' : 'Custom' },
+                                ].map(mode => (
+                                  <button
+                                    key={mode.id}
+                                    onClick={() => setOpts(p => ({ ...p, pointCloudColorMode: mode.id as any }))}
+                                    style={{
+                                      flex: 1,
+                                      fontSize: '9px',
+                                      padding: '4px 2px',
+                                      borderRadius: '4px',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      background: opts.pointCloudColorMode === mode.id ? '#6366f1' : 'rgba(30,41,59,0.5)',
+                                      color: 'white',
+                                      fontWeight: opts.pointCloudColorMode === mode.id ? 'bold' : 'normal',
+                                      transition: 'all 0.2s'
+                                    }}
+                                  >
+                                    {mode.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Custom Color Picker (only for natural/custom mode) */}
+                            {opts.pointCloudColorMode === 'natural' && (
+                              <div style={{ marginBottom: 12 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <div className="dot" style={{ background: opts.pointCloudCustomColor, width: '12px', height: '12px' }} />
+                                  <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>
+                                    {lang === 'sk' ? 'FARBA JASKYNE' : 'CAVE COLOR'}
+                                  </label>
+                                  <div style={{ marginLeft: 'auto' }}>
+                                    <ColorPicker t={t} value={opts.pointCloudCustomColor} onChange={(c) => setOpts(p => ({ ...p, pointCloudCustomColor: c }))} />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
 

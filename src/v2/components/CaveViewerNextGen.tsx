@@ -313,6 +313,11 @@ const CaveViewerNextGen = ({
             url={cave.pointCloudUrl} 
             pointSize={o.pointCloudSize || 1.0} 
             brightness={o.pointCloudBrightness || 1.0}
+            plasticity={o.pointCloudPlasticity || 1.0}
+            colorMode={o.pointCloudColorMode || 'original'}
+            customColor={o.pointCloudCustomColor || '#ffffff'}
+            minZ={cave.bounds.min.z}
+            maxZ={cave.bounds.max.z}
             clippingPlanes={compositeClippingPlanes}
           />
         )}

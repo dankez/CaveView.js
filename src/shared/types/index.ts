@@ -189,6 +189,9 @@ export interface ViewerOptions {
   edlStrength:         number
   edlRadius:           number
   pointCloudBrightness: number
+  pointCloudColorMode: 'original' | 'elevation' | 'natural'
+  pointCloudCustomColor: string
+  pointCloudPlasticity: number
   
   surfaceTextureOpacity: number
   surfaceWmsResolution: number

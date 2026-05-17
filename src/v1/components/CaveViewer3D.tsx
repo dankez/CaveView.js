@@ -2261,7 +2261,6 @@ const CaveViewer3D = ({
   )
 }
 
-export default React.memo(CaveViewer3D)
 
 // ─── Map Georeferencing Utilities ─────────────────────────────────────────────
 
@@ -2321,3 +2320,4 @@ function parseSVGStations(svgText: string): { name: string, x: number, y: number
   })
   return stations
 }
+export default React.memo(CaveViewer3D)
