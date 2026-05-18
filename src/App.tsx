@@ -2157,7 +2157,7 @@ export default function App() {
             <div className="welcome-main">
               <div style={{ textAlign: 'center' }}>
                 <div className="logo-icon">🏔️</div>
-                <h1 className="logo-title" style={{ marginBottom: '0.2rem' }}>LochViewer</h1>
+                <h1 className="logo-title" style={{ marginBottom: '0.2rem' }}>LochViewer 2.0.1</h1>
                 <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 600, letterSpacing: '0.05em' }}>by DankeZ</div>
                 <p className="logo-sub" style={{ marginTop: '1.2rem' }}>{t('welcome.sub')}</p>
               </div>
@@ -2231,22 +2231,23 @@ export default function App() {
                 História verzií
               </div>
 
-              <div className="changelog-ver">release-2026-05-07-01 (Dnes)</div>
-              <div className="changelog-group">GeoTIFF & Custom Povrchy</div>
+              <div className="changelog-ver">v2.0.1 (Dnes)</div>
+              <div className="changelog-group">Farby & Analytické Rezy</div>
               <ul className="changelog-list">
-                <li className="changelog-item">Integrácia GeoTIFF (.tif) ako vlastný povrch k modelu</li>
-                <li className="changelog-item">Podpora pre .tfw (World file) pre presné georeferencovanie</li>
-                <li className="changelog-item">Drag & drop podpora pre páry TIFF + TFW</li>
-                <li className="changelog-item">Možnosť nahrať terén v plnej kvalite (pixel-to-vertex)</li>
-                <li className="changelog-item">Optimalizované renderovanie cez dlaždicový (tiled) mesh</li>
+                <li className="changelog-item">Vlastné farby pre LiDAR cez Color Picker</li>
+                <li className="changelog-item">Ladenie plasticity pre hlboké tiene a detaily</li>
+                <li className="changelog-item">Dynamické zvýraznenie hrán rezov (Clipping Highlight)</li>
+                <li className="changelog-item">Jemné ladenie veľkosti bodov (krok 0.05)</li>
+                <li className="changelog-item">Plná synchronizácia orezávacej logiky s verziou v1</li>
               </ul>
 
-              <div className="changelog-ver">v1.4.3</div>
-              <div className="changelog-group">Opravy & LiDAR Interakcia</div>
+              <div className="changelog-ver">v2.0.0</div>
+              <div className="changelog-group">NextGen Engine & LiDAR LOD</div>
               <ul className="changelog-list">
-                <li className="changelog-item">Opravené meranie a klikanie na PLY mračná bodov</li>
-                <li className="changelog-item">Zvýšená citlivosť raycastingu na 0.5m</li>
-                <li className="changelog-item">Hladší "Silk" povrch pre organickú rekonštrukciu</li>
+                <li className="changelog-item">Úplne nový motor pre mračná bodov (LOD Streaming)</li>
+                <li className="changelog-item">Eye-Dome Lighting (EDL) pre špičkovú plasticitu</li>
+                <li className="changelog-item">Mapbox 3D Terrain integrácia</li>
+                <li className="changelog-item">Street View navigácia a Undo (Ctrl+Z)</li>
               </ul>
 
               <div className="changelog-ver">v1.3.0</div>
