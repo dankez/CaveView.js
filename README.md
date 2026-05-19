@@ -1,4 +1,4 @@
-# LochViewer - Speleological Viewer (v2.0.0)
+# LochViewer - Speleological Viewer (v2.0.2)
 
 [🇸🇰 Slovenská verzia nižšie / Slovak version below](#slovenská-verzia)
 
@@ -7,15 +7,22 @@ A modern web application for 3D visualization and analysis of cave systems, buil
 ## 🚀 Version 2.0: NextGen Engine
 The new **NextGen (v2)** engine represents a major leap in performance and visual quality, specifically designed for massive LiDAR data and real-world geographic context.
 
+### 🎛️ Integrated Sidebar UI (Master Switch)
+- **Engine Master Switch**: Version 2.0.2 introduces a unified sidebar where you can toggle between **Standard (v1)** and **NextGen (v2)** directly in the "Cave Walls" section using the **LIDAR NEXTGEN** switch.
+- **Context-Aware Settings**: When NextGen is active, the sidebar dynamically switches to advanced LiDAR controls (Point Size, Brightness, Plasticity, Custom Colors). When off, it restores classic mesh tools (Organic Smoothing, 3D Render, Wireframe).
+
 ### ☁️ LiDAR Octree LOD & Streaming
 - **Extreme Performance**: Handles models with millions of points (e.g., "Erna" with 6.2M pts) smoothly at 60 FPS.
 - **Spatial Octree Indexing**: Dynamically loads and renders only the parts of the cave currently visible to the camera.
 - **Web Worker Streaming**: File processing and indexing are offloaded to background threads, ensuring a lag-free UI.
 
 ### 🎨 Advanced Visuals
-- **Eye-Dome Lighting (EDL)**: Custom post-processing shader that adds depth and structural clarity to point clouds, making them look like solid surfaces.
-- **Interactive Shading**: Adjust **Brightness** and **Point Size** in real-time to match the density of different scanner outputs.
+- **Eye-Dome Lighting (EDL)**: Custom post-processing shader that adds depth and structural clarity to point clouds and meshes alike.
+- **Plasticity & Intensity**: New real-time controls to tune the "depth" of shadows and surface details, achieving a "genial" shading look for any model.
+- **Custom Colors**: Integrated Color Picker for LiDAR models allowing users to set a natural cave look (browns, ochres) while keeping perfect shading.
+- **Interactive Shading**: Adjust **Brightness** and **Point Size** (fine steps of 0.05) in real-time.
 - **Normal-Based Shading**: Utilizes LiDAR normals for realistic "headlight" lighting from the viewer's perspective.
+- **Enhanced Clipping**: Automatic high-visibility highlights on the edges of cross-sections.
 
 ### 🗺️ Geographic Context (Mapbox)
 - **3D Terrain Integration**: Automatically fetches and renders 3D satellite terrain from Mapbox using `three-geo` based on cave GPS coordinates.
@@ -116,12 +123,16 @@ LochViewer prioritizes user security and data protection. An independent securit
 
 ---
 <a name="slovenská-verzia"></a>
-# LochViewer - Speleologický Prehliadač (v2.0.0)
+# LochViewer - Speleologický Prehliadač (v2.0.2)
 
 Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémov, postavená na technológiách React, Three.js a React-Three-Fiber.
 
 ## 🚀 Verzia 2.0: NextGen Engine
 Nový engine **NextGen (v2)** predstavuje zásadný skok vo výkone a vizuálnej kvalite, navrhnutý špeciálne pre masívne LiDAR dáta a reálny geografický kontext.
+
+### 🎛️ Integrované UI v sidebare (Master Switch)
+- **Hlavný vypínač motora**: Verzia 2.0.2 prináša zjednotené ovládanie. V sekcii "Steny jaskyne" nájdete prepínač **LIDAR NEXTGEN**, ktorý okamžite prepne celú scénu do moderného režimu.
+- **Kontextové nastavenia**: Ak je NextGen aktívny, sidebar zobrazí len LiDAR funkcie (Veľkosť bodov, Jas, Plasticita, Vlastná farba). Po vypnutí sa vrátia klasické nástroje (Organické vyhladzovanie, 3D Render, Drôtený model).
 
 ### ☁️ LiDAR Octree LOD a Streaming
 - **Extrémny výkon**: Plynule zvláda modely s miliónmi bodov (napr. „Erna“ s 6.2M bodmi) pri 60 FPS.
@@ -129,9 +140,12 @@ Nový engine **NextGen (v2)** predstavuje zásadný skok vo výkone a vizuálnej
 - **Web Worker Streaming**: Spracovanie súborov prebieha na pozadí, vďaka čomu rozhranie zostáva bleskovo rýchle aj pri načítavaní gigabajtových dát.
 
 ### 🎨 Pokročilý vizuál
-- **Eye-Dome Lighting (EDL)**: Špeciálny shader, ktorý dodáva mračnu bodov hĺbku a jasné kontúry, vďaka čomu model pôsobí ako pevný povrch.
-- **Interaktívne ladenie**: Upravte si **Jas** a **Veľkosť bodov** v reálnom čase podľa hustoty konkrétneho skenu.
-- **Tieňovanie podľa normál**: Využíva LiDARové normály pre realistické nasvietenie štýlom „čelovka“ z pohľadu diváka.
+- **Eye-Dome Lighting (EDL)**: Špeciálny shader, ktorý dodáva mračnu bodov aj stenám jaskyne hĺbku a jasné kontúry.
+- **Ladenie plasticity**: Nový posuvník pre dynamickú kontrolu hĺbky tieňov a sýtosti detailov povrchu pre dosiahnutie "geniálneho" tieňovania.
+- **Vlastné farby**: Možnosť manuálneho výberu farby mračna bodov cez Color Picker pri zachovaní plnej plasticity.
+- **Interaktívne ladenie**: Upravte si **Jas** a **Veľkosť bodov** (jemný krok 0.05) v reálnom čase.
+- **Tieňovanie podľa normál**: Využíva LiDARové normály pre realistické nasvietenie štýlom „čelovka“.
+- **Zvýraznené rezy**: Automatické vysvietenie hrán pri použití orezávacích rovín pre lepšiu analýzu profilov.
 
 ### 🗺️ Geografický kontext (Mapbox)
 - **Integrácia 3D terénu**: Automaticky sťahuje a renderuje 3D satelitný terén z Mapboxu (pomocou `three-geo`) na základe GPS polohy jaskyne.

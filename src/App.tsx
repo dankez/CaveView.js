@@ -2434,18 +2434,6 @@ export default function App() {
               </button>
               
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {/* Engine Switcher */}
-                <div className="hide-mobile-flex" style={{ display: 'flex', gap: '2px', background: 'rgba(30,41,59,0.5)', padding: '2px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  {(['v1', 'v2'] as const).map(e => (
-                    <button key={e} onClick={() => setOpts(prev => ({ ...prev, engine: e }))}
-                      style={{ padding: '4px 8px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer',
-                        background: opts.engine === e ? '#3b82f6' : 'transparent',
-                        color: opts.engine === e ? 'white' : '#94a3b8' }}>
-                      {e === 'v1' ? 'v1' : 'v2'}
-                    </button>
-                  ))}
-                </div>
-
                 {/* NextGen Navigation Controls */}
                 {opts.engine === 'v2' && (
                   <div style={{ display: 'flex', gap: '4px' }}>
@@ -2857,228 +2845,139 @@ export default function App() {
                       {t('cave.title')}
                       <ColorPicker t={t} value={opts.colorScraps} onChange={(c) => setOpts(p => ({ ...p, colorScraps: c }))} />
                     </div>
-                    <div className="toggle-row">
-                      <label className="toggle-label">{t('cave.show')}</label>
-                      <div className={`switch${opts.showScraps ? ' on' : ''}`}
-                        onClick={() => toggleOpt('showScraps')} role="switch"
-                        aria-checked={opts.showScraps} tabIndex={0} />
+
+                    {/* MAIN NEXTGEN SWITCH */}
+                    <div className="toggle-row" style={{ background: 'rgba(99,102,241,0.1)', padding: '8px', borderRadius: '8px', marginBottom: '12px', border: '1px solid rgba(99,102,241,0.2)' }}>
+                      <label className="toggle-label" style={{ color: '#a5b4fc', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>blur_on</span>
+                        {lang === 'sk' ? 'LIDAR NEXTGEN' : 'LiDAR NEXTGEN'}
+                      </label>
+                      <div className={`switch${opts.engine === 'v2' ? ' on' : ''}`}
+                        onClick={() => setOpts(p => ({ ...p, engine: p.engine === 'v2' ? 'v1' : 'v2' }))} role="switch"
+                        aria-checked={opts.engine === 'v2'} tabIndex={0} />
                     </div>
 
-                    {opts.showScraps && (
+                    {/* CASE A: NEXTGEN IS ON (v2 Engine) */}
+                    {opts.engine === 'v2' ? (
+                      <div style={{ padding: '0 4px' }}>
+                        <div style={{ marginBottom: 12 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>{lang === 'sk' ? 'VEĽKOSŤ BODOV' : 'POINT SIZE'}</label>
+                            <span style={{ fontSize: 10, color: '#818cf8', fontWeight: 700 }}>{opts.pointCloudSize.toFixed(2)}</span>
+                          </div>
+                          <input type="range" min={0.0} max={2.0} step={0.05}
+                            value={opts.pointCloudSize}
+                            onChange={e => setOpts(p => ({ ...p, pointCloudSize: Number(e.target.value) }))}
+                            className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+                        </div>
+
+                        <div style={{ marginBottom: 12 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>{lang === 'sk' ? 'JAS MODELU' : 'BRIGHTNESS'}</label>
+                            <span style={{ fontSize: 10, color: '#818cf8', fontWeight: 700 }}>{opts.pointCloudBrightness.toFixed(2)}</span>
+                          </div>
+                          <input type="range" min={0.1} max={3.0} step={0.1}
+                            value={opts.pointCloudBrightness}
+                            onChange={e => setOpts(p => ({ ...p, pointCloudBrightness: Number(e.target.value) }))}
+                            className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+                        </div>
+
+                        <div style={{ marginBottom: 12 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>{lang === 'sk' ? 'PLASTICITA' : 'PLASTICITY'}</label>
+                            <span style={{ fontSize: 10, color: '#818cf8', fontWeight: 700 }}>{opts.pointCloudPlasticity.toFixed(1)}</span>
+                          </div>
+                          <input type="range" min={0.5} max={2.5} step={0.1}
+                            value={opts.pointCloudPlasticity}
+                            onChange={e => setOpts(p => ({ ...p, pointCloudPlasticity: Number(e.target.value) }))}
+                            className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+                        </div>
+
+                        <div style={{ marginBottom: 12 }}>
+                          <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, display: 'block', marginBottom: 6 }}>
+                            {lang === 'sk' ? 'REŽIM FARIEB' : 'COLOR MODE'}
+                          </label>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            {[
+                              { id: 'original',  label: lang === 'sk' ? 'PLY' : 'Original' },
+                              { id: 'elevation', label: lang === 'sk' ? 'Výška' : 'Elevation' },
+                              { id: 'natural',   label: lang === 'sk' ? 'Vlastná' : 'Custom' },
+                            ].map(mode => (
+                              <button key={mode.id} onClick={() => setOpts(p => ({ ...p, pointCloudColorMode: mode.id as any }))}
+                                style={{ flex: 1, fontSize: '9px', padding: '4px 2px', borderRadius: '4px', border: 'none', cursor: 'pointer',
+                                  background: opts.pointCloudColorMode === mode.id ? '#6366f1' : 'rgba(30,41,59,0.5)', color: 'white' }}>
+                                {mode.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {opts.pointCloudColorMode === 'natural' && (
+                          <div style={{ marginBottom: 12 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div className="dot" style={{ background: opts.pointCloudCustomColor, width: '12px', height: '12px' }} />
+                              <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>{lang === 'sk' ? 'FARBA JASKYNE' : 'CAVE COLOR'}</label>
+                              <div style={{ marginLeft: 'auto' }}>
+                                <ColorPicker t={t} value={opts.pointCloudCustomColor} onChange={(c) => setOpts(p => ({ ...p, pointCloudCustomColor: c }))} />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      /* CASE B: NEXTGEN IS OFF (Standard Mesh - v1) */
                       <>
                         <div className="toggle-row">
-                          <label className="toggle-label">{t('cave.organic')}</label>
-                          <div className={`switch${opts.smoothScraps ? ' on' : ''}`}
-                            onClick={() => {
-                              const newVal = !opts.smoothScraps;
-                              setOpts(p => ({ ...p, smoothScraps: newVal, accurateScraps: newVal ? false : p.accurateScraps, useSurfaceNet: newVal ? false : p.useSurfaceNet }));
-                            }} role="switch"
-                            aria-checked={opts.smoothScraps} tabIndex={0} />
+                          <label className="toggle-label">{t('cave.show')}</label>
+                          <div className={`switch${opts.showScraps ? ' on' : ''}`}
+                            onClick={() => toggleOpt('showScraps')} role="switch"
+                            aria-checked={opts.showScraps} tabIndex={0} />
                         </div>
 
-                        {opts.smoothScraps && (
-                          <div style={{ marginBottom: 12, padding: '0 4px' }}>
-                            {/* Organická úroveň (Hladkosť) - pre LiDAR nastavuje jemnosť rekonštrukcie, pre LOX úroveň vyhladenia stien */}
-                            <div style={{ marginBottom: 8 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>{lang === 'sk' ? 'Úroveň vyhladenia' : 'Smoothness Level'}</label>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <button 
-                                    onClick={() => setOpts(p => ({ ...p, organicLevel: Math.max(0, Math.round((p.organicLevel - 1) * 10) / 10) }))}
-                                    className="debug-btn"
-                                  >-</button>
-                                  <span className="debug-val" style={{ minWidth: '24px', textAlign: 'center' }}>{Math.round(opts.organicLevel)}</span>
-                                  <button 
-                                    onClick={() => setOpts(p => ({ ...p, organicLevel: Math.min(20, Math.round((p.organicLevel + 1) * 10) / 10) }))}
-                                    className="debug-btn"
-                                  >+</button>
-                                </div>
-                              </div>
-                              <input 
-                                type="range" min="0" max="20" step="0.1"
-                                value={opts.organicLevel}
-                                onChange={(e) => setOpts(p => ({ ...p, organicLevel: parseFloat(e.target.value) }))}
-                                style={{ width: '100%', height: 4, borderRadius: 2, appearance: 'none', background: 'rgba(255,255,255,0.1)', outline: 'none' }}
-                              />
+                        {opts.showScraps && (
+                          <>
+                            <div className="toggle-row">
+                              <label className="toggle-label">{t('cave.organic')}</label>
+                              <div className={`switch${opts.smoothScraps ? ' on' : ''}`}
+                                onClick={() => {
+                                  const newVal = !opts.smoothScraps;
+                                  setOpts(p => ({ ...p, smoothScraps: newVal, accurateScraps: newVal ? false : p.accurateScraps }));
+                                }} role="switch"
+                                aria-checked={opts.smoothScraps} tabIndex={0} />
                             </div>
 
-                            {/* Vypuklosť (Bulge) - dodatočná dilatácia modelu */}
-                            <div style={{ marginBottom: 8 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>{lang === 'sk' ? 'Vypuklosť (Bulge)' : 'Bulge / Dilation'}</label>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <button 
-                                    onClick={() => setOpts(p => ({ ...p, organicDilation: Math.max(-5, Math.round((p.organicDilation - 0.1) * 10) / 10) }))}
-                                    className="debug-btn"
-                                  >-</button>
-                                  <span className="debug-val" style={{ minWidth: '24px', textAlign: 'center' }}>{opts.organicDilation.toFixed(2)}</span>
-                                  <button 
-                                    onClick={() => setOpts(p => ({ ...p, organicDilation: Math.min(10, Math.round((p.organicDilation + 0.1) * 10) / 10) }))}
-                                    className="debug-btn"
-                                  >+</button>
-                                </div>
-                              </div>
-                              <input 
-                                type="range" min="-5" max="10" step="0.05"
-                                value={opts.organicDilation}
-                                onChange={(e) => setOpts(p => ({ ...p, organicDilation: parseFloat(e.target.value) }))}
-                                style={{ width: '100%', height: 4, borderRadius: 2, appearance: 'none', background: 'rgba(255,255,255,0.1)', outline: 'none' }}
-                              />
+                            <div className="toggle-row">
+                              <label className="toggle-label">{t('cave.accurateMesh')}</label>
+                              <div className={`switch${opts.accurateScraps ? ' on' : ''}`}
+                                onClick={() => {
+                                  const newVal = !opts.accurateScraps;
+                                  setOpts(p => ({ ...p, accurateScraps: newVal, smoothScraps: newVal ? false : p.smoothScraps }));
+                                }} role="switch"
+                                aria-checked={opts.accurateScraps} tabIndex={0} />
                             </div>
-                          </div>
+
+                            <div className="toggle-row">
+                              <label className="toggle-label">{t('cave.render3d')}</label>
+                              <div className={`switch${opts.showRenderCave ? ' on' : ''}`}
+                                onClick={() => toggleOpt('showRenderCave')} role="switch"
+                                aria-checked={opts.showRenderCave} tabIndex={0} />
+                            </div>
+
+                            <div className="toggle-row">
+                              <label className="toggle-label">{t('cave.wire') || 'Drôtený model'}</label>
+                              <div className={`switch${opts.scrapsWireframe ? ' on' : ''}`}
+                                onClick={() => toggleOpt('scrapsWireframe')} role="switch"
+                                aria-checked={opts.scrapsWireframe} tabIndex={0} />
+                            </div>
+
+                            <div className="toggle-row">
+                              <label className="toggle-label">{t('cave.altitude')}</label>
+                              <div className={`switch${opts.scrapsAltitude ? ' on' : ''}`}
+                                onClick={() => toggleOpt('scrapsAltitude')} role="switch"
+                                aria-checked={opts.scrapsAltitude} tabIndex={0} />
+                            </div>
+                          </>
                         )}
-                        <div className="toggle-row">
-                          <label className="toggle-label">{t('cave.accurateMesh')}</label>
-                          <div className={`switch${opts.accurateScraps ? ' on' : ''}`}
-                            onClick={() => {
-                              const newVal = !opts.accurateScraps;
-                              setOpts(p => ({ ...p, accurateScraps: newVal, smoothScraps: newVal ? false : p.smoothScraps, useSurfaceNet: newVal ? false : p.useSurfaceNet }));
-                            }} role="switch"
-                            aria-checked={opts.accurateScraps} tabIndex={0} />
-                        </div>
-
-
-
-                        {/* ── LiDAR NEXTGEN (v2) ── */}
-                        {opts.engine === 'v2' && (
-                          <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 12 }}>
-                            <div className="s-label" style={{ color: '#818cf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>blur_on</span>
-                              {lang === 'sk' ? 'LIDAR NEXTGEN' : 'LiDAR NEXTGEN'}
-                            </div>
-                            
-                            {/* Point Size */}
-                            <div style={{ marginBottom: 12 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>{lang === 'sk' ? 'VEĽKOSŤ BODOV' : 'POINT SIZE'}</label>
-                                <span style={{ fontSize: 10, color: '#818cf8', fontWeight: 700 }}>{opts.pointCloudSize.toFixed(2)}</span>
-                              </div>
-                              <input type="range" min={0.0} max={2.0} step={0.05}
-                                value={opts.pointCloudSize}
-                                onChange={e => setOpts(p => ({ ...p, pointCloudSize: Number(e.target.value) }))}
-                                className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
-                            </div>
-
-                            {/* Brightness */}
-                            <div style={{ marginBottom: 12 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>{lang === 'sk' ? 'JAS MODELU' : 'BRIGHTNESS'}</label>
-                                <span style={{ fontSize: 10, color: '#818cf8', fontWeight: 700 }}>{opts.pointCloudBrightness.toFixed(2)}</span>
-                              </div>
-                              <input type="range" min={0.1} max={3.0} step={0.1}
-                                value={opts.pointCloudBrightness}
-                                onChange={e => setOpts(p => ({ ...p, pointCloudBrightness: Number(e.target.value) }))}
-                                className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
-                            </div>
-
-                            {/* Plasticity */}
-                            <div style={{ marginBottom: 12 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>{lang === 'sk' ? 'PLASTICITA' : 'PLASTICITY'}</label>
-                                <span style={{ fontSize: 10, color: '#818cf8', fontWeight: 700 }}>{opts.pointCloudPlasticity.toFixed(1)}</span>
-                              </div>
-                              <input type="range" min={0.5} max={2.5} step={0.1}
-                                value={opts.pointCloudPlasticity}
-                                onChange={e => setOpts(p => ({ ...p, pointCloudPlasticity: Number(e.target.value) }))}
-                                className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
-                            </div>
-
-                            {/* Color Mode */}
-                            <div style={{ marginBottom: 12 }}>
-                              <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, display: 'block', marginBottom: 6 }}>
-                                {lang === 'sk' ? 'REŽIM FARIEB' : 'COLOR MODE'}
-                              </label>
-                              <div style={{ display: 'flex', gap: '4px' }}>
-                                {[
-                                  { id: 'original',  label: lang === 'sk' ? 'PLY' : 'Original' },
-                                  { id: 'elevation', label: lang === 'sk' ? 'Výška' : 'Elevation' },
-                                  { id: 'natural',   label: lang === 'sk' ? 'Vlastná' : 'Custom' },
-                                ].map(mode => (
-                                  <button
-                                    key={mode.id}
-                                    onClick={() => setOpts(p => ({ ...p, pointCloudColorMode: mode.id as any }))}
-                                    style={{
-                                      flex: 1,
-                                      fontSize: '9px',
-                                      padding: '4px 2px',
-                                      borderRadius: '4px',
-                                      border: 'none',
-                                      cursor: 'pointer',
-                                      background: opts.pointCloudColorMode === mode.id ? '#6366f1' : 'rgba(30,41,59,0.5)',
-                                      color: 'white',
-                                      fontWeight: opts.pointCloudColorMode === mode.id ? 'bold' : 'normal',
-                                      transition: 'all 0.2s'
-                                    }}
-                                  >
-                                    {mode.label}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Custom Color Picker (only for natural/custom mode) */}
-                            {opts.pointCloudColorMode === 'natural' && (
-                              <div style={{ marginBottom: 12 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <div className="dot" style={{ background: opts.pointCloudCustomColor, width: '12px', height: '12px' }} />
-                                  <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>
-                                    {lang === 'sk' ? 'FARBA JASKYNE' : 'CAVE COLOR'}
-                                  </label>
-                                  <div style={{ marginLeft: 'auto' }}>
-                                    <ColorPicker t={t} value={opts.pointCloudCustomColor} onChange={(c) => setOpts(p => ({ ...p, pointCloudCustomColor: c }))} />
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        <div className="toggle-row">
-                          <label className="toggle-label">{t('cave.render3d')}</label>
-                          <div className={`switch${opts.showRenderCave ? ' on' : ''}`}
-                            onClick={() => toggleOpt('showRenderCave')} role="switch"
-                            aria-checked={opts.showRenderCave} tabIndex={0} />
-                        </div>
-                        {opts.showRenderCave && (
-                          <div style={{ padding: '4px', background: 'rgba(30,41,59,0.5)', borderRadius: '6px', marginTop: '4px', marginBottom: '8px' }}>
-                            <div style={{ display: 'flex', gap: '4px' }}>
-                              {[
-                                { id: 'limestone',      label: lang === 'sk' ? 'Vápenec' : 'Limestone' },
-                                { id: 'dolomite',       label: lang === 'sk' ? 'Dolomit' : 'Dolomite' },
-                                { id: 'grey_limestone', label: lang === 'sk' ? 'Sivý váp.' : 'Grey L.' },
-                              ].map(tex => (
-                                <button
-                                  key={tex.id}
-                                  onClick={() => setOpts(p => ({ ...p, caveTexture: tex.id as any }))}
-                                  style={{
-                                    flex: 1,
-                                    fontSize: '9px',
-                                    padding: '4px',
-                                    borderRadius: '4px',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    background: opts.caveTexture === tex.id ? '#3b82f6' : '#1e293b',
-                                    color: 'white',
-                                    transition: 'all 0.2s'
-                                  }}
-                                >
-                                  {tex.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {([
-                          { key: 'scrapsWireframe' as const, label: t('cave.wire') },
-                          { key: 'scrapsAltitude' as const, label: t('cave.altitude') },
-                        ] as const).map(({ key, label }) => (
-                          <div className="toggle-row" key={key}>
-                            <label className="toggle-label">{label}</label>
-                            <div className={`switch${opts[key] ? ' on' : ''}`}
-                              onClick={() => toggleOpt(key)} role="switch"
-                              aria-checked={opts[key]} tabIndex={0} />
-                          </div>
-                        ))}
                       </>
                     )}
                   </div>

@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.0.2] - 2026-05-17
+### UI Reorganizácia & Stabilizácia
+- **Master Switch UI:** NextGen engine (v2) je teraz integrovaný priamo v sekcii "Steny jaskyne" ako hlavný prepínač. Tým sa zjednotilo ovládanie a vyčistila horná lišta.
+- **Kontextové Sidebar Menu:** Sidebar dynamicky zobrazuje len relevantné nastavenia podľa zvoleného motora (LiDAR vs Mesh).
+- **Nezávislé vrstvy:** Drôtený model (Wireframe) a vrstevnice na povrchu teraz fungujú nezávisle od ostatných vizuálnych režimov.
+- **Vylepšený Organic mód:** Zvýšená agresivita vyhladzovania (Taubin smoothing) pre "blanket look" efekt bez ostrých hrotov.
+- **Oprava navigácie:** Fixnutá logika `isMoving`, ktorá predtým blokovala vykresľovanie rúrok (Tubes) po zastavení pohybu.
+- **Calibration Fix (v2):** Opravený prepočet súradníc pre meranie staníc v NextGen engine pri aktívnej kalibrácii.
+
 ## [2.0.1] - 2026-05-17
 ### Custom Farby & Analytické Rezy
 - **Vlastná farba (Color Picker):** Implementovaná možnosť manuálneho výberu farby mračna bodov v NextGen engine so zachovaním plného tieňovania.
