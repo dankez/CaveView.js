@@ -58,7 +58,7 @@ class pltLoader extends FileLoader {
 				segments = [];
 				lastStationIndex = -1;
 
-			case 'D': // eslint-disable-line no-fallthrough
+			case 'D':  
 
 				stationName = parts[ 4 ].substring( 1 );
 

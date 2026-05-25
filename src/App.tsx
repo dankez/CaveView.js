@@ -9,6 +9,8 @@ import CaveViewer3D from '@v1/components/CaveViewer3D'
 import CaveViewerNextGen from '@v2/components/CaveViewerNextGen'
 import type { ParsedCave, ViewerOptions, CaveSurface, StationLabel } from '@shared/types'
 import type { Vec3 } from '@v1/parsers/caveParser'
+import { calculateVolumeAndProfile, analyzeLiDARAnomalies } from '@shared/utils/speleoAnalysis'
+import type { LiDARAnomaly } from '@shared/utils/speleoAnalysis'
 
 // ─── Error Boundary ───────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -636,6 +638,12 @@ export default function App() {
   const [appStatus, setAppStatus] = useState<{ msg: string; type: 'info' | 'error' | 'success' | 'progress'; progress?: number } | null>(null)
   const [downloadableTexture, setDownloadableTexture] = useState<{ dataUrl: string, bbox: string } | null>(null)
   const [currentTheme, setCurrentTheme] = useState<string>('precision')
+  
+  // Speleological & LiDAR analysis states
+  const [anomalies, setAnomalies] = useState<LiDARAnomaly[]>([])
+  const [activeAnomalyId, setActiveAnomalyId] = useState<string | null>(null)
+  const [isLiDARAnalyzing, setIsLiDARAnalyzing] = useState(false)
+  const [selectedSegmentProfile, setSelectedSegmentProfile] = useState<any | null>(null)
 
 
   const surfNextId = useRef(1)
@@ -708,12 +716,14 @@ export default function App() {
     mapboxZoom:          13,
     mapboxRadius:        2.0,
     mapboxOpacity:       0.5,
-    // LiDAR V2 specific
     pointCloudSize:      1.0,
     pointCloudBrightness: 1.2,
     pointCloudColorMode: 'original',
     pointCloudCustomColor: '#b3a694',
     pointCloudPlasticity: 1.0,
+    pointCloudViewMode: 'all',
+    pointCloudHeightThreshold: 0.1,
+    pointCloudAngleThreshold: 0.3,
     edlStrength:         0.8,
     edlRadius:           1.2,
 
@@ -755,7 +765,8 @@ export default function App() {
     cinematicMode:       false,
     recordingDuration:   10, // 0 = manual
     excludeModelFromClipping: false,
-    caveCalibrationOffset: { x: 0, y: 0, z: 0 }
+    caveCalibrationOffset: { x: 0, y: 0, z: 0 },
+    terrainCalibrationMode: false
   })
 
   useEffect(() => {
@@ -977,6 +988,42 @@ export default function App() {
     })
     setShowStationCard(true)
   }, [cave, isMeasuringMode]);
+
+  useEffect(() => {
+    if (!cave || selectedStations.length !== 2) {
+      setSelectedSegmentProfile(null);
+      return;
+    }
+    
+    const s1 = selectedStations[0];
+    const s2 = selectedStations[1];
+    
+    let activeSegment: any = null;
+    if (cave.segments) {
+      activeSegment = cave.segments.find((s: any) => 
+        (s.from?.name === s1.name && s.to?.name === s2.name) ||
+        (s.from?.name === s2.name && s.to?.name === s1.name)
+      );
+    }
+    
+    if (!activeSegment) {
+      activeSegment = {
+        from: s1.pos,
+        to: s2.pos,
+        fromLrud: undefined,
+        toLrud: undefined,
+        type: 'cave'
+      };
+    }
+    
+    try {
+      const profile = calculateVolumeAndProfile(activeSegment, cave);
+      setSelectedSegmentProfile(profile);
+    } catch (e) {
+      console.warn("Failed to calculate segment profile:", e);
+      setSelectedSegmentProfile(null);
+    }
+  }, [selectedStations, cave]);
 
   const handleSurfaceClick = useCallback((origX: number, origY: number, altitude: number, screenX: number, screenY: number, ctrlKey: boolean = false) => {
     if (!cave || (!isMeasuringMode && !ctrlKey)) return // Klik na terén berieme IBA v režime merania alebo s CTRL
@@ -2552,6 +2599,9 @@ export default function App() {
                         selectedStations={selectedStations}
                         activeProfilePoints={activeProfilePoints}
                         isMeasuringMode={isMeasuringMode}
+                        anomalies={anomalies}
+                        activeAnomalyId={activeAnomalyId}
+                        onSurfaceOffsetChange={(offset) => setOpts(prev => ({ ...prev, surfaceOffset: offset }))}
                       />
                     )}
                   </ErrorBoundary>
@@ -2922,6 +2972,63 @@ export default function App() {
                               </div>
                             </div>
                           </div>
+                        )}
+
+                        {/* Selektívne zobrazenie LiDAR Point Cloudu */}
+                        <div style={{ marginBottom: 12 }}>
+                          <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, display: 'block', marginBottom: 6 }}>
+                            {lang === 'sk' ? 'SELEKTÍVNE ZOBRAZENIE' : 'SELECTIVE VIEW'}
+                          </label>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            {[
+                              { id: 'all',     label: lang === 'sk' ? 'Všetko' : 'All' },
+                              { id: 'floor',   label: lang === 'sk' ? 'Podlaha' : 'Floor' },
+                              { id: 'ceiling', label: lang === 'sk' ? 'Strop' : 'Ceiling' },
+                              { id: 'contour', label: lang === 'sk' ? 'Vrstevnice' : 'Contours' },
+                              { id: 'heatmap', label: lang === 'sk' ? 'Heatmapa' : 'Heatmap' },
+                            ].map(mode => (
+                              <button key={mode.id} onClick={() => setOpts(p => ({ ...p, pointCloudViewMode: mode.id as any }))}
+                                style={{ flex: '1 1 30%', fontSize: '9px', padding: '5px 2px', borderRadius: '4px', border: 'none', cursor: 'pointer',
+                                  background: opts.pointCloudViewMode === mode.id ? '#6366f1' : 'rgba(30,41,59,0.5)', color: 'white' }}>
+                                {mode.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Interaktívne posuvníky prahových hodnôt segmentácie */}
+                        {opts.pointCloudViewMode !== 'all' && (
+                          <>
+                            <div style={{ marginBottom: 12 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>
+                                  {lang === 'sk' ? 'HRANIČNÁ VÝŠKA REZU' : 'HEIGHT THRESHOLD'}
+                                </label>
+                                <span style={{ fontSize: 10, color: '#6366f1', marginLeft: 'auto', fontWeight: 700 }}>
+                                  {(opts.pointCloudHeightThreshold ?? 0.1).toFixed(2)}
+                                </span>
+                              </div>
+                              <input type="range" min="-0.8" max="0.8" step="0.05"
+                                value={opts.pointCloudHeightThreshold ?? 0.1}
+                                onChange={e => setOpts(p => ({ ...p, pointCloudHeightThreshold: Number(e.target.value) }))}
+                                className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+                            </div>
+
+                            <div style={{ marginBottom: 12 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>
+                                  {lang === 'sk' ? 'UHOL SKLONU PLOCHY' : 'ANGLE THRESHOLD'}
+                                </label>
+                                <span style={{ fontSize: 10, color: '#6366f1', marginLeft: 'auto', fontWeight: 700 }}>
+                                  {(opts.pointCloudAngleThreshold ?? 0.3).toFixed(2)}
+                                </span>
+                              </div>
+                              <input type="range" min="0.0" max="0.9" step="0.05"
+                                value={opts.pointCloudAngleThreshold ?? 0.3}
+                                onChange={e => setOpts(p => ({ ...p, pointCloudAngleThreshold: Number(e.target.value) }))}
+                                className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+                            </div>
+                          </>
                         )}
                       </div>
                     ) : (
@@ -3437,6 +3544,155 @@ export default function App() {
                       {lang === 'sk' ? 'Klikni na ľubovoľný bod jaskyne pre pridanie postavy.' : 'Click on any cave point to add a caver.'}
                     </div>
                   )}
+                </div>
+
+                {/* ─── SPELEO & GEOLÓGIA ────────────────────────────────────────────────── */}
+                <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem' }}>
+                  <div className="s-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(147, 51, 234, 0.1)', borderLeft: '4px solid #a855f7' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#c084fc' }}>insights</span>
+                    {lang === 'sk' ? 'SPELEO & GEOLÓGIA' : 'SPELEO & GEOLOGY'}
+                  </div>
+
+                  {/* 1. 3D Kalibrácia Terénu (Gizmo) */}
+                  <div style={{ background: 'rgba(30,41,59,0.3)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
+                    <div className="toggle-row" style={{ border: 'none', padding: 0, marginBottom: '6px' }}>
+                      <label className="toggle-label" style={{ fontSize: '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#38bdf8' }}>open_with</span>
+                        {lang === 'sk' ? '3D kalibračné gizmo terénu' : '3D Terrain Gizmo'}
+                      </label>
+                      <div className={`switch${opts.terrainCalibrationMode ? ' on' : ''}`}
+                        onClick={() => setOpts(p => ({ ...p, terrainCalibrationMode: !p.terrainCalibrationMode }))}
+                        role="switch"
+                        aria-checked={opts.terrainCalibrationMode}
+                        tabIndex={0}
+                      />
+                    </div>
+                    <p style={{ fontSize: '9px', color: '#64748b', margin: '0 0 8px 0', lineHeight: '1.3' }}>
+                      {lang === 'sk' ? 'Aktivuje 3D manipulačné šípky priamo nad terénom v scéne pre real-time doladenie pozície.' : 'Activates 3D transformation arrows directly above the terrain in the scene for real-time alignment.'}
+                    </p>
+                    {opts.surfaceOffset && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9px', color: '#94a3b8', background: '#0f172a', padding: '4px 8px', borderRadius: '4px', fontFamily: 'monospace' }}>
+                        <span>Offset:</span>
+                        <span>X: {opts.surfaceOffset.x} | Y: {opts.surfaceOffset.y} | Z: {opts.surfaceOffset.z}m</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2. LiDAR & Splay Analyzátor Anomálií */}
+                  <div style={{ background: 'rgba(30,41,59,0.3)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
+                    <div style={{ fontSize: '10px', color: '#e2e8f0', marginBottom: '8px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#a855f7' }}>analytics</span>
+                      {lang === 'sk' ? 'LiDAR & Splay detektor komínov' : 'LiDAR Anomaly Detector'}
+                    </div>
+                    
+                    <button 
+                      onClick={async () => {
+                        if (!cave) return;
+                        setIsLiDARAnalyzing(true);
+                        setTimeout(() => {
+                          const results = analyzeLiDARAnomalies(cave);
+                          setAnomalies(results);
+                          setIsLiDARAnalyzing(false);
+                        }, 600);
+                      }}
+                      className="btn-back"
+                      style={{ width: '100%', marginBottom: '8px', background: 'rgba(147, 51, 234, 0.1)', color: '#c084fc', borderColor: 'rgba(147, 51, 234, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '6px', fontSize: '10px' }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>youtube_searched_for</span>
+                      <span>{isLiDARAnalyzing ? (lang === 'sk' ? 'Skenujem priestory...' : 'Scanning spaces...') : (lang === 'sk' ? 'Detegovať komíny, okná a pukliny' : 'Detect Chimneys & Windows')}</span>
+                    </button>
+
+                    {anomalies.length > 0 ? (
+                      <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px', paddingRight: '2px' }}>
+                        {anomalies.map((a) => (
+                          <div 
+                            key={a.id} 
+                            onClick={() => setActiveAnomalyId(activeAnomalyId === a.id ? null : a.id)}
+                            style={{ 
+                              padding: '6px', 
+                              borderRadius: '4px', 
+                              background: activeAnomalyId === a.id ? 'rgba(147,51,234,0.2)' : 'rgba(15,23,42,0.6)', 
+                              border: `1px solid ${activeAnomalyId === a.id ? '#c084fc' : 'rgba(255,255,255,0.05)'}`,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '2px',
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9px' }}>
+                              <span style={{ 
+                                fontWeight: 'bold', 
+                                color: a.type === 'chimney' ? '#f97316' : a.type === 'window' ? '#06b6d4' : '#c084fc',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>
+                                  {a.type === 'chimney' ? 'vertical_align_top' : a.type === 'window' ? 'open_in_new' : 'splitscreen'}
+                                </span>
+                                {a.type === 'chimney' ? (lang === 'sk' ? 'Komín / Dóm' : 'Chimney') : a.type === 'window' ? (lang === 'sk' ? 'Okno / Puklina' : 'Window') : (lang === 'sk' ? 'Geologická anomália' : 'Anomaly')}
+                              </span>
+                              <span style={{ color: '#10b981', fontWeight: 'bold' }}>{a.confidence.toFixed(0)}% spoľ.</span>
+                            </div>
+                            <div style={{ fontSize: '8px', color: '#94a3b8', lineHeight: '1.2' }}>
+                              {a.description} (Veľkosť: {a.size.toFixed(1)}m)
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '9px', color: '#64748b', textAlign: 'center', padding: '6px 0' }}>
+                        {lang === 'sk' ? 'Žiadne zistené anomálie. Spusťte analýzu.' : 'No anomalies detected yet. Click scan.'}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 3. Objemový Profiler a 2D rezy */}
+                  <div style={{ background: 'rgba(30,41,59,0.3)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
+                    <div style={{ fontSize: '10px', color: '#e2e8f0', marginBottom: '8px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#06b6d4' }}>layers</span>
+                      {lang === 'sk' ? '2D rez chodbou a objem' : '2D Cross-section & Volume'}
+                    </div>
+
+                    {selectedSegmentProfile ? (
+                      <div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '8px', fontSize: '9px', color: '#94a3b8' }}>
+                          <div style={{ background: '#0f172a', padding: '4px 6px', borderRadius: '4px' }}>
+                            <div style={{ color: '#64748b', fontSize: '8px' }}>{lang === 'sk' ? 'Prierezová plocha' : 'Cross-section area'}</div>
+                            <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#06b6d4', fontFamily: 'monospace' }}>{(selectedSegmentProfile.area ?? 0).toFixed(1)} m²</div>
+                          </div>
+                          <div style={{ background: '#0f172a', padding: '4px 6px', borderRadius: '4px' }}>
+                            <div style={{ color: '#64748b', fontSize: '8px' }}>{lang === 'sk' ? 'Odhadovaný objem' : 'Cave segment volume'}</div>
+                            <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#10b981', fontFamily: 'monospace' }}>{(selectedSegmentProfile.volume ?? 0).toFixed(1)} m³</div>
+                          </div>
+                        </div>
+
+                        <div style={{ background: '#0f172a', padding: '4px 6px', borderRadius: '4px', marginBottom: '8px', fontSize: '9px', color: '#94a3b8', display: 'flex', justifyContent: 'space-between' }}>
+                          <span>Dĺžka úseku: <strong style={{ color: '#e2e8f0' }}>{(selectedSegmentProfile.length ?? 0).toFixed(1)} m</strong></span>
+                          <span>LRUD: <strong style={{ color: '#e2e8f0' }}>{(selectedSegmentProfile.lrud?.l ?? 0).toFixed(1)}/{(selectedSegmentProfile.lrud?.r ?? 0).toFixed(1)}/{(selectedSegmentProfile.lrud?.u ?? 0).toFixed(1)}/{(selectedSegmentProfile.lrud?.d ?? 0).toFixed(1)}</strong></span>
+                        </div>
+
+                        {/* Textový výpis profilu chodby (bez SVG grafiky) */}
+                        <div style={{ background: '#090d16', borderRadius: '6px', padding: '8px', border: '1px solid rgba(6,182,212,0.15)', display: 'flex', flexDirection: 'column' }}>
+                          <div style={{ fontSize: '8px', color: '#06b6d4', fontWeight: 'bold', marginBottom: '4px' }}>
+                            {lang === 'sk' ? 'Tvar profilu chodby' : 'Passage shape'}
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '9px', color: '#94a3b8' }}>
+                            <div>Strop: <strong style={{ color: '#e2e8f0' }}>{(selectedSegmentProfile.lrud?.u ?? 0).toFixed(1)}m</strong></div>
+                            <div>Dno: <strong style={{ color: '#e2e8f0' }}>{(selectedSegmentProfile.lrud?.d ?? 0).toFixed(1)}m</strong></div>
+                            <div>Ľavá: <strong style={{ color: '#e2e8f0' }}>{(selectedSegmentProfile.lrud?.l ?? 0).toFixed(1)}m</strong></div>
+                            <div>Pravá: <strong style={{ color: '#e2e8f0' }}>{(selectedSegmentProfile.lrud?.r ?? 0).toFixed(1)}m</strong></div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '9px', color: '#64748b', textAlign: 'center', padding: '10px 0', lineHeight: '1.4' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px', display: 'block', marginBottom: '4px', color: '#64748b' }}>query_stats</span>
+                        {lang === 'sk' ? 'Pre výpočet objemu a 2D prierezu chodby zapnite režim merania a kliknite na 2 po sebe nasledujúce stanice.' : 'To compute volume & 2D cross-section, turn on measurement tool and select two connected stations.'}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div>

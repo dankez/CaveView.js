@@ -1744,7 +1744,6 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, ...p
       
       const format = source === 'wms-shadow' ? 'image/png' : 'image/jpeg';
 
-      let downloadPromise;
       // Map WMS Resolution selection to ZBGIS/Freemap XYZ zoom levels
       let zoomLevel = 16;
       if (props.options.surfaceWmsResolution <= 512) zoomLevel = 15;
@@ -1752,7 +1751,7 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, ...p
       else if (props.options.surfaceWmsResolution <= 2048) zoomLevel = 17;
       else zoomLevel = 18;
 
-      downloadPromise = downloadTiledXyz(url, surface.sjtskBbox, format, (p: Progress) => {
+      const downloadPromise = downloadTiledXyz(url, surface.sjtskBbox, format, (p: Progress) => {
         if (!isActive) return;
         const progress = Math.round((p.current / p.total) * 100);
         setWmsProgress(progress);
@@ -2060,7 +2059,7 @@ const CaveViewer3D = ({
       
       const v = new THREE.Vector3().subVectors(p2, p1).normalize()
       if (v.lengthSq() > 0.0001) {
-        let normal = new THREE.Vector3(-v.z, 0, v.x)
+        const normal = new THREE.Vector3(-v.z, 0, v.x)
         if (o.profileClipFlip) normal.multiplyScalar(-1)
         planes.push(new THREE.Plane(normal, -normal.dot(p1) - o.profileClipOffset))
       }

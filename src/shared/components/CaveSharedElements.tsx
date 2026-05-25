@@ -254,6 +254,10 @@ export const Character3D = React.memo(({ pos, pose, clippingPlanes }: { pos: [nu
 });
 
 export const ManualConnection = React.memo(({ p1, p2 }: { p1: {x:number, y:number, z:number}, p2: {x:number, y:number, z:number} }) => {
+  if (!p1 || !p2 || isNaN(p1.x) || isNaN(p1.y) || isNaN(p1.z) || isNaN(p2.x) || isNaN(p2.y) || isNaN(p2.z)) {
+    return null;
+  }
+
   const points = useMemo(() => [
     new THREE.Vector3(p1.x, p1.z, -p1.y),
     new THREE.Vector3(p2.x, p2.z, -p2.y)

@@ -24,7 +24,7 @@ export function parseLox(buffer: ArrayBuffer, onProgress?: (msg: string) => void
   const shash: Record<string, Vec3> = {}
 
   // Terrain accumulator — type 5 and type 6 records share one terrain object per file
-  let terrain: Partial<CaveSurface> = {}
+  const terrain: Partial<CaveSurface> = {}
 
   let pos            = 0
   let chunkDataStart = 0
@@ -140,8 +140,8 @@ export function parseLox(buffer: ArrayBuffer, onProgress?: (msg: string) => void
   // ── type 3 ─ Shot ────────────────────────────────────────────────────────────
   function readShot() {
     const m_from_r = readUint(); const m_to_r = readUint()
-    readFloat64(); readFloat64(); readFloat64(); readFloat64()  // fromLRUD
-    readFloat64(); readFloat64(); readFloat64(); readFloat64()  // toLRUD
+    const fl_l = readFloat64(); const fl_r = readFloat64(); const fl_u = readFloat64(); const fl_d = readFloat64()  // fromLRUD
+    const tl_l = readFloat64(); const tl_r = readFloat64(); const tl_u = readFloat64(); const tl_d = readFloat64()  // toLRUD
     const m_flags = readUint()
     readUint()  // m_sectionType
     readUint()  // m_surveyId
@@ -155,7 +155,14 @@ export function parseLox(buffer: ArrayBuffer, onProgress?: (msg: string) => void
     if      (m_flags & 0x10) type = 'splay'
     else if (m_flags & 0x01) type = 'surface'
     else if (m_flags & 0x02) type = 'duplicate'
-    segments.push({ from, to, type })
+    
+    segments.push({ 
+      from, 
+      to, 
+      type,
+      fromLrud: { l: fl_l, r: fl_r, u: fl_u, d: fl_d },
+      toLrud: { l: tl_l, r: tl_r, u: tl_u, d: tl_d }
+    })
   }
 
   // ── type 4 ─ Scrap (triangulated wall mesh) ───────────────────────────────
@@ -682,6 +689,8 @@ function buildResult(
     type: s.type,
     from: { x: s.from.x - cx, y: s.from.y - cy, z: s.from.z - cz },
     to:   { x: s.to.x   - cx, y: s.to.y   - cy, z: s.to.z   - cz },
+    fromLrud: s.fromLrud,
+    toLrud: s.toLrud,
   }))
 
   const centeredStations = stations.map(s => ({ x: s.x - cx, y: s.y - cy, z: s.z - cz }))

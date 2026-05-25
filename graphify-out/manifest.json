@@ -20,8 +20,8 @@
     "hash": "1a4fb1c9680cdea7a78ffe64450eacda"
   },
   "/home/dankez/cave3d/CaveView-modernized/vite.config.ts": {
-    "mtime": 1778957159.2753956,
-    "hash": "9cbf182462d87a37c317e7dae83eac6a"
+    "mtime": 1779130533.994055,
+    "hash": "5b55051a88489397e93225433a73ceff"
   },
   "/home/dankez/cave3d/CaveView-modernized/inspect_lox.ts": {
     "mtime": 1777201521.1537378,
@@ -44,44 +44,44 @@
     "hash": "e15f4c9754927c9219958cbbcf4537b4"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/App.tsx": {
-    "mtime": 1778959834.614236,
-    "hash": "610dd778823121848ff2ce8967da820f"
+    "mtime": 1779742298.3805153,
+    "hash": "0d78ed910dec09abdf0f266bfbc36a7b"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/main.tsx": {
     "mtime": 1776409952.8888268,
     "hash": "6ae1d7f14c4f267fbb8a816063c4d248"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v2/parsers/plyLoader.ts": {
-    "mtime": 1778958019.7311087,
-    "hash": "0148759942a971019bab28ab9743edac"
+    "mtime": 1779130533.9510555,
+    "hash": "2d4dd69b22aa5a10b2a0654a911f9c88"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v2/parsers/pointcloud.worker.ts": {
-    "mtime": 1778958053.303753,
-    "hash": "fac5f377a1aa90789a3d024025cc1432"
+    "mtime": 1779742526.698173,
+    "hash": "3ec75cbd6ea6871cb048a048aa590db1"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v2/parsers/__tests__/plyLoader.test.ts": {
-    "mtime": 1778957903.74434,
+    "mtime": 1779130533.9450557,
     "hash": "67a93f25b90bd67e2bc5c13db0371efa"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v2/components/MapboxTerrain.tsx": {
-    "mtime": 1778958721.7167058,
-    "hash": "f5bdeea34f92e858bbe06ca7a596f6bb"
+    "mtime": 1779277591.1617997,
+    "hash": "0ebce921074cadf8fb18b0100d7c799d"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v2/components/index.ts": {
-    "mtime": 1778958777.5001197,
+    "mtime": 1779130533.9450557,
     "hash": "89d6b626d850604204a6fae283b21542"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v2/components/CaveViewerNextGen.tsx": {
-    "mtime": 1778959706.8099713,
-    "hash": "04f84f2d5be6780493d75ae2943d53f8"
+    "mtime": 1779734744.3515365,
+    "hash": "20f604102e8b2d84c32ed15c47e9ee40"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v2/components/EDLPass.tsx": {
-    "mtime": 1778958177.7134366,
-    "hash": "923d946a62b590ef4aa3393bb8cdf138"
+    "mtime": 1779262061.3809218,
+    "hash": "3a9a60c2a48ab2215f379fba9c67e369"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v2/components/PointCloudLOD.tsx": {
-    "mtime": 1778958521.8098085,
-    "hash": "b4958d80194032cc2d9a37a16b39084c"
+    "mtime": 1779742288.7136152,
+    "hash": "6c852d249a8365de151e5c9700bdc3c3"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/test/setup.ts": {
     "mtime": 1777201521.7377317,
@@ -108,8 +108,12 @@
     "hash": "7699225f0e86c170210e341a4a64b66c"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/shared/types/index.ts": {
-    "mtime": 1778959645.347013,
-    "hash": "60d5cda85f8f2a7a5a2b661ea70290ae"
+    "mtime": 1779734709.2548792,
+    "hash": "5e1541aa25e4e0c019755c3756a9a784"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/speleoAnalysis.ts": {
+    "mtime": 1779286325.1345992,
+    "hash": "b2924281a10fff8e18c2e7cc67d8869f"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/geoUtils.ts": {
     "mtime": 1778345338.512635,
@@ -131,33 +135,37 @@
     "mtime": 1778959780.9745336,
     "hash": "0e61ee483397a3ba393ef561fac24c6b"
   },
+  "/home/dankez/cave3d/CaveView-modernized/src/shared/components/CaveSharedElements.tsx": {
+    "mtime": 1779295944.985921,
+    "hash": "5d5646c4a4714bde94c9b34d63ac43e2"
+  },
   "/home/dankez/cave3d/CaveView-modernized/src/shared/core/constants.ts": {
     "mtime": 1776409952.8878267,
     "hash": "e4f797092a42bd1f051236d1eddcd356"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v1/parsers/th2Parser.ts": {
-    "mtime": 1777201521.7377317,
+    "mtime": 1779130533.8690565,
     "hash": "554c1d623f0940445dbda4a5b86d9e5c"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v1/parsers/tiffParser.ts": {
-    "mtime": 1778959793.972963,
+    "mtime": 1779130533.8820562,
     "hash": "0c340534026bd247df5447efd6bd3891"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v1/parsers/parser.worker.ts": {
-    "mtime": 1778142441.5757043,
+    "mtime": 1779130533.8470566,
     "hash": "e9436c535b0c0373f2faa1fcc0676b98"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v1/parsers/caveParser.ts": {
-    "mtime": 1778959819.2098808,
-    "hash": "9a630c965ecfab15d83e4ab6ab89ede3"
+    "mtime": 1779277448.5382996,
+    "hash": "d5cd39dc9444bbf6821ea7ace7306ff8"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v1/parsers/__tests__/caveParser.test.ts": {
-    "mtime": 1777201521.7377317,
+    "mtime": 1779130533.814057,
     "hash": "db1755e56ff832691b6b1544b98b86a3"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v1/components/CaveViewer3D.tsx": {
-    "mtime": 1778959755.2216911,
-    "hash": "6bfc646b6c31e25bbd3261ba9c9d9490"
+    "mtime": 1779261768.4810412,
+    "hash": "dce7e4435c1d1212e51e56a97eb8f6e1"
   },
   "/home/dankez/cave3d/CaveView-modernized/legacy/js/CV2Plugins.js": {
     "mtime": 1776409952.8108265,
@@ -260,8 +268,8 @@
     "hash": "69240a2aa094703686527b0920f7b6f4"
   },
   "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/pltLoader.js": {
-    "mtime": 1776409952.8128264,
-    "hash": "cbf68fa849d87e6e766b98c590acce8a"
+    "mtime": 1779261756.5881698,
+    "hash": "27c3fe959e818385380f2647ebcca209"
   },
   "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/loxLoader.js": {
     "mtime": 1776409952.8128264,
@@ -536,8 +544,8 @@
     "hash": "b995395ed924b6ad234df923d90447e7"
   },
   "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/TextureCache.js": {
-    "mtime": 1776409952.8118265,
-    "hash": "46a260d2378776c6083a2331720577a9"
+    "mtime": 1779261756.5881698,
+    "hash": "0946986d13bb803bb672183803f54451"
   },
   "/home/dankez/cave3d/CaveView-modernized/legacy/js/public/Segment.js": {
     "mtime": 1776409952.8148265,
@@ -612,8 +620,8 @@
     "hash": "97f8b507dd2b675760ca6d0eb9c78396"
   },
   "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/Page.js": {
-    "mtime": 1776409952.8158264,
-    "hash": "0cf194e1210e565b67154e6a47b94812"
+    "mtime": 1779261756.57117,
+    "hash": "79bed8459b0a51cdbc769e949935779d"
   },
   "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/FileSelector.js": {
     "mtime": 1776409952.8158264,
@@ -624,20 +632,20 @@
     "hash": "0560dac6f7d94fcaa36a9e6fb46e6e0a"
   },
   "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SelectionPage.js": {
-    "mtime": 1776409952.8158264,
-    "hash": "5df3eb3a08ce49851dff3503c82ff102"
+    "mtime": 1779261756.57117,
+    "hash": "cce587db165d6fb4b6c9bae437a8ad25"
   },
   "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SelectionTreePage.js": {
-    "mtime": 1776409952.8158264,
-    "hash": "942178cb87847f47c356d0539b5ffa7c"
+    "mtime": 1779261756.57117,
+    "hash": "22ada27292ade31a08233b83a29d6eb9"
   },
   "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/PointerControls.js": {
     "mtime": 1776409952.8158264,
     "hash": "a4ae57f122ed3fa6a9d2ee1a9d4760e3"
   },
   "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SelectionCommonPage.js": {
-    "mtime": 1776409952.8158264,
-    "hash": "7eba5f009d5461cb9299f9dd3f720757"
+    "mtime": 1779261756.57117,
+    "hash": "d77b49882cdbce57ad13ed240ebde658"
   },
   "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/EditPage.js": {
     "mtime": 1776409952.8158264,
@@ -684,8 +692,8 @@
     "hash": "1a3b604d1b504d82e81c5c673e9fb681"
   },
   "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/PointIndicator.js": {
-    "mtime": 1776409952.8168266,
-    "hash": "18c6ca0bc51e326908d7d9591642014e"
+    "mtime": 1779261756.57117,
+    "hash": "a97c93f532b87964676fbef55fa3bf82"
   },
   "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/StationLabels.js": {
     "mtime": 1777201521.1817374,
@@ -748,8 +756,8 @@
     "hash": "14cc90446a77b416c742989931f7894e"
   },
   "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/CameraManager.js": {
-    "mtime": 1776409952.8158264,
-    "hash": "ab90385eabe3b75839c7aa13d0089617"
+    "mtime": 1779261756.57117,
+    "hash": "449f6080127b4604a3e4f646d4d5a703"
   },
   "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Marker.js": {
     "mtime": 1776409952.8168266,
@@ -860,8 +868,8 @@
     "hash": "0b1aa3fc2813dd8497d8a286088d8535"
   },
   "/home/dankez/cave3d/CaveView-modernized/README.md": {
-    "mtime": 1778572397.661719,
-    "hash": "27bddb8853c84ef4dc8893e5616ed53d"
+    "mtime": 1779216359.216298,
+    "hash": "d4bbc5b7d97887c6f16fc7096a8f3e77"
   },
   "/home/dankez/cave3d/CaveView-modernized/ALGORITHMS.md": {
     "mtime": 1778572376.317941,
@@ -872,8 +880,8 @@
     "hash": "c1870c04c463048a48a5e9923c4381b5"
   },
   "/home/dankez/cave3d/CaveView-modernized/CHANGELOG.md": {
-    "mtime": 1778572350.1512132,
-    "hash": "530b75776fe2525edadc82ce671db89f"
+    "mtime": 1779217384.385301,
+    "hash": "cafac94533d6443795482dc95a1de320"
   },
   "/home/dankez/cave3d/CaveView-modernized/agents.md": {
     "mtime": 1777201521.1427379,
@@ -892,8 +900,12 @@
     "hash": "8ee39dcfe68a23b3797b02648930d699"
   },
   "/home/dankez/cave3d/CaveView-modernized/GEMINI.md": {
-    "mtime": 1777585309.8565907,
-    "hash": "8ee39dcfe68a23b3797b02648930d699"
+    "mtime": 1779027994.727135,
+    "hash": "abad9b21e02b4e287e45d68837caef4a"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/handleStationClick_fix.txt": {
+    "mtime": 1779031540.139157,
+    "hash": "8240b1b7dbabeda3ed736b66cc44b809"
   },
   "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/index.html": {
     "mtime": 1768380035.0,

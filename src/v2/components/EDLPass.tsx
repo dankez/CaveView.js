@@ -63,6 +63,7 @@ const EDLShader = {
 export const EDLPass: React.FC<{ strength?: number; radius?: number }> = ({ strength = 1.0, radius = 1.0 }) => {
   const { gl, scene, camera, size } = useThree();
 
+  // Create composer once. Dynamic resizing handles internal texture adjustments efficiently.
   const composer = useMemo(() => {
     const renderTarget = new THREE.WebGLRenderTarget(size.width, size.height);
     renderTarget.depthTexture = new THREE.DepthTexture(size.width, size.height);
@@ -78,11 +79,46 @@ export const EDLPass: React.FC<{ strength?: number; radius?: number }> = ({ stre
     
     composer.addPass(edlPass);
     return composer;
-  }, [gl, scene, camera, size.width, size.height]);
+  }, [gl, scene, camera]);
 
+  // Dynamically update sizes & uniforms on window resize without recreating resources
   useEffect(() => {
     composer.setSize(size.width, size.height);
-  }, [composer, size]);
+    const edlPass = composer.passes[1] as ShaderPass;
+    if (edlPass && edlPass.uniforms && edlPass.uniforms.size) {
+      edlPass.uniforms.size.value.set(size.width, size.height);
+    }
+  }, [composer, size.width, size.height]);
+
+  // Dynamically update strength & radius uniforms when UI parameters change
+  useEffect(() => {
+    const edlPass = composer.passes[1] as ShaderPass;
+    if (edlPass && edlPass.uniforms) {
+      edlPass.uniforms.edlStrength.value = strength;
+      edlPass.uniforms.radius.value = radius;
+    }
+  }, [composer, strength, radius]);
+
+  // CRITICAL: Prevent GPU VRAM leaks by disposing render target and texture buffers on unmount
+  useEffect(() => {
+    return () => {
+      composer.passes.forEach(pass => {
+        if (pass.dispose) pass.dispose();
+      });
+      
+      const renderTarget = composer.readBuffer;
+      if (renderTarget) {
+        if (renderTarget.depthTexture) renderTarget.depthTexture.dispose();
+        renderTarget.dispose();
+      }
+      
+      const writeTarget = composer.writeBuffer;
+      if (writeTarget) {
+        if (writeTarget.depthTexture) writeTarget.depthTexture.dispose();
+        writeTarget.dispose();
+      }
+    };
+  }, [composer]);
 
   useFrame(() => {
     composer.render();

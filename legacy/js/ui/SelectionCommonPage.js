@@ -64,7 +64,7 @@ class SelectionCommonPage extends Page {
 
 		const self = this;
 
-		const redraw = container.clientHeight; /* lgtm[js/unused-local-variable] */ // eslint-disable-line no-unused-vars
+		const redraw = container.clientHeight; /* lgtm[js/unused-local-variable] */  
 
 		this.addLine = function ( ul, child ) {
 

@@ -12,6 +12,7 @@ interface MapboxTerrainProps {
   opacity?: number;
   visible?: boolean;
   mapboxToken: string;
+  position?: [number, number, number];
 }
 
 const MapboxTerrain: React.FC<MapboxTerrainProps> = ({
@@ -21,9 +22,9 @@ const MapboxTerrain: React.FC<MapboxTerrainProps> = ({
   zoom = 13,
   opacity = 1,
   visible = true,
-  mapboxToken
+  mapboxToken,
+  position = [0, 0, 0]
 }) => {
-  const { scene } = useThree();
   const [terrainGroup, setTerrainGroup] = useState<THREE.Group | null>(null);
 
   const tgeo = useMemo(() => {
@@ -60,7 +61,6 @@ const MapboxTerrain: React.FC<MapboxTerrainProps> = ({
           });
           
           setTerrainGroup(group);
-          scene.add(group);
         }
       } catch (err) {
         console.error('Failed to load Mapbox terrain:', err);
@@ -71,11 +71,8 @@ const MapboxTerrain: React.FC<MapboxTerrainProps> = ({
 
     return () => {
       isMounted = false;
-      if (terrainGroup) {
-        scene.remove(terrainGroup);
-      }
     };
-  }, [lat, lng, radius, zoom, tgeo, scene]);
+  }, [lat, lng, radius, zoom, tgeo, visible]);
 
   useEffect(() => {
     if (terrainGroup) {
@@ -89,7 +86,9 @@ const MapboxTerrain: React.FC<MapboxTerrainProps> = ({
     }
   }, [visible, opacity, terrainGroup]);
 
-  return null;
+  if (!terrainGroup || !visible) return null;
+
+  return <primitive object={terrainGroup} position={position} />;
 };
 
 export default MapboxTerrain;

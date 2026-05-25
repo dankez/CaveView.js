@@ -175,7 +175,7 @@ function CameraManager ( ctx, renderer, scene ) {
 
 			if ( activeCamera.isPerspective ) break;
 
-		case CAMERA_PERSPECTIVE: // eslint-disable-line no-fallthrough
+		case CAMERA_PERSPECTIVE:  
 
 			offsetLength = 4 * height * Math.tan( MathUtils.DEG2RAD * perspectiveCamera.fov / 2 ) / orthographicCamera.zoom / 2;
 

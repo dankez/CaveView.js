@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useState, useCallback, useRef } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
-import { OrbitControls, GizmoHelper, GizmoViewport } from '@react-three/drei'
+import { OrbitControls, GizmoHelper, GizmoViewport, TransformControls } from '@react-three/drei'
 import * as THREE from 'three'
 import gsap from 'gsap'
 import { PointCloudLOD } from './PointCloudLOD'
@@ -15,6 +15,7 @@ import {
   ManualConnection 
 } from '@shared/components/CaveSharedElements'
 import type { ParsedCave, ViewerOptions, StationLabel } from '@shared/types'
+import type { LiDARAnomaly } from '@shared/utils/speleoAnalysis'
 
 interface Props {
   cave: ParsedCave
@@ -27,6 +28,9 @@ interface Props {
   activeProfilePoints?: any[] | null
   isMeasuringMode: boolean
   manualConnection?: { p1: any, p2: any } | null
+  anomalies?: LiDARAnomaly[]
+  activeAnomalyId?: string | null
+  onSurfaceOffsetChange?: (offset: { x: number, y: number, z: number }) => void
 }
 
 const SceneBackground = ({ texture, color }: { texture: THREE.Texture | null, color: string }) => {
@@ -71,14 +75,18 @@ const NavigationHandler = ({
   fitTrigger, 
   cave, 
   offset,
-  onStationClick
+  onStationClick,
+  anomalies,
+  activeAnomalyId
 }: { 
   isMeasuringMode: boolean, 
   controlsRef: React.RefObject<any>,
   fitTrigger?: number,
   cave: ParsedCave,
   offset?: {x: number, y: number, z: number},
-  onStationClick: any
+  onStationClick: any,
+  anomalies?: any[],
+  activeAnomalyId?: string | null
 }) => {
   const { camera, scene, raycaster, gl } = useThree();
   const historyRef = useRef<{ pos: THREE.Vector3, target: THREE.Vector3 }[]>([]);
@@ -113,6 +121,25 @@ const NavigationHandler = ({
       }
     });
   }, [camera, controlsRef]);
+
+  useEffect(() => {
+    if (!activeAnomalyId || !anomalies || !controlsRef.current) return;
+    const a = anomalies.find(x => x.id === activeAnomalyId);
+    if (!a) return;
+    
+    const offX = offset?.x || 0;
+    const offY = offset?.z || 0;
+    const offZ = -(offset?.y || 0);
+    
+    const posX = a.pos.x + offX;
+    const posY = a.pos.z + offY;
+    const posZ = -a.pos.y + offZ;
+    
+    const targetPoint = new THREE.Vector3(posX, posY, posZ);
+    const endPos = new THREE.Vector3(posX + 15, posY + 10, posZ + 15);
+    
+    flyTo(endPos, targetPoint);
+  }, [activeAnomalyId, anomalies, offset, flyTo, controlsRef]);
 
   const handleUndo = useCallback(() => {
     const prevState = historyRef.current.pop();
@@ -202,10 +229,47 @@ const NavigationHandler = ({
 
 const CaveViewerNextGen = ({ 
   cave, options: o, onStationClick, onCameraUpdate, onStatusChange, fitTrigger, 
-  selectedStations, activeProfilePoints, isMeasuringMode, manualConnection 
+  selectedStations, activeProfilePoints, isMeasuringMode, manualConnection,
+  anomalies, activeAnomalyId, onSurfaceOffsetChange
 }: Props) => {
   const [isMoving, setIsModelMoving] = useState(false)
   const controlsRef = useRef<any>(null);
+  
+  const terrainRef = useRef<THREE.Group>(null);
+  const transformControlsRef = useRef<any>(null);
+
+  // Disable OrbitControls while dragging terrain
+  useEffect(() => {
+    if (!transformControlsRef.current || !controlsRef.current) return;
+    
+    const controls = controlsRef.current;
+    const transform = transformControlsRef.current;
+    
+    const handleDragging = (e: any) => {
+      controls.enabled = !e.value;
+    };
+    
+    transform.addEventListener('dragging-changed', handleDragging);
+    
+    return () => {
+      transform.removeEventListener('dragging-changed', handleDragging);
+    };
+  }, [o.terrainCalibrationMode]);
+
+  const handleTerrainTransform = useCallback(() => {
+    if (terrainRef.current && onSurfaceOffsetChange) {
+      const pos = terrainRef.current.position;
+      // Convert Three.js (x, y, z) back to Speleo (x, y, z)
+      // Three.js X -> world X
+      // Three.js Y (vertikála) -> world Z
+      // Three.js Z -> world -Y => world Y = -Three.js Z
+      onSurfaceOffsetChange({
+        x: Number(pos.x.toFixed(2)),
+        y: Number((-pos.z).toFixed(2)),
+        z: Number(pos.y.toFixed(2))
+      });
+    }
+  }, [onSurfaceOffsetChange]);
 
   const handleCameraChange = useCallback(() => {
     if (!isMoving) setIsModelMoving(true)
@@ -250,7 +314,7 @@ const CaveViewerNextGen = ({
       const p2 = new THREE.Vector3(s2.origX - (s1.centerX||0), 0, -(s2.origY - (s1.centerY||0)))
       const v = new THREE.Vector3().subVectors(p2, p1).normalize()
       if (v.lengthSq() > 0.0001) {
-        let normal = new THREE.Vector3(-v.z, 0, v.x)
+        const normal = new THREE.Vector3(-v.z, 0, v.x)
         if (o.profileClipFlip) normal.multiplyScalar(-1)
         planes.push(new THREE.Plane(normal, -normal.dot(p1) - o.profileClipOffset))
       }
@@ -282,6 +346,8 @@ const CaveViewerNextGen = ({
         cave={cave} 
         offset={o.caveCalibrationOffset}
         onStationClick={onStationClick}
+        anomalies={anomalies}
+        activeAnomalyId={activeAnomalyId}
       />
       
       <ambientLight intensity={0.5} />
@@ -319,18 +385,105 @@ const CaveViewerNextGen = ({
             minZ={cave.bounds.min.z}
             maxZ={cave.bounds.max.z}
             clippingPlanes={caveClippingPlanes}
+            viewMode={o.pointCloudViewMode || 'all'}
+            heightThreshold={o.pointCloudHeightThreshold ?? 0.4}
+            angleThreshold={o.pointCloudAngleThreshold ?? 0.5}
           />
         )}
 
+        {/* LiDAR Anomálie */}
+        {anomalies && anomalies.map((a) => {
+          const isSelected = activeAnomalyId === a.id;
+          
+          // Prepočet súradníc: Speleo (x, y, z) -> Three.js (x, z, -y)
+          const posX = a.pos.x;
+          const posY = a.pos.z;
+          const posZ = -a.pos.y;
+          
+          if (a.type === 'chimney') {
+            return (
+              <group key={a.id} position={[posX, posY, posZ]}>
+                <mesh>
+                  <coneGeometry args={[0.4, a.size, 8]} />
+                  <meshBasicMaterial 
+                    color={isSelected ? "#f43f5e" : "#f97316"} 
+                    transparent 
+                    opacity={isSelected ? 0.6 : 0.3} 
+                    wireframe={!isSelected}
+                  />
+                </mesh>
+                <pointLight color="#f97316" intensity={isSelected ? 2.0 : 0.5} distance={8} />
+              </group>
+            )
+          } else if (a.type === 'window') {
+            return (
+              <group key={a.id} position={[posX, posY, posZ]}>
+                <mesh>
+                  <sphereGeometry args={[0.6, 16, 16]} />
+                  <meshBasicMaterial 
+                    color={isSelected ? "#06b6d4" : "#0284c7"} 
+                    transparent 
+                    opacity={isSelected ? 0.6 : 0.3} 
+                    wireframe={!isSelected}
+                  />
+                </mesh>
+                <pointLight color="#0284c7" intensity={isSelected ? 2.0 : 0.5} distance={6} />
+              </group>
+            )
+          } else if (a.type === 'fracture') {
+            let rotation: [number, number, number] = [0, 0, 0];
+            if (a.normal) {
+              const normalVec = new THREE.Vector3(a.normal.x, a.normal.z, -a.normal.y).normalize();
+              const up = new THREE.Vector3(0, 1, 0);
+              const quaternion = new THREE.Quaternion().setFromUnitVectors(up, normalVec);
+              const euler = new THREE.Euler().setFromQuaternion(quaternion);
+              rotation = [euler.x, euler.y, euler.z];
+            }
+            return (
+              <group key={a.id} position={[posX, posY, posZ]} rotation={rotation}>
+                <mesh>
+                  <cylinderGeometry args={[a.size / 4, a.size / 4, 0.1, 16]} />
+                  <meshBasicMaterial 
+                    color={isSelected ? "#d946ef" : "#8b5cf6"} 
+                    transparent 
+                    opacity={isSelected ? 0.5 : 0.25} 
+                    wireframe={!isSelected}
+                  />
+                </mesh>
+                <pointLight color="#8b5cf6" intensity={isSelected ? 2.0 : 0.5} distance={8} />
+              </group>
+            )
+          }
+          return null;
+        })}
+
         {gpsCenter && o.showMapboxTerrain && o.mapboxToken && (
-          <MapboxTerrain 
-            lat={gpsCenter.lat}
-            lng={gpsCenter.lng}
-            radius={o.mapboxRadius || 2.0}
-            zoom={o.mapboxZoom || 13}
-            opacity={o.mapboxOpacity || 0.5}
-            visible={o.showMapboxTerrain}
-            mapboxToken={o.mapboxToken}
+          <group 
+            ref={terrainRef} 
+            position={[
+              o.surfaceOffset?.x || 0, 
+              o.surfaceOffset?.z || 0, 
+              -(o.surfaceOffset?.y || 0)
+            ]}
+          >
+            <MapboxTerrain 
+              lat={gpsCenter.lat}
+              lng={gpsCenter.lng}
+              radius={o.mapboxRadius || 2.0}
+              zoom={o.mapboxZoom || 13}
+              opacity={o.mapboxOpacity || 0.5}
+              visible={o.showMapboxTerrain}
+              mapboxToken={o.mapboxToken}
+            />
+          </group>
+        )}
+
+        {o.terrainCalibrationMode && o.showMapboxTerrain && terrainRef.current && (
+          <TransformControls 
+            ref={transformControlsRef}
+            object={terrainRef.current} 
+            mode="translate" 
+            onChange={handleTerrainTransform}
           />
         )}
       </group>

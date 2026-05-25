@@ -113,16 +113,139 @@ self.onmessage = (event: MessageEvent) => {
       if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
     }
 
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const cz = (minZ + maxZ) / 2;
+
+    // ─── 1. Krok: 2D Height Distribution Grid ──────────────────────────────────
+    const grid = new Map<string, number[]>();
+    const cellSize = 0.5; // 0.5m grid cell size for high-precision voxelization
+
+    for (let i = 0; i < vertexCount; i++) {
+      const x = points[i * 3];
+      const y = points[i * 3 + 1];
+      const z = points[i * 3 + 2]; // Original JTSK altitude
+
+      const gx = Math.floor(x / cellSize);
+      const gy = Math.floor(y / cellSize);
+      const key = `${gx},${gy}`;
+
+      let cell = grid.get(key);
+      if (!cell) {
+        cell = [];
+        grid.set(key, cell);
+      }
+      cell.push(z);
+    }
+
+    // ─── 2. Krok: Height Bucket Clustering & Gap Detection (CPU) ───────────────
+    // Tento algoritmus analyzuje vertikálne rozdelenie výšok v každom stĺpci.
+    // Deteguje prázdne vzdušné priestory (medzery >= 40cm), čím chirurgicky
+    // oddelí skutočnú podlahu od visiacich previsov nízkeho stropu a stalaktitov.
+    const cellBounds = new Map<string, { minFloor: number, maxFloor: number, minCeil: number, maxCeil: number }>();
+    const bucketSize = 0.2; // 20cm height segments for precise layer detection
+
+    for (const [key, heights] of grid.entries()) {
+      if (heights.length === 0) continue;
+
+      let minZ = Infinity, maxZ = -Infinity;
+      for (const h of heights) {
+        if (h < minZ) minZ = h;
+        if (h > maxZ) maxZ = h;
+      }
+
+      if (maxZ - minZ < 0.4) {
+        // Flat area or too few points, no gap analysis needed
+        cellBounds.set(key, { minFloor: minZ, maxFloor: maxZ, minCeil: minZ, maxCeil: maxZ });
+        continue;
+      }
+
+      // Build height occupancy buckets
+      const numBuckets = Math.ceil((maxZ - minZ) / bucketSize) + 1;
+      const buckets = new Uint8Array(numBuckets);
+      for (const h of heights) {
+        const idx = Math.floor((h - minZ) / bucketSize);
+        if (idx >= 0 && idx < numBuckets) buckets[idx] = 1;
+      }
+
+      // 1. Find floor boundary (bottom-up: stop at the first gap of >= 40cm)
+      let maxFloorIdx = 0;
+      let consecutiveGaps = 0;
+      for (let i = 0; i < numBuckets; i++) {
+        if (buckets[i] === 0) {
+          consecutiveGaps++;
+          if (consecutiveGaps >= 2) { // 40cm gap detected
+            break;
+          }
+        } else {
+          consecutiveGaps = 0;
+          maxFloorIdx = i;
+        }
+      }
+      const maxFloor = minZ + (maxFloorIdx + 1) * bucketSize;
+
+      // 2. Find ceiling boundary (top-down: stop at the first gap of >= 40cm)
+      let minCeilIdx = numBuckets - 1;
+      consecutiveGaps = 0;
+      for (let i = numBuckets - 1; i >= 0; i--) {
+        if (buckets[i] === 0) {
+          consecutiveGaps++;
+          if (consecutiveGaps >= 2) { // 40cm gap detected
+            break;
+          }
+        } else {
+          consecutiveGaps = 0;
+          minCeilIdx = i;
+        }
+      }
+      const minCeil = minZ + minCeilIdx * bucketSize;
+
+      cellBounds.set(key, {
+        minFloor: minZ,
+        maxFloor: Math.min(maxFloor, maxZ),
+        minCeil: Math.max(minCeil, minZ),
+        maxCeil: maxZ
+      });
+    }
+
+    // ─── 3. Krok: Relatívna výška pre každý bod (-1.0 podlaha až +1.0 strop) ────
+    const relHeights = new Float32Array(vertexCount);
+    for (let i = 0; i < vertexCount; i++) {
+      const x = points[i * 3];
+      const y = points[i * 3 + 1];
+      const z = points[i * 3 + 2];
+
+      const gx = Math.floor(x / cellSize);
+      const gy = Math.floor(y / cellSize);
+      const key = `${gx},${gy}`;
+
+      const bounds = cellBounds.get(key);
+      if (bounds) {
+        if (z <= bounds.maxFloor) {
+          // Bod patrí k súvislej podlahe. Mapujeme do [-1.0, -0.2]
+          const range = bounds.maxFloor - bounds.minFloor;
+          const t = range > 0.05 ? (z - bounds.minFloor) / range : 0.0;
+          relHeights[i] = -1.0 + t * 0.8;
+        } else if (z >= bounds.minCeil) {
+          // Bod patrí k súvislému stropu. Mapujeme do [0.2, 1.0]
+          const range = bounds.maxCeil - bounds.minCeil;
+          const t = range > 0.05 ? (z - bounds.minCeil) / range : 1.0;
+          relHeights[i] = 0.2 + t * 0.8;
+        } else {
+          // Bod leží vo vzdušnej medzere (previs nízkeho stropu / plávajúci artefakt)
+          relHeights[i] = 0.0;
+        }
+      } else {
+        relHeights[i] = 0.0;
+      }
+    }
+
+    // ─── 4. Krok: Octree & Stream ──────────────────────────────────────────────
     const root = new OctreeNode({
       min: { x: minX, y: minY, z: minZ },
       max: { x: maxX, y: maxY, z: maxZ }
     });
 
-    const cx = (minX + maxX) / 2;
-    const cy = (minY + maxY) / 2;
-    const cz = (minZ + maxZ) / 2;
-
-    // Build Octree & find max intensity
     let maxIntensity = 0;
     for (let i = 0; i < vertexCount; i++) {
       if (intensity[i] > maxIntensity) maxIntensity = intensity[i];
@@ -131,19 +254,18 @@ self.onmessage = (event: MessageEvent) => {
 
     const intensityScale = maxIntensity > 1.0 ? 1.0 / maxIntensity : 1.0;
 
-    // Stream nodes
     root.traverse((node) => {
       if (node.isLeaf && node.indices.length > 0) {
         const nodePoints = new Float32Array(node.indices.length * 3);
         const nodeColors = new Float32Array(node.indices.length * 3);
         const nodeNormals = new Float32Array(node.indices.length * 3);
         const nodeIntensity = new Float32Array(node.indices.length);
+        const nodeRelHeight = new Float32Array(node.indices.length); // NEW
 
         for (let i = 0; i < node.indices.length; i++) {
           const idx = node.indices[i];
-          // CENTER THE POINTS!
           nodePoints[i * 3] = points[idx * 3] - cx;
-          nodePoints[i * 3 + 1] = points[idx * 3 + 2] - cz; // Swap Y/Z to match Three.js (v1 logic: x, z, -y)
+          nodePoints[i * 3 + 1] = points[idx * 3 + 2] - cz; // Swap Y/Z for Three.js
           nodePoints[i * 3 + 2] = -(points[idx * 3 + 1] - cy);
           
           nodeColors[i * 3] = colors[idx * 3];
@@ -155,6 +277,7 @@ self.onmessage = (event: MessageEvent) => {
           nodeNormals[i * 3 + 2] = -normals[idx * 3 + 1];
           
           nodeIntensity[i] = intensity[idx] * intensityScale;
+          nodeRelHeight[i] = relHeights[idx]; // NEW
         }
 
         const b = node.bounds;
@@ -179,8 +302,9 @@ self.onmessage = (event: MessageEvent) => {
           colors: nodeColors,
           normals: nodeNormals,
           intensity: nodeIntensity,
+          relHeight: nodeRelHeight, // NEW
           vertexCount: node.indices.length
-        }, [nodePoints.buffer, nodeColors.buffer, nodeNormals.buffer, nodeIntensity.buffer] as any);
+        }, [nodePoints.buffer, nodeColors.buffer, nodeNormals.buffer, nodeIntensity.buffer, nodeRelHeight.buffer] as any);
       }
     });
 

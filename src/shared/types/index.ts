@@ -46,6 +46,8 @@ export interface Segment {
   from: Vec3
   to: Vec3
   type: 'cave' | 'splay' | 'surface' | 'duplicate'
+  fromLrud?: Lrud
+  toLrud?: Lrud
 }
 
 /** Per-station metadata for label display */
@@ -192,6 +194,9 @@ export interface ViewerOptions {
   pointCloudColorMode: 'original' | 'elevation' | 'natural'
   pointCloudCustomColor: string
   pointCloudPlasticity: number
+  pointCloudViewMode: 'all' | 'floor' | 'ceiling' | 'contour' | 'heatmap'
+  pointCloudHeightThreshold: number
+  pointCloudAngleThreshold: number
   
   surfaceTextureOpacity: number
   surfaceWmsResolution: number
@@ -241,4 +246,5 @@ export interface ViewerOptions {
   recordingDuration:   number
   excludeModelFromClipping: boolean
   caveCalibrationOffset: { x: number, y: number, z: number }
+  terrainCalibrationMode: boolean
 }

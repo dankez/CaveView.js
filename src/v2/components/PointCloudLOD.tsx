@@ -7,21 +7,26 @@ const vertexShader = `
 
 attribute vec3 color;
 attribute float intensity;
+attribute float relHeight; // NEW
 
 varying vec3 vColor;
 varying float vIntensity;
 varying vec3 vNormal;
+varying vec3 vModelNormal; // NEW (model space normála pre segmenter)
 varying vec3 vViewPosition;
 varying float vWorldZ;
+varying float vRelHeight; // NEW
 
 uniform float pointSize;
 
 void main() {
     vColor = color;
     vIntensity = intensity;
+    vRelHeight = relHeight; // NEW
     vWorldZ = position.y; // In v2, Y is altitude
+    vModelNormal = normal; // NEW
     
-    // Transform normal to view space
+    // Transform normal to view space (pre headlight lighting)
     vNormal = normalize(normalMatrix * normal);
 
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
@@ -42,8 +47,10 @@ const fragmentShader = `
 varying vec3 vColor;
 varying float vIntensity;
 varying vec3 vNormal;
+varying vec3 vModelNormal; // NEW (model space normála)
 varying vec3 vViewPosition;
 varying float vWorldZ;
+varying float vRelHeight; // NEW
 
 uniform float brightness;
 uniform float plasticity;
@@ -52,6 +59,11 @@ uniform vec3 customColor;
 uniform vec3 highlightColor;
 uniform float minZ;
 uniform float maxZ;
+
+// Real-time GPU segmenter uniforms
+uniform int uViewMode; // 0: All, 1: Floor, 2: Ceiling, 3: Contour Floor, 4: Heatmap Floor
+uniform float uHeightThreshold; // threshold for relHeight (0.0 to 1.0)
+uniform float uAngleThreshold;  // threshold for normal.y (0.0 to 1.0)
 
 vec3 getElevationColor(float z) {
     float t = clamp((z - minZ) / (maxZ - minZ), 0.0, 1.0);
@@ -91,12 +103,54 @@ void main() {
     }
     #endif
 
+    // ─── Speleo Segmenter: Autonómny Floor & Ceiling Discard ──────────────────
+    // Zistíme, či LiDAR model má vypočítané normály. 
+    bool hasNormals = (length(vModelNormal) > 0.1);
+    vec3 mNormal = hasNormals ? normalize(vModelNormal) : vec3(0.0);
+
+    // Podlaha: body ležiace v spodnej/strednej časti profilu jaskyne (pod uHeightThreshold)
+    // ktoré majú smer sklonu nahor (mNormal.y > uAngleThreshold) pre zahojenie balvanov a stupňov.
+    bool isFloor = (vRelHeight < uHeightThreshold) && (!hasNormals || mNormal.y > uAngleThreshold);
+    
+    // Strop: body ležiace v hornej/strednej časti profilu jaskyne (nad -uHeightThreshold)
+    // ktoré majú smer sklonu nadol (mNormal.y < -uAngleThreshold) pre zachovanie najvrchnejšej klenby.
+    bool isCeiling = (vRelHeight > -uHeightThreshold) && (!hasNormals || mNormal.y < -uAngleThreshold);
+
+    if (uViewMode == 1) { // Floor only
+        if (!isFloor) discard;
+    } else if (uViewMode == 2) { // Ceiling only
+        if (!isCeiling) discard;
+    } else if (uViewMode == 3 || uViewMode == 4) { // Contour/Heatmap floor modes
+        if (!isFloor) discard;
+    }
+
     // 1. Base color selection
     vec3 baseColor;
-    if (colorMode == 1) {
+    if (uViewMode == 4) {
+        // Heatmap floor: height elevation coloring
+        baseColor = getElevationColor(vWorldZ);
+    } else if (uViewMode == 3) {
+        // Contour floor: Draw elegant 1m contours on dark slate floor
+        vec3 terrainColor = vec3(0.15, 0.20, 0.25); // Slate background
+        
+        float fractZ = fract(vWorldZ + 0.5) - 0.5;
+        float distToContour = abs(fractZ);
+        float contourWidth = 0.03; // sharp 3cm lines
+        
+        // Anti-aliased lines using smoothstep
+        float contourIntensity = 1.0 - smoothstep(0.0, contourWidth, distToContour);
+        
+        // Highlight every 5th meter contour
+        float isIndexContour = 1.0 - smoothstep(0.0, contourWidth * 1.5, abs(fract(vWorldZ / 5.0 + 0.5) - 0.5) * 5.0);
+        
+        vec3 mainContourCol = vec3(0.95, 0.75, 0.15); // Golden main contours
+        vec3 subContourCol = vec3(0.65, 0.70, 0.75);  // Light silver sub-contours
+        vec3 finalContourColor = mix(subContourCol, mainContourCol, isIndexContour);
+        
+        baseColor = mix(terrainColor, finalContourColor, contourIntensity);
+    } else if (colorMode == 1) {
         baseColor = getElevationColor(vWorldZ);
     } else if (colorMode == 2) {
-        // Use user-selected custom color - EXACT SAME LOGIC AS ORIGINAL
         baseColor = customColor; 
     } else {
         // Original mode: use vertex color with a safe fallback for pure white/black
@@ -106,28 +160,25 @@ void main() {
         }
     }
     
-    // 2. Lighting calculation (Headlight effect) - THE PERFECT ORIGINAL FORMULA
+    // 2. Lighting calculation (Headlight effect)
     vec3 lightDir = normalize(vec3(0.2, 0.2, 1.0));
     float dotNL = dot(vNormal, lightDir);
     float diffuse = (length(vNormal) > 0.01) ? max(dotNL, 0.0) : 0.6;
     
-    // 3. Intensity influence - THE PERFECT ORIGINAL FORMULA
-    // Base intensity effect (0.4 floor, 0.6 scale)
+    // 3. Intensity influence
     float baseIntensityEffect = 0.4 + vIntensity * 0.6;
-    // Plasticity only scales the contrast of this effect
     float brightIntensity = mix(1.0, baseIntensityEffect, plasticity);
     
     // 4. Final Shading
-    // Reverting to the high-contrast 0.4/0.6 split
     float ambient = 0.4;
     float light = (ambient + (diffuse * 0.6 * plasticity)) * brightness;
     
     vec3 finalColor = baseColor * light * brightIntensity;
     
-    // 5. Gamma correction (The perfect 0.8)
+    // 5. Gamma correction
     finalColor = pow(finalColor, vec3(0.8 / clamp(brightness, 0.5, 2.0)));
 
-    // 6. Highlight for Clipping Edges (using UI-selected color)
+    // 6. Highlight for Clipping Edges
     if (hasClip && minClipDist < 0.15) {
         float highlightStrength = 1.0 - (minClipDist / 0.15);
         finalColor = mix(finalColor, highlightColor, highlightStrength * 0.9);
@@ -143,6 +194,7 @@ interface ChunkData {
   colors: Float32Array;
   normals: Float32Array;
   intensity: Float32Array;
+  relHeight: Float32Array; // NEW
   vertexCount: number;
   bounds: {
     min: { x: number; y: number; z: number };
@@ -160,7 +212,10 @@ export const PointCloudLOD: React.FC<{
   highlightColor?: string;
   minZ?: number;
   maxZ?: number;
-  clippingPlanes?: THREE.Plane[] 
+  clippingPlanes?: THREE.Plane[];
+  viewMode?: 'all' | 'floor' | 'ceiling' | 'contour' | 'heatmap'; // NEW
+  heightThreshold?: number; // NEW
+  angleThreshold?: number;  // NEW
 }> = ({ 
   url, 
   pointSize = 1.0, 
@@ -171,13 +226,24 @@ export const PointCloudLOD: React.FC<{
   highlightColor = '#ff4444',
   minZ = -100,
   maxZ = 100,
-  clippingPlanes = [] 
+  clippingPlanes = [],
+  viewMode = 'all', // NEW
+  heightThreshold = 0.4, // NEW
+  angleThreshold = 0.5, // NEW
 }) => {
   const [chunks, setChunks] = useState<Map<string, { points: THREE.Points; bounds: THREE.Box3 }>>(new Map());
   const { camera } = useThree();
   const workerRef = useRef<Worker | null>(null);
+  
+  // Keep track of loaded chunks for reliable GPU cleanup on unmount
+  const chunksRef = useRef<Map<string, { points: THREE.Points; bounds: THREE.Box3 }>>(new Map());
+
+  // Reuse Frustum and Matrix4 instances to prevent Garbage Collection stuttering/FPS drops
+  const frustumRef = useRef(new THREE.Frustum());
+  const matrixRef = useRef(new THREE.Matrix4());
 
   const modeInt = colorMode === 'elevation' ? 1 : colorMode === 'natural' ? 2 : 0;
+  const viewModeInt = viewMode === 'floor' ? 1 : viewMode === 'ceiling' ? 2 : viewMode === 'contour' ? 3 : viewMode === 'heatmap' ? 4 : 0; // NEW
   const threeColor = useMemo(() => new THREE.Color(customColor), [customColor]);
   const threeHighlightColor = useMemo(() => new THREE.Color(highlightColor), [highlightColor]);
 
@@ -197,6 +263,7 @@ export const PointCloudLOD: React.FC<{
         geometry.setAttribute('color', new THREE.BufferAttribute(chunk.colors, 3));
         geometry.setAttribute('normal', new THREE.BufferAttribute(chunk.normals, 3));
         geometry.setAttribute('intensity', new THREE.BufferAttribute(chunk.intensity, 1));
+        geometry.setAttribute('relHeight', new THREE.BufferAttribute(chunk.relHeight, 1)); // NEW
         geometry.computeBoundingSphere();
 
         const material = new THREE.ShaderMaterial({
@@ -208,7 +275,10 @@ export const PointCloudLOD: React.FC<{
             customColor: { value: threeColor },
             highlightColor: { value: threeHighlightColor },
             minZ: { value: minZ },
-            maxZ: { value: maxZ }
+            maxZ: { value: maxZ },
+            uViewMode: { value: viewModeInt }, // NEW
+            uHeightThreshold: { value: heightThreshold }, // NEW
+            uAngleThreshold: { value: angleThreshold }  // NEW
           },
           vertexShader,
           fragmentShader,
@@ -228,9 +298,12 @@ export const PointCloudLOD: React.FC<{
           new THREE.Vector3(chunk.bounds.max.x, chunk.bounds.max.y, chunk.bounds.max.z)
         );
 
+        const chunkObj = { points, bounds: box };
+        chunksRef.current.set(chunk.id, chunkObj);
+
         setChunks(prev => {
           const next = new Map(prev);
-          next.set(chunk.id, { points, bounds: box });
+          next.set(chunk.id, chunkObj);
           return next;
         });
       }
@@ -245,6 +318,18 @@ export const PointCloudLOD: React.FC<{
 
     return () => {
       worker.terminate();
+      
+      // CRITICAL: 100% reliable GPU VRAM resource cleanup to prevent memory leaks!
+      chunksRef.current.forEach(chunk => {
+        chunk.points.geometry.dispose();
+        if (Array.isArray(chunk.points.material)) {
+          chunk.points.material.forEach(m => m.dispose());
+        } else {
+          chunk.points.material.dispose();
+        }
+      });
+      chunksRef.current.clear();
+      setChunks(new Map());
     };
   }, [url]);
 
@@ -260,15 +345,19 @@ export const PointCloudLOD: React.FC<{
         if (material.uniforms.highlightColor) material.uniforms.highlightColor.value = threeHighlightColor;
         if (material.uniforms.minZ) material.uniforms.minZ.value = minZ;
         if (material.uniforms.maxZ) material.uniforms.maxZ.value = maxZ;
+        if (material.uniforms.uViewMode) material.uniforms.uViewMode.value = viewModeInt; // NEW
+        if (material.uniforms.uHeightThreshold) material.uniforms.uHeightThreshold.value = heightThreshold; // NEW
+        if (material.uniforms.uAngleThreshold) material.uniforms.uAngleThreshold.value = angleThreshold; // NEW
       }
       material.clippingPlanes = clippingPlanes;
       material.needsUpdate = true;
     });
-  }, [pointSize, brightness, plasticity, colorMode, customColor, highlightColor, threeColor, threeHighlightColor, minZ, maxZ, clippingPlanes, chunks]);
+  }, [pointSize, brightness, plasticity, colorMode, customColor, highlightColor, threeColor, threeHighlightColor, minZ, maxZ, clippingPlanes, chunks, viewMode, heightThreshold, angleThreshold]); // NEW dependencies
 
   useFrame(() => {
-    const frustum = new THREE.Frustum();
-    const matrix = new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    const frustum = frustumRef.current;
+    const matrix = matrixRef.current;
+    matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     frustum.setFromProjectionMatrix(matrix);
 
     chunks.forEach(chunk => {
