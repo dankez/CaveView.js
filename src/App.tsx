@@ -50,6 +50,7 @@ const SUPPORTED = [
   { ext: '.3d',  label: 'Survex 3D',   icon: '📐' },
   { ext: '.plt', label: 'Compass PLT', icon: '🧭' },
   { ext: '.ply', label: 'LiDAR PLY',   icon: '☁️' },
+  { ext: '.stl', label: '3D Mesh STL', icon: '🧱' },
 ]
 
 
@@ -1282,8 +1283,8 @@ export default function App() {
 
   const handleFile = useCallback(async (file: File) => {
     const ext = getExt(file.name)
-    if (!['.lox', '.3d', '.plt', '.ply', '.tif', '.tiff'].includes(ext)) {
-      setErrorMsg(`Nepodporovaný formát: ${ext}. Použite .lox, .3d, .plt, .ply alebo .tif`)
+    if (!['.lox', '.3d', '.plt', '.ply', '.stl', '.tif', '.tiff'].includes(ext)) {
+      setErrorMsg(`Nepodporovaný formát: ${ext}. Použite .lox, .3d, .plt, .ply, .stl alebo .tif`)
       return
     }
 
@@ -2221,7 +2222,7 @@ export default function App() {
                 >
                   📁 {t('welcome.selectFile')}
                 </button>
-                <input ref={fileInputRef} type="file" accept=".lox,.3d,.plt,.ply" onChange={e => {
+                <input ref={fileInputRef} type="file" accept=".lox,.3d,.plt,.ply,.stl" onChange={e => {
                   const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''
                 }} />
               </div>

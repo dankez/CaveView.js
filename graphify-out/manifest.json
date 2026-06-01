@@ -20,8 +20,8 @@
     "hash": "1a4fb1c9680cdea7a78ffe64450eacda"
   },
   "/home/dankez/cave3d/CaveView-modernized/vite.config.ts": {
-    "mtime": 1779130533.994055,
-    "hash": "5b55051a88489397e93225433a73ceff"
+    "mtime": 1780337920.7887247,
+    "hash": "d59bfb1b9670a382ae835ef0fe245ef2"
   },
   "/home/dankez/cave3d/CaveView-modernized/inspect_lox.ts": {
     "mtime": 1777201521.1537378,
@@ -44,8 +44,8 @@
     "hash": "e15f4c9754927c9219958cbbcf4537b4"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/App.tsx": {
-    "mtime": 1779742298.3805153,
-    "hash": "0d78ed910dec09abdf0f266bfbc36a7b"
+    "mtime": 1780338344.1669137,
+    "hash": "58c82fa7a96b94693e89b5e8a06a4563"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/main.tsx": {
     "mtime": 1776409952.8888268,
@@ -56,12 +56,16 @@
     "hash": "2d4dd69b22aa5a10b2a0654a911f9c88"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v2/parsers/pointcloud.worker.ts": {
-    "mtime": 1779742526.698173,
-    "hash": "3ec75cbd6ea6871cb048a048aa590db1"
+    "mtime": 1780339382.5369353,
+    "hash": "3366db8a170a5e0c121a211ce0374124"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v2/parsers/__tests__/plyLoader.test.ts": {
     "mtime": 1779130533.9450557,
     "hash": "67a93f25b90bd67e2bc5c13db0371efa"
+  },
+  "/home/dankez/cave3d/CaveView-modernized/src/v2/parsers/__tests__/segmentation.test.ts": {
+    "mtime": 1780339429.6134198,
+    "hash": "850519ee7a42284fba46bc74b9f46381"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v2/components/MapboxTerrain.tsx": {
     "mtime": 1779277591.1617997,
@@ -72,16 +76,16 @@
     "hash": "89d6b626d850604204a6fae283b21542"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v2/components/CaveViewerNextGen.tsx": {
-    "mtime": 1779734744.3515365,
-    "hash": "20f604102e8b2d84c32ed15c47e9ee40"
+    "mtime": 1780338079.5094197,
+    "hash": "af5e7e5667357c5056393b236b4daf35"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v2/components/EDLPass.tsx": {
     "mtime": 1779262061.3809218,
     "hash": "3a9a60c2a48ab2215f379fba9c67e369"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v2/components/PointCloudLOD.tsx": {
-    "mtime": 1779742288.7136152,
-    "hash": "6c852d249a8365de151e5c9700bdc3c3"
+    "mtime": 1780339413.1216004,
+    "hash": "c0f0d5b115126622ad7f2e38724fa0bb"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/test/setup.ts": {
     "mtime": 1777201521.7377317,
@@ -108,8 +112,8 @@
     "hash": "7699225f0e86c170210e341a4a64b66c"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/shared/types/index.ts": {
-    "mtime": 1779734709.2548792,
-    "hash": "5e1541aa25e4e0c019755c3756a9a784"
+    "mtime": 1780338524.1666923,
+    "hash": "18f84af32364ce9e2c19ff3862bb3436"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/speleoAnalysis.ts": {
     "mtime": 1779286325.1345992,
@@ -156,8 +160,8 @@
     "hash": "e9436c535b0c0373f2faa1fcc0676b98"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v1/parsers/caveParser.ts": {
-    "mtime": 1779277448.5382996,
-    "hash": "d5cd39dc9444bbf6821ea7ace7306ff8"
+    "mtime": 1780337250.4312592,
+    "hash": "0794bb741b71716c645c6ea072edf1ea"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v1/parsers/__tests__/caveParser.test.ts": {
     "mtime": 1779130533.814057,
@@ -872,16 +876,16 @@
     "hash": "d4bbc5b7d97887c6f16fc7096a8f3e77"
   },
   "/home/dankez/cave3d/CaveView-modernized/ALGORITHMS.md": {
-    "mtime": 1779742760.8862753,
-    "hash": "013b1f0574b69578f67a3f44f713bb13"
+    "mtime": 1780340181.4282796,
+    "hash": "d36a5322a24f7ad2ab64605a2ad96562"
   },
   "/home/dankez/cave3d/CaveView-modernized/BLOG_DRAFT.md": {
     "mtime": 1777564573.9556322,
     "hash": "c1870c04c463048a48a5e9923c4381b5"
   },
   "/home/dankez/cave3d/CaveView-modernized/CHANGELOG.md": {
-    "mtime": 1779217384.385301,
-    "hash": "cafac94533d6443795482dc95a1de320"
+    "mtime": 1780340154.7975662,
+    "hash": "23f3ee7688922ce45695c3500f5b2872"
   },
   "/home/dankez/cave3d/CaveView-modernized/agents.md": {
     "mtime": 1777201521.1427379,

@@ -242,6 +242,7 @@ LochViewer kladie veľký dôraz na bezpečnosť používateľov a ochranu dát.
 * `.3d` (Survex data)
 * `.plt` (Compass data)
 * `.ply` (Binárne LiDAR mračná bodov)
+* `.stl` (3D Mesh modely - binárne aj ASCII)
 * `.tif / .tiff` (GeoTIFF terénne modely)
 
 ---

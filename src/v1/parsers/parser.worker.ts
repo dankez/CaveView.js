@@ -1,4 +1,5 @@
 import { parseLox, parsePly, parseSvx, parsePlt } from './caveParser';
+import { parseStl } from './stlParser';
 
 self.onmessage = async (e: MessageEvent) => {
   const { buffer, ext } = e.data;
@@ -12,11 +13,8 @@ self.onmessage = async (e: MessageEvent) => {
 
     if (ext === '.ply') {
       cave = parsePly(buffer, progress);
-      // POZOR: classifyLiDAR() sa NESMIE volať pre jaskynné PLY skeny!
-      // Jej heuristika ("body nad priemerom = vegetácia") odreže horné steny jaskyne.
-      // Klasifikácia sa používa LEN ak PLY súbor obsahuje natívnu 'class' vlastnosť.
-      // Ak nie je natívna klasifikácia, všetky body ostanú class=0 (unclassified)
-      // a OrganicShell ich všetky zahrnie do rekonštrukcie.
+    } else if (ext === '.stl') {
+      cave = parseStl(buffer);
     } else if (ext === '.lox') {
       cave = parseLox(buffer, progress);
     } else if (ext === '.plt') {

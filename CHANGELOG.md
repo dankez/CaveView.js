@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0] - 2026-06-01
+### Podpora 3D Mesh formátu STL
+- **STL Parser:** Implementovaná podpora pre binárne a ASCII STL súbory. Modely sú načítavané asynchrónne cez background workera pomocou `STLLoader`.
+- **Integrácia s Engine v1:** STL modely sú automaticky spracovávané ako "scraps" (steny), čo umožňuje ich tieňovanie a interakciu.
+- **Automatické centrovanie:** Parser inteligentne vypočíta geometrický stred STL modelu, aby sa správne zobrazil aj bez georeferenčných dát.
+- **Unit Testy:** Pridané testy pre overenie správnosti parsovania STL binárnych dát.
+
 ## [2.1.0] - 2026-06-01
 ### Parting Line Segmentácia & Stabilizácia
 - **Mold Parting Line (Nový algoritmus):** Úplne nová logika segmentácie podlahy a stropu. Namiesto hľadania medzier používa geometrický stred (midpoint) vertikálnych stĺpcov. Tým sa eliminujú neprirodzene vysoké steny v úzkych vysokých meandroch.
