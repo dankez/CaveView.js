@@ -1,12 +1,7 @@
 console.log('[Worker] Script loaded');
 
 import { PLYLoader } from './plyLoader';
-
-export interface Vec3 {
-  x: number;
-  y: number;
-  z: number;
-}
+import type { Vec3, LiDARWorkerMessage } from '@shared/types';
 
 export interface Bounds {
   min: Vec3;
@@ -138,12 +133,10 @@ self.onmessage = (event: MessageEvent) => {
       cell.push(z);
     }
 
-    // ─── 2. Krok: Height Bucket Clustering & Gap Detection (CPU) ───────────────
-    // Tento algoritmus analyzuje vertikálne rozdelenie výšok v každom stĺpci.
-    // Deteguje prázdne vzdušné priestory (medzery >= 40cm), čím chirurgicky
-    // oddelí skutočnú podlahu od visiacich previsov nízkeho stropu a stalaktitov.
-    const cellBounds = new Map<string, { minFloor: number, maxFloor: number, minCeil: number, maxCeil: number }>();
-    const bucketSize = 0.2; // 20cm height segments for precise layer detection
+    // ─── 2. Krok: Mold Parting Line Analysis (CPU) ────────────────────────────
+    // Tento algoritmus hľadá geometrický stred jaskynnej chodby v každom stĺpci.
+    // Deliaca čiara (parting line) je definovaná ako stred medzi dnom a stropom.
+    const cellBounds = new Map<string, { minZ: number, maxZ: number, midZ: number }>();
 
     for (const [key, heights] of grid.entries()) {
       if (heights.length === 0) continue;
@@ -154,61 +147,14 @@ self.onmessage = (event: MessageEvent) => {
         if (h > maxZ) maxZ = h;
       }
 
-      if (maxZ - minZ < 0.4) {
-        // Flat area or too few points, no gap analysis needed
-        cellBounds.set(key, { minFloor: minZ, maxFloor: maxZ, minCeil: minZ, maxCeil: maxZ });
-        continue;
-      }
-
-      // Build height occupancy buckets
-      const numBuckets = Math.ceil((maxZ - minZ) / bucketSize) + 1;
-      const buckets = new Uint8Array(numBuckets);
-      for (const h of heights) {
-        const idx = Math.floor((h - minZ) / bucketSize);
-        if (idx >= 0 && idx < numBuckets) buckets[idx] = 1;
-      }
-
-      // 1. Find floor boundary (bottom-up: stop at the first gap of >= 40cm)
-      let maxFloorIdx = 0;
-      let consecutiveGaps = 0;
-      for (let i = 0; i < numBuckets; i++) {
-        if (buckets[i] === 0) {
-          consecutiveGaps++;
-          if (consecutiveGaps >= 2) { // 40cm gap detected
-            break;
-          }
-        } else {
-          consecutiveGaps = 0;
-          maxFloorIdx = i;
-        }
-      }
-      const maxFloor = minZ + (maxFloorIdx + 1) * bucketSize;
-
-      // 2. Find ceiling boundary (top-down: stop at the first gap of >= 40cm)
-      let minCeilIdx = numBuckets - 1;
-      consecutiveGaps = 0;
-      for (let i = numBuckets - 1; i >= 0; i--) {
-        if (buckets[i] === 0) {
-          consecutiveGaps++;
-          if (consecutiveGaps >= 2) { // 40cm gap detected
-            break;
-          }
-        } else {
-          consecutiveGaps = 0;
-          minCeilIdx = i;
-        }
-      }
-      const minCeil = minZ + minCeilIdx * bucketSize;
-
-      cellBounds.set(key, {
-        minFloor: minZ,
-        maxFloor: Math.min(maxFloor, maxZ),
-        minCeil: Math.max(minCeil, minZ),
-        maxCeil: maxZ
+      cellBounds.set(key, { 
+        minZ, 
+        maxZ, 
+        midZ: (minZ + maxZ) / 2 
       });
     }
 
-    // ─── 3. Krok: Relatívna výška pre každý bod (-1.0 podlaha až +1.0 strop) ────
+    // ─── 3. Krok: Relatívna výška pre každý bod (-1.0 dno až +1.0 strop) ────────
     const relHeights = new Float32Array(vertexCount);
     for (let i = 0; i < vertexCount; i++) {
       const x = points[i * 3];
@@ -221,19 +167,12 @@ self.onmessage = (event: MessageEvent) => {
 
       const bounds = cellBounds.get(key);
       if (bounds) {
-        if (z <= bounds.maxFloor) {
-          // Bod patrí k súvislej podlahe. Mapujeme do [-1.0, -0.2]
-          const range = bounds.maxFloor - bounds.minFloor;
-          const t = range > 0.05 ? (z - bounds.minFloor) / range : 0.0;
-          relHeights[i] = -1.0 + t * 0.8;
-        } else if (z >= bounds.minCeil) {
-          // Bod patrí k súvislému stropu. Mapujeme do [0.2, 1.0]
-          const range = bounds.maxCeil - bounds.minCeil;
-          const t = range > 0.05 ? (z - bounds.minCeil) / range : 1.0;
-          relHeights[i] = 0.2 + t * 0.8;
+        const halfHeight = (bounds.maxZ - bounds.minZ) / 2;
+        if (halfHeight > 0.02) { // Prevencia delenia nulou v extrémne plochých plochách
+          relHeights[i] = (z - bounds.midZ) / halfHeight;
         } else {
-          // Bod leží vo vzdušnej medzere (previs nízkeho stropu / plávajúci artefakt)
-          relHeights[i] = 0.0;
+          // Takmer plochý úsek - považujeme za dno
+          relHeights[i] = -1.0;
         }
       } else {
         relHeights[i] = 0.0;
@@ -294,7 +233,7 @@ self.onmessage = (event: MessageEvent) => {
           }
         };
 
-        self.postMessage({
+        const message: LiDARWorkerMessage = {
           type: 'POINTCLOUD_CHUNK',
           id: node.id,
           bounds: nodeBounds,
@@ -302,15 +241,25 @@ self.onmessage = (event: MessageEvent) => {
           colors: nodeColors,
           normals: nodeNormals,
           intensity: nodeIntensity,
-          relHeight: nodeRelHeight, // NEW
+          relHeight: nodeRelHeight,
           vertexCount: node.indices.length
-        }, [nodePoints.buffer, nodeColors.buffer, nodeNormals.buffer, nodeIntensity.buffer, nodeRelHeight.buffer] as any);
+        };
+
+        (self as any).postMessage(message, [
+          nodePoints.buffer, 
+          nodeColors.buffer, 
+          nodeNormals.buffer, 
+          nodeIntensity.buffer, 
+          nodeRelHeight.buffer
+        ]);
       }
     });
 
-    self.postMessage({ type: 'DONE', vertexCount });
+    const doneMessage: LiDARWorkerMessage = { type: 'DONE', vertexCount };
+    (self as any).postMessage(doneMessage);
 
   } catch (error) {
-    self.postMessage({ type: 'ERROR', error: (error as Error).message });
+    const errorMessage: LiDARWorkerMessage = { type: 'ERROR', error: (error as Error).message };
+    (self as any).postMessage(errorMessage);
   }
 };

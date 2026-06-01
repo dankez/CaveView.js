@@ -14,24 +14,8 @@ import {
   Character3D, 
   ManualConnection 
 } from '@shared/components/CaveSharedElements'
-import type { ParsedCave, ViewerOptions, StationLabel } from '@shared/types'
+import type { ParsedCave, ViewerOptions, StationLabel, CaveViewerNextGenProps, Vec3 } from '@shared/types'
 import type { LiDARAnomaly } from '@shared/utils/speleoAnalysis'
-
-interface Props {
-  cave: ParsedCave
-  options: ViewerOptions
-  onStationClick: (idx: number, screenX: number, screenY: number, ctrlKey: boolean, point?: THREE.Vector3) => void
-  onCameraUpdate?: (data: { dist: number, fov: number, height: number }) => void
-  onStatusChange?: (status: { msg: string; type: 'info' | 'error' | 'success' | 'progress'; progress?: number } | null) => void
-  fitTrigger?: number
-  selectedStations?: any[]
-  activeProfilePoints?: any[] | null
-  isMeasuringMode: boolean
-  manualConnection?: { p1: any, p2: any } | null
-  anomalies?: LiDARAnomaly[]
-  activeAnomalyId?: string | null
-  onSurfaceOffsetChange?: (offset: { x: number, y: number, z: number }) => void
-}
 
 const SceneBackground = ({ texture, color }: { texture: THREE.Texture | null, color: string }) => {
   const { scene } = useThree()
@@ -42,7 +26,7 @@ const SceneBackground = ({ texture, color }: { texture: THREE.Texture | null, co
   return null
 }
 
-const AutoFit = ({ cave, trigger, offset }: { cave: ParsedCave, trigger?: number, offset?: {x: number, y: number, z: number} }) => {
+const AutoFit = ({ cave, trigger, offset }: { cave: ParsedCave, trigger?: number, offset?: Vec3 }) => {
   const { camera, controls } = useThree() as any
   useEffect(() => {
     const b = cave.bounds
@@ -83,9 +67,9 @@ const NavigationHandler = ({
   controlsRef: React.RefObject<any>,
   fitTrigger?: number,
   cave: ParsedCave,
-  offset?: {x: number, y: number, z: number},
-  onStationClick: any,
-  anomalies?: any[],
+  offset?: Vec3,
+  onStationClick?: (idx: number, x: number, y: number, ctrl: boolean, p?: any) => void,
+  anomalies?: LiDARAnomaly[],
   activeAnomalyId?: string | null
 }) => {
   const { camera, scene, raycaster, gl } = useThree();
@@ -201,7 +185,7 @@ const NavigationHandler = ({
     const intersects = raycaster.intersectObjects(scene.children, true);
     if (intersects.length > 0) {
       const point = intersects[0].point;
-      onStationClick(-1, e.clientX, e.clientY, e.ctrlKey, point);
+      onStationClick?.(-1, e.clientX, e.clientY, e.ctrlKey, point);
     }
   }, [camera, scene, raycaster, isMeasuringMode, onStationClick, gl]);
 
@@ -231,7 +215,7 @@ const CaveViewerNextGen = ({
   cave, options: o, onStationClick, onCameraUpdate, onStatusChange, fitTrigger, 
   selectedStations, activeProfilePoints, isMeasuringMode, manualConnection,
   anomalies, activeAnomalyId, onSurfaceOffsetChange
-}: Props) => {
+}: CaveViewerNextGenProps) => {
   const [isMoving, setIsModelMoving] = useState(false)
   const controlsRef = useRef<any>(null);
   
@@ -366,7 +350,7 @@ const CaveViewerNextGen = ({
         <EntranceMarkers cave={cave} options={o} />
 
         {selectedStations && selectedStations.length === 2 && (
-          <ManualConnection p1={selectedStations[0]} p2={selectedStations[1]} />
+          <ManualConnection p1={selectedStations[0].pos} p2={selectedStations[1].pos} />
         )}
 
         {o.placedCaver && (

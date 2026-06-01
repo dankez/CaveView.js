@@ -248,3 +248,35 @@ export interface ViewerOptions {
   caveCalibrationOffset: { x: number, y: number, z: number }
   terrainCalibrationMode: boolean
 }
+
+export interface LiDARWorkerMessage {
+  type: 'POINTCLOUD_CHUNK' | 'DONE' | 'ERROR';
+  id?: string;
+  bounds?: {
+    min: Vec3;
+    max: Vec3;
+  };
+  points?: Float32Array;
+  colors?: Float32Array;
+  normals?: Float32Array;
+  intensity?: Float32Array;
+  relHeight?: Float32Array;
+  vertexCount?: number;
+  error?: string;
+}
+
+export interface CaveViewerNextGenProps {
+  cave: ParsedCave;
+  options: ViewerOptions;
+  onStationClick?: (idx: number, screenX: number, screenY: number, ctrlKey: boolean, point?: any) => void;
+  onCameraUpdate?: (data: { dist: number, fov: number, height: number }) => void;
+  onStatusChange?: (status: { msg: string, type: 'info' | 'error' | 'success' | 'progress', progress?: number } | null) => void;
+  fitTrigger?: number;
+  selectedStations?: StationLabel[];
+  activeProfilePoints?: StationLabel[] | null;
+  isMeasuringMode: boolean;
+  manualConnection?: { p1: Vec3, p2: Vec3 } | null;
+  anomalies?: any[];
+  activeAnomalyId?: string | null;
+  onSurfaceOffsetChange?: (offset: Vec3) => void;
+}

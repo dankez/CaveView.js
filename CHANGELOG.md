@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.1.0] - 2026-06-01
+### Parting Line Segmentácia & Stabilizácia
+- **Mold Parting Line (Nový algoritmus):** Úplne nová logika segmentácie podlahy a stropu. Namiesto hľadania medzier používa geometrický stred (midpoint) vertikálnych stĺpcov. Tým sa eliminujú neprirodzene vysoké steny v úzkych vysokých meandroch.
+- **Deliaca čiara [-1.0, 1.0]:** Body sú teraz mapované lineárne od dna (-1) po strop (+1). UI posuvník "Výška rezu" teraz funguje ako dynamický posun tejto deliacej roviny.
+- **Typová čistka (TS Strict):** Zjednotená definícia `Vec3` naprieč celým projektom. Odstránené kritické `any` a `as any` z NextGen enginu. Zavedené rozhranie `LiDARWorkerMessage` pre typovo bezpečnú komunikáciu s Workerom.
+- **Optimalizácia prenosu dát:** Implementované **Transferable Objects** pri komunikácii s Workerom, čo zrýchľuje načítavanie masívnych modelov bez lagovania UI.
+- **Čistá konzola:** Odstránené varovania o duplicite Three.js a chyby CORS/429 pri geolokácii (nahradené natívnou detekciou prehliadača).
+- **Unit Testy:** Pridané matematické overenie segmentácie v `src/v2/parsers/__tests__/segmentation.test.ts`.
+
 ## [2.0.2] - 2026-05-17
 ### UI Reorganizácia & Stabilizácia
 - **Master Switch UI:** NextGen engine (v2) je teraz integrovaný priamo v sekcii "Steny jaskyne" ako hlavný prepínač. Tým sa zjednotilo ovládanie a vyčistila horná lišta.

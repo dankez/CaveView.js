@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { useThree, useFrame } from '@react-three/fiber';
+import type { LiDARWorkerMessage } from '@shared/types';
 
 const vertexShader = `
 #include <clipping_planes_pars_vertex>
@@ -103,18 +104,18 @@ void main() {
     }
     #endif
 
-    // ─── Speleo Segmenter: Autonómny Floor & Ceiling Discard ──────────────────
+    // ─── Speleo Segmenter: Mold Parting Line Logic (GPU) ─────────────────────
     // Zistíme, či LiDAR model má vypočítané normály. 
     bool hasNormals = (length(vModelNormal) > 0.1);
     vec3 mNormal = hasNormals ? normalize(vModelNormal) : vec3(0.0);
 
-    // Podlaha: body ležiace v spodnej/strednej časti profilu jaskyne (pod uHeightThreshold)
-    // ktoré majú smer sklonu nahor (mNormal.y > uAngleThreshold) pre zahojenie balvanov a stupňov.
+    // Podlaha: body ležiace pod deliacou rovinou (uHeightThreshold)
+    // Sklon nahor (mNormal.y > uAngleThreshold) odstraňuje strmé steny.
     bool isFloor = (vRelHeight < uHeightThreshold) && (!hasNormals || mNormal.y > uAngleThreshold);
     
-    // Strop: body ležiace v hornej/strednej časti profilu jaskyne (nad -uHeightThreshold)
-    // ktoré majú smer sklonu nadol (mNormal.y < -uAngleThreshold) pre zachovanie najvrchnejšej klenby.
-    bool isCeiling = (vRelHeight > -uHeightThreshold) && (!hasNormals || mNormal.y < -uAngleThreshold);
+    // Strop: body ležiace nad deliacou rovinou (uHeightThreshold)
+    // Sklon nadol (mNormal.y < -uAngleThreshold) odstraňuje strmé steny.
+    bool isCeiling = (vRelHeight > uHeightThreshold) && (!hasNormals || mNormal.y < -uAngleThreshold);
 
     if (uViewMode == 1) { // Floor only
         if (!isFloor) discard;
@@ -253,17 +254,15 @@ export const PointCloudLOD: React.FC<{
     });
     workerRef.current = worker;
 
-    worker.onmessage = (event: MessageEvent) => {
+    worker.onmessage = (event: MessageEvent<LiDARWorkerMessage>) => {
       const data = event.data;
-      if (data.type === 'POINTCLOUD_CHUNK') {
-        const chunk = data as ChunkData;
-        
+      if (data.type === 'POINTCLOUD_CHUNK' && data.points && data.colors && data.normals && data.intensity && data.relHeight && data.bounds && data.id) {
         const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute('position', new THREE.BufferAttribute(chunk.points, 3));
-        geometry.setAttribute('color', new THREE.BufferAttribute(chunk.colors, 3));
-        geometry.setAttribute('normal', new THREE.BufferAttribute(chunk.normals, 3));
-        geometry.setAttribute('intensity', new THREE.BufferAttribute(chunk.intensity, 1));
-        geometry.setAttribute('relHeight', new THREE.BufferAttribute(chunk.relHeight, 1)); // NEW
+        geometry.setAttribute('position', new THREE.BufferAttribute(data.points, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(data.colors, 3));
+        geometry.setAttribute('normal', new THREE.BufferAttribute(data.normals, 3));
+        geometry.setAttribute('intensity', new THREE.BufferAttribute(data.intensity, 1));
+        geometry.setAttribute('relHeight', new THREE.BufferAttribute(data.relHeight, 1));
         geometry.computeBoundingSphere();
 
         const material = new THREE.ShaderMaterial({
@@ -276,9 +275,9 @@ export const PointCloudLOD: React.FC<{
             highlightColor: { value: threeHighlightColor },
             minZ: { value: minZ },
             maxZ: { value: maxZ },
-            uViewMode: { value: viewModeInt }, // NEW
-            uHeightThreshold: { value: heightThreshold }, // NEW
-            uAngleThreshold: { value: angleThreshold }  // NEW
+            uViewMode: { value: viewModeInt },
+            uHeightThreshold: { value: heightThreshold },
+            uAngleThreshold: { value: angleThreshold }
           },
           vertexShader,
           fragmentShader,
@@ -294,16 +293,16 @@ export const PointCloudLOD: React.FC<{
         points.frustumCulled = false;
 
         const box = new THREE.Box3(
-          new THREE.Vector3(chunk.bounds.min.x, chunk.bounds.min.y, chunk.bounds.min.z),
-          new THREE.Vector3(chunk.bounds.max.x, chunk.bounds.max.y, chunk.bounds.max.z)
+          new THREE.Vector3(data.bounds.min.x, data.bounds.min.y, data.bounds.min.z),
+          new THREE.Vector3(data.bounds.max.x, data.bounds.max.y, data.bounds.max.z)
         );
 
         const chunkObj = { points, bounds: box };
-        chunksRef.current.set(chunk.id, chunkObj);
+        chunksRef.current.set(data.id, chunkObj);
 
         setChunks(prev => {
           const next = new Map(prev);
-          next.set(chunk.id, chunkObj);
+          next.set(data.id!, chunkObj);
           return next;
         });
       }

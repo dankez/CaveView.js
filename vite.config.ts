@@ -14,6 +14,7 @@ export default defineConfig({
       '@v2': path.resolve(__dirname, './src/v2'),
       'THREE': 'three',
     },
+    dedupe: ['three'],
   },
   optimizeDeps: {
     include: ['three-geo'],

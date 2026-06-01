@@ -110,52 +110,36 @@ Lineárny posun celého jaskynného systému (vrátane staníc a mračien bodov)
 - **Krok**: 0.5 metra pre jemné doladenie v reálnom čase.
 
 ---
-## 6. Autonómna LiDAR Segmentácia (Floor & Ceiling Voxelization)
+## 6. Autonómna LiDAR Segmentácia (Mold Parting Line)
 
 Tento pokročilý algoritmus umožňuje úplne autonómne oddelenie podlahy a stropu priamo z 3D mračna bodov (PLY) **bez akejkoľvek závislosti na stredovej línii (centerline) alebo `.lox` súboroch**.
 
-### 6.1 Height Bucket Clustering & Gap Detection (CPU - Web Worker)
-Počas načítania PLY súboru vo Web Workeri rozdelíme 3D priestor jaskyne do vertikálnych stĺpcov (2D mriežka v rovine X-Y súradníc JTSK) s jemnou veľkosťou bunky $d_{cell} = 0.5 \text{ metra}$.
+### 6.1 Midpoint Analysis (CPU - Web Worker)
+Počas načítania PLY súboru vo Web Workeri rozdelíme 3D priestor jaskyne do vertikálnych stĺpcov (2D mriežka) s veľkosťou bunky $d_{cell} = 0.5 \text{ metra}$.
 
-Pre každý stĺpec $(gx, gy)$ analyzujeme vertikálne rozdelenie výšok (súradnica Z v JTSK) pomocou **výškových vedierok (buckets)** s veľkosťou $h_{bucket} = 0.2 \text{ metra}$ (20 cm):
+Pre každý stĺpec $(gx, gy)$ analyzujeme vertikálne rozloženie bodov:
+1. **Extrémy**: Zistíme minimálnu a maximálnu nadmorskú výšku v stĺpci $[Z_{min}, Z_{max}]$.
+2. **Deliaca čiara (Midpoint)**: Vypočítame geometrický stred chodby $Z_{mid} = \frac{Z_{min} + Z_{max}}{2}$.
+3. **Relatívna výška**: Pre každý bod $P$ v stĺpci vypočítame relatívnu pozíciu $d_{rel}$ voči stredu:
+   $$d_{rel} = \frac{P_z - Z_{mid}}{H_{half}}$$
+   kde $H_{half} = \frac{Z_{max} - Z_{min}}{2}$. Výsledná hodnota $d_{rel} \in [-1.0, 1.0]$ sa odošle do GPU.
+   - **-1.0**: Bod leží presne na dne (podlaha).
+   - **0.0**: Bod leží presne v strede výšky chodby (deliaca čiara).
+   - **1.0**: Bod leží presne na strope.
 
-1. Zistíme rozsah výšok $[Z_{min}, Z_{max}]$ v stĺpci.
-2. Ak je celková výška stĺpca $Z_{max} - Z_{min} < 0.4 \text{ metra}$, ide o plochý úsek a celá bunka sa prehlási za podlahu aj strop súčasne bez potreby analýzy medzier.
-3. Inak vytvoríme binárne pole obsadenosti vedierok $B$ s veľkosťou $M = \lceil \frac{Z_{max} - Z_{min}}{h_{bucket}} \rceil + 1$:
-   $$B[j] = \begin{cases} 1 & \text{ak v stĺpci existuje bod } P_z \in [Z_{min} + j \cdot h_{bucket}, Z_{min} + (j+1) \cdot h_{bucket}) \\ 0 & \text{inak} \end{cases}$$
-4. **Detekcia súvislej podlahy (zdola nahor):**
-   Postupujeme od najnižšieho vedierka $j = 0$ nahor. Hľadáme prvú súvislú prázdnu medzeru $\ge 0.4 \text{ metra}$ (dve po sebe idúce prázdne vedierka $B[k] = 0 \land B[k+1] = 0$). Na tomto indexe $k$ sa podlaha zastaví:
-   $$Z_{floor\_max} = Z_{min} + k \cdot h_{bucket}$$
-   Všetky body ležiace pod $Z_{floor\_max}$ sú klasifikované ako skutočná podlaha (vrátane spadnutých balvanov a stupňov na zemi).
-5. **Detekcia súvislého stropu (zhora nadol):**
-   Postupujeme od najvyššieho vedierka $j = M-1$ nadol. Hľadáme prvú súvislú prázdnu medzeru $\ge 0.4 \text{ metra}$. Na tomto indexe $m$ sa strop zastaví:
-   $$Z_{ceil\_min} = Z_{min} + m \cdot h_{bucket}$$
-   Všetky body ležiace nad $Z_{ceil\_min}$ sú klasifikované ako skutočný strop (vrchná klenba jaskyne).
-6. **Výpočet relatívnej výšky bodu ($d_{rel} \in [-1.0, 1.0]$):**
-   Pre každý bod $P$ v stĺpci vypočítame relatívnu výšku, ktorá sa odošle do GPU:
-   $$d_{rel} = \begin{cases} -1.0 + 0.8 \cdot \frac{P_z - Z_{min}}{Z_{floor\_max} - Z_{min}} & \text{pre } P_z \le Z_{floor\_max} \\ 0.2 + 0.8 \cdot \frac{P_z - Z_{ceil\_min}}{Z_{max} - Z_{ceil\_min}} & \text{pre } P_z \ge Z_{ceil\_min} \\ 0.0 & \text{pre body vo vzdušnej medzere (previsy, stalaktity vo vzduchu)} \end{cases}$$
+Tento prístup "formy" zaručuje, že aj v úzkych vysokých meandroch bude podlaha končiť presne v polovici výšky, čím sa eliminujú neprirodzene vysoké bočné steny.
 
-### 6.2 Stabilná Model Space filtrácia a ošetrenie modelov bez normál (GPU)
-Do Fragment Shaderu prenášame pre každý bod relatívnu výšku `vRelHeight` ($d_{rel}$) a surovú model-space normálu `vModelNormal` ($\vec{N}_{model}$).
-V shaderi vyhodnocujeme podmienky rezu v reálnom čase na základe používateľom nastavených posuvníkov citlivosti:
-* $H_{threshold}$ (`uHeightThreshold`): rozsah $[-0.8, 0.8]$, predvolene $0.1$.
-* $A_{threshold}$ (`uAngleThreshold`): rozsah $[0.0, 0.9]$, predvolene $0.3$.
+### 6.2 Dynamická GPU Filtrácia (Shader)
+Do Fragment Shaderu prenášame pre každý bod relatívnu výšku `vRelHeight` ($d_{rel}$) a model-space normálu `vModelNormal` ($\vec{N}_{model}$).
+V shaderi vyhodnocujeme viditeľnosť v reálnom čase pomocou používateľských prahov:
+* $H_{threshold}$ (`uHeightThreshold`): posun deliacej roviny (predvolene $0.0$).
+* $A_{threshold}$ (`uAngleThreshold`): filtrácia strmosti stien (predvolene $0.3$).
 
-1. **Detekcia normál:** Ak súbor PLY nemá normály, ich dĺžka v shaderi je takmer nulová:
-   $$hasNormals = \|\vec{N}_{model}\| > 0.1$$
-2. **Podmienka pre Podlahu (Floor):**
+1. **Podmienka pre Podlahu (Floor):**
    $$\text{isFloor} = (d_{rel} < H_{threshold}) \land (\neg hasNormals \lor N_{model, y} > A_{threshold})$$
-3. **Podmienka pre Strop (Ceiling):**
-   $$\text{isCeiling} = (d_{rel} > -H_{threshold}) \land (\neg hasNormals \lor N_{model, y} < -A_{threshold})$$
-4. **Vrstevnicový algoritmus (1m Contours):**
-   V režime vrstevníc na podlahe vykresľujeme ostré izolínie pomocou gradientnej interpolácie:
-   $$t_{fract} = \text{fract}(P_{world\_y} + 0.5) - 0.5$$
-   $$I_{contour} = 1.0 - \text{smoothstep}(0.0, W_{contour}, |t_{fract}|)$$
-   Kde $W_{contour} = 0.03 \text{ metra}$ (šírka čiary 3 cm). Pre hlavnú zvýraznenú vrstevnicu každých 5 metrov ($I_{index\_contour}$):
-   $$t_{index} = \text{fract}\left(\frac{P_{world\_y}}{5.0} + 0.5\right) - 0.5$$
-   $$I_{index\_contour} = 1.0 - \text{smoothstep}(0.0, W_{contour} \cdot 1.5, |t_{index}| \cdot 5.0)$$
-   Výsledná farba bodu sa zmieša s tmavou bridlicovou základnou farbou a zlatou (indexovou) alebo striebornou farbou vrstevnice na základe vypočítaných intenzít.
+2. **Podmienka pre Strop (Ceiling):**
+   $$\text{isCeiling} = (d_{rel} > H_{threshold}) \land (\neg hasNormals \lor N_{model, y} < -A_{threshold})$$
 
 ---
-*Dokumentácia verzie: release-2026-05-25-01*
+*Dokumentácia verzie: release-2026-06-01-01*
 

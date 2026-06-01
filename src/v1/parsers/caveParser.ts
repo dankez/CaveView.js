@@ -1,6 +1,5 @@
 import { tryUtmToWgs84, tryJtskToWgs84 } from "@shared/utils/coords";
 import type { Vec3, Segment, Scrap, StationLabel, Calibration, CaveSurface, ParsedCave } from "@shared/types";
-export type { Vec3, Segment, Scrap, StationLabel, Calibration, CaveSurface, ParsedCave };
 
 /**
  * Cave file parsers for .lox (Therion), .3d (Survex), .plt (Compass)

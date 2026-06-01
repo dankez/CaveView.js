@@ -7,8 +7,7 @@ import { tryUtmToWgs84, tryJtskToWgs84 } from "@shared/utils/coords";
 import { parseGeoTiff } from '@v1/parsers/tiffParser'
 import CaveViewer3D from '@v1/components/CaveViewer3D'
 import CaveViewerNextGen from '@v2/components/CaveViewerNextGen'
-import type { ParsedCave, ViewerOptions, CaveSurface, StationLabel } from '@shared/types'
-import type { Vec3 } from '@v1/parsers/caveParser'
+import type { ParsedCave, ViewerOptions, CaveSurface, StationLabel, Vec3 } from '@shared/types'
 import { calculateVolumeAndProfile, analyzeLiDARAnomalies } from '@shared/utils/speleoAnalysis'
 import type { LiDARAnomaly } from '@shared/utils/speleoAnalysis'
 
@@ -613,21 +612,13 @@ export default function App() {
     const savedLang = localStorage.getItem('cv-language');
     if (savedLang) return; 
 
-    fetch('https://ipapi.co/json/').catch(() => new Response(JSON.stringify({})))
-      .then(res => res.json())
-      .then(data => {
-        const country = data.country_code;
-        let detected: Language = 'en';
-        if (country === 'SK') detected = 'sk';
-        else if (country === 'FR') detected = 'fr';
-        else if (['DE', 'AT', 'CH'].includes(country)) detected = 'de';
-        
-        if (detected !== lang) {
-          console.log('IP language detection:', detected, 'from', country);
-          setLang(detected);
-        }
-      })
-      .catch(err => console.warn('IP detection failed:', err));
+    const browserLang = navigator.language.split('-')[0] as Language;
+    const supported: Language[] = ['sk', 'en', 'fr', 'de'];
+    
+    if (supported.includes(browserLang) && browserLang !== lang) {
+      console.log('Browser language detection:', browserLang);
+      setLang(browserLang);
+    }
   }, []);
 
   const t = useCallback((key: string) => getTranslation(lang, key), [lang])
