@@ -43,7 +43,7 @@ export const de = {
   welcome: {
     sub: "3D-Höhlenvermessungs-Viewer",
     dzTitle: "Höhlendatei hier ablegen",
-    dzSub: "Unterstützt: .lox (Therion), .3d (Survex), .plt (Compass)",
+    dzSub: "Unterstützt: .lox, .3d, .plt, .ply, .stl, .tif",
     selectFile: "Datei auswählen",
     demoTitle: "Testmodelle",
     stressTitle: "Belastungstest (Großes Modell)",

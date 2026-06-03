@@ -1,8 +1,7 @@
 import proj4 from 'proj4';
+import { SJTSK_DEF } from './geoUtils';
 
-// EPSG:5514 is S-JTSK Krovak East-North. Wait, usually proj4 returns -Y, -X for Krovak.
-// Let's use the user's provided proj4 string.
-proj4.defs('EPSG:5514', '+proj=krovak +lat_0=49.5 +lon_0=24.83333333333333 +alpha=30.28813972222222 +k=0.9999 +x_0=0 +y_0=0 +ellps=bessel +towgs84=570.8,85.7,462.8,4.998,1.587,5.261,3.56 +units=m +no_defs');
+proj4.defs('EPSG:5514', SJTSK_DEF);
 proj4.defs('EPSG:4326', '+proj=longlat +datum=WGS84 +no_defs');
 proj4.defs('EPSG:3857', '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs');
 
@@ -12,6 +11,16 @@ export interface Progress {
     current: number;
     total: number;
 }
+
+export interface DownloadFailure {
+    z?: number;
+    x?: number;
+    y?: number;
+    url: string;
+    error: string;
+}
+
+export type WmsCrs = 'EPSG:3857' | 'EPSG:5514';
 
 const gpsToTile = (lat: number, lon: number, zoom: number): { x: number; y: number } => {
   const n = Math.pow(2, zoom);
@@ -32,12 +41,27 @@ const metersPerPixel = (lat: number, zoom: number): number => {
     return (2 * Math.PI * 6378137 / TILE_SIZE) * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
 };
 
-proj4.defs('EPSG:3857', '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs');
-
 export interface DownloadResult {
     dataUrl: string;
     // The exact bounding box in S-JTSK of the stitched image!
-    sjtskBbox: string; 
+    sjtskBbox: string;
+    totalTiles?: number;
+    successfulTiles?: number;
+    failedTiles?: DownloadFailure[];
+}
+
+function parseSjtskBbox(sjtskBbox: string): [number, number, number, number] {
+    const parts = sjtskBbox.split(',').map(Number);
+    if (parts.length !== 4 || !parts.every(Number.isFinite)) {
+        throw new Error(`Invalid S-JTSK bbox: ${sjtskBbox}`);
+    }
+
+    const [minX, minY, maxX, maxY] = parts;
+    if (maxX <= minX || maxY <= minY) {
+        throw new Error(`Invalid S-JTSK bbox extent: ${sjtskBbox}`);
+    }
+
+    return [minX, minY, maxX, maxY];
 }
 
 export async function downloadWmsImage(
@@ -46,9 +70,10 @@ export async function downloadWmsImage(
     width: number,
     height: number,
     format: string = 'image/jpeg',
-    onProgress?: (p: Progress) => void
+    onProgress?: (p: Progress) => void,
+    crs: WmsCrs = 'EPSG:3857'
 ): Promise<DownloadResult> {
-    const parts = sjtskBbox.split(',').map(Number);
+    const parts = parseSjtskBbox(sjtskBbox);
     // Expand by 150 meters to ensure the texture is always larger than the 3D model
     const margin = 150;
     const minX = parts[0] - margin;
@@ -63,16 +88,18 @@ export async function downloadWmsImage(
     // We update the BBox string to reflect the newly expanded area for exact calibration
     const expandedSjtskBbox = `${minX},${minY},${maxX},${maxY}`;
 
-    const bl3857 = proj4('EPSG:4326', 'EPSG:3857').forward(blGps);
-    const tr3857 = proj4('EPSG:4326', 'EPSG:3857').forward(trGps);
-
-    // The bounding box in EPSG:3857
-    const bbox3857 = `${Math.min(bl3857[0], tr3857[0])},${Math.min(bl3857[1], tr3857[1])},${Math.max(bl3857[0], tr3857[0])},${Math.max(bl3857[1], tr3857[1])}`;
+    let requestBbox = expandedSjtskBbox;
+    if (crs === 'EPSG:3857') {
+        const bl3857 = proj4('EPSG:4326', 'EPSG:3857').forward(blGps);
+        const tr3857 = proj4('EPSG:4326', 'EPSG:3857').forward(trGps);
+        requestBbox = `${Math.min(bl3857[0], tr3857[0])},${Math.min(bl3857[1], tr3857[1])},${Math.max(bl3857[0], tr3857[0])},${Math.max(bl3857[1], tr3857[1])}`;
+    }
 
     const url = urlPattern
-        .replace('{bbox}', bbox3857)
+        .replace('{bbox}', requestBbox)
         .replace('{width}', width.toString())
-        .replace('{height}', height.toString());
+        .replace('{height}', height.toString())
+        .replace('{crs}', encodeURIComponent(crs));
 
     if (onProgress) onProgress({ current: 0, total: 1 });
 
@@ -80,24 +107,29 @@ export async function downloadWmsImage(
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d')!;
+    if (!ctx) throw new Error('Canvas 2D context is unavailable');
     ctx.fillStyle = '#cccccc';
     ctx.fillRect(0, 0, width, height);
 
     try {
         const resp = await fetch(url);
-        if (!resp.ok) throw new Error(`WMS fetch failed: ${resp.statusText}`);
+        if (!resp.ok) throw new Error(`WMS fetch failed: ${resp.status} ${resp.statusText}`);
         const blob = await resp.blob();
         const img = await createImageBitmap(blob);
         ctx.drawImage(img, 0, 0, width, height);
     } catch (e) {
-        console.warn(`Failed to fetch WMS image`, e);
+        const message = e instanceof Error ? e.message : String(e);
+        throw new Error(`Failed to fetch WMS image: ${message}`);
     } finally {
         if (onProgress) onProgress({ current: 1, total: 1 });
     }
 
     return {
         dataUrl: canvas.toDataURL(format, format === 'image/jpeg' ? 0.85 : 1.0),
-        sjtskBbox: expandedSjtskBbox // Bbox is updated to the expanded one!
+        sjtskBbox: expandedSjtskBbox,
+        totalTiles: 1,
+        successfulTiles: 1,
+        failedTiles: [],
     };
 }
 
@@ -108,7 +140,7 @@ export async function downloadTiledXyz(
     onProgress?: (p: Progress) => void,
     forceZoom?: number
 ): Promise<DownloadResult> {
-    const parts = sjtskBbox.split(',').map(Number);
+    const parts = parseSjtskBbox(sjtskBbox);
     const minX = parts[0];
     const minY = parts[1];
     const maxX = parts[2];
@@ -170,11 +202,14 @@ export async function downloadTiledXyz(
     canvas.height = numTilesY * TILE_SIZE;
     
     const ctx = canvas.getContext('2d')!;
+    if (!ctx) throw new Error('Canvas 2D context is unavailable');
     ctx.fillStyle = '#cccccc';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     const total = numTilesX * numTilesY;
     let current = 0;
+    let successfulTiles = 0;
+    const failedTiles: DownloadFailure[] = [];
 
     const fetchTile = async (tx: number, ty: number) => {
         let url = urlPattern
@@ -196,14 +231,17 @@ export async function downloadTiledXyz(
         
         try {
             const resp = await fetch(url);
-            if (!resp.ok) throw new Error('Tile fetch failed');
+            if (!resp.ok) throw new Error(`Tile fetch failed: ${resp.status} ${resp.statusText}`);
             const blob = await resp.blob();
             const img = await createImageBitmap(blob);
             
             const dx = (tx - xMin) * TILE_SIZE;
             const dy = (ty - yMin) * TILE_SIZE;
             ctx.drawImage(img, dx, dy, TILE_SIZE, TILE_SIZE);
+            successfulTiles++;
         } catch (e) {
+            const error = e instanceof Error ? e.message : String(e);
+            failedTiles.push({ z: zoom, x: tx, y: ty, url, error });
             console.warn(`Failed to fetch tile ${zoom}/${tx}/${ty}`, e);
         } finally {
             current++;
@@ -211,7 +249,7 @@ export async function downloadTiledXyz(
         }
     };
 
-    const queue = [];
+    const queue: [number, number][] = [];
     for (let ty = yMin; ty <= yMax; ty++) {
         for (let tx = xMin; tx <= xMax; tx++) {
             queue.push([tx, ty]);
@@ -224,8 +262,17 @@ export async function downloadTiledXyz(
         await Promise.all(batch.map(([tx, ty]) => fetchTile(tx, ty)));
     }
 
+    if (successfulTiles === 0) {
+        const firstFailure = failedTiles[0];
+        const detail = firstFailure ? ` First failure: ${firstFailure.error}` : '';
+        throw new Error(`No map tiles downloaded (${failedTiles.length}/${total} failed).${detail}`);
+    }
+
     return {
         dataUrl: canvas.toDataURL(format, format === 'image/jpeg' ? 0.85 : 1.0),
-        sjtskBbox: exactSjtskBbox
+        sjtskBbox: exactSjtskBbox,
+        totalTiles: total,
+        successfulTiles,
+        failedTiles,
     };
 }

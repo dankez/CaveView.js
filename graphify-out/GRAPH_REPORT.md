@@ -1,16 +1,16 @@
-# Graph Report - CaveView-modernized  (2026-06-01)
+# Graph Report - CaveView-modernized  (2026-06-02)
 
 ## Corpus Check
-- 227 files · ~285,122 words
+- 238 files · ~290,491 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1433 nodes · 2403 edges · 123 communities (74 shown, 49 thin omitted)
-- Extraction: 75% EXTRACTED · 25% INFERRED · 0% AMBIGUOUS · INFERRED: 605 edges (avg confidence: 0.8)
+- 1535 nodes · 2578 edges · 133 communities (72 shown, 61 thin omitted)
+- Extraction: 77% EXTRACTED · 23% INFERRED · 0% AMBIGUOUS · INFERRED: 605 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `fd0c1b85`
+- Built from commit: `5744c8f1`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -38,6 +38,7 @@
 - [[_COMMUNITY_Community 20|Community 20]]
 - [[_COMMUNITY_Community 21|Community 21]]
 - [[_COMMUNITY_Community 22|Community 22]]
+- [[_COMMUNITY_Community 23|Community 23]]
 - [[_COMMUNITY_Community 24|Community 24]]
 - [[_COMMUNITY_Community 25|Community 25]]
 - [[_COMMUNITY_Community 26|Community 26]]
@@ -52,9 +53,11 @@
 - [[_COMMUNITY_Community 35|Community 35]]
 - [[_COMMUNITY_Community 36|Community 36]]
 - [[_COMMUNITY_Community 37|Community 37]]
+- [[_COMMUNITY_Community 38|Community 38]]
 - [[_COMMUNITY_Community 39|Community 39]]
 - [[_COMMUNITY_Community 40|Community 40]]
 - [[_COMMUNITY_Community 41|Community 41]]
+- [[_COMMUNITY_Community 42|Community 42]]
 - [[_COMMUNITY_Community 43|Community 43]]
 - [[_COMMUNITY_Community 44|Community 44]]
 - [[_COMMUNITY_Community 45|Community 45]]
@@ -62,7 +65,6 @@
 - [[_COMMUNITY_Community 47|Community 47]]
 - [[_COMMUNITY_Community 48|Community 48]]
 - [[_COMMUNITY_Community 49|Community 49]]
-- [[_COMMUNITY_Community 50|Community 50]]
 - [[_COMMUNITY_Community 51|Community 51]]
 - [[_COMMUNITY_Community 52|Community 52]]
 - [[_COMMUNITY_Community 53|Community 53]]
@@ -103,10 +105,20 @@
 - [[_COMMUNITY_Community 88|Community 88]]
 - [[_COMMUNITY_Community 89|Community 89]]
 - [[_COMMUNITY_Community 90|Community 90]]
+- [[_COMMUNITY_Community 91|Community 91]]
 - [[_COMMUNITY_Community 92|Community 92]]
 - [[_COMMUNITY_Community 93|Community 93]]
 - [[_COMMUNITY_Community 94|Community 94]]
+- [[_COMMUNITY_Community 95|Community 95]]
+- [[_COMMUNITY_Community 96|Community 96]]
 - [[_COMMUNITY_Community 97|Community 97]]
+- [[_COMMUNITY_Community 98|Community 98]]
+- [[_COMMUNITY_Community 99|Community 99]]
+- [[_COMMUNITY_Community 100|Community 100]]
+- [[_COMMUNITY_Community 102|Community 102]]
+- [[_COMMUNITY_Community 103|Community 103]]
+- [[_COMMUNITY_Community 104|Community 104]]
+- [[_COMMUNITY_Community 107|Community 107]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `Survey` - 49 edges
@@ -115,10 +127,10 @@
 4. `WebTerrain` - 18 edges
 5. `Stations` - 18 edges
 6. `Legs` - 17 edges
-7. `CommonTerrain` - 16 edges
-8. `Tile` - 16 edges
-9. `Changelog` - 15 edges
-10. `Scale` - 14 edges
+7. `Changelog` - 17 edges
+8. `CommonTerrain` - 16 edges
+9. `Tile` - 16 edges
+10. `🚀 Latest Features` - 16 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `handleTiffFile()` --calls--> `parseGeoTiff()`  [INFERRED]
@@ -127,204 +139,204 @@
   src/shared/utils/XyzTileDownloader.ts → src/utils/XyzTileDownloader.ts
 - `downloadTiledXyz()` --calls--> `lat2tile()`  [EXTRACTED]
   src/shared/utils/XyzTileDownloader.ts → src/utils/XyzTileDownloader.ts
+- `parseLox()` --calls--> `getSjtskBoundsFromDtm()`  [EXTRACTED]
+  src/v1/parsers/caveParser.ts → src/shared/utils/surfaceBounds.ts
 - `buildCrossSections()` --calls--> `buildWallsSync()`  [INFERRED]
   legacy/js/viewer/walls/buildCrossSections.js → legacy/js/viewer/walls/WallBuilders.js
-- `buildWallsSync()` --calls--> `buildScraps()`  [INFERRED]
-  legacy/js/viewer/walls/WallBuilders.js → legacy/js/viewer/walls/buildScraps.js
 
-## Communities (123 total, 49 thin omitted)
+## Communities (133 total, 61 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.05
-Nodes (21): _getId(), ScaleBar, EditPage, ExportPage, Frame, HelpPage, InfoPage, Page (+13 more)
+Cohesion: 0.07
+Nodes (14): _getId(), EditPage, ExportPage, Frame, HelpPage, InfoPage, Page, RoutePanel (+6 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.05
-Nodes (8): dataURL(), hydrateGeometry(), replaceExtension(), WorkerPool, WorkerPoolCache, EPSG3857TileSet, Tile, WebTerrain
+Cohesion: 0.06
+Nodes (16): equalArray(), getCanvas(), getMinMax(), getPaddedArrayBuffer(), getPaddedBufferSize(), GLTFExporter, GLTFLightExtension, GLTFMaterialsClearcoatExtension (+8 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.07
-Nodes (15): equalArray(), getCanvas(), getMinMax(), getPaddedArrayBuffer(), getPaddedBufferSize(), GLTFExporter, GLTFLightExtension, GLTFMaterialsClearcoatExtension (+7 more)
+Cohesion: 0.05
+Nodes (9): Leg, PublicFactory, Segment, Station, CanvasPopup, PointerControls, SegmentPopup, StationPopup (+1 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.05
-Nodes (8): LineSegments2, LineSegmentsGeometry, SurveyBox, CGeometry, Orb, TerrainMeshGeometry, DyeTraces, Legs
+Cohesion: 0.06
+Nodes (57): 🎡 Adaptívny Rotačný Gizmo, 🎡 Adaptive Rotation Gizmo, ✂️ Advanced Spatial Analysis (Clipping & Profiles), 🎨 Advanced Visuals, 🔒 Bezpečnosť a Audit, ☁️ Cloud Sharing (Google Drive) & Security, code:bash (git clone https://github.com/dankez/CaveView.js.git), code:bash (git clone https://github.com/dankez/CaveView.js.git) (+49 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.06
-Nodes (10): GlyphString, GlyphStringBase, MutableGlyphString, GlyphStringGeometry, GlyphStringGeometryCache, AHI, AngleScale, CursorScale (+2 more)
+Cohesion: 0.07
+Nodes (49): applyTaubinSmoothing(), AutoFit(), BoundingBox(), buildScrapsGeo(), buildTerrainGeo(), buildTerrainTileData(), CameraMonitor(), CaveLegs() (+41 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.05
-Nodes (51): 🎡 Adaptívny Rotačný Gizmo, 🎡 Adaptive Rotation Gizmo, ✂️ Advanced Spatial Analysis (Clipping & Profiles), 🎨 Advanced Visuals, 🔒 Bezpečnosť a Audit, ☁️ Cloud Sharing (Google Drive) & Security, code:bash (git clone https://github.com/dankez/CaveView.js.git), code:bash (git clone https://github.com/dankez/CaveView.js.git) (+43 more)
+Nodes (11): GlyphString, GlyphStringBase, MutableGlyphString, GlyphStringGeometryCache, AHI, AngleScale, CursorScale, ProgressDial (+3 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.09
-Nodes (43): applyTaubinSmoothing(), AutoFit(), BoundingBox(), buildScrapsGeo(), buildTerrainGeo(), buildTerrainTileData(), CameraMonitor(), CaveLegs() (+35 more)
+Cohesion: 0.05
+Nodes (33): PLYHeader, PLYLoader, PLYProperty, Bounds, buckets, cell, cellBounds, doneMessage (+25 more)
 
 ### Community 7 - "Community 7"
+Cohesion: 0.06
+Nodes (6): dataURL(), hydrateGeometry(), replaceExtension(), EPSG3857TileSet, Tile, WebTerrain
+
+### Community 8 - "Community 8"
 Cohesion: 0.08
 Nodes (27): getTileUrl(), gpsToFractionalTile(), PROXIES, stitchTilesToDataURL(), TileCache, TileData, TileInfo, tileToGps() (+19 more)
 
-### Community 8 - "Community 8"
-Cohesion: 0.07
-Nodes (28): CalibrationPoint, Props, CaveLegs, Character3D, CYL_UP, ELEV_STOPS, EntranceMarkers, ManualConnection (+20 more)
-
 ### Community 9 - "Community 9"
 Cohesion: 0.05
-Nodes (31): PLYHeader, PLYLoader, PLYProperty, Bounds, buckets, cell, cellBounds, doneMessage (+23 more)
+Nodes (14): parseGeoTiff(), AppState, encodeState(), execManualMeasure(), findStationByName(), getIframeCode(), getShareUrl(), handleCopyShare() (+6 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.07
-Nodes (7): StationPosition, LinearScale, Scale, AnaglyphEffect(), StationLabels, Stations, testPoint()
+Cohesion: 0.05
+Nodes (40): [1.2.0] - 2026-05-01, [1.3.0] - 2026-05-03, [2.0.1] - 2026-05-17, [2.0.2] - 2026-05-17, [2.1.0] - 2026-06-01, [2.2.0] - 2026-06-01, Branding & Signature (v1.4.3), Changelog (+32 more)
 
 ### Community 11 - "Community 11"
-Cohesion: 0.06
-Nodes (7): AppState, draw(), execManualMeasure(), findStationByName(), LoadedFile, MemoizedStatusBadge, SUPPORTED
+Cohesion: 0.07
+Nodes (8): TextureCache, loxLoader, pltLoader, SurveyDataCollector, Svx3dLoader, progress(), ImagePopup, PointIndicator
 
 ### Community 12 - "Community 12"
-Cohesion: 0.08
-Nodes (5): RenderUtils, TextureLookup, unpackRGBA(), CommonTerrain, Snapshot
-
-### Community 13 - "Community 13"
-Cohesion: 0.07
-Nodes (29): [1.2.0] - 2026-05-01, [1.3.0] - 2026-05-03, [2.0.1] - 2026-05-17, [2.0.2] - 2026-05-17, [2.1.0] - 2026-06-01, Branding & Signature (v1.4.3), Changelog, Custom Farby & Analytické Rezy (+21 more)
-
-### Community 14 - "Community 14"
-Cohesion: 0.09
-Nodes (7): Cfg, Compass, HudObject, BarGeometry, EntrancePointMaterial, WallMaterial, LightingManager()
-
-### Community 15 - "Community 15"
 Cohesion: 0.07
 Nodes (28): 1.1 Surface Nets (Dual Contouring), 1.2 Silk/Fabric Smoothing (Laplacian), 1.3 Taubin Smoothing (Volume Preserving), 1.4 Dilation / Bulge (Model Offset), 1. Rekonštrukcia povrchu (Surface Reconstruction), 2.1 LiDAR Raycasting & LOD (Level of Detail), 2.2 Režim merania a Gating interakcie, 2.2 Vertikálne profilovanie (Clipping) (+20 more)
 
-### Community 16 - "Community 16"
-Cohesion: 0.16
-Nodes (21): buildResult(), Calibration, CaveSurface, classifyLiDAR(), ParsedCave, parseLox(), parsePlt(), parsePly() (+13 more)
+### Community 13 - "Community 13"
+Cohesion: 0.15
+Nodes (22): CalibrationPoint, Props, buildResult(), Calibration, CaveSurface, classifyLiDAR(), normalizePlyColor(), normalizePlyIntensity() (+14 more)
+
+### Community 14 - "Community 14"
+Cohesion: 0.1
+Nodes (16): CaveLegs, Character3D, CYL_UP, ELEV_STOPS, EntranceMarkers, ManualConnection, StationLabels, Stations (+8 more)
+
+### Community 15 - "Community 15"
+Cohesion: 0.12
+Nodes (21): parseStl(), filePath, parsed, CaveViewerNextGenProps, Lrud, ParsedCave, Scrap, Segment (+13 more)
 
 ### Community 17 - "Community 17"
-Cohesion: 0.1
-Nodes (5): loxLoader, pltLoader, SurveyDataCollector, Svx3dLoader, progress()
+Cohesion: 0.12
+Nodes (4): LinearScale, Scale, Stations, testPoint()
 
-### Community 19 - "Community 19"
-Cohesion: 0.15
-Nodes (3): Materials(), CaveViewer, StationMarkers
+### Community 18 - "Community 18"
+Cohesion: 0.16
+Nodes (16): context, element, originalCreateElement, progress, DownloadFailure, DownloadResult, downloadTiledXyz(), downloadWmsImage() (+8 more)
 
 ### Community 20 - "Community 20"
-Cohesion: 0.1
-Nodes (5): DepthMaterial, HeightMaterial, SurveyLineMaterial, ExportGltf, ViewState
+Cohesion: 0.16
+Nodes (3): buildCrossSections(), buildScraps(), buildWallsSync()
 
 ### Community 21 - "Community 21"
-Cohesion: 0.14
-Nodes (3): ClusterMarkers, QuadTree, Marker
+Cohesion: 0.13
+Nodes (10): de, en, fr, getBrowserLanguage(), getTranslation(), Language, languages, Translations (+2 more)
 
-### Community 24 - "Community 24"
+### Community 22 - "Community 22"
+Cohesion: 0.14
+Nodes (13): applyTaubinSmoothing(), buildScrapsGeo(), ClippingEdges, computeAngleWeightedNormals(), createCaveReliefTexture(), fade(), fract(), hashNoise() (+5 more)
+
+### Community 23 - "Community 23"
+Cohesion: 0.13
+Nodes (4): Cfg, DepthMaterial, HeightMaterial, SurveyLineMaterial
+
+### Community 25 - "Community 25"
 Cohesion: 0.12
 Nodes (4): AHIControl, CompassControl, Control, CursorControl
 
-### Community 25 - "Community 25"
-Cohesion: 0.16
-Nodes (7): de, en, fr, Language, languages, Translations, sk
-
 ### Community 26 - "Community 26"
-Cohesion: 0.17
-Nodes (4): CommonTerrainMaterial, ContourMaterial, HypsometricMaterial, TerrainOverlayMaterial
+Cohesion: 0.14
+Nodes (4): Compass, HudObject, EntrancePointMaterial, LightingManager()
 
 ### Community 27 - "Community 27"
 Cohesion: 0.17
-Nodes (3): ModelSource, CaveViewUI(), FileSelector
+Nodes (4): CommonTerrainMaterial, ContourMaterial, HypsometricMaterial, TerrainOverlayMaterial
 
-### Community 29 - "Community 29"
-Cohesion: 0.13
-Nodes (4): TextureCache, LoxTile, ImagePopup, PointIndicator
+### Community 28 - "Community 28"
+Cohesion: 0.18
+Nodes (3): draw(), CaveViewer, Entrances
 
 ### Community 30 - "Community 30"
 Cohesion: 0.14
-Nodes (3): Leg, OrbitControls, SegmentPopup
+Nodes (4): DistanceFieldPass, HUD(), AnaglyphEffect(), StationMarkers
 
 ### Community 31 - "Community 31"
+Cohesion: 0.19
+Nodes (3): ModelSource, CaveViewUI(), FileSelector
+
+### Community 33 - "Community 33"
 Cohesion: 0.13
 Nodes (14): 🏔️ 1. Vrstevnice, ktoré vám konečne niečo povedia, 🗺️ 2. Mapy a povrchy s profesionálnou presnosťou, 📐 3. Merania (pre tých, čo chcú mať všetko pod kontrolou), 🎥 4. Filmové štúdio priamo v prehliadači, 📱 5. Mobilná verzia (pre jaskynných nomádov), 🔗 6. Zdieľanie ako u profíkov (Embed), 👤 7. Jaskyniar so svetlom a orezávaním, ✂️ 8. Rezy jaskyňou (Clipping) – Vidieť dovnútra nikdy nebolo jednoduchšie (+6 more)
 
-### Community 33 - "Community 33"
+### Community 34 - "Community 34"
+Cohesion: 0.25
+Nodes (7): applyLaplacianSmoothing(), applyTaubinSmoothing(), computeAngleWeightedNormals(), reconstructSurface(), reconstructSurfaceNet(), CameraMove, Segments
+
+### Community 35 - "Community 35"
 Cohesion: 0.14
 Nodes (12): altClose, altToggles, caverStandingBtn, closeBtn, closeMenuBtn, criticalErrors, errors, langBtn (+4 more)
 
-### Community 34 - "Community 34"
-Cohesion: 0.29
-Nodes (9): DownloadResult, downloadTiledXyz(), downloadWmsImage(), gpsToTile(), lat2tile(), lon2tile(), metersPerPixel(), Progress (+1 more)
-
-### Community 35 - "Community 35"
-Cohesion: 0.18
-Nodes (4): buildCrossSections(), buildScraps(), buildWallsSync(), Walls
-
 ### Community 36 - "Community 36"
+Cohesion: 0.17
+Nodes (3): SurveyBox, LoxTile, Snapshot
+
+### Community 38 - "Community 38"
 Cohesion: 0.15
 Nodes (12): DankeZ Downloader (Freemap Tile Downloader), 🇬🇧 English version, Freemap Tile Downloader, Insights and Improvements, Kľúčové Vlastnosti, Key Features, New Features, Nové Funkcie (+4 more)
 
-### Community 39 - "Community 39"
-Cohesion: 0.27
-Nodes (9): Lrud, Segment, analyzeLiDARAnomalies(), calculateVolumeAndProfile(), estimateDistanceToPointCloud(), estimateLRUDFromGeometry(), LiDARAnomaly, ProfileResult (+1 more)
-
-### Community 40 - "Community 40"
-Cohesion: 0.22
-Nodes (3): DistanceFieldPass, HUD(), CameraManager()
-
-### Community 41 - "Community 41"
-Cohesion: 0.22
-Nodes (3): PointerControls, Popup, PopupGeometry
-
-### Community 45 - "Community 45"
-Cohesion: 0.29
-Nodes (6): code:html (<iframe), ⚠️ Dôležité upozornenie (CORS), 🚀 Hlavné funkcie, 🔗 LochViewer - Systém zdieľania a vkladania (Embed), 🛠️ Parametre URL adresy, 📦 Príklad vloženia do stránky
+### Community 42 - "Community 42"
+Cohesion: 0.2
+Nodes (9): CanvasStats, clickStlViewMode(), criticalErrors, customColor, errors, input, readCanvasStats(), wallColorButton (+1 more)
 
 ### Community 46 - "Community 46"
 Cohesion: 0.33
+Nodes (5): tryJtskToWgs84(), tryUtmToWgs84(), fetchAltitudeFromZbgis(), jtskToWgs84(), wgs84ToJtsk()
+
+### Community 54 - "Community 54"
+Cohesion: 0.38
+Nodes (5): bounds, DtmLike, getSjtskBoundsFromDtm(), gridToWorld(), SjtskBounds
+
+### Community 56 - "Community 56"
+Cohesion: 0.29
+Nodes (6): code:html (<iframe), ⚠️ Dôležité upozornenie (CORS), 🚀 Hlavné funkcie, 🔗 LochViewer - Systém zdieľania a vkladania (Embed), 🛠️ Parametre URL adresy, 📦 Príklad vloženia do stránky
+
+### Community 57 - "Community 57"
+Cohesion: 0.33
 Nodes (4): parseTh2(), Th2Line, Th2Point, Th2Scrap
 
-### Community 53 - "Community 53"
+### Community 65 - "Community 65"
+Cohesion: 0.33
+Nodes (5): buttons, sampleButtons, samples, samplesRect, welcome
+
+### Community 66 - "Community 66"
 Cohesion: 0.33
 Nodes (5): Aktuálny stav (Current Progress), Core Requirements (Striktné pravidlá), graphify, Project Goal, Role: Speleological Software Engineer
 
-### Community 54 - "Community 54"
+### Community 67 - "Community 67"
 Cohesion: 0.4
 Nodes (5): 🏗 Architecture, 🛠 Development Rules, 🚀 Engine v2 (NextGen) Tech Stack, graphify, Project Guidelines: CaveView 2.x NextGen
 
-### Community 55 - "Community 55"
-Cohesion: 0.7
-Nodes (3): fetchAltitudeFromZbgis(), jtskToWgs84(), wgs84ToJtsk()
-
-### Community 64 - "Community 64"
-Cohesion: 0.5
-Nodes (4): encodeState(), getIframeCode(), getShareUrl(), handleCopyShare()
-
-### Community 66 - "Community 66"
-Cohesion: 0.5
-Nodes (3): getBrowserLanguage(), getTranslation(), App()
-
 ### Community 68 - "Community 68"
-Cohesion: 0.5
-Nodes (3): DownloadProgress, downloadTiledWms(), TileCache
+Cohesion: 0.4
+Nodes (3): buffer, header, result
+
+### Community 69 - "Community 69"
+Cohesion: 0.6
+Nodes (3): getDefaultPointCloudSize(), getPreferredEngineForFile(), ViewerEngine
 
 ## Knowledge Gaps
-- **177 isolated node(s):** `AppState`, `LoadedFile`, `SUPPORTED`, `MemoizedStatusBadge`, `PLYProperty` (+172 more)
+- **209 isolated node(s):** `htmlAttrEscapes`, `AppState`, `LoadedFile`, `SUPPORTED`, `MemoizedStatusBadge` (+204 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **49 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **61 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `reconstructSurface()` connect `Community 0` to `Community 6`, `Community 23`?**
-  _High betweenness centrality (0.055) - this node is a cross-community bridge._
-- **Why does `parsePly()` connect `Community 16` to `Community 19`, `Community 11`, `Community 23`?**
-  _High betweenness centrality (0.045) - this node is a cross-community bridge._
-- **Why does `getPaddedArrayBuffer()` connect `Community 2` to `Community 23`?**
-  _High betweenness centrality (0.027) - this node is a cross-community bridge._
-- **What connects `AppState`, `LoadedFile`, `SUPPORTED` to the rest of the system?**
-  _177 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `reconstructSurface()` connect `Community 34` to `Community 0`, `Community 4`?**
+  _High betweenness centrality (0.059) - this node is a cross-community bridge._
+- **Why does `parsePly()` connect `Community 13` to `Community 9`, `Community 34`, `Community 68`, `Community 28`?**
+  _High betweenness centrality (0.051) - this node is a cross-community bridge._
+- **Why does `Materials()` connect `Community 47` to `Community 0`, `Community 34`, `Community 36`, `Community 5`, `Community 23`, `Community 26`, `Community 28`, `Community 30`?**
+  _High betweenness centrality (0.035) - this node is a cross-community bridge._
+- **What connects `htmlAttrEscapes`, `AppState`, `LoadedFile` to the rest of the system?**
+  _209 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.05 - nodes in this community are weakly interconnected._
-- **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.05 - nodes in this community are weakly interconnected._
-- **Should `Community 2` be split into smaller, more focused modules?**
   _Cohesion score 0.07 - nodes in this community are weakly interconnected._
+- **Should `Community 1` be split into smaller, more focused modules?**
+  _Cohesion score 0.06 - nodes in this community are weakly interconnected._
+- **Should `Community 2` be split into smaller, more focused modules?**
+  _Cohesion score 0.05 - nodes in this community are weakly interconnected._

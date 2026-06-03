@@ -249,6 +249,7 @@ export const PointCloudLOD: React.FC<{
   const threeHighlightColor = useMemo(() => new THREE.Color(highlightColor), [highlightColor]);
 
   useEffect(() => {
+    let active = true;
     const worker = new Worker(new URL('../parsers/pointcloud.worker.ts', import.meta.url), {
       type: 'module'
     });
@@ -311,11 +312,12 @@ export const PointCloudLOD: React.FC<{
     fetch(url)
       .then(res => res.arrayBuffer())
       .then(buffer => {
-        worker.postMessage({ buffer }, [buffer]);
+        if (active) worker.postMessage({ buffer }, [buffer]);
       })
       .catch(err => console.error('Failed to fetch pointcloud:', err));
 
     return () => {
+      active = false;
       worker.terminate();
       
       // CRITICAL: 100% reliable GPU VRAM resource cleanup to prevent memory leaks!

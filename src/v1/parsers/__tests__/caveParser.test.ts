@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { parsePlt } from '../caveParser';
+import { parsePlt, parsePly } from '../caveParser';
+
+function makeBinaryPly(header: string, bodyLength: number, writeBody: (dv: DataView) => void) {
+  const headerBytes = new TextEncoder().encode(header);
+  const buffer = new ArrayBuffer(headerBytes.byteLength + bodyLength);
+  new Uint8Array(buffer).set(headerBytes);
+  writeBody(new DataView(buffer, headerBytes.byteLength));
+  return buffer;
+}
 
 describe('caveParser', () => {
   describe('parsePlt', () => {
@@ -32,6 +40,60 @@ D 10 10 10
       const result = parsePlt(pltData);
       expect(result.stationCount).toBe(3);
       expect(result.segmentCount).toBe(1); // M -> D works, then X breaks, then D fails because prevPos is null
+    });
+  });
+
+  describe('parsePly', () => {
+    it('parses typed binary coordinates, colors, intensity, and classification', () => {
+      const header = [
+        'ply',
+        'format binary_little_endian 1.0',
+        'element vertex 2',
+        'property double x',
+        'property double y',
+        'property double z',
+        'property ushort red',
+        'property uchar green',
+        'property float blue',
+        'property ushort intensity',
+        'property uchar classification',
+        'end_header',
+        ''
+      ].join('\n');
+
+      const stride = 34;
+      const buffer = makeBinaryPly(header, stride * 2, dv => {
+        const writeVertex = (base: number, x: number, y: number, z: number, red: number, green: number, blue: number, intensity: number, cls: number) => {
+          dv.setFloat64(base, x, true);
+          dv.setFloat64(base + 8, y, true);
+          dv.setFloat64(base + 16, z, true);
+          dv.setUint16(base + 24, red, true);
+          dv.setUint8(base + 26, green);
+          dv.setFloat32(base + 27, blue, true);
+          dv.setUint16(base + 31, intensity, true);
+          dv.setUint8(base + 33, cls);
+        };
+
+        writeVertex(0, 10, 20, 30, 32768, 128, 0.5, 65535, 10);
+        writeVertex(stride, 14, 26, 36, 65535, 64, 1.0, 32768, 2);
+      });
+
+      const result = parsePly(buffer);
+
+      expect(result.pointCount).toBe(2);
+      expect(result.points![0]).toBeCloseTo(-2);
+      expect(result.points![1]).toBeCloseTo(-3);
+      expect(result.points![2]).toBeCloseTo(-3);
+      expect(result.points![3]).toBeCloseTo(2);
+      expect(result.points![4]).toBeCloseTo(3);
+      expect(result.points![5]).toBeCloseTo(3);
+      expect(result.pointColors![0]).toBeCloseTo(32768 / 65535);
+      expect(result.pointColors![1]).toBeCloseTo(128 / 255);
+      expect(result.pointColors![2]).toBeCloseTo(0.5);
+      expect(result.pointIntensity![0]).toBeCloseTo(1);
+      expect(result.pointIntensity![1]).toBeCloseTo(32768 / 65535);
+      expect(result.pointClassification![0]).toBe(10);
+      expect(result.pointClassification![1]).toBe(2);
     });
   });
 });

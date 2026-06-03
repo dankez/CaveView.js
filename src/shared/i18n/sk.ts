@@ -43,7 +43,7 @@ export const sk = {
   welcome: {
     sub: "3D Prehliadač jaskynných prieskumov",
     dzTitle: "Pretiahnite jaskynný súbor sem",
-    dzSub: "Podporované: .lox (Therion), .3d (Survex), .plt (Compass), .ply (LiDAR)",
+    dzSub: "Podporované: .lox, .3d, .plt, .ply, .stl, .tif",
     selectFile: "Vybrať súbor",
     demoTitle: "Testovacie modely",
     stressTitle: "Záťažový test (Big Model)",

@@ -24,8 +24,8 @@ function simulateSegmentation(points: Float32Array) {
   // 2. Parting Line logic (midpoint)
   const cellBounds = new Map<string, { minZ: number, midZ: number, halfHeight: number }>();
   for (const [key, heights] of grid.entries()) {
-    let minZ = Math.min(...heights);
-    let maxZ = Math.max(...heights);
+    const minZ = Math.min(...heights);
+    const maxZ = Math.max(...heights);
     cellBounds.set(key, { 
       minZ, 
       midZ: (minZ + maxZ) / 2, 

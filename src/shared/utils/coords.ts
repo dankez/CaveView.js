@@ -1,4 +1,5 @@
 import proj4 from "proj4";
+import { SJTSK_DEF } from "./geoUtils";
 
 /** Pokus o konverziu UTM (metricke súradnice) → WGS84 lat/lon.
  *  Funguje pre UTM Severnej pologule zóna 1–60. Vráti null ak nie sú UTM súradnice. */
@@ -69,9 +70,8 @@ export function tryJtskToWgs84(x: number, y: number): { lat: number; lon: number
   // Easting (x) je typicky od -900000 do -150000
   // Northing (y) je typicky od -1350000 do -900000
   if (x > -950000 && x < -150000 && y > -1350000 && y < -900000) {
-    const sjtskDef = "+proj=krovak +lat_0=49.5 +lon_0=24.83333333333333 +alpha=30.28813972222222 +k=0.9999 +x_0=0 +y_0=0 +ellps=bessel +towgs84=589,76,480,0,0,0,0 +units=m +no_defs"
     try {
-      const wgs = proj4(sjtskDef, "WGS84", [x, y])
+      const wgs = proj4(SJTSK_DEF, "WGS84", [x, y])
       if (wgs && wgs.length === 2) return { lat: wgs[1], lon: wgs[0], epsg: 'S-JTSK Křovák' }
     } catch (e) {
       console.warn("Chyba proj4 pri S-JTSK:", e)

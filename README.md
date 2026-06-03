@@ -1,14 +1,14 @@
-# LochViewer - Speleological Viewer (v2.0.2)
+# LochViewer - Speleological Viewer (v2.2.0)
 
 [🇸🇰 Slovenská verzia nižšie / Slovak version below](#slovenská-verzia)
 
 A modern web application for 3D visualization and analysis of cave systems, built with React, Three.js, and React-Three-Fiber.
 
-## 🚀 Version 2.0: NextGen Engine
+## 🚀 Version 2.2: NextGen Engine
 The new **NextGen (v2)** engine represents a major leap in performance and visual quality, specifically designed for massive LiDAR data and real-world geographic context.
 
 ### 🎛️ Integrated Sidebar UI (Master Switch)
-- **Engine Master Switch**: Version 2.0.2 introduces a unified sidebar where you can toggle between **Standard (v1)** and **NextGen (v2)** directly in the "Cave Walls" section using the **LIDAR NEXTGEN** switch.
+- **Engine Master Switch**: Version 2.2 includes a unified sidebar where you can toggle between **Standard (v1)** and **NextGen (v2)** directly in the "Cave Walls" section using the **LIDAR NEXTGEN** switch.
 - **Context-Aware Settings**: When NextGen is active, the sidebar dynamically switches to advanced LiDAR controls (Point Size, Brightness, Plasticity, Custom Colors). When off, it restores classic mesh tools (Organic Smoothing, 3D Render, Wireframe).
 
 ### ☁️ LiDAR Octree LOD & Streaming
@@ -39,10 +39,16 @@ LochViewer prioritizes user security and data protection. An independent securit
 - **Zero known vulnerabilities** in npm dependencies (`npm audit` clean).
 - **Secure OAuth2 implementation** for Google Drive uploads (tokens are kept in-memory, never stored locally).
 - **Safe file parsing** isolated in Web Workers to prevent main-thread DoS.
-- **Secrets Management**: All API keys are securely managed via `.env` variables and `.gitignore`.
-- Detailed audit report: [INDEPENDENT_SECURITY_AUDIT.md](INDEPENDENT_SECURITY_AUDIT.md)
+- **Client configuration**: Vite `VITE_` values are public in the browser bundle. Protect Google and Mapbox keys with provider-side restrictions such as allowed referrers, scopes, and quotas.
+- Detailed audit report: [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md)
 
 ## 🚀 Latest Features
+
+### 🛠 Stability & Security Hardening
+- **Safer embeds**: Generated iframe snippets escape URL/title attributes and clamp embed dimensions.
+- **Resource cleanup**: Blob URLs and Three.js GPU resources are released when models, textures, floor maps, terrain, or recordings are replaced.
+- **PLY correctness**: Binary PLY parsing now respects declared scalar types such as `double`, `ushort`, `uchar`, and `float` for coordinates, colors, intensity, and classifications.
+- **Coordinate consistency**: S-JTSK reprojection uses one shared definition across terrain, GPS, TIFF, and XYZ workflows.
 
 ### ☁️ Cloud Sharing (Google Drive) & Security
 - **Direct Upload**: Users can seamlessly upload models directly to their own Google Drive from the application.
@@ -119,19 +125,20 @@ LochViewer prioritizes user security and data protection. An independent securit
 * `.3d` (Survex data)
 * `.plt` (Compass data)
 * `.ply` (Binary LiDAR Point Clouds)
+* `.stl` (3D Mesh models - binary and ASCII)
 * `.tif / .tiff` (GeoTIFF Terrain Models)
 
 ---
 <a name="slovenská-verzia"></a>
-# LochViewer - Speleologický Prehliadač (v2.0.2)
+# LochViewer - Speleologický Prehliadač (v2.2.0)
 
 Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémov, postavená na technológiách React, Three.js a React-Three-Fiber.
 
-## 🚀 Verzia 2.0: NextGen Engine
+## 🚀 Verzia 2.2: NextGen Engine
 Nový engine **NextGen (v2)** predstavuje zásadný skok vo výkone a vizuálnej kvalite, navrhnutý špeciálne pre masívne LiDAR dáta a reálny geografický kontext.
 
 ### 🎛️ Integrované UI v sidebare (Master Switch)
-- **Hlavný vypínač motora**: Verzia 2.0.2 prináša zjednotené ovládanie. V sekcii "Steny jaskyne" nájdete prepínač **LIDAR NEXTGEN**, ktorý okamžite prepne celú scénu do moderného režimu.
+- **Hlavný vypínač motora**: Verzia 2.2 prináša zjednotené ovládanie. V sekcii "Steny jaskyne" nájdete prepínač **LIDAR NEXTGEN**, ktorý okamžite prepne celú scénu do moderného režimu.
 - **Kontextové nastavenia**: Ak je NextGen aktívny, sidebar zobrazí len LiDAR funkcie (Veľkosť bodov, Jas, Plasticita, Vlastná farba). Po vypnutí sa vrátia klasické nástroje (Organické vyhladzovanie, 3D Render, Drôtený model).
 
 ### ☁️ LiDAR Octree LOD a Streaming
@@ -162,10 +169,16 @@ LochViewer kladie veľký dôraz na bezpečnosť používateľov a ochranu dát.
 - **Nulový počet známych zraniteľností** v npm závislostiach (čistý `npm audit`).
 - **Bezpečná implementácia OAuth2** pre nahrávanie na Google Drive (tokeny zostávajú len v pamäti, nikdy sa neukladajú na disk).
 - **Bezpečné spracovanie súborov** izolované vo Web Workeroch, čo chráni hlavné vlákno pred DoS útokmi.
-- **Správa tajných kľúčov**: Všetky API kľúče sú bezpečne spravované cez `.env` premenné a chránené pred únikom pomocou `.gitignore`.
-- Podrobná správa z auditu: [INDEPENDENT_SECURITY_AUDIT.md](INDEPENDENT_SECURITY_AUDIT.md)
+- **Klientská konfigurácia**: Hodnoty `VITE_` sú verejné v browser bundle. Google a Mapbox kľúče chráňte obmedzeniami u poskytovateľa, napríklad povolenými referrermi, scope a kvótami.
+- Podrobná správa z auditu: [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md)
 
 ## 🚀 Najnovšie funkcie
+
+### 🛠 Stabilizácia a bezpečnostné spevnenie
+- **Bezpečnejší embed**: Generovaný iframe kód escapuje URL/title atribúty a orezáva rozmery embedu do rozumného rozsahu.
+- **Uvoľňovanie zdrojov**: Blob URL a Three.js GPU zdroje sa uvoľňujú pri výmene modelov, textúr, podlahových máp, terénu a nahrávok.
+- **Korektnejší PLY parser**: Binárny PLY parser rešpektuje deklarované typy ako `double`, `ushort`, `uchar` a `float` pri súradniciach, farbách, intenzite aj klasifikácii.
+- **Konzistentné súradnice**: S-JTSK reprojekcia používa jednu spoločnú definíciu pre terrain, GPS, TIFF a XYZ workflow.
 
 ### ☁️ Zdieľanie cez Cloud (Google Drive) a Bezpečnosť
 - **Priamy Upload**: Používatelia môžu plynule nahrať modely na svoj vlastný Google Disk priamo z aplikácie.

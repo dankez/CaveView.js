@@ -14,14 +14,20 @@ import {
   Character3D, 
   ManualConnection 
 } from '@shared/components/CaveSharedElements'
+import { Scraps } from '@shared/components/Scraps'
 import type { ParsedCave, ViewerOptions, StationLabel, CaveViewerNextGenProps, Vec3 } from '@shared/types'
 import type { LiDARAnomaly } from '@shared/utils/speleoAnalysis'
 
 const SceneBackground = ({ texture, color }: { texture: THREE.Texture | null, color: string }) => {
   const { scene } = useThree()
   useEffect(() => {
+    const previousBackground = scene.background
     if (texture) scene.background = texture
     else scene.background = new THREE.Color(color)
+    return () => {
+      scene.background = previousBackground
+      texture?.dispose()
+    }
   }, [scene, texture, color])
   return null
 }
@@ -74,6 +80,20 @@ const NavigationHandler = ({
 }) => {
   const { camera, scene, raycaster, gl } = useThree();
   const historyRef = useRef<{ pos: THREE.Vector3, target: THREE.Vector3 }[]>([]);
+
+  const getCanvasPointer = useCallback((e: MouseEvent) => {
+    const rect = gl.domElement.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return null;
+
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    if (x < 0 || y < 0 || x > rect.width || y > rect.height) return null;
+
+    return new THREE.Vector2(
+      (x / rect.width) * 2 - 1,
+      -(y / rect.height) * 2 + 1
+    );
+  }, [gl]);
 
   const flyTo = useCallback((endPos: THREE.Vector3, targetPoint: THREE.Vector3) => {
     // Save current state to history before flying
@@ -149,10 +169,8 @@ const NavigationHandler = ({
   const handleDoubleClick = useCallback((e: MouseEvent) => {
     if (isMeasuringMode) return;
 
-    const mouse = new THREE.Vector2(
-      (e.clientX / gl.domElement.clientWidth) * 2 - 1,
-      -(e.clientY / gl.domElement.clientHeight) * 2 + 1
-    );
+    const mouse = getCanvasPointer(e);
+    if (!mouse) return;
 
     raycaster.setFromCamera(mouse, camera);
     raycaster.params.Points = { threshold: 0.5 };
@@ -169,15 +187,13 @@ const NavigationHandler = ({
 
       flyTo(endPos, targetPoint);
     }
-  }, [camera, scene, raycaster, isMeasuringMode, flyTo, gl]);
+  }, [camera, scene, raycaster, isMeasuringMode, flyTo, getCanvasPointer]);
 
   const handleClick = useCallback((e: MouseEvent) => {
     if (!isMeasuringMode) return;
 
-    const mouse = new THREE.Vector2(
-      (e.clientX / gl.domElement.clientWidth) * 2 - 1,
-      -(e.clientY / gl.domElement.clientHeight) * 2 + 1
-    );
+    const mouse = getCanvasPointer(e);
+    if (!mouse) return;
 
     raycaster.setFromCamera(mouse, camera);
     raycaster.params.Points = { threshold: 0.2 };
@@ -187,7 +203,7 @@ const NavigationHandler = ({
       const point = intersects[0].point;
       onStationClick?.(-1, e.clientX, e.clientY, e.ctrlKey, point);
     }
-  }, [camera, scene, raycaster, isMeasuringMode, onStationClick, gl]);
+  }, [camera, scene, raycaster, isMeasuringMode, onStationClick, getCanvasPointer]);
 
   useEffect(() => {
     gl.domElement.addEventListener('dblclick', handleDoubleClick);
@@ -218,6 +234,7 @@ const CaveViewerNextGen = ({
 }: CaveViewerNextGenProps) => {
   const [isMoving, setIsModelMoving] = useState(false)
   const controlsRef = useRef<any>(null);
+  const movingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const terrainRef = useRef<THREE.Group>(null);
   const transformControlsRef = useRef<any>(null);
@@ -257,7 +274,18 @@ const CaveViewerNextGen = ({
 
   const handleCameraChange = useCallback(() => {
     if (!isMoving) setIsModelMoving(true)
+    if (movingTimeoutRef.current) clearTimeout(movingTimeoutRef.current)
+    movingTimeoutRef.current = setTimeout(() => {
+      setIsModelMoving(false)
+      movingTimeoutRef.current = null
+    }, 800)
   }, [isMoving])
+
+  useEffect(() => {
+    return () => {
+      if (movingTimeoutRef.current) clearTimeout(movingTimeoutRef.current)
+    }
+  }, [])
 
   const diag = Math.sqrt(cave.bounds.size.x ** 2 + cave.bounds.size.y ** 2 + cave.bounds.size.z ** 2)
 
@@ -348,6 +376,25 @@ const CaveViewerNextGen = ({
         <CaveLegs cave={cave} options={o} showSplay={o.showSplay} showAltitude={o.traverseAltitude} clippingPlanes={compositeClippingPlanes} />
         <StationLabels cave={cave} options={o} showNames={o.showStationNames} showAltitudes={o.showStationAlt} />
         <EntranceMarkers cave={cave} options={o} />
+
+        {o.showScraps && cave.scraps?.length > 0 && (
+          <Scraps 
+            cave={cave} 
+            options={o}
+            opacity={o.scrapsOpacity}
+            showSolid={cave.pointCount === 0 ? o.scrapsSolid : (o.smoothScraps || o.accurateScraps)}
+            showWire={o.scrapsWireframe}
+            showAltitude={o.scrapsAltitude}
+            smooth={o.smoothScraps}
+            showRender={o.showRenderCave}
+            caveTexture={o.caveTexture}
+            renderOpacity={o.renderOpacity}
+            isMoving={isMoving}
+            clippingPlanes={compositeClippingPlanes}
+            onProcessingStart={onStatusChange ? (msg) => onStatusChange({ msg, type: 'progress' }) : undefined}
+            onProcessingEnd={onStatusChange ? () => onStatusChange(null) : undefined}
+          />
+        )}
 
         {selectedStations && selectedStations.length === 2 && (
           <ManualConnection p1={selectedStations[0].pos} p2={selectedStations[1].pos} />

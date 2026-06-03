@@ -1,6 +1,6 @@
 import { Vector3 } from 'three';
 
-export interface Vec3 { x: number; y: number; z: number }
+export interface Vec3 { x: number; y: number; z: number; relHeight?: number }
 
 export interface Station {
   id: number;
@@ -151,6 +151,11 @@ export interface ViewerOptions {
   scrapsAltitude:      boolean
   scrapsIntensity:     boolean
   scrapsClassification: boolean
+  scrapsRelief:        number
+  scrapsViewMode:      'all' | 'floor' | 'ceiling' | 'section'
+  scrapsHeightThreshold: number
+  scrapsAngleThreshold: number
+  scrapsSectionWidth:  number
   smoothScraps:        boolean
   accurateScraps:      boolean
   showRenderCave:      boolean

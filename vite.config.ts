@@ -51,7 +51,7 @@ export default defineConfig({
         rewrite: path => path.replace(/^\/xyz-proxy\/zbgis/, '/zbgis/rest/services'),
       },
       '/xyz-proxy/freemap-orto': {
-        target: 'https://ortofoto.tiles.freemap.sk',
+        target: 'https://ofmozaika.tiles.freemap.sk',
         changeOrigin: true,
         rewrite: path => path.replace(/^\/xyz-proxy\/freemap-orto/, ''),
       },

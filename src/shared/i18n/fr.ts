@@ -43,7 +43,7 @@ export const fr = {
   welcome: {
     sub: "Visualiseur de levés spéléo 3D",
     dzTitle: "Déposez le fichier spéléo ici",
-    dzSub: "Supporté : .lox (Therion), .3d (Survex), .plt (Compass)",
+    dzSub: "Supporté : .lox, .3d, .plt, .ply, .stl, .tif",
     selectFile: "Sélectionner un fichier",
     demoTitle: "Modèles de test",
     stressTitle: "Test de charge (Gros modèle)",

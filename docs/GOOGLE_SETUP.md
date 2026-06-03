@@ -7,6 +7,9 @@ Tento návod vysvetľuje, ako získať a nakonfigurovať kľúče potrebné pre 
 - `VITE_GOOGLE_CLIENT_ID`
 - `VITE_GOOGLE_API_KEY`
 
+These values are shipped to the browser by Vite. Treat them as public client configuration and restrict them in Google Cloud by origin, API scope, and quota.
+Tieto hodnoty Vite vloží do browser bundle. Berte ich ako verejnú klientsku konfiguráciu a obmedzte ich v Google Cloud podľa originu, API scope a kvót.
+
 ---
 
 ## 🇸🇰 Slovenský návod
@@ -40,6 +43,7 @@ https://console.cloud.google.com/apis/library/drive.googleapis.com?organizationI
 2. **Dôležité: Obmedz kľúč!** Klikni na kľúč a v nastaveniach:
    - **API restrictions**: Vyber "Restrict key" a zvoľ **Google Drive API**.
    - **Application restrictions**: Vyber "Websites" a pridaj svoju doménu.
+   - Pre lokálny vývoj pridaj aj `http://localhost:5173/*`.
 3. Skopíruj kľúč do `.env` ako `VITE_GOOGLE_API_KEY`.
 
 ---
@@ -73,6 +77,8 @@ https://console.cloud.google.com/apis/library/drive.googleapis.com?organizationI
 2. **Important: Restrict the key!** Click on the key and in settings:
    - **API restrictions**: Select "Restrict key" and choose **Google Drive API**.
    - **Application restrictions**: Select "Websites" and add your domain.
+   - For local development, also add `http://localhost:5173/*`.
+3. Copy the key to `.env` as `VITE_GOOGLE_API_KEY`.
 
 ---
 

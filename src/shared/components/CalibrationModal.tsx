@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { ParsedCave, StationLabel } from '@shared/types';
 
 interface CalibrationPoint {
@@ -74,7 +74,17 @@ export const CalibrationModal: React.FC<Props> = ({ svgText, cave, onCalibrate, 
     onClose();
   };
 
-  const svgUrl = svgText.startsWith('data:image') ? svgText : URL.createObjectURL(new Blob([svgText], { type: 'image/svg+xml' }));
+  const svgUrl = useMemo(() => {
+    return svgText.startsWith('data:image')
+      ? svgText
+      : URL.createObjectURL(new Blob([svgText], { type: 'image/svg+xml' }));
+  }, [svgText]);
+
+  useEffect(() => {
+    return () => {
+      if (!svgText.startsWith('data:image')) URL.revokeObjectURL(svgUrl);
+    };
+  }, [svgText, svgUrl]);
 
   return (
     <div className="calibration-overlay">

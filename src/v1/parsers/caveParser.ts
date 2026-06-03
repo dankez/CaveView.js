@@ -1,4 +1,5 @@
 import { tryUtmToWgs84, tryJtskToWgs84 } from "@shared/utils/coords";
+import { getSjtskBoundsFromDtm } from "@shared/utils/surfaceBounds";
 import type { Vec3, Segment, Scrap, StationLabel, Calibration, CaveSurface, ParsedCave } from "@shared/types";
 
 /**
@@ -71,6 +72,7 @@ export function parseLox(buffer: ArrayBuffer, onProgress?: (msg: string) => void
 
   // Commit terrain if we collected DTM data
   if (terrain.dtm) {
+    const sjtskBounds = getSjtskBoundsFromDtm(terrain.dtm);
     surfaces.push({
       dtm:            terrain.dtm!,
       bitmapData:     terrain.bitmapData ?? null,
@@ -78,6 +80,7 @@ export function parseLox(buffer: ArrayBuffer, onProgress?: (msg: string) => void
       bitmapUrl:      null, // will be populated in main thread
       bitmapCalib:    terrain.bitmapCalib ?? null,
       centerOffset:   { x: 0, y: 0, z: 0 },
+      ...(sjtskBounds ? { sjtskBbox: sjtskBounds.bbox, sjtskAspect: sjtskBounds.aspect } : {}),
     })
   }
 
@@ -383,6 +386,78 @@ export function parsePlt(text: string, onProgress?: (msg: string) => void): Pars
 
 // ─── PLY parser (LiDAR / Mesh) ──────────────────────────────────────────────────
 
+function readPlyScalar(dv: DataView, offset: number, type: string): number {
+  switch (type.toLowerCase()) {
+    case 'char':
+    case 'int8':
+      return dv.getInt8(offset);
+    case 'uchar':
+    case 'uint8':
+      return dv.getUint8(offset);
+    case 'short':
+    case 'int16':
+      return dv.getInt16(offset, true);
+    case 'ushort':
+    case 'uint16':
+      return dv.getUint16(offset, true);
+    case 'int':
+    case 'int32':
+      return dv.getInt32(offset, true);
+    case 'uint':
+    case 'uint32':
+      return dv.getUint32(offset, true);
+    case 'double':
+    case 'float64':
+      return dv.getFloat64(offset, true);
+    case 'float':
+    case 'float32':
+    default:
+      return dv.getFloat32(offset, true);
+  }
+}
+
+function normalizePlyColor(value: number, type: string): number {
+  switch (type.toLowerCase()) {
+    case 'uchar':
+    case 'uint8':
+      return value / 255;
+    case 'char':
+    case 'int8':
+      return Math.max(0, value) / 127;
+    case 'ushort':
+    case 'uint16':
+      return value / 65535;
+    case 'short':
+    case 'int16':
+      return Math.max(0, value) / 32767;
+    case 'uint':
+    case 'uint32':
+      return value / 4294967295;
+    case 'int':
+    case 'int32':
+      return Math.max(0, value) / 2147483647;
+    case 'double':
+    case 'float64':
+    case 'float':
+    case 'float32':
+    default:
+      return value > 1 ? value / 255 : value;
+  }
+}
+
+function normalizePlyIntensity(value: number, type: string): number {
+  switch (type.toLowerCase()) {
+    case 'uchar':
+    case 'uint8':
+      return value / 255;
+    case 'ushort':
+    case 'uint16':
+      return value / 65535;
+    default:
+      return value;
+  }
+}
+
 export function parsePly(buffer: ArrayBuffer, onProgress?: (msg: string) => void): ParsedCave {
   // Read header more robustly (can be > 1024 bytes)
   const bytes = new Uint8Array(buffer);
@@ -429,7 +504,7 @@ export function parsePly(buffer: ArrayBuffer, onProgress?: (msg: string) => void
       if (parts[1] === 'face') faceCount = parseInt(parts[2]);
     }
     if (parts[0] === 'property' && currentElement === 'vertex') {
-      const type = parts[1];
+      const type = parts[1].toLowerCase();
       const name = parts[2];
       const size = typeSizes[type] || 4;
       properties.push({ name, type, size, offset: currentStride });
@@ -454,18 +529,19 @@ export function parsePly(buffer: ArrayBuffer, onProgress?: (msg: string) => void
   const pointClassification = new Uint8Array(vertexCount);
   
   // Property indices for fast access
+  const propName = (name: string) => name.toLowerCase();
   const propIdx = {
-    x: properties.find(p => p.name === 'x'),
-    y: properties.find(p => p.name === 'y'),
-    z: properties.find(p => p.name === 'z'),
-    r: properties.find(p => p.name === 'red' || p.name === 'r' || p.name === 'diffuse_red'),
-    g: properties.find(p => p.name === 'green' || p.name === 'g' || p.name === 'diffuse_green'),
-    b: properties.find(p => p.name === 'blue' || p.name === 'b' || p.name === 'diffuse_blue'),
-    nx: properties.find(p => p.name === 'nx' || p.name === 'normal_x'),
-    ny: properties.find(p => p.name === 'ny' || p.name === 'normal_y'),
-    nz: properties.find(p => p.name === 'nz' || p.name === 'normal_z'),
-    intensity: properties.find(p => p.name === 'intensity' || p.name === 'i' || p.name === 'scalar_Intensity'),
-    class: properties.find(p => p.name === 'classification' || p.name === 'class' || p.name === 'scalar_Classification')
+    x: properties.find(p => propName(p.name) === 'x'),
+    y: properties.find(p => propName(p.name) === 'y'),
+    z: properties.find(p => propName(p.name) === 'z'),
+    r: properties.find(p => ['red', 'r', 'diffuse_red'].includes(propName(p.name))),
+    g: properties.find(p => ['green', 'g', 'diffuse_green'].includes(propName(p.name))),
+    b: properties.find(p => ['blue', 'b', 'diffuse_blue'].includes(propName(p.name))),
+    nx: properties.find(p => ['nx', 'normal_x', 'n_x'].includes(propName(p.name))),
+    ny: properties.find(p => ['ny', 'normal_y', 'n_y'].includes(propName(p.name))),
+    nz: properties.find(p => ['nz', 'normal_z', 'n_z'].includes(propName(p.name))),
+    intensity: properties.find(p => ['intensity', 'i', 'scalar_intensity', 'value'].includes(propName(p.name))),
+    class: properties.find(p => ['classification', 'class', 'scalar_classification'].includes(propName(p.name)))
   };
 
   let minX = Infinity, minY = Infinity, minZ = Infinity;
@@ -477,9 +553,9 @@ export function parsePly(buffer: ArrayBuffer, onProgress?: (msg: string) => void
     
     // Position (mandatory)
     let x = 0, y = 0, z = 0;
-    if (propIdx.x) x = dv.getFloat32(vOffset + propIdx.x.offset, true);
-    if (propIdx.y) y = dv.getFloat32(vOffset + propIdx.y.offset, true);
-    if (propIdx.z) z = dv.getFloat32(vOffset + propIdx.z.offset, true);
+    if (propIdx.x) x = readPlyScalar(dv, vOffset + propIdx.x.offset, propIdx.x.type);
+    if (propIdx.y) y = readPlyScalar(dv, vOffset + propIdx.y.offset, propIdx.y.type);
+    if (propIdx.z) z = readPlyScalar(dv, vOffset + propIdx.z.offset, propIdx.z.type);
     
     points[i*3] = x; points[i*3+1] = y; points[i*3+2] = z;
     
@@ -490,28 +566,28 @@ export function parsePly(buffer: ArrayBuffer, onProgress?: (msg: string) => void
 
     // Color (optional)
     if (propIdx.r && propIdx.g && propIdx.b) {
-      pointColors[i*3]   = dv.getUint8(vOffset + propIdx.r.offset) / 255;
-      pointColors[i*3+1] = dv.getUint8(vOffset + propIdx.g.offset) / 255;
-      pointColors[i*3+2] = dv.getUint8(vOffset + propIdx.b.offset) / 255;
+      pointColors[i*3]   = normalizePlyColor(readPlyScalar(dv, vOffset + propIdx.r.offset, propIdx.r.type), propIdx.r.type);
+      pointColors[i*3+1] = normalizePlyColor(readPlyScalar(dv, vOffset + propIdx.g.offset, propIdx.g.type), propIdx.g.type);
+      pointColors[i*3+2] = normalizePlyColor(readPlyScalar(dv, vOffset + propIdx.b.offset, propIdx.b.type), propIdx.b.type);
     } else {
       pointColors[i*3] = 1; pointColors[i*3+1] = 1; pointColors[i*3+2] = 1;
     }
 
     // Normals (optional)
     if (propIdx.nx && propIdx.ny && propIdx.nz) {
-      pointNormals[i*3]   = dv.getFloat32(vOffset + propIdx.nx.offset, true);
-      pointNormals[i*3+1] = dv.getFloat32(vOffset + propIdx.ny.offset, true);
-      pointNormals[i*3+2] = dv.getFloat32(vOffset + propIdx.nz.offset, true);
+      pointNormals[i*3]   = readPlyScalar(dv, vOffset + propIdx.nx.offset, propIdx.nx.type);
+      pointNormals[i*3+1] = readPlyScalar(dv, vOffset + propIdx.ny.offset, propIdx.ny.type);
+      pointNormals[i*3+2] = readPlyScalar(dv, vOffset + propIdx.nz.offset, propIdx.nz.type);
     }
 
     // Intensity (optional)
     if (propIdx.intensity) {
-      pointIntensity[i] = dv.getFloat32(vOffset + propIdx.intensity.offset, true);
+      pointIntensity[i] = normalizePlyIntensity(readPlyScalar(dv, vOffset + propIdx.intensity.offset, propIdx.intensity.type), propIdx.intensity.type);
     }
 
     // Classification (optional)
     if (propIdx.class) {
-      pointClassification[i] = dv.getUint8(vOffset + propIdx.class.offset);
+      pointClassification[i] = Math.max(0, Math.min(255, Math.round(readPlyScalar(dv, vOffset + propIdx.class.offset, propIdx.class.type))));
     }
   }
 
@@ -543,11 +619,13 @@ export function parsePly(buffer: ArrayBuffer, onProgress?: (msg: string) => void
   const outCls       = hasNativeCls  ? new Uint8Array(Math.min(vertexCount, MAX_POINTS)) : new Uint8Array(0);
   const hasIntensity = propIdx.intensity !== undefined;
   const outIntensity = hasIntensity  ? new Float32Array(Math.min(vertexCount, MAX_POINTS)) : new Float32Array(0);
+  const outKeys = new Array<bigint>(Math.min(vertexCount, MAX_POINTS));
 
   let outCount = 0;
+  let uniqueVoxelCount = 0;
+  const hashVoxelKey = (key: bigint) => Number((key ^ (key >> 21n) ^ (key >> 42n)) & 0xffffffffn);
 
   for (let i = 0; i < vertexCount; i++) {
-    if (outCount >= MAX_POINTS) break; 
     const x = points[i*3];
     const y = points[i*3+1];
     const z = points[i*3+2];
@@ -558,9 +636,24 @@ export function parsePly(buffer: ArrayBuffer, onProgress?: (msg: string) => void
 
     const key = BigInt(ix & 0x3FFF) | (BigInt(iy & 0x3FFF) << 14n) | (BigInt(iz & 0x3FFF) << 28n);
     if (voxelMap.has(key)) continue;
-    voxelMap.set(key, outCount);
+    uniqueVoxelCount++;
 
-    const o3 = outCount * 3;
+    let targetIndex = outCount;
+    if (outCount < MAX_POINTS) {
+      outCount++;
+    } else {
+      const selectionHash = hashVoxelKey(key ^ BigInt(uniqueVoxelCount));
+      const replaceProbability = MAX_POINTS / uniqueVoxelCount;
+      if (selectionHash / 0xffffffff > replaceProbability) continue;
+      targetIndex = hashVoxelKey(key + 0x9e3779b97f4a7c15n) % MAX_POINTS;
+      const replacedKey = outKeys[targetIndex];
+      if (replacedKey !== undefined) voxelMap.delete(replacedKey);
+    }
+
+    voxelMap.set(key, targetIndex);
+    outKeys[targetIndex] = key;
+
+    const o3 = targetIndex * 3;
     outPoints[o3]   = x - cx;
     outPoints[o3+1] = y - cy;
     outPoints[o3+2] = z - cz;
@@ -570,10 +663,8 @@ export function parsePly(buffer: ArrayBuffer, onProgress?: (msg: string) => void
       outColors[o3+1] = pointColors[i*3+1];
       outColors[o3+2] = pointColors[i*3+2];
     }
-    if (hasNativeCls) outCls[outCount] = pointClassification[i];
-    if (hasIntensity) outIntensity[outCount] = pointIntensity[i];
-
-    outCount++;
+    if (hasNativeCls) outCls[targetIndex] = pointClassification[i];
+    if (hasIntensity) outIntensity[targetIndex] = pointIntensity[i];
   }
 
   if (onProgress) onProgress('finalizing');

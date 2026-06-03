@@ -38,11 +38,44 @@ export function parseStl(buffer: ArrayBuffer): ParsedCave {
   const cy = (minY + maxY) / 2;
   const cz = (minZ + maxZ) / 2;
 
-  // Center the vertices for v1 coordinate system
+  // --- Parting Line Analysis ---
+  // We apply the same logic as the LiDAR worker: 
+  // 1. Map vertices to a 2D grid
+  const cellSize = 0.5;
+  const grid = new Map<string, { minZ: number, maxZ: number, midZ: number, halfH: number }>();
+  
+  for (const v of vertices) {
+    const gx = Math.floor(v.x / cellSize);
+    const gy = Math.floor(v.y / cellSize);
+    const key = `${gx},${gy}`;
+    
+    let b = grid.get(key);
+    if (!b) {
+      b = { minZ: v.z, maxZ: v.z, midZ: 0, halfH: 0 };
+      grid.set(key, b);
+    } else {
+      if (v.z < b.minZ) b.minZ = v.z;
+      if (v.z > b.maxZ) b.maxZ = v.z;
+    }
+  }
+  
+  // Calculate midpoints per cell
+  for (const b of grid.values()) {
+    b.midZ = (b.minZ + b.maxZ) / 2;
+    b.halfH = (b.maxZ - b.minZ) / 2;
+  }
+
+  // Center the vertices and store relHeight
   const centeredVertices = vertices.map(v => ({
     x: v.x - cx,
     y: v.y - cy,
-    z: v.z - cz
+    z: v.z - cz,
+    relHeight: (function() {
+      const gx = Math.floor(v.x / cellSize);
+      const gy = Math.floor(v.y / cellSize);
+      const b = grid.get(`${gx},${gy}`)!;
+      return b.halfH > 0.02 ? (v.z - b.midZ) / b.halfH : -1.0;
+    })()
   }));
 
   // STL is usually unindexed (flat triangles), but we can create a simple face array
@@ -52,7 +85,7 @@ export function parseStl(buffer: ArrayBuffer): ParsedCave {
   }
 
   const mainScrap: Scrap = {
-    vertices: centeredVertices,
+    vertices: centeredVertices as any, // Cast to any to include relHeight
     faces: faces,
     survey: 1
   };

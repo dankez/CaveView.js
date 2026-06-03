@@ -27,11 +27,11 @@ Aplikácia využíva duálnu architektúru motorov (Dual-Engine) s čistým odde
 
 ### 📂 Podporované formáty
 - **.lox (Therion)**: Najlepšia podpora vrátane stien jaskyne, textúr a terénu.
-- [ALGORITHMS.md](../ALGORITHMS.md) - Podrobný popis matematických algoritmov (Surface Nets, Laplacian Silk).
-- [CHANGELOG.md](../CHANGELOG.md) - História zmien.
 - **.3d (Survex)**: Podpora pre polygonové ťahy (v3 až v8).
 - **.plt (Compass)**: Základná podpora pre dáta z Compassu.
-- **.ply (LiDAR)**: Pokročilá rekonštrukcia povrchu (Organický model s Laplacovským vyhladením a presný Mesh model).
+- **.ply (LiDAR)**: Pokročilá rekonštrukcia povrchu, Octree LOD a korektné čítanie binárnych PLY typov.
+- **.stl (3D Mesh)**: Binárne aj ASCII STL súbory načítané ako jaskynné steny/scraps.
+- **.tif / .tiff (GeoTIFF)**: Samostatné terénne vrstvy s podporou world súborov a reprojekcie.
 
 ---
 
@@ -59,4 +59,6 @@ The application uses a Dual-Engine architecture with clean module separation:
 - **.lox (Therion)**: Full support including cave walls, textures, and DTM terrain.
 - **.3d (Survex)**: Support for centerlines (v3 through v8).
 - **.plt (Compass)**: Basic support for Compass plot data.
-- **.ply (LiDAR)**: Advanced surface reconstruction (Organic model with Laplacian smoothing and Accurate Mesh model).
+- **.ply (LiDAR)**: Advanced reconstruction, Octree LOD, and binary PLY scalar type handling.
+- **.stl (3D Mesh)**: Binary and ASCII STL files loaded as cave wall/scrap geometry.
+- **.tif / .tiff (GeoTIFF)**: Standalone terrain layers with world-file and reprojection support.

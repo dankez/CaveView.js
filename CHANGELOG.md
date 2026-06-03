@@ -1,5 +1,26 @@
 # Changelog
 
+## [Unreleased] - Stabilizácia a bezpečnosť
+### Opravené
+- **Blob URL a GPU cleanup:** Modelové bitmapy, PLY Blob URL, používateľské textúry, podlahové mapy, Mapbox terrain a nahrávky teraz uvoľňujú Blob/Three.js zdroje pri výmene alebo unmount.
+- **Bezpečný iframe embed:** Generovaný iframe kód escapuje HTML atribúty a orezáva rozmery na rozumný rozsah.
+- **v1 LiDAR filtering:** Skryté klasifikačné triedy sa už nepresúvajú na súradnicu 0,0,0; geometria sa skladá len z viditeľných bodov.
+- **v1 duplicitný scale/measurement render:** Jaskyniar a manuálne spojenie sa renderujú len v kalibrovanej skupine.
+- **v2 raycasting:** Klik a dvojklik v NextGen engine používajú reálny bounding rect canvasu, takže fungujú aj pri offsete UI.
+- **v2 movement state:** `isMoving` sa po zastavení kamery znova vypne, čo stabilizuje progresívne renderovanie a mapové vrstvy.
+- **PLY parsery:** v1 aj v2 parser čítajú hodnoty podľa deklarovaných PLY typov (`double`, `ushort`, `uchar`, `float`, atď.) namiesto pevného `float32`/`uint8` predpokladu.
+- **v1 PLY decimácia:** Decimácia po naplnení 1M limitu pokračuje cez celý súbor pomocou deterministického replacement samplingu namiesto ukončenia na začiatku dát.
+- **S-JTSK definícia:** GPS, TIFF reprojekcia a XYZ terrain používajú jednotnú definíciu súradnicového systému.
+- **LOX wall režimy:** Obnovené samostatné render vetvy pre klasické steny jaskyne: solid farba, organic/smoothed, 3D render textúra, wireframe a color-by-height.
+- **XYZ/WMS scraping povrchov:** LOX/DTM povrchy teraz dostávajú S-JTSK bbox z kalibrácie rohov mriežky, downloader už nevracia sivý placeholder ako úspech pri nulovom počte stiahnutých dlaždíc a geologická mapa ide cez WMS v EPSG:5514. Pred opravou boli overené limity zdrojov: ZBGIS ortofoto/DMR5 prakticky z15-z19, Freemap DMR5 shading z15-z18, Freemap ortofoto dostupné minimálne z15-z23 na testovacom bode.
+- **STL cave walls:** STL modely sa už neotvárajú v LiDAR NextGen point-cloud režime, takže v bočnom paneli znova funguje farba stien, 3D render, wireframe a farebné podľa výšky.
+- **STL/plastickosť stien:** Mesh steny majú procedurálne reliéfne tieňovanie a nový ovládač plasticity, pričom STL modely sa načítajú s plne nepriehľadnou stenou a silnejším relief defaultom.
+- **STL selektívne zobrazenie:** STL mesh steny podporujú režimy Všetko, Podlaha, Strop a Rez na rovnakom `relHeight` princípe ako PLY segmentácia.
+- **Mobilný welcome screen:** Úvodná obrazovka má kompaktný mobilný layout, viditeľné testovacie modely v prvom viewporte a bez horizontálneho pretekania.
+
+### Dokumentácia
+- README má aktuálnu verziu 2.2.0, opravený odkaz na bezpečnostný audit, doplnený STL formát v anglickej časti a presnejší text o verejnej povahe `VITE_` klientskych kľúčov.
+
 ## [2.2.0] - 2026-06-01
 ### Podpora 3D Mesh formátu STL
 - **STL Parser:** Implementovaná podpora pre binárne a ASCII STL súbory. Modely sú načítavané asynchrónne cez background workera pomocou `STLLoader`.

@@ -43,7 +43,7 @@ export const en = {
   welcome: {
     sub: "3D Cave Survey Viewer",
     dzTitle: "Drop cave file here",
-    dzSub: "Supported: .lox (Therion), .3d (Survex), .plt (Compass)",
+    dzSub: "Supported: .lox, .3d, .plt, .ply, .stl, .tif",
     selectFile: "Select file",
     demoTitle: "Test models",
     stressTitle: "Stress test (Big Model)",

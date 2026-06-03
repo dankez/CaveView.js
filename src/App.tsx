@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect, Suspense, useMemo } from 'react'
 import * as THREE from 'three'
 import proj4 from 'proj4'
-import { fetchAltitudeFromZbgis, wgs84ToJtsk } from '@shared/utils/geoUtils'
+import { SJTSK_DEF, fetchAltitudeFromZbgis, wgs84ToJtsk } from '@shared/utils/geoUtils'
 import { parseLox, parseSvx, parsePlt, parsePly } from '@v1/parsers/caveParser'
 import { tryUtmToWgs84, tryJtskToWgs84 } from "@shared/utils/coords";
 import { parseGeoTiff } from '@v1/parsers/tiffParser'
@@ -9,6 +9,8 @@ import CaveViewer3D from '@v1/components/CaveViewer3D'
 import CaveViewerNextGen from '@v2/components/CaveViewerNextGen'
 import type { ParsedCave, ViewerOptions, CaveSurface, StationLabel, Vec3 } from '@shared/types'
 import { calculateVolumeAndProfile, analyzeLiDARAnomalies } from '@shared/utils/speleoAnalysis'
+import { getSjtskBoundsFromDtm } from '@shared/utils/surfaceBounds'
+import { getDefaultPointCloudSize, getPreferredEngineForFile } from '@shared/utils/modelDefaults'
 import type { LiDARAnomaly } from '@shared/utils/speleoAnalysis'
 
 // ─── Error Boundary ───────────────────────────────────────────────────────────
@@ -36,6 +38,23 @@ import { getBrowserLanguage, getTranslation, Language, languages } from '@shared
 // ── Google Drive Config (Vymeň za tvoje reálne kľúče v .env súbore) ──
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || ''
+
+const htmlAttrEscapes: Record<string, string> = {
+  '&': '&amp;',
+  '"': '&quot;',
+  "'": '&#39;',
+  '<': '&lt;',
+  '>': '&gt;'
+}
+
+function escapeHtmlAttribute(value: string): string {
+  return value.replace(/[&"'<>]/g, ch => htmlAttrEscapes[ch])
+}
+
+function clampEmbedDimension(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  return Math.max(120, Math.min(4096, Math.round(value)))
+}
 
 type AppState = 'welcome' | 'loading' | 'viewer' | 'error'
 
@@ -639,6 +658,34 @@ export default function App() {
 
 
   const surfNextId = useRef(1)
+  const managedObjectUrls = useRef<Set<string>>(new Set())
+
+  const trackObjectUrl = useCallback((url: string) => {
+    managedObjectUrls.current.add(url)
+    return url
+  }, [])
+
+  const revokeManagedObjectUrl = useCallback((url?: string | null) => {
+    if (!url || !managedObjectUrls.current.delete(url)) return
+    URL.revokeObjectURL(url)
+  }, [])
+
+  const revokeCaveObjectUrls = useCallback((target: ParsedCave | null) => {
+    if (!target) return
+    revokeManagedObjectUrl(target.pointCloudUrl)
+    target.surfaces?.forEach(surface => revokeManagedObjectUrl(surface.bitmapUrl))
+  }, [revokeManagedObjectUrl])
+
+  const clearSurfaceTextureUrl = useCallback((url?: string | null) => {
+    revokeManagedObjectUrl(url)
+  }, [revokeManagedObjectUrl])
+
+  useEffect(() => {
+    return () => {
+      managedObjectUrls.current.forEach(url => URL.revokeObjectURL(url))
+      managedObjectUrls.current.clear()
+    }
+  }, [])
 
   const contourLevels = useMemo(() => {
     if (!cameraData) return { major: 10, minor: 2.5 };
@@ -675,6 +722,11 @@ export default function App() {
     scrapsAltitude:      false,
     scrapsIntensity:     false,
     scrapsClassification: false,
+    scrapsRelief:        0.35,
+    scrapsViewMode:      'all',
+    scrapsHeightThreshold: 0.1,
+    scrapsAngleThreshold: 0.0,
+    scrapsSectionWidth:  0.08,
     smoothScraps:        false,
     accurateScraps:      false,
     organicLevel:        5,
@@ -834,7 +886,7 @@ export default function App() {
   const getProjectProjection = useCallback(() => {
     if (!cave) return null
     for (const label of cave.stationLabels) {
-      if (label.gps?.epsg === 'S-JTSK Křovák') return "+proj=krovak +lat_0=49.5 +lon_0=24.83333333333333 +alpha=30.28813972222222 +k=0.9999 +x_0=0 +y_0=0 +ellps=bessel +towgs84=589,76,480,0,0,0,0 +units=m +no_defs"
+      if (label.gps?.epsg === 'S-JTSK Křovák') return SJTSK_DEF
       if (label.gps?.zone) {
         return `+proj=utm +zone=${label.gps.zone} +ellps=WGS84 +datum=WGS84 +units=m +no_defs`
       }
@@ -853,13 +905,16 @@ export default function App() {
     const file = e.target.files?.[0]
     if (!file) return
     
-    const url = URL.createObjectURL(file)
-    setOpts(p => ({ 
-      ...p, 
-      surfaceTextureUrl: url,
-      surfaceTextureSource: 'custom',
-      showSurfaceTexture: true 
-    }))
+    const url = trackObjectUrl(URL.createObjectURL(file))
+    setOpts(p => {
+      clearSurfaceTextureUrl(p.surfaceTextureUrl)
+      return { 
+        ...p, 
+        surfaceTextureUrl: url,
+        surfaceTextureSource: 'custom',
+        showSurfaceTexture: true 
+      }
+    })
   }
 
   const shiftCave = (dx: number, dy: number, dz: number) => {
@@ -887,9 +942,11 @@ export default function App() {
     const calibText = `S-JTSK Bounding Box (Krovak EPSG:5514)\nminX, minY, maxX, maxY\n${bbox}\n\nTento súbor sa dá neskôr použiť na ručnú kalibráciu pre tento vygenerovaný JPG v CaveViewer aplikácii.`;
     const blob = new Blob([calibText], { type: 'text/plain;charset=utf-8' });
     const aTxt = document.createElement('a');
-    aTxt.href = URL.createObjectURL(blob);
+    const txtUrl = URL.createObjectURL(blob);
+    aTxt.href = txtUrl;
     aTxt.download = `povrch_textura_${opts.surfaceTextureSource}_calib.txt`;
     aTxt.click();
+    setTimeout(() => URL.revokeObjectURL(txtUrl), 0);
   }
 
   const handleCalibFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1242,7 +1299,7 @@ export default function App() {
       parsed.surfaces.forEach((s: CaveSurface) => {
         if (s.bitmapData && s.bitmapMimeType) {
           const blob = new Blob([s.bitmapData as any], { type: s.bitmapMimeType })
-          s.bitmapUrl = URL.createObjectURL(blob)
+          s.bitmapUrl = trackObjectUrl(URL.createObjectURL(blob))
           hasBitmap = true
         }
       })
@@ -1253,12 +1310,16 @@ export default function App() {
     // NextGen support: Create Blob URL for point cloud data for PLY files
     if (isPLY && buffer) {
       const blob = new Blob([buffer], { type: 'application/octet-stream' });
-      parsed.pointCloudUrl = URL.createObjectURL(blob);
+      parsed.pointCloudUrl = trackObjectUrl(URL.createObjectURL(blob));
     }
 
-    setCave(parsed)
+    setCave(prev => {
+      revokeCaveObjectUrls(prev)
+      return parsed
+    })
     setOpts(prev => {
       const hasBit = !!(hasBitmap)
+      clearSurfaceTextureUrl(prev.surfaceTextureUrl)
       return { 
         ...prev, 
         clippingHeight: parsed.bounds.max.z + (parsed.centerOffset?.z || 0),
@@ -1279,7 +1340,7 @@ export default function App() {
         surfaceTextureOffset: { x: 0, y: 0 }
       }
     })
-  }, [])
+  }, [clearSurfaceTextureUrl, revokeCaveObjectUrls, trackObjectUrl])
 
   const handleFile = useCallback(async (file: File) => {
     const ext = getExt(file.name)
@@ -1293,14 +1354,32 @@ export default function App() {
       return;
     }
 
-    // Auto-select engine v2 for large PLY files (> 50MB) and set smart defaults
-    if (ext === '.ply') {
-      const isLarge = file.size > 50 * 1024 * 1024;
+    // PLY is a point-cloud workflow; STL is a mesh/scrap workflow and belongs to v1 wall rendering.
+    if (ext === '.ply' || ext === '.stl') {
+      const isStl = ext === '.stl';
       setOpts(prev => ({ 
         ...prev, 
-        engine: 'v2',
-        pointCloudSize: isLarge ? 0.3 : 0.5,
-        pointCloudBrightness: 1.2 
+        engine: getPreferredEngineForFile(ext),
+        pointCloudSize: getDefaultPointCloudSize(ext, file.size),
+        pointCloudBrightness: 1.2,
+        ...(isStl ? {
+          showScraps: true,
+          scrapsSolid: true,
+          scrapsWireframe: false,
+          scrapsAltitude: false,
+          scrapsRelief: 0.55,
+          scrapsViewMode: 'all',
+          scrapsHeightThreshold: 0.1,
+          scrapsAngleThreshold: 0.0,
+          scrapsSectionWidth: 0.08,
+          scrapsOpacity: 1.0,
+          showRenderCave: false,
+          smoothScraps: false,
+          accurateScraps: false,
+          showStations: false,
+          showTraverse: false,
+          showSplay: false,
+        } : {})
       }))
     } else {
       setOpts(prev => ({ ...prev, engine: 'v1' }))
@@ -1369,14 +1448,32 @@ export default function App() {
       setProgress(60)
       setLoadedFile({ name: label, size: buf.byteLength, ext })
 
-      // Auto-select engine v2 for large PLY files (> 50MB) and set smart defaults
-      if (ext === '.ply') {
-        const isLarge = buf.byteLength > 50 * 1024 * 1024;
+      // PLY is a point-cloud workflow; STL is a mesh/scrap workflow and belongs to v1 wall rendering.
+      if (ext === '.ply' || ext === '.stl') {
+        const isStl = ext === '.stl';
         setOpts(prev => ({ 
           ...prev, 
-          engine: 'v2',
-          pointCloudSize: isLarge ? 0.3 : 0.5,
-          pointCloudBrightness: 1.2 
+          engine: getPreferredEngineForFile(ext),
+          pointCloudSize: getDefaultPointCloudSize(ext, buf.byteLength),
+          pointCloudBrightness: 1.2,
+          ...(isStl ? {
+            showScraps: true,
+            scrapsSolid: true,
+            scrapsWireframe: false,
+            scrapsAltitude: false,
+            scrapsRelief: 0.55,
+            scrapsViewMode: 'all',
+            scrapsHeightThreshold: 0.1,
+            scrapsAngleThreshold: 0.0,
+            scrapsSectionWidth: 0.08,
+            scrapsOpacity: 1.0,
+            showRenderCave: false,
+            smoothScraps: false,
+            accurateScraps: false,
+            showStations: false,
+            showTraverse: false,
+            showSplay: false,
+          } : {})
         }))
       } else {
         setOpts(prev => ({ ...prev, engine: 'v1' }))
@@ -1391,6 +1488,11 @@ export default function App() {
           if (tfwResp.ok) tfwText = await tfwResp.text();
         } catch(e) {}
         const surf = await parseGeoTiff(buf, tfwText);
+        const sjtskBounds = getSjtskBoundsFromDtm(surf.dtm);
+        if (sjtskBounds) {
+          surf.sjtskBbox = sjtskBounds.bbox;
+          surf.sjtskAspect = sjtskBounds.aspect;
+        }
         const b = surf.bounds!;
         const midZ = (b.minZ + b.maxZ) / 2;
         const halfW = b.width / 2;
@@ -1458,25 +1560,11 @@ export default function App() {
         centerOffset: newSurface.centerOffset
       });
 
-      // Add WMS texture from GKÚ Ortofoto if it looks like S-JTSK coordinates
-      const origCal = newSurface.dtm.calib;
-      const isSjtskOrig = origCal.xOrigin > -950000 && origCal.xOrigin < -150000 && origCal.yOrigin > -1350000 && origCal.yOrigin < -900000;
-      if (isSjtskOrig) {
-        const samples = newSurface.dtm.samples;
-        const lines = newSurface.dtm.lines;
-        
-        const minX = origCal.xOrigin;
-        const maxX = origCal.xOrigin + samples * origCal.xx;
-        const maxY = origCal.yOrigin; // yy is usually negative
-        const minY = origCal.yOrigin + lines * origCal.yy;
-
-        const bboxX1 = Math.min(minX, maxX);
-        const bboxY1 = Math.min(minY, maxY);
-        const bboxX2 = Math.max(minX, maxX);
-        const bboxY2 = Math.max(minY, maxY);
-        
-        newSurface.sjtskBbox = `${bboxX1},${bboxY1},${bboxX2},${bboxY2}`;
-        newSurface.sjtskAspect = Math.abs(bboxY2 - bboxY1) / Math.abs(bboxX2 - bboxX1);
+      // Add map texture support if the raster is calibrated in S-JTSK coordinates.
+      const sjtskBounds = getSjtskBoundsFromDtm(newSurface.dtm);
+      if (sjtskBounds) {
+        newSurface.sjtskBbox = sjtskBounds.bbox;
+        newSurface.sjtskAspect = sjtskBounds.aspect;
         
         // Default initially to orthophoto
         // We no longer attach WMS here. The user must select WMS in the UI.
@@ -1528,17 +1616,16 @@ export default function App() {
 
         if (isSjtsk && caveProj) {
           try {
-            const sjtskDef = "+proj=krovak +lat_0=49.5 +lon_0=24.83333333333333 +alpha=30.28813972222222 +k=0.9999 +x_0=0 +y_0=0 +ellps=bessel +towgs84=589,76,480,0,0,0,0 +units=m +no_defs";
             console.log('[TIFF] Reprojecting surface from S-JTSK to Cave CRS', caveProj);
             
             // Reproject origin and vectors
-            const oWgs = proj4(sjtskDef, "WGS84", [cal.xOrigin, cal.yOrigin]);
+            const oWgs = proj4(SJTSK_DEF, "WGS84", [cal.xOrigin, cal.yOrigin]);
             const oTarget = proj4("WGS84", caveProj, oWgs);
             
-            const xWgs = proj4(sjtskDef, "WGS84", [cal.xOrigin + cal.xx, cal.yOrigin + cal.yx]);
+            const xWgs = proj4(SJTSK_DEF, "WGS84", [cal.xOrigin + cal.xx, cal.yOrigin + cal.yx]);
             const xTarget = proj4("WGS84", caveProj, xWgs);
             
-            const yWgs = proj4(sjtskDef, "WGS84", [cal.xOrigin + cal.xy, cal.yOrigin + cal.yy]);
+            const yWgs = proj4(SJTSK_DEF, "WGS84", [cal.xOrigin + cal.xy, cal.yOrigin + cal.yy]);
             const yTarget = proj4("WGS84", caveProj, yWgs);
 
             newSurface.dtm.calib = {
@@ -1593,7 +1680,16 @@ export default function App() {
   }, [handleFile, cave])
 
   const handleReset = () => {
-    setAppState('welcome'); setLoadedFile(null); setCave(null)
+    setAppState('welcome'); setLoadedFile(null)
+    setCave(prev => {
+      revokeCaveObjectUrls(prev)
+      return null
+    })
+    setLastLoadedBuffer(null)
+    setOpts(prev => {
+      clearSurfaceTextureUrl(prev.surfaceTextureUrl)
+      return { ...prev, surfaceTextureUrl: null, showSurfaceTexture: false }
+    })
     setProgress(0); setErrorMsg(null)
   }
 
@@ -1640,6 +1736,11 @@ export default function App() {
       showRenderCave:      p.get('cave3d') === '1',
       caveTexture:         (p.get('ctex') as any) ?? prev.caveTexture,
       scrapsOpacity:       p.has('scrop') ? parseFloat(p.get('scrop')!) : prev.scrapsOpacity,
+      scrapsRelief:        p.has('srelief') ? parseFloat(p.get('srelief')!) : prev.scrapsRelief,
+      scrapsViewMode:      (p.get('sview') as any) ?? prev.scrapsViewMode,
+      scrapsHeightThreshold: p.has('sth') ? parseFloat(p.get('sth')!) : prev.scrapsHeightThreshold,
+      scrapsAngleThreshold: p.has('sang') ? parseFloat(p.get('sang')!) : prev.scrapsAngleThreshold,
+      scrapsSectionWidth:  p.has('swidth') ? parseFloat(p.get('swidth')!) : prev.scrapsSectionWidth,
       renderOpacity:       p.has('rop') ? parseFloat(p.get('rop')!) : prev.renderOpacity,
       colorScraps:         p.get('cscraps') ? '#' + p.get('cscraps') : prev.colorScraps,
       colorScrapsWire:     p.get('cswire') ? '#' + p.get('cswire') : prev.colorScrapsWire,
@@ -1703,6 +1804,11 @@ export default function App() {
     if (o.showRenderCave) p.set('cave3d', '1')
     if (o.caveTexture !== 'limestone') p.set('ctex', o.caveTexture)
     if (o.scrapsOpacity !== 0.85) p.set('scrop', String(o.scrapsOpacity))
+    if (o.scrapsRelief !== 0.35) p.set('srelief', String(o.scrapsRelief))
+    if (o.scrapsViewMode !== 'all') p.set('sview', o.scrapsViewMode)
+    if (o.scrapsHeightThreshold !== 0.1) p.set('sth', String(o.scrapsHeightThreshold))
+    if (o.scrapsAngleThreshold !== 0.0) p.set('sang', String(o.scrapsAngleThreshold))
+    if (o.scrapsSectionWidth !== 0.08) p.set('swidth', String(o.scrapsSectionWidth))
     if (o.renderOpacity !== 1.0) p.set('rop', String(o.renderOpacity))
     if (o.colorScraps !== '#2a5585') p.set('cscraps', o.colorScraps.replace('#', ''))
     if (o.colorScrapsWire !== '#6a9fd8') p.set('cswire', o.colorScrapsWire.replace('#', ''))
@@ -1780,8 +1886,11 @@ export default function App() {
   }
 
   const getIframeCode = () => {
-    const url = getShareUrl(true)
-    return `<iframe src="${url}" width="${iframeWidth}" height="${iframeHeight}" style="border:0;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.4);" allowfullscreen loading="lazy" title="LochViewer - ${loadedFile?.name ?? 'Cave Model'}"></iframe>`
+    const url = escapeHtmlAttribute(getShareUrl(true))
+    const title = escapeHtmlAttribute(`LochViewer - ${loadedFile?.name ?? 'Cave Model'}`)
+    const width = clampEmbedDimension(iframeWidth)
+    const height = clampEmbedDimension(iframeHeight)
+    return `<iframe src="${url}" width="${width}" height="${height}" style="border:0;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.4);" allowfullscreen loading="lazy" title="${title}"></iframe>`
   }
 
   const handleCopyShare = () => {
@@ -1938,15 +2047,9 @@ export default function App() {
         /* WELCOME */
         .app{position:relative;z-index:1;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
         .welcome{display:flex;flex-direction:row;align-items:stretch;width:100vw;height:100vh;background:#020617;overflow:hidden;position:fixed;top:0;left:0;z-index:1000}
-        .welcome-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3rem; padding: 4rem; overflow-y: auto; background: radial-gradient(circle at center, #111827 0%, #020617 100%); position: relative; }
+        .welcome-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3rem; padding: 4rem; overflow-y: auto; background: radial-gradient(circle at center, #111827 0%, #020617 100%); position: relative; min-width: 0; }
         .welcome-main::before { content: ""; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 800px; height: 800px; background: radial-gradient(circle at center, rgba(59, 130, 246, 0.03) 0%, transparent 70%); pointer-events: none; }
         .welcome-sidebar { width: 350px; background: rgba(15,23,42,0.5); border-left: 1px solid #1e293b; padding: 2.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.5rem; text-align: left; backdrop-filter: blur(10px); }
-        
-        @media (max-width: 900px) {
-          .welcome { flex-direction: column; overflow-y: auto; height: auto; min-height: 100vh; position: relative; }
-          .welcome-main { padding: 4rem 1.5rem; flex: none; width: 100%; }
-          .welcome-sidebar { width: 100%; border-left: none; border-top: 1px solid #1e293b; padding: 2rem 1.5rem; flex: none; background: #020617; }
-        }
 
         .welcome-version { font-size: 0.8rem; color: #6366f1; font-weight: 700; background: rgba(99,102,241,0.1); padding: 4px 12px; border-radius: 6px; display: inline-block; margin-top: 0.75rem; border: 1px solid rgba(99,102,241,0.2); }
         .changelog-title { font-size: 12px; font-weight: 800; color: #f8fafc; text-transform: uppercase; letter-spacing: .2em; margin-bottom: 1.5rem; display: flex; alignItems: center; gap: 10px; }
@@ -1965,13 +2068,13 @@ export default function App() {
         .logo-sub{font-size:.85rem;color:#718096;margin-top:.3rem;letter-spacing:.08em;text-transform:uppercase}
 
         .welcome-main > div { width: 100%; max-width: 920px; }
-        .dropzone{width:100%; max-width: 920px; border:2px dashed rgba(99,179,237,.3);border-radius:20px;padding:2.5rem 2rem;text-align:center;cursor:pointer;transition:all .25s ease;background:rgba(99,179,237,.03);position:relative;overflow:hidden}
+        .dropzone{width:100%; max-width: 920px; border:2px dashed rgba(99,179,237,.3);border-radius:20px;padding:2.5rem 2rem;text-align:center;cursor:pointer;transition-property:border-color,background-color,transform,box-shadow;transition-duration:.25s;transition-timing-function:ease;background:rgba(99,179,237,.03);position:relative;overflow:hidden}
         .dropzone:hover,.dropzone.over{border-color:rgba(99,179,237,.7);background:rgba(99,179,237,.08);transform:scale(1.01);box-shadow:0 0 40px rgba(99,179,237,.15)}
         .dz-icon{font-size:2.5rem;margin-bottom:.7rem;display:block}
         .dz-title{font-size:1.05rem;font-weight:600;margin-bottom:.3rem}
         .dz-sub{font-size:.82rem;color:#718096}
         .dz-or{margin:.9rem 0;color:#4a5568;font-size:.82rem}
-        .btn-open{display:inline-flex;align-items:center;gap:.45rem;background:linear-gradient(135deg,#4299e1,#9f7aea);color:#fff;border:none;border-radius:10px;padding:.65rem 1.5rem;font-size:.875rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;box-shadow:0 4px 20px rgba(66,153,225,.3)}
+        .btn-open{display:inline-flex;align-items:center;gap:.45rem;background:linear-gradient(135deg,#4299e1,#9f7aea);color:#fff;border:none;border-radius:10px;padding:.65rem 1.5rem;font-size:.875rem;font-weight:600;cursor:pointer;transition-property:transform,box-shadow;transition-duration:.2s;font-family:inherit;box-shadow:0 4px 20px rgba(66,153,225,.3)}
         .btn-open:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(66,153,225,.45)}
 
         .formats{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;width:100%}
@@ -2042,8 +2145,55 @@ export default function App() {
         input[type=range]{width:100%;height:3px;-webkit-appearance:none;background:rgba(255,255,255,.1);border-radius:100px;outline:none;cursor:pointer}
         input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#4299e1;cursor:pointer;box-shadow:0 0 6px rgba(66,153,225,.5)}
 
-        .btn-demo{background:rgba(99,179,237,.08);border:1px solid rgba(99,179,237,.25);color:#63b3ed;border-radius:8px;padding:.45rem 1rem;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+        .welcome-samples{width:100%;display:flex;flex-direction:column;gap:1.5rem;max-width:720px}
+        .demo-title{font-size:.62rem;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem;text-align:center}
+        .demo-title.danger{color:#f56565}
+        .demo-grid{display:flex;gap:.6rem;justify-content:center}
+        .btn-demo{background:rgba(99,179,237,.08);border:1px solid rgba(99,179,237,.25);color:#63b3ed;border-radius:8px;padding:.45rem 1rem;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit;transition-property:background-color,border-color,transform;transition-duration:.2s;min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:.35rem;text-align:center}
         .btn-demo:hover{background:rgba(99,179,237,.18);border-color:rgba(99,179,237,.5);transform:translateY(-1px)}
+        .btn-demo:active,.btn-open:active{transform:scale(.96)}
+
+        @media (max-width: 900px) {
+          .app{align-items:stretch;justify-content:flex-start;height:100dvh}
+          .welcome { display:block; overflow-y:auto; overflow-x:hidden; height:100dvh; min-height:0; position:fixed; inset:0; -webkit-overflow-scrolling:touch; }
+          .welcome-main { padding:1.1rem 1rem 1.25rem; gap:1rem; flex:none; width:100%; justify-content:flex-start; overflow:visible; min-height:auto; }
+          .welcome-main::before { display:none; }
+          .welcome-main > div { max-width:100%; }
+          .welcome-sidebar { width:100%; border-left:none; border-top:1px solid #1e293b; padding:1.1rem 1rem 1.4rem; flex:none; background:#020617; overflow:visible; gap:1rem; }
+          .logo-icon{font-size:2.35rem;animation:none;margin-top:.1rem}
+          .logo-title{font-size:clamp(2rem,9vw,2.45rem);line-height:1;text-wrap:balance}
+          .logo-sub{font-size:.68rem;line-height:1.35;margin-top:.55rem!important;text-wrap:balance}
+          .dropzone{padding:1rem .9rem;border-radius:14px;min-height:0!important}
+          .dropzone:hover,.dropzone.over{transform:none}
+          .dz-icon{font-size:1.65rem;margin-bottom:.35rem}
+          .dz-title{font-size:.95rem;margin-bottom:.2rem}
+          .dz-sub{font-size:.72rem;line-height:1.4;text-wrap:pretty}
+          .dz-or{display:none}
+          .btn-open{width:100%;min-height:44px;justify-content:center;padding:.7rem 1rem;margin-top:.8rem}
+          .welcome-samples{gap:.85rem;max-width:100%}
+          .demo-title{text-align:left;margin-bottom:.45rem;color:#64748b;letter-spacing:.08em}
+          .demo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;justify-content:stretch}
+          .demo-grid-stress{grid-template-columns:minmax(0,1fr)}
+          .btn-demo{width:100%;min-height:44px;padding:.65rem .45rem;font-size:.78rem;line-height:1.2;white-space:normal;overflow-wrap:anywhere}
+          .changelog-title{margin-bottom:1rem}
+          .changelog-ver{margin-top:1.1rem}
+          .changelog-item{font-size:11px;line-height:1.5;margin-bottom:.55rem}
+        }
+
+        @media (max-width: 360px) {
+          .demo-grid{grid-template-columns:minmax(0,1fr)}
+          .logo-title{font-size:1.9rem}
+        }
+
+        @media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+          .welcome{display:flex;flex-direction:row}
+          .welcome-main{width:62%;padding:.85rem;gap:.65rem}
+          .welcome-sidebar{width:38%;border-top:none;border-left:1px solid #1e293b;overflow-y:auto;padding:.85rem}
+          .logo-icon{display:none}
+          .logo-sub{display:none}
+          .dropzone{padding:.75rem}
+          .welcome-samples{gap:.55rem}
+        }
 
         .help-text{font-size:.72rem;color:#2d3748;line-height:1.6}
         .loading-3d{font-size:.85rem;color:#4a5568}
@@ -2196,7 +2346,7 @@ export default function App() {
             <div className="welcome-main">
               <div style={{ textAlign: 'center' }}>
                 <div className="logo-icon">🏔️</div>
-                <h1 className="logo-title" style={{ marginBottom: '0.2rem' }}>LochViewer 2.0.1</h1>
+                <h1 className="logo-title" style={{ marginBottom: '0.2rem' }}>LochViewer 2.1</h1>
                 <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 600, letterSpacing: '0.05em' }}>by DankeZ</div>
                 <p className="logo-sub" style={{ marginTop: '1.2rem' }}>{t('welcome.sub')}</p>
               </div>
@@ -2208,7 +2358,6 @@ export default function App() {
                 onDragLeave={e => { e.preventDefault(); setIsDragging(false) }}
                 onClick={() => fileInputRef.current?.click()}
                 role="button" tabIndex={0}
-                style={{ width: '100%', maxWidth: '720px', minHeight: '260px' }}
                 onKeyDown={e => e.key === 'Enter' && fileInputRef.current?.click()}
               >
                 <span className="dz-icon">📂</span>
@@ -2232,10 +2381,10 @@ export default function App() {
               )}
 
               {/* Demo models */}
-              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '720px' }}>
+              <div className="welcome-samples">
                 <div>
-                  <div style={{ fontSize: '.62rem', fontWeight: 700, color: '#4a5568', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '.5rem', textAlign: 'center' }}>{t('welcome.demoTitle')}</div>
-                  <div style={{ display: 'flex', gap: '.6rem', justifyContent: 'center' }}>
+                  <div className="demo-title">{t('welcome.demoTitle')}</div>
+                  <div className="demo-grid">
                     <button className="btn-demo" onClick={() => loadFromUrl('/test_simple.lox', 'model-simple.lox')} type="button">
                       🗺️ Simple
                     </button>
@@ -2252,8 +2401,8 @@ export default function App() {
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '.62rem', fontWeight: 700, color: '#f56565', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '.5rem', textAlign: 'center' }}>{t('welcome.stressTitle')}</div>
-                  <div style={{ display: 'flex', gap: '.6rem', justifyContent: 'center' }}>
+                  <div className="demo-title danger">{t('welcome.stressTitle')}</div>
+                  <div className="demo-grid demo-grid-stress">
                     <button className="btn-demo" style={{ borderColor: 'rgba(245,101,101,0.4)', color: '#feb2b2', background: 'rgba(245,101,101,0.05)' }} 
                       onClick={() => loadFromUrl('/zlomiskovo.lox', 'zlomiskovo-lid2022.lox')} type="button">
                       🏔️ {t('welcome.bigModel')}
@@ -2888,19 +3037,21 @@ export default function App() {
                       <ColorPicker t={t} value={opts.colorScraps} onChange={(c) => setOpts(p => ({ ...p, colorScraps: c }))} />
                     </div>
 
-                    {/* MAIN NEXTGEN SWITCH */}
-                    <div className="toggle-row" style={{ background: 'rgba(99,102,241,0.1)', padding: '8px', borderRadius: '8px', marginBottom: '12px', border: '1px solid rgba(99,102,241,0.2)' }}>
-                      <label className="toggle-label" style={{ color: '#a5b4fc', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>blur_on</span>
-                        {lang === 'sk' ? 'LIDAR NEXTGEN' : 'LiDAR NEXTGEN'}
-                      </label>
-                      <div className={`switch${opts.engine === 'v2' ? ' on' : ''}`}
-                        onClick={() => setOpts(p => ({ ...p, engine: p.engine === 'v2' ? 'v1' : 'v2' }))} role="switch"
-                        aria-checked={opts.engine === 'v2'} tabIndex={0} />
-                    </div>
+                    {/* MAIN NEXTGEN SWITCH - only for point-cloud models */}
+                    {cave.pointCount > 0 && (
+                      <div className="toggle-row" style={{ background: 'rgba(99,102,241,0.1)', padding: '8px', borderRadius: '8px', marginBottom: '12px', border: '1px solid rgba(99,102,241,0.2)' }}>
+                        <label className="toggle-label" style={{ color: '#a5b4fc', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>blur_on</span>
+                          {lang === 'sk' ? 'LIDAR NEXTGEN' : 'LiDAR NEXTGEN'}
+                        </label>
+                        <div className={`switch${opts.engine === 'v2' ? ' on' : ''}`}
+                          onClick={() => setOpts(p => ({ ...p, engine: p.engine === 'v2' ? 'v1' : 'v2' }))} role="switch"
+                          aria-checked={opts.engine === 'v2'} tabIndex={0} />
+                      </div>
+                    )}
 
                     {/* CASE A: NEXTGEN IS ON (v2 Engine) */}
-                    {opts.engine === 'v2' ? (
+                    {opts.engine === 'v2' && cave.pointCount > 0 ? (
                       <div style={{ padding: '0 4px' }}>
                         <div style={{ marginBottom: 12 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -3075,6 +3226,80 @@ export default function App() {
                                 onClick={() => toggleOpt('scrapsAltitude')} role="switch"
                                 aria-checked={opts.scrapsAltitude} tabIndex={0} />
                             </div>
+
+                            {loadedFile?.ext === '.stl' && (
+                              <div style={{ marginTop: 12, padding: '0 4px' }}>
+                                <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, display: 'block', marginBottom: 6 }}>
+                                  {lang === 'sk' ? 'SELEKTÍVNE ZOBRAZENIE STL' : 'STL SELECTIVE VIEW'}
+                                </label>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px' }}>
+                                  {[
+                                    { id: 'all', label: lang === 'sk' ? 'Všetko' : 'All' },
+                                    { id: 'floor', label: lang === 'sk' ? 'Podlaha' : 'Floor' },
+                                    { id: 'ceiling', label: lang === 'sk' ? 'Strop' : 'Ceiling' },
+                                    { id: 'section', label: lang === 'sk' ? 'Rez' : 'Cut' },
+                                  ].map(mode => (
+                                    <button key={mode.id} onClick={() => setOpts(p => ({ ...p, scrapsViewMode: mode.id as any }))}
+                                      style={{ fontSize: '9px', padding: '5px 2px', borderRadius: '4px', border: 'none', cursor: 'pointer',
+                                        background: opts.scrapsViewMode === mode.id ? '#0ea5e9' : 'rgba(30,41,59,0.5)', color: 'white' }}>
+                                      {mode.label}
+                                    </button>
+                                  ))}
+                                </div>
+
+                                {opts.scrapsViewMode !== 'all' && (
+                                  <>
+                                    <div style={{ marginTop: 10 }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
+                                        <span>{lang === 'sk' ? 'Hranica rezu' : 'Cut threshold'}</span>
+                                        <span style={{ color: '#4fc3f7' }}>{opts.scrapsHeightThreshold.toFixed(2)}</span>
+                                      </div>
+                                      <input type="range" min={-0.8} max={0.8} step={0.05}
+                                        value={opts.scrapsHeightThreshold}
+                                        onChange={e => setOpts(p => ({ ...p, scrapsHeightThreshold: Number(e.target.value) }))}
+                                        className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                                    </div>
+
+                                    {opts.scrapsViewMode !== 'section' && (
+                                      <div style={{ marginTop: 10 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
+                                          <span>{lang === 'sk' ? 'Rovinnosť plochy' : 'Surface flatness'}</span>
+                                          <span style={{ color: '#4fc3f7' }}>{opts.scrapsAngleThreshold.toFixed(2)}</span>
+                                        </div>
+                                        <input type="range" min={0} max={0.9} step={0.05}
+                                          value={opts.scrapsAngleThreshold}
+                                          onChange={e => setOpts(p => ({ ...p, scrapsAngleThreshold: Number(e.target.value) }))}
+                                          className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                                      </div>
+                                    )}
+
+                                    {opts.scrapsViewMode === 'section' && (
+                                      <div style={{ marginTop: 10 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
+                                          <span>{lang === 'sk' ? 'Hrúbka rezu' : 'Cut thickness'}</span>
+                                          <span style={{ color: '#4fc3f7' }}>{opts.scrapsSectionWidth.toFixed(2)}</span>
+                                        </div>
+                                        <input type="range" min={0.02} max={0.3} step={0.01}
+                                          value={opts.scrapsSectionWidth}
+                                          onChange={e => setOpts(p => ({ ...p, scrapsSectionWidth: Number(e.target.value) }))}
+                                          className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            )}
+
+                            <div style={{ marginTop: '8px', padding: '0 4px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
+                                <span>{lang === 'sk' ? 'Plasticita stien' : 'Wall relief'}</span>
+                                <span style={{ color: '#4fc3f7' }}>{opts.scrapsRelief.toFixed(2)}</span>
+                              </div>
+                              <input type="range" min={0} max={1} step={0.05}
+                                value={opts.scrapsRelief}
+                                onChange={e => setOpts(p => ({ ...p, scrapsRelief: Number(e.target.value) }))}
+                                className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                            </div>
                           </>
                         )}
                       </>
@@ -3169,14 +3394,17 @@ export default function App() {
                             inp.onchange = (e: any) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                const url = URL.createObjectURL(file);
-                                setOpts(p => ({ 
-                                  ...p, 
-                                  surfaceTextureUrl: url, 
-                                  showSurfaceTexture: true,
-                                  showSurfaceMesh: false,
-                                  showSurfaceNetwork: false
-                                }));
+                                const url = trackObjectUrl(URL.createObjectURL(file));
+                                setOpts(p => {
+                                  clearSurfaceTextureUrl(p.surfaceTextureUrl)
+                                  return { 
+                                    ...p, 
+                                    surfaceTextureUrl: url, 
+                                    showSurfaceTexture: true,
+                                    showSurfaceMesh: false,
+                                    showSurfaceNetwork: false
+                                  }
+                                });
                               }
                             };
                             inp.click();
@@ -3195,7 +3423,10 @@ export default function App() {
                         </button>
                         {opts.surfaceTextureUrl && (
                           <button 
-                            onClick={() => setOpts(p => ({ ...p, surfaceTextureUrl: null }))}
+                            onClick={() => setOpts(p => {
+                              clearSurfaceTextureUrl(p.surfaceTextureUrl)
+                              return { ...p, surfaceTextureUrl: null }
+                            })}
                             style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '10px', padding: '0 4px' }}
                           >✕</button>
                         )}
@@ -3272,7 +3503,10 @@ export default function App() {
                               </button>
                               {opts.surfaceTextureUrl && (
                                 <button 
-                                  onClick={() => setOpts(p => ({ ...p, surfaceTextureUrl: null }))}
+                                  onClick={() => setOpts(p => {
+                                    clearSurfaceTextureUrl(p.surfaceTextureUrl)
+                                    return { ...p, surfaceTextureUrl: null }
+                                  })}
                                   className="btn-mini" style={{ color: '#f87171' }}
                                 >✕</button>
                               )}
@@ -3761,6 +3995,7 @@ export default function App() {
                           const a = document.createElement('a')
                           a.href = url; a.download = `cave_presentation_${new Date().getTime()}.webm`
                           a.click()
+                          setTimeout(() => URL.revokeObjectURL(url), 0)
                           setIsRecording(false)
                           delete (window as any)._activeRecorder
                         }
@@ -3978,4 +4213,3 @@ export default function App() {
     </>
   )
 }
-
