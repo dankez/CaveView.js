@@ -789,7 +789,10 @@ const ContourLabels = React.memo(({ surface, majorInterval, color, opacity }: an
 // ─── Cave wall scraps — solid + wireframe + altitude (independent) ─────────────
 
 // ─── Terrain geometry builder ────────────────────────────────────────────────
-function buildTerrainGeo({ positions, uvs, bitmapUvs, colors, indices }: { positions: Float32Array, uvs: Float32Array, bitmapUvs?: Float32Array, colors: Float32Array, indices: number[] }) {
+function buildTerrainGeo(
+  { positions, uvs, bitmapUvs, colors, indices }: { positions: Float32Array, uvs: Float32Array, bitmapUvs?: Float32Array, colors: Float32Array, indices: number[] },
+  buildBoundsTree = true
+) {
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   g.setAttribute('uv',       new THREE.BufferAttribute(uvs, 2));
@@ -800,25 +803,74 @@ function buildTerrainGeo({ positions, uvs, bitmapUvs, colors, indices }: { posit
   g.setIndex(indices);
   g.computeVertexNormals();
 
-  // Vypočítať BVH strom pre bleskový raycasting terénu
-  // @ts-ignore
-  g.computeBoundsTree();
+  if (buildBoundsTree) {
+    // Vypočítať BVH strom pre bleskový raycasting terénu
+    // @ts-ignore
+    g.computeBoundsTree();
+  }
 
   return g;
 }
 
-function buildTerrainTileData(surface: CaveSurface, colStart: number, rowStart: number, colCount: number, rowCount: number, imgSize?: [number, number], subsample = 1) {
+function buildSampleIndexes(start: number, count: number, maxIndex: number, subsample: number): number[] {
+  const step = Math.max(1, Math.floor(subsample));
+  const end = Math.min(start + count - 1, maxIndex);
+  const indexes: number[] = [];
+
+  for (let value = start; value <= end; value += step) {
+    indexes.push(value);
+  }
+
+  if (indexes[indexes.length - 1] !== end) {
+    indexes.push(end);
+  }
+
+  return indexes;
+}
+
+function getTerrainHeightRange(surface: CaveSurface): { minZ: number; maxZ: number } {
+  if (surface.bounds && Number.isFinite(surface.bounds.minZ) && Number.isFinite(surface.bounds.maxZ)) {
+    return { minZ: surface.bounds.minZ, maxZ: surface.bounds.maxZ };
+  }
+
+  const data = surface.dtm.data;
+  let minZ = Infinity;
+  let maxZ = -Infinity;
+  for (let i = 0; i < data.length; i++) {
+    if (data[i] < minZ) minZ = data[i];
+    if (data[i] > maxZ) maxZ = data[i];
+  }
+  return { minZ, maxZ };
+}
+
+function getMovingTerrainSubsample(samples: number, lines: number): number {
+  const total = samples * lines;
+  if (total > 4_000_000) return 8;
+  if (total > 1_000_000) return 6;
+  if (total > 250_000) return 4;
+  if (total > 90_000) return 2;
+  return 1;
+}
+
+function buildTerrainTileData(
+  surface: CaveSurface,
+  colStart: number,
+  rowStart: number,
+  colCount: number,
+  rowCount: number,
+  imgSize?: [number, number],
+  subsample = 1,
+  heightRange?: { minZ: number; maxZ: number }
+) {
   const { dtm, bitmapCalib, centerOffset: { x: cx, y: cy, z: cz } } = surface;
   const { data, samples: origSamples, lines: origLines, calib } = dtm;
+  const colIndexes = buildSampleIndexes(colStart, colCount, origSamples - 1, subsample);
+  const rowIndexes = buildSampleIndexes(rowStart, rowCount, origLines - 1, subsample);
 
-  const samples = colCount;
-  const lines = rowCount;
+  const samples = colIndexes.length;
+  const lines = rowIndexes.length;
 
-  let globalMinZ = Infinity, globalMaxZ = -Infinity;
-  for (let i = 0; i < data.length; i++) {
-    if (data[i] < globalMinZ) globalMinZ = data[i];
-    if (data[i] > globalMaxZ) globalMaxZ = data[i];
-  }
+  const { minZ: globalMinZ, maxZ: globalMaxZ } = heightRange || getTerrainHeightRange(surface);
   const positions = new Float32Array(lines * samples * 3);
   const uvs = new Float32Array(lines * samples * 2);
   const colors = new Float32Array(lines * samples * 3);
@@ -843,9 +895,9 @@ function buildTerrainTileData(surface: CaveSurface, colStart: number, rowStart: 
   let vIdx = 0, uIdx = 0, cIdx = 0, buIdx = 0;
 
   for (let r = 0; r < lines; r++) {
-    const row = rowStart + r;
+    const row = rowIndexes[r];
     for (let c = 0; c < samples; c++) {
-      const col = colStart + c;
+      const col = colIndexes[c];
       
       const idx = row * origSamples + col;
       const wx = calib.xOrigin + col * calib.xx + row * calib.xy;
@@ -994,15 +1046,22 @@ function getWmsImageSize(sjtskBbox: string, requestedSize: number): { width: num
   return { width: Math.max(256, Math.min(4096, Math.round(base * widthMeters / heightMeters))), height: base };
 }
 
-const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCount, imgSize, imgSizeUniformRef, xyzCalib, ...props }: any) => {
+const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCount, imgSize, imgSizeUniformRef, xyzCalib, heightRange, ...props }: any) => {
   const [geo, setGeo] = useState<THREE.BufferGeometry | null>(null);
+  const terrainSubsample = props.isMoving
+    ? getMovingTerrainSubsample(surface.dtm.samples, surface.dtm.lines)
+    : 1;
 
   useEffect(() => {
-    const data = buildTerrainTileData(surface, colStart, rowStart, colCount, rowCount, imgSize, 1);
-    const g = buildTerrainGeo(data);
+    const data = buildTerrainTileData(surface, colStart, rowStart, colCount, rowCount, imgSize, terrainSubsample, heightRange);
+    const g = buildTerrainGeo(data, terrainSubsample === 1);
     setGeo(g);
-    return () => g.dispose();
-  }, [surface, colStart, rowStart, colCount, rowCount, imgSize]);
+    return () => {
+      // @ts-ignore
+      if (g.boundsTree) g.disposeBoundsTree();
+      g.dispose();
+    };
+  }, [surface, colStart, rowStart, colCount, rowCount, imgSize, terrainSubsample, heightRange]);
 
   const contourUniforms = useMemo(() => ({
     uMajorInterval: { value: props.contourInterval || 10.0 },
@@ -1282,6 +1341,7 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
 
 const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, onTextureDownloadInfo, ...props }: any) => {
   const { samples, lines } = surface.dtm;
+  const heightRange = useMemo(() => getTerrainHeightRange(surface), [surface]);
   
   const tiles = useMemo(() => {
     const t = [];
@@ -1556,6 +1616,7 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, onTe
           surface={surface} {...tile} {...props} 
           texture={texture} imgSize={imgSize} 
           xyzCalib={xyzCalib}
+          heightRange={heightRange}
           imgSizeUniformRef={imgSizeUniformRef}
         />
       ))}

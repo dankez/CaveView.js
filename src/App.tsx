@@ -2,11 +2,7 @@ import React, { useState, useRef, useCallback, useEffect, Suspense, useMemo } fr
 import * as THREE from 'three'
 import proj4 from 'proj4'
 import { SJTSK_DEF, fetchAltitudeFromZbgis, wgs84ToJtsk } from '@shared/utils/geoUtils'
-import { parseLox, parseSvx, parsePlt, parsePly } from '@v1/parsers/caveParser'
 import { tryUtmToWgs84, tryJtskToWgs84 } from "@shared/utils/coords";
-import { parseGeoTiff } from '@v1/parsers/tiffParser'
-import CaveViewer3D from '@v1/components/CaveViewer3D'
-import CaveViewerNextGen from '@v2/components/CaveViewerNextGen'
 import type { ParsedCave, ViewerOptions, CaveSurface, StationLabel, Vec3 } from '@shared/types'
 import type { TextureDownloadInspector } from '@shared/utils/XyzTileDownloader'
 import { clearBrowserTileCache } from '@shared/utils/tileCache'
@@ -14,6 +10,18 @@ import { calculateVolumeAndProfile, analyzeLiDARAnomalies } from '@shared/utils/
 import { getSjtskBoundsFromDtm } from '@shared/utils/surfaceBounds'
 import { getDefaultPointCloudSize, getPreferredEngineForFile } from '@shared/utils/modelDefaults'
 import type { LiDARAnomaly } from '@shared/utils/speleoAnalysis'
+
+const CaveViewer3D = React.lazy(() => import('@v1/components/CaveViewer3D'))
+const CaveViewerNextGen = React.lazy(() => import('@v2/components/CaveViewerNextGen'))
+
+async function parseGeoTiffLazy(
+  buffer: ArrayBuffer,
+  tfwText: string | null,
+  centerOffset?: { x: number; y: number; z: number }
+): Promise<CaveSurface> {
+  const { parseGeoTiff } = await import('@v1/parsers/tiffParser')
+  return parseGeoTiff(buffer, tfwText, centerOffset)
+}
 
 // ─── Error Boundary ───────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -1621,7 +1629,7 @@ export default function App() {
           const tfwResp = await fetch(tfwUrl);
           if (tfwResp.ok) tfwText = await tfwResp.text();
         } catch(e) {}
-        const surf = await parseGeoTiff(buf, tfwText);
+        const surf = await parseGeoTiffLazy(buf, tfwText);
         const sjtskBounds = getSjtskBoundsFromDtm(surf.dtm);
         if (sjtskBounds) {
           surf.sjtskBbox = sjtskBounds.bbox;
@@ -1684,7 +1692,7 @@ export default function App() {
       }
       
       const cx = cave ? cave.centerOffset : { x: 0, y: 0, z: 0 };
-      const newSurface = await parseGeoTiff(tifBuf, tfwText, cx);
+      const newSurface = await parseGeoTiffLazy(tifBuf, tfwText, cx);
       
       console.log('[TIFF] Parsed surface:', {
         samples: newSurface.dtm.samples,
