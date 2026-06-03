@@ -8,6 +8,8 @@ import { parseGeoTiff } from '@v1/parsers/tiffParser'
 import CaveViewer3D from '@v1/components/CaveViewer3D'
 import CaveViewerNextGen from '@v2/components/CaveViewerNextGen'
 import type { ParsedCave, ViewerOptions, CaveSurface, StationLabel, Vec3 } from '@shared/types'
+import type { TextureDownloadInspector } from '@shared/utils/XyzTileDownloader'
+import { clearBrowserTileCache } from '@shared/utils/tileCache'
 import { calculateVolumeAndProfile, analyzeLiDARAnomalies } from '@shared/utils/speleoAnalysis'
 import { getSjtskBoundsFromDtm } from '@shared/utils/surfaceBounds'
 import { getDefaultPointCloudSize, getPreferredEngineForFile } from '@shared/utils/modelDefaults'
@@ -62,6 +64,118 @@ function imageExtensionFromDataUrl(dataUrl: string): string {
   if (match[1] === 'jpeg') return 'jpg'
   if (match[1] === 'svg+xml') return 'svg'
   return match[1]
+}
+
+function formatBytes(bytes?: number): string {
+  if (!Number.isFinite(bytes) || !bytes) return '0 B'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function formatDuration(ms?: number): string {
+  if (!Number.isFinite(ms) || !ms) return '-'
+  if (ms < 1000) return `${Math.round(ms)} ms`
+  return `${(ms / 1000).toFixed(1)} s`
+}
+
+function getTextureProgress(info: TextureDownloadInspector | null): number {
+  if (!info || info.totalTiles <= 0) return 0
+  return Math.max(0, Math.min(100, Math.round((info.completedTiles / info.totalTiles) * 100)))
+}
+
+function isRemoteTextureSource(source: ViewerOptions['surfaceTextureSource']): boolean {
+  return source === 'wms-orto' || source === 'wms-shadow' || source === 'wms-geology' || source === 'wms-orto-freemap'
+}
+
+function getTextureStatusLabel(info: TextureDownloadInspector, lang: Language): string {
+  if (info.status === 'success') return lang === 'sk' ? 'Hotovo' : 'Done'
+  if (info.status === 'error') return lang === 'sk' ? 'Chyba' : 'Error'
+  return lang === 'sk' ? 'Sťahuje sa' : 'Downloading'
+}
+
+function TextureDownloadInspectorPanel({
+  info,
+  lang,
+  onClearCache,
+}: {
+  info: TextureDownloadInspector | null
+  lang: Language
+  onClearCache: () => void
+}) {
+  const progress = getTextureProgress(info)
+  const statusColor = info?.status === 'success' ? '#10b981' : info?.status === 'error' ? '#ef4444' : '#60a5fa'
+  const outputFormat = info?.outputFormat ? info.outputFormat.replace('image/', '').toUpperCase() : '-'
+
+  const Row = ({ label, value, color }: { label: string; value: React.ReactNode; color?: string }) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '10px', lineHeight: 1.35 }}>
+      <span style={{ color: '#64748b' }}>{label}</span>
+      <span style={{ color: color || '#cbd5e1', textAlign: 'right', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>{value}</span>
+    </div>
+  )
+
+  return (
+    <div style={{ borderTop: '1px solid rgba(148,163,184,0.16)', paddingTop: '9px', marginTop: '2px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '8px' }}>
+        <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>troubleshoot</span>
+          {lang === 'sk' ? 'INSPEKTOR DLAŽDÍC' : 'TILE INSPECTOR'}
+        </div>
+        <button
+          type="button"
+          onClick={onClearCache}
+          className="btn-mini"
+          style={{ fontSize: '9px', padding: '2px 7px', color: '#fbbf24', borderColor: 'rgba(251,191,36,0.3)' }}
+        >
+          {lang === 'sk' ? 'Vyčistiť cache' : 'Clear cache'}
+        </button>
+      </div>
+
+      {info ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          <div style={{ height: '4px', borderRadius: '999px', overflow: 'hidden', background: 'rgba(148,163,184,0.15)' }}>
+            <div style={{ width: `${progress}%`, height: '100%', background: statusColor, transition: 'width .2s ease' }} />
+          </div>
+          <Row label={lang === 'sk' ? 'Stav' : 'Status'} value={getTextureStatusLabel(info, lang)} color={statusColor} />
+          <Row label={lang === 'sk' ? 'Zdroj' : 'Source'} value={info.provider || info.sourceKey || '-'} />
+          <Row
+            label={info.mode === 'xyz' ? 'XYZ' : 'WMS'}
+            value={info.mode === 'xyz' && info.zoom ? `z${info.zoom} · ${info.widthPixels || '-'}x${info.heightPixels || '-'}` : `${info.widthPixels || '-'}x${info.heightPixels || '-'}`}
+          />
+          <Row
+            label={lang === 'sk' ? 'Dlaždice' : 'Tiles'}
+            value={`${info.completedTiles}/${info.totalTiles} · ok ${info.successfulTiles} · err ${info.failedTiles}`}
+          />
+          <Row
+            label="Cache"
+            value={`${info.cacheHits} hit · ${info.cacheMisses} miss · ${formatBytes(info.bytesFromCache)}`}
+          />
+          <Row
+            label={lang === 'sk' ? 'Sieť' : 'Network'}
+            value={`${info.networkTiles} · ${formatBytes(info.bytesDownloaded)}`}
+          />
+          <Row
+            label="Fallback"
+            value={`${info.fallbackTiles} tile · ${info.fallbackRequests} req`}
+            color={info.fallbackTiles > 0 ? '#fbbf24' : undefined}
+          />
+          <Row
+            label={lang === 'sk' ? 'Výstup' : 'Output'}
+            value={`${outputFormat} · ${formatDuration(info.durationMs)}`}
+          />
+          {info.message && (
+            <div style={{ color: '#fca5a5', fontSize: '10px', lineHeight: 1.35, wordBreak: 'break-word' }}>
+              {info.message}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.35 }}>
+          {lang === 'sk' ? 'Bez aktívneho sťahovania' : 'No active download'}
+        </div>
+      )}
+    </div>
+  )
 }
 
 type AppState = 'welcome' | 'loading' | 'viewer' | 'error'
@@ -656,6 +770,7 @@ export default function App() {
   const [processingInfo, setProcessingInfo] = useState<string | null>(null)
   const [appStatus, setAppStatus] = useState<{ msg: string; type: 'info' | 'error' | 'success' | 'progress'; progress?: number } | null>(null)
   const [downloadableTexture, setDownloadableTexture] = useState<{ dataUrl: string, bbox: string } | null>(null)
+  const [textureDownloadInfo, setTextureDownloadInfo] = useState<TextureDownloadInspector | null>(null)
   const [currentTheme, setCurrentTheme] = useState<string>('precision')
   
   // Speleological & LiDAR analysis states
@@ -823,7 +938,18 @@ export default function App() {
 
   useEffect(() => {
     setDownloadableTexture(null);
+    setTextureDownloadInfo(null);
   }, [opts.surfaceTextureSource, opts.surfaceWmsResolution]);
+
+  const handleClearTileCache = useCallback(async () => {
+    await clearBrowserTileCache();
+    setTextureDownloadInfo(null);
+    setAppStatus({
+      msg: lang === 'sk' ? 'Cache mapových dlaždíc vyčistená' : 'Map tile cache cleared',
+      type: 'success',
+    });
+    setTimeout(() => setAppStatus(null), 2500);
+  }, [lang]);
 
   // ─── DEFINÍCIA ŠABLÓN ────────────────────────────────────────────────────────
   const THEMES = {
@@ -2525,10 +2651,10 @@ export default function App() {
                     gap: '4px',
                     boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
                   }}
-                  title={lang === 'sk' ? "Stiahnuť textúru ako JPG a kalibračný súbor" : "Download Texture as JPG with Calibration"}
+                  title={lang === 'sk' ? "Stiahnuť textúru a kalibračný súbor" : "Download texture with calibration"}
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>download</span>
-                  {lang === 'sk' ? 'Textúra JPG' : 'Texture JPG'}
+                  {lang === 'sk' ? 'Textúra' : 'Texture'}
                 </button>
               )}
 
@@ -2716,6 +2842,7 @@ export default function App() {
                         onProcessingEnd={() => setProcessingInfo(null)}
                         onStatusChange={setAppStatus}
                         onTextureReady={(dataUrl, bbox) => setDownloadableTexture({ dataUrl, bbox })}
+                        onTextureDownloadInfo={setTextureDownloadInfo}
                         fitTrigger={fitTrigger}
                         selectedStations={selectedStations}
                         activeProfilePoints={activeProfilePoints}
@@ -3484,7 +3611,7 @@ export default function App() {
                             </div>
                           </div>
 
-                          {(opts.surfaceTextureSource === 'wms-orto' || opts.surfaceTextureSource === 'wms-shadow' || opts.surfaceTextureSource === 'wms-geology' || opts.surfaceTextureSource === 'wms-orto-freemap') && (
+                          {isRemoteTextureSource(opts.surfaceTextureSource) && (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                               <span style={{ fontSize: '10px', color: '#94a3b8' }}>{lang === 'sk' ? 'Rozlíšenie / zoom' : 'Resolution / zoom'}</span>
                               <select 
@@ -3498,6 +3625,14 @@ export default function App() {
                                 <option value="4096">{lang === 'sk' ? 'Auto maximum' : 'Auto maximum'}</option>
                               </select>
                             </div>
+                          )}
+
+                          {isRemoteTextureSource(opts.surfaceTextureSource) && (
+                            <TextureDownloadInspectorPanel
+                              info={textureDownloadInfo}
+                              lang={lang}
+                              onClearCache={handleClearTileCache}
+                            />
                           )}
 
                           {opts.surfaceTextureSource === 'custom' && (

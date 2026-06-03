@@ -1,5 +1,6 @@
 import proj4 from 'proj4';
 import { SJTSK_DEF } from './geoUtils';
+import { browserTileCache, createXyzTileCacheKey, type TileCacheBackend } from './tileCache';
 
 proj4.defs('EPSG:5514', SJTSK_DEF);
 proj4.defs('EPSG:4326', '+proj=longlat +datum=WGS84 +no_defs');
@@ -23,6 +24,45 @@ export interface DownloadFailure {
 export type WmsCrs = 'EPSG:3857' | 'EPSG:5514';
 
 export type UrlPatternCandidates = string | string[];
+
+export type TextureDownloadMode = 'xyz' | 'wms';
+export type TextureDownloadStatus = 'running' | 'success' | 'error';
+
+export interface TextureDownloadInspector {
+    mode: TextureDownloadMode;
+    status: TextureDownloadStatus;
+    sourceKey?: string;
+    provider?: string;
+    zoom?: number;
+    totalTiles: number;
+    completedTiles: number;
+    successfulTiles: number;
+    failedTiles: number;
+    cacheHits: number;
+    cacheMisses: number;
+    networkTiles: number;
+    candidateRequests: number;
+    fallbackRequests: number;
+    fallbackTiles: number;
+    bytesDownloaded: number;
+    bytesFromCache: number;
+    widthPixels?: number;
+    heightPixels?: number;
+    metersPerPixel?: number;
+    outputFormat?: string;
+    startedAt: number;
+    finishedAt?: number;
+    durationMs?: number;
+    message?: string;
+}
+
+export interface XyzDownloadOptions {
+    cache?: TileCacheBackend | null;
+    cacheKeyPrefix?: string;
+    sourceKey?: string;
+    provider?: string;
+    onInspectorUpdate?: (info: TextureDownloadInspector) => void;
+}
 
 export interface XyzTilePlan {
     zoom: number;
@@ -60,6 +100,7 @@ export interface DownloadResult {
     totalTiles?: number;
     successfulTiles?: number;
     failedTiles?: DownloadFailure[];
+    inspector?: TextureDownloadInspector;
 }
 
 function mapProxyFailureHint(url: string): string {
@@ -84,6 +125,20 @@ function summarizeCandidateFailures(failures: { url: string; error: string }[]):
     const first = failures[0];
     const suffix = failures.length > 1 ? `; ${failures.length - 1} fallback candidate(s) also failed` : '';
     return `${first.error}${suffix}`;
+}
+
+function hashString(value: string): string {
+    let hash = 2166136261;
+    for (let i = 0; i < value.length; i++) {
+        hash ^= value.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(36);
+}
+
+function mimeFromDataUrl(dataUrl: string): string | undefined {
+    const match = /^data:([^;,]+)/.exec(dataUrl);
+    return match?.[1];
 }
 
 function parseSjtskBbox(sjtskBbox: string): [number, number, number, number] {
@@ -237,21 +292,48 @@ export async function downloadWmsImage(
     ctx.fillStyle = '#cccccc';
     ctx.fillRect(0, 0, width, height);
 
+    const startedAt = Date.now();
     const candidateFailures: { url: string; error: string }[] = [];
+    let candidateRequests = 0;
     try {
-        for (const url of urls) {
+        for (const [index, url] of urls.entries()) {
             try {
+                candidateRequests++;
                 const resp = await fetch(url);
                 if (!resp.ok) throw new Error(`WMS fetch failed: ${resp.status} ${resp.statusText}${mapProxyFailureHint(url)}`);
                 const blob = await resp.blob();
                 const img = await createImageBitmap(blob);
                 ctx.drawImage(img, 0, 0, width, height);
+                const dataUrl = canvasToTextureDataUrl(canvas, format);
+                const finishedAt = Date.now();
                 return {
-                    dataUrl: canvasToTextureDataUrl(canvas, format),
+                    dataUrl,
                     sjtskBbox: expandedSjtskBbox,
                     totalTiles: 1,
                     successfulTiles: 1,
                     failedTiles: [],
+                    inspector: {
+                        mode: 'wms',
+                        status: 'success',
+                        totalTiles: 1,
+                        completedTiles: 1,
+                        successfulTiles: 1,
+                        failedTiles: 0,
+                        cacheHits: 0,
+                        cacheMisses: 0,
+                        networkTiles: 1,
+                        candidateRequests,
+                        fallbackRequests: index,
+                        fallbackTiles: index > 0 ? 1 : 0,
+                        bytesDownloaded: blob.size,
+                        bytesFromCache: 0,
+                        widthPixels: width,
+                        heightPixels: height,
+                        outputFormat: mimeFromDataUrl(dataUrl),
+                        startedAt,
+                        finishedAt,
+                        durationMs: finishedAt - startedAt,
+                    },
                 };
             } catch (e) {
                 const error = e instanceof Error ? e.message : String(e);
@@ -274,8 +356,13 @@ export async function downloadTiledXyz(
     sjtskBbox: string, // S-JTSK bounding box
     format: string = 'image/jpeg',
     onProgress?: (p: Progress) => void,
-    forceZoom?: number
+    forceZoom?: number,
+    options: XyzDownloadOptions = {}
 ): Promise<DownloadResult> {
+    const urlPatterns = toUrlPatterns(urlPattern);
+    const cache = options.cache === null ? null : (options.cache || browserTileCache);
+    const useCache = !!cache && cache.isAvailable();
+    const sourceKey = options.cacheKeyPrefix || options.sourceKey || `url-${hashString(urlPatterns[0] || 'unknown')}`;
     const parts = parseSjtskBbox(sjtskBbox);
     const minX = parts[0];
     const minY = parts[1];
@@ -346,6 +433,41 @@ export async function downloadTiledXyz(
     let current = 0;
     let successfulTiles = 0;
     const failedTiles: DownloadFailure[] = [];
+    const startedAt = Date.now();
+    const inspector: TextureDownloadInspector = {
+        mode: 'xyz',
+        status: 'running',
+        sourceKey,
+        provider: options.provider,
+        zoom,
+        totalTiles: total,
+        completedTiles: 0,
+        successfulTiles: 0,
+        failedTiles: 0,
+        cacheHits: 0,
+        cacheMisses: 0,
+        networkTiles: 0,
+        candidateRequests: 0,
+        fallbackRequests: 0,
+        fallbackTiles: 0,
+        bytesDownloaded: 0,
+        bytesFromCache: 0,
+        widthPixels: canvas.width,
+        heightPixels: canvas.height,
+        metersPerPixel: mpp,
+        startedAt,
+    };
+
+    const emitInspector = (status: TextureDownloadStatus = inspector.status, message?: string) => {
+        const now = Date.now();
+        options.onInspectorUpdate?.({
+            ...inspector,
+            status,
+            message,
+            durationMs: now - startedAt,
+            finishedAt: status === 'running' ? undefined : now,
+        });
+    };
 
     const buildTileUrl = (pattern: string, tx: number, ty: number): string => {
         let url = pattern
@@ -368,11 +490,35 @@ export async function downloadTiledXyz(
     };
 
     const fetchTile = async (tx: number, ty: number) => {
-        const urls = toUrlPatterns(urlPattern).map(pattern => buildTileUrl(pattern, tx, ty));
+        const urls = urlPatterns.map(pattern => buildTileUrl(pattern, tx, ty));
         const candidateFailures: { url: string; error: string }[] = [];
+        const cacheKey = createXyzTileCacheKey(sourceKey, zoom, tx, ty);
 
-        for (const url of urls) {
+        if (useCache && cache) {
             try {
+                const cachedBlob = await cache.get(cacheKey);
+                if (cachedBlob) {
+                    const img = await createImageBitmap(cachedBlob);
+                    const dx = (tx - xMin) * TILE_SIZE;
+                    const dy = (ty - yMin) * TILE_SIZE;
+                    ctx.drawImage(img, dx, dy, TILE_SIZE, TILE_SIZE);
+                    inspector.cacheHits++;
+                    inspector.bytesFromCache += cachedBlob.size;
+                    successfulTiles++;
+                    inspector.successfulTiles = successfulTiles;
+                    return;
+                }
+                inspector.cacheMisses++;
+            } catch (e) {
+                const error = e instanceof Error ? e.message : String(e);
+                console.warn(`Failed to read tile cache ${zoom}/${tx}/${ty}`, { error });
+            }
+        }
+
+        for (const [index, url] of urls.entries()) {
+            try {
+                inspector.candidateRequests++;
+                if (index > 0) inspector.fallbackRequests++;
                 const resp = await fetch(url);
                 if (!resp.ok) throw new Error(`Tile fetch failed: ${resp.status} ${resp.statusText}${mapProxyFailureHint(url)}`);
                 const blob = await resp.blob();
@@ -381,7 +527,14 @@ export async function downloadTiledXyz(
                 const dx = (tx - xMin) * TILE_SIZE;
                 const dy = (ty - yMin) * TILE_SIZE;
                 ctx.drawImage(img, dx, dy, TILE_SIZE, TILE_SIZE);
+                inspector.networkTiles++;
+                inspector.bytesDownloaded += blob.size;
+                if (index > 0) inspector.fallbackTiles++;
                 successfulTiles++;
+                inspector.successfulTiles = successfulTiles;
+                if (useCache && cache) {
+                    void cache.put(cacheKey, blob);
+                }
                 return;
             } catch (e) {
                 const error = e instanceof Error ? e.message : String(e);
@@ -398,6 +551,7 @@ export async function downloadTiledXyz(
             url: firstUrl,
             error: summarizeCandidateFailures(candidateFailures),
         });
+        inspector.failedTiles = failedTiles.length;
     };
 
     const queue: [number, number][] = [];
@@ -407,6 +561,8 @@ export async function downloadTiledXyz(
         }
     }
 
+    emitInspector();
+
     const concurrency = 6;
     for (let i = 0; i < queue.length; i += concurrency) {
         const batch = queue.slice(i, i + concurrency);
@@ -415,7 +571,11 @@ export async function downloadTiledXyz(
                 await fetchTile(tx, ty);
             } finally {
                 current++;
+                inspector.completedTiles = current;
+                inspector.successfulTiles = successfulTiles;
+                inspector.failedTiles = failedTiles.length;
                 if (onProgress) onProgress({ current, total });
+                emitInspector();
             }
         }));
     }
@@ -423,14 +583,31 @@ export async function downloadTiledXyz(
     if (successfulTiles === 0) {
         const firstFailure = failedTiles[0];
         const detail = firstFailure ? ` First failure: ${firstFailure.error}` : '';
+        emitInspector('error', `No map tiles downloaded (${failedTiles.length}/${total} failed).${detail}`);
         throw new Error(`No map tiles downloaded (${failedTiles.length}/${total} failed).${detail}`);
     }
 
+    const dataUrl = canvasToTextureDataUrl(canvas, format);
+    inspector.outputFormat = mimeFromDataUrl(dataUrl);
+    const finishedAt = Date.now();
+    const finalInspector: TextureDownloadInspector = {
+        ...inspector,
+        status: 'success',
+        completedTiles: current,
+        successfulTiles,
+        failedTiles: failedTiles.length,
+        outputFormat: inspector.outputFormat,
+        finishedAt,
+        durationMs: finishedAt - startedAt,
+    };
+    options.onInspectorUpdate?.(finalInspector);
+
     return {
-        dataUrl: canvasToTextureDataUrl(canvas, format),
+        dataUrl,
         sjtskBbox: exactSjtskBbox,
         totalTiles: total,
         successfulTiles,
         failedTiles,
+        inspector: finalInspector,
     };
 }

@@ -6,7 +6,7 @@ import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh'
 import { reconstructSurface } from '@shared/utils/surfaceReconstruction'
 
-import { downloadTiledXyz, downloadWmsImage, selectBestXyzZoom, type DownloadResult, type Progress, type WmsCrs } from '@shared/utils/XyzTileDownloader'
+import { downloadTiledXyz, downloadWmsImage, selectBestXyzZoom, type DownloadResult, type Progress, type TextureDownloadInspector, type WmsCrs } from '@shared/utils/XyzTileDownloader'
 import { buildMapProxyUrlCandidates } from '@shared/utils/mapProxyUrls'
 import { 
   Stations, 
@@ -1280,7 +1280,7 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
   );
 });
 
-const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, ...props }: any) => {
+const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, onTextureDownloadInfo, ...props }: any) => {
   const { samples, lines } = surface.dtm;
   
   const tiles = useMemo(() => {
@@ -1301,12 +1301,19 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, ...p
   const [wmsProgress, setWmsProgress] = useState(0);
   const [xyzCalib, setXyzCalib] = useState<number[] | null>(null);
   const imgSizeUniformRef = useRef<{ value: [number, number] }[]>([])
+  const textureInspectorRef = useRef<TextureDownloadInspector | null>(null)
+
+  const reportTextureInspector = useCallback((info: TextureDownloadInspector | null) => {
+    textureInspectorRef.current = info;
+    onTextureDownloadInfo?.(info);
+  }, [onTextureDownloadInfo]);
 
 
   useEffect(() => {
     let isActive = true;
     setTexture(null);
     setXyzCalib(null);
+    reportTextureInspector(null);
 
     const source = props.options.surfaceTextureSource || 'custom';
     const remoteSource = REMOTE_TEXTURE_SOURCES[source];
@@ -1342,7 +1349,53 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, ...p
       const downloadPromise = remoteSource.type === 'wms'
         ? (() => {
             const size = getWmsImageSize(surface.sjtskBbox, props.options.surfaceWmsResolution);
-            return downloadWmsImage(url, surface.sjtskBbox, size.width, size.height, remoteSource.format, updateProgress, remoteSource.crs || 'EPSG:3857');
+            const startedAt = Date.now();
+            reportTextureInspector({
+              mode: 'wms',
+              status: 'running',
+              sourceKey: source,
+              provider: remoteSource.provider,
+              totalTiles: 1,
+              completedTiles: 0,
+              successfulTiles: 0,
+              failedTiles: 0,
+              cacheHits: 0,
+              cacheMisses: 0,
+              networkTiles: 0,
+              candidateRequests: 0,
+              fallbackRequests: 0,
+              fallbackTiles: 0,
+              bytesDownloaded: 0,
+              bytesFromCache: 0,
+              widthPixels: size.width,
+              heightPixels: size.height,
+              startedAt,
+            });
+            return downloadWmsImage(url, surface.sjtskBbox, size.width, size.height, remoteSource.format, (p) => {
+              updateProgress(p);
+              reportTextureInspector({
+                mode: 'wms',
+                status: 'running',
+                sourceKey: source,
+                provider: remoteSource.provider,
+                totalTiles: p.total,
+                completedTiles: p.current,
+                successfulTiles: 0,
+                failedTiles: 0,
+                cacheHits: 0,
+                cacheMisses: 0,
+                networkTiles: 0,
+                candidateRequests: 0,
+                fallbackRequests: 0,
+                fallbackTiles: 0,
+                bytesDownloaded: 0,
+                bytesFromCache: 0,
+                widthPixels: size.width,
+                heightPixels: size.height,
+                startedAt,
+                durationMs: Date.now() - startedAt,
+              });
+            }, remoteSource.crs || 'EPSG:3857');
           })()
           : (() => {
             const zoomPlan = selectBestXyzZoom(
@@ -1355,7 +1408,35 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, ...p
               type: 'progress',
               progress: 0,
             });
-            return downloadTiledXyz(url, surface.sjtskBbox, remoteSource.format, updateProgress, zoomPlan.zoom);
+            reportTextureInspector({
+              mode: 'xyz',
+              status: 'running',
+              sourceKey: source,
+              provider: remoteSource.provider,
+              zoom: zoomPlan.zoom,
+              totalTiles: zoomPlan.totalTiles,
+              completedTiles: 0,
+              successfulTiles: 0,
+              failedTiles: 0,
+              cacheHits: 0,
+              cacheMisses: 0,
+              networkTiles: 0,
+              candidateRequests: 0,
+              fallbackRequests: 0,
+              fallbackTiles: 0,
+              bytesDownloaded: 0,
+              bytesFromCache: 0,
+              widthPixels: zoomPlan.widthPixels,
+              heightPixels: zoomPlan.heightPixels,
+              metersPerPixel: zoomPlan.metersPerPixel,
+              startedAt: Date.now(),
+            });
+            return downloadTiledXyz(url, surface.sjtskBbox, remoteSource.format, updateProgress, zoomPlan.zoom, {
+              cacheKeyPrefix: source,
+              sourceKey: source,
+              provider: remoteSource.provider,
+              onInspectorUpdate: reportTextureInspector,
+            });
           })();
 
       downloadPromise.then((result: DownloadResult) => {
@@ -1382,6 +1463,13 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, ...p
           setXyzCalib([ex0, ey0, ex1, ey1]);
 
           setWmsLoading(false);
+          if (result.inspector) {
+            reportTextureInspector({
+              ...result.inspector,
+              sourceKey: source,
+              provider: remoteSource.provider,
+            });
+          }
           const failedCount = result.failedTiles?.length || 0;
           const successMsg = failedCount > 0
             ? `Mapové podklady načítané (${result.successfulTiles}/${result.totalTiles}, ${failedCount} chýb)`
@@ -1394,6 +1482,17 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, ...p
         if (!isActive) return;
         console.error("Map texture download failed:", err);
         setWmsLoading(false);
+        const previousInfo = textureInspectorRef.current;
+        const now = Date.now();
+        if (previousInfo) {
+          reportTextureInspector({
+            ...previousInfo,
+            status: 'error',
+            message: err.message,
+            finishedAt: now,
+            durationMs: now - previousInfo.startedAt,
+          });
+        }
         onStatusChange?.({ msg: `Chyba: Nepodarilo sa stiahnuť mapové podklady (${err.message})`, type: 'error' });
       });
     } else if (typeof url === 'string') {
@@ -1414,7 +1513,7 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, ...p
     return () => {
       isActive = false;
     }
-  }, [surface.bitmapUrl, props.surfaceTextureUrl, props.options.surfaceTextureSource, props.options.surfaceWmsResolution, surface.sjtskBbox])
+  }, [surface.bitmapUrl, props.surfaceTextureUrl, props.options.surfaceTextureSource, props.options.surfaceWmsResolution, surface.sjtskBbox, reportTextureInspector])
 
   const hoverGeo = useMemo(() => new THREE.SphereGeometry(0.25, 8, 8), [])
   const hoverMat = useMemo(() => new THREE.MeshBasicMaterial({ color: "#ef4444", depthTest: false }), [])
@@ -1560,6 +1659,7 @@ interface Props {
   onProcessingEnd?: () => void
   onStatusChange?: (status: { msg: string; type: 'info' | 'error' | 'success' | 'progress'; progress?: number } | null) => void
   onTextureReady?: (dataUrl: string, bbox: string) => void
+  onTextureDownloadInfo?: (info: TextureDownloadInspector | null) => void
   manualConnection?: { p1: {x:number, y:number, z:number}, p2: {x:number, y:number, z:number} } | null
   placedCaver?: { pos: [number, number, number], pose: 'standing' | 'crawling' } | null
   fitTrigger?: number
@@ -1575,7 +1675,7 @@ interface Props {
 
 const CaveViewer3D = ({ 
   cave, options: o, onStationClick, onSurfaceClick, onBackgroundClick, onMoveStateChange, onCameraUpdate, 
-  onProcessingStart, onProcessingEnd, onStatusChange, manualConnection, placedCaver, fitTrigger, selectedStations, activeProfilePoints,
+  onProcessingStart, onProcessingEnd, onStatusChange, onTextureReady, onTextureDownloadInfo, manualConnection, placedCaver, fitTrigger, selectedStations, activeProfilePoints,
   contourInterval, minorInterval, isMeasuringMode
 }: Props) => {
   const [isMoving, setIsMoving] = useState(false)
@@ -1727,6 +1827,8 @@ const CaveViewer3D = ({
           colorTerrainWire={o.colorTerrainWire}
           onSurfaceClick={onSurfaceClick}
           onStatusChange={onStatusChange}
+          onTextureReady={onTextureReady}
+          onTextureDownloadInfo={onTextureDownloadInfo}
           isMoving={isMoving}
           options={o}
           clippingPlanes={compositeClippingPlanes}

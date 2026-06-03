@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { downloadTiledXyz, downloadWmsImage, getPreferredTextureFormat, selectBestXyzZoom, type Progress } from '../XyzTileDownloader';
+import { downloadTiledXyz, downloadWmsImage, getPreferredTextureFormat, selectBestXyzZoom, type Progress, type TextureDownloadInspector } from '../XyzTileDownloader';
+import type { TileCacheBackend } from '../tileCache';
 
 describe('XyzTileDownloader', () => {
   const originalCreateElement = document.createElement.bind(document);
@@ -38,6 +39,21 @@ describe('XyzTileDownloader', () => {
       status: 200,
       statusText: 'OK',
       blob: async () => new Blob(['image'], { type: 'image/jpeg' }),
+    };
+  }
+
+  function memoryTileCache(): TileCacheBackend {
+    const store = new Map<string, Blob>();
+    return {
+      isAvailable: () => true,
+      get: vi.fn(async (key: string) => store.get(key) || null),
+      put: vi.fn((key: string, blob: Blob) => {
+        store.set(key, blob);
+        return Promise.resolve();
+      }),
+      clear: vi.fn(async () => {
+        store.clear();
+      }),
     };
   }
 
@@ -98,6 +114,54 @@ describe('XyzTileDownloader', () => {
     expect(result.successfulTiles).toBe(result.totalTiles);
     expect(fetchMock.mock.calls.some(([url]) => String(url).startsWith('/bad/'))).toBe(true);
     expect(fetchMock.mock.calls.some(([url]) => String(url).startsWith('/ok/'))).toBe(true);
+  });
+
+  it('reuses cached XYZ tiles and reports download inspector stats', async () => {
+    const cache = memoryTileCache();
+    const updates: TextureDownloadInspector[] = [];
+    fetchMock.mockResolvedValue(imageResponse());
+
+    const first = await downloadTiledXyz(
+      '/tiles/{z}/{x}/{y}.jpg',
+      '-500100,-1200100,-500000,-1200000',
+      'image/jpeg',
+      undefined,
+      15,
+      {
+        cache,
+        cacheKeyPrefix: 'unit-source',
+        provider: 'Unit',
+        onInspectorUpdate: info => updates.push(info),
+      }
+    );
+
+    const networkCalls = fetchMock.mock.calls.length;
+    expect(networkCalls).toBe(first.totalTiles);
+    expect(first.inspector?.networkTiles).toBe(first.totalTiles);
+    expect(first.inspector?.cacheMisses).toBe(first.totalTiles);
+    expect(first.inspector?.sourceKey).toBe('unit-source');
+    expect(updates.some(info => info.status === 'running')).toBe(true);
+    expect(updates.at(-1)?.status).toBe('success');
+
+    fetchMock.mockClear();
+    const second = await downloadTiledXyz(
+      '/tiles/{z}/{x}/{y}.jpg',
+      '-500100,-1200100,-500000,-1200000',
+      'image/jpeg',
+      undefined,
+      15,
+      {
+        cache,
+        cacheKeyPrefix: 'unit-source',
+        provider: 'Unit',
+      }
+    );
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(second.inspector?.cacheHits).toBe(second.totalTiles);
+    expect(second.inspector?.networkTiles).toBe(0);
+    expect(second.inspector?.bytesFromCache).toBeGreaterThan(0);
+    expect(second.successfulTiles).toBe(second.totalTiles);
   });
 
   it('requests WMS images in EPSG:5514 when requested', async () => {
