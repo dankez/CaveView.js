@@ -14,6 +14,7 @@ interface BuildUrlOptions {
   mode?: MapProxyMode;
   proxyBase?: string;
   appBase?: string;
+  includePublicCorsProxies?: boolean;
 }
 
 function normalizeBase(base: string | undefined): string {
@@ -24,6 +25,12 @@ function normalizeBase(base: string | undefined): string {
 
 function encodeQueryValue(value: string | number | boolean): string {
   return encodeURIComponent(String(value))
+    .replace(/%7B/gi, '{')
+    .replace(/%7D/gi, '}');
+}
+
+function encodeProxyTargetPattern(url: string): string {
+  return encodeURIComponent(url)
     .replace(/%7B/gi, '{')
     .replace(/%7D/gi, '}');
 }
@@ -70,4 +77,36 @@ export function buildMapProxyUrl(
   const mode = options?.mode || getConfiguredMode();
   if (mode === 'php') return buildPhpProxyUrl(source, upstreamPath, params, options);
   return `${getProxyBase(options)}${viteProxyPath}`;
+}
+
+export function buildPublicCorsProxyUrls(targetUrlPattern: string): string[] {
+  const encodedTarget = encodeProxyTargetPattern(targetUrlPattern);
+  return [
+    `https://api.allorigins.win/raw?url=${encodedTarget}`,
+    `https://corsproxy.io/?${encodedTarget}`,
+    `https://api.codetabs.com/v1/proxy/?quest=${encodedTarget}`,
+    `https://thingproxy.freeboard.io/fetch/${targetUrlPattern}`,
+  ];
+}
+
+function uniqueUrls(urls: string[]): string[] {
+  return urls.filter((url, index) => url && urls.indexOf(url) === index);
+}
+
+export function buildMapProxyUrlCandidates(
+  source: MapProxySource,
+  upstreamPath: string,
+  params: MapProxyParams,
+  viteProxyPath: string,
+  directUrlPattern: string,
+  options?: BuildUrlOptions
+): string[] {
+  const includePublicCorsProxies = options?.includePublicCorsProxies !== false;
+  const sameOriginProxyUrl = buildMapProxyUrl(source, upstreamPath, params, viteProxyPath, options);
+  const candidates = [
+    directUrlPattern,
+    sameOriginProxyUrl,
+    ...(includePublicCorsProxies ? buildPublicCorsProxyUrls(directUrlPattern) : []),
+  ];
+  return uniqueUrls(candidates);
 }

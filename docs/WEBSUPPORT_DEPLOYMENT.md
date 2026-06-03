@@ -2,6 +2,18 @@
 
 CaveView uses remote map tiles when texturing LOX terrain surfaces. Local development works through the Vite `server.proxy` rules, but those rules are not included in the static production build. On Websupport hosting, deploy the generated `dist` folder with the included Apache/PHP proxy files.
 
+Production texture downloads try multiple URL candidates in order:
+
+```text
+1. direct provider URL
+2. same-origin map-proxy.php
+3. public CORS proxy fallbacks
+```
+
+The PHP proxy is therefore a fallback, not the only download path.
+
+For XYZ map textures, CaveView automatically selects the highest zoom that fits the selected texture budget. Small models can therefore use the source maximum zoom, while larger models are scaled down to avoid excessive tile downloads.
+
 ## Required Files
 
 After `npm run build`, verify that these files exist in `dist`:
@@ -24,7 +36,7 @@ Development mode keeps using the Vite routes:
 /wms-proxy/...
 ```
 
-Production builds use the same-origin PHP proxy:
+Production builds can use the same-origin PHP proxy as a fallback:
 
 ```text
 /map-proxy.php?source=zbgis&path=...

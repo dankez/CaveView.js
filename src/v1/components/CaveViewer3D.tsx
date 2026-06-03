@@ -6,8 +6,8 @@ import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh'
 import { reconstructSurface } from '@shared/utils/surfaceReconstruction'
 
-import { downloadTiledXyz, downloadWmsImage, type DownloadResult, type Progress, type WmsCrs } from '@shared/utils/XyzTileDownloader'
-import { buildMapProxyUrl } from '@shared/utils/mapProxyUrls'
+import { downloadTiledXyz, downloadWmsImage, selectBestXyzZoom, type DownloadResult, type Progress, type WmsCrs } from '@shared/utils/XyzTileDownloader'
+import { buildMapProxyUrlCandidates } from '@shared/utils/mapProxyUrls'
 import { 
   Stations, 
   StationLabels, 
@@ -897,7 +897,7 @@ type RemoteTextureSourceType = 'xyz' | 'wms';
 
 interface RemoteTextureSource {
   type: RemoteTextureSourceType;
-  url: string;
+  url: string | string[];
   provider: string;
   format: string;
   maxZoom?: number;
@@ -910,23 +910,25 @@ const REMOTE_TEXTURE_SOURCES: Record<string, RemoteTextureSource> = {
     provider: 'ZBGIS',
     format: 'image/jpeg',
     maxZoom: 19,
-    url: buildMapProxyUrl(
+    url: buildMapProxyUrlCandidates(
       'zbgis',
       'Ortofoto/MapServer/tile/{z}/{y}/{x}',
       { blankTile: 'false' },
-      '/xyz-proxy/zbgis/Ortofoto/MapServer/tile/{z}/{y}/{x}?blankTile=false'
+      '/xyz-proxy/zbgis/Ortofoto/MapServer/tile/{z}/{y}/{x}?blankTile=false',
+      'https://zbgis.skgeodesy.sk/zbgis/rest/services/Ortofoto/MapServer/tile/{z}/{y}/{x}?blankTile=false'
     ),
   },
   'wms-shadow': {
     type: 'xyz',
     provider: 'ZBGIS',
     format: 'image/jpeg',
-    maxZoom: 19,
-    url: buildMapProxyUrl(
+    maxZoom: 18,
+    url: buildMapProxyUrlCandidates(
       'zbgis',
       'LLS_DMR5/MapServer/tile/{z}/{y}/{x}',
       { blankTile: 'false' },
-      '/xyz-proxy/zbgis/LLS_DMR5/MapServer/tile/{z}/{y}/{x}?blankTile=false'
+      '/xyz-proxy/zbgis/LLS_DMR5/MapServer/tile/{z}/{y}/{x}?blankTile=false',
+      'https://zbgis.skgeodesy.sk/zbgis/rest/services/LLS_DMR5/MapServer/tile/{z}/{y}/{x}?blankTile=false'
     ),
   },
   'wms-orto-freemap': {
@@ -934,11 +936,12 @@ const REMOTE_TEXTURE_SOURCES: Record<string, RemoteTextureSource> = {
     provider: 'Freemap',
     format: 'image/jpeg',
     maxZoom: 23,
-    url: buildMapProxyUrl(
+    url: buildMapProxyUrlCandidates(
       'freemap-orto',
       '{z}/{x}/{y}.jpg',
       {},
-      '/xyz-proxy/freemap-orto/{z}/{x}/{y}.jpg'
+      '/xyz-proxy/freemap-orto/{z}/{x}/{y}.jpg',
+      'https://ofmozaika.tiles.freemap.sk/{z}/{x}/{y}.jpg'
     ),
   },
   'wms-geology': {
@@ -946,7 +949,7 @@ const REMOTE_TEXTURE_SOURCES: Record<string, RemoteTextureSource> = {
     provider: 'ŠGÚDŠ',
     format: 'image/jpeg',
     crs: 'EPSG:5514',
-    url: buildMapProxyUrl(
+    url: buildMapProxyUrlCandidates(
       'geology',
       '',
       {
@@ -962,7 +965,8 @@ const REMOTE_TEXTURE_SOURCES: Record<string, RemoteTextureSource> = {
         crs: 'EPSG:5514',
         bbox: '{bbox}',
       },
-      '/wms-proxy/geology?service=WMS&request=GetMap&layers=0%2C1%2C2&styles=&format=image%2Fjpeg&transparent=false&version=1.3.0&width={width}&height={height}&crs=EPSG%3A5514&bbox={bbox}'
+      '/wms-proxy/geology?service=WMS&request=GetMap&layers=0%2C1%2C2&styles=&format=image%2Fjpeg&transparent=false&version=1.3.0&width={width}&height={height}&crs=EPSG%3A5514&bbox={bbox}',
+      'https://ags.geology.sk/arcgis/services/WebServices/GM50/MapServer/WMSServer?service=WMS&request=GetMap&layers=0%2C1%2C2&styles=&format=image%2Fjpeg&transparent=false&version=1.3.0&width={width}&height={height}&crs=EPSG%3A5514&bbox={bbox}'
     ),
   },
 };
@@ -1306,7 +1310,7 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, ...p
 
     const source = props.options.surfaceTextureSource || 'custom';
     const remoteSource = REMOTE_TEXTURE_SOURCES[source];
-    let url: string | null = null;
+    let url: string | string[] | null = null;
 
     if (source === 'custom') {
       url = props.surfaceTextureUrl || surface.bitmapUrl;
@@ -1340,9 +1344,18 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, ...p
             const size = getWmsImageSize(surface.sjtskBbox, props.options.surfaceWmsResolution);
             return downloadWmsImage(url, surface.sjtskBbox, size.width, size.height, remoteSource.format, updateProgress, remoteSource.crs || 'EPSG:3857');
           })()
-        : (() => {
-            const zoomLevel = Math.min(resolutionToZoom(props.options.surfaceWmsResolution), remoteSource.maxZoom || 18);
-            return downloadTiledXyz(url, surface.sjtskBbox, remoteSource.format, updateProgress, zoomLevel);
+          : (() => {
+            const zoomPlan = selectBestXyzZoom(
+              surface.sjtskBbox,
+              remoteSource.maxZoom || resolutionToZoom(props.options.surfaceWmsResolution),
+              props.options.surfaceWmsResolution
+            );
+            onStatusChange?.({
+              msg: `Sťahujem mapové podklady... zoom ${zoomPlan.zoom}, ${zoomPlan.totalTiles} dlaždíc`,
+              type: 'progress',
+              progress: 0,
+            });
+            return downloadTiledXyz(url, surface.sjtskBbox, remoteSource.format, updateProgress, zoomPlan.zoom);
           })();
 
       downloadPromise.then((result: DownloadResult) => {
@@ -1383,7 +1396,7 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, ...p
         setWmsLoading(false);
         onStatusChange?.({ msg: `Chyba: Nepodarilo sa stiahnuť mapové podklady (${err.message})`, type: 'error' });
       });
-    } else {
+    } else if (typeof url === 'string') {
       const loader = new THREE.TextureLoader()
       loader.load(url, (t) => {
         if (!isActive) return;

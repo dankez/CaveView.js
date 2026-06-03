@@ -56,6 +56,14 @@ function clampEmbedDimension(value: number): number {
   return Math.max(120, Math.min(4096, Math.round(value)))
 }
 
+function imageExtensionFromDataUrl(dataUrl: string): string {
+  const match = /^data:image\/([^;,]+)/.exec(dataUrl)
+  if (!match) return 'jpg'
+  if (match[1] === 'jpeg') return 'jpg'
+  if (match[1] === 'svg+xml') return 'svg'
+  return match[1]
+}
+
 type AppState = 'welcome' | 'loading' | 'viewer' | 'error'
 
 interface LoadedFile {
@@ -777,7 +785,7 @@ export default function App() {
     surfaceTextureUrl:   null,
     surfaceTextureSource: 'custom',
     surfaceTextureOpacity: 1.0,
-    surfaceWmsResolution: 2048,
+    surfaceWmsResolution: 4096,
     surfaceOffset:       { x: 0, y: 0, z: 0 },
     colorSplay:          '#78909c',
     colorTraverse:       '#4fc3f7',
@@ -935,11 +943,11 @@ export default function App() {
     // Download Image
     const aImg = document.createElement('a');
     aImg.href = dataUrl;
-    aImg.download = `povrch_textura_${opts.surfaceTextureSource}.jpg`;
+    aImg.download = `povrch_textura_${opts.surfaceTextureSource}.${imageExtensionFromDataUrl(dataUrl)}`;
     aImg.click();
 
     // Create a .txt file with calibration bbox data
-    const calibText = `S-JTSK Bounding Box (Krovak EPSG:5514)\nminX, minY, maxX, maxY\n${bbox}\n\nTento súbor sa dá neskôr použiť na ručnú kalibráciu pre tento vygenerovaný JPG v CaveViewer aplikácii.`;
+    const calibText = `S-JTSK Bounding Box (Krovak EPSG:5514)\nminX, minY, maxX, maxY\n${bbox}\n\nTento súbor sa dá neskôr použiť na ručnú kalibráciu pre túto vygenerovanú textúru v CaveViewer aplikácii.`;
     const blob = new Blob([calibText], { type: 'text/plain;charset=utf-8' });
     const aTxt = document.createElement('a');
     const txtUrl = URL.createObjectURL(blob);
@@ -2592,7 +2600,7 @@ export default function App() {
                   onClick={() => {
                     const link = document.createElement('a');
                     link.href = downloadableTexture.dataUrl;
-                    link.download = `surface_map_${opts.surfaceTextureSource}.jpg`;
+                    link.download = `surface_map_${opts.surfaceTextureSource}.${imageExtensionFromDataUrl(downloadableTexture.dataUrl)}`;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
@@ -3478,16 +3486,16 @@ export default function App() {
 
                           {(opts.surfaceTextureSource === 'wms-orto' || opts.surfaceTextureSource === 'wms-shadow' || opts.surfaceTextureSource === 'wms-geology' || opts.surfaceTextureSource === 'wms-orto-freemap') && (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                              <span style={{ fontSize: '10px', color: '#94a3b8' }}>{lang === 'sk' ? 'Rozlíšenie WMS' : 'WMS Resolution'}</span>
+                              <span style={{ fontSize: '10px', color: '#94a3b8' }}>{lang === 'sk' ? 'Rozlíšenie / zoom' : 'Resolution / zoom'}</span>
                               <select 
                                 value={opts.surfaceWmsResolution} 
                                 onChange={(e) => setOpts(p => ({ ...p, surfaceWmsResolution: parseInt(e.target.value) }))}
                                 style={{ background: '#1e293b', color: 'white', border: '1px solid #334155', borderRadius: '4px', fontSize: '10px', padding: '1px 4px', outline: 'none' }}
                               >
-                                <option value="512">{lang === 'sk' ? 'Zoom 15 (Nízka)' : 'Zoom 15 (Low)'}</option>
-                                <option value="1024">{lang === 'sk' ? 'Zoom 16 (Stredná)' : 'Zoom 16 (Med)'}</option>
-                                <option value="2048">{lang === 'sk' ? 'Zoom 17 (Vysoká)' : 'Zoom 17 (High)'}</option>
-                                <option value="4096">{lang === 'sk' ? 'Zoom 18 (Max)' : 'Zoom 18 (Max)'}</option>
+                                <option value="512">{lang === 'sk' ? 'Auto nízka' : 'Auto low'}</option>
+                                <option value="1024">{lang === 'sk' ? 'Auto stredná' : 'Auto medium'}</option>
+                                <option value="2048">{lang === 'sk' ? 'Auto vysoká' : 'Auto high'}</option>
+                                <option value="4096">{lang === 'sk' ? 'Auto maximum' : 'Auto maximum'}</option>
                               </select>
                             </div>
                           )}

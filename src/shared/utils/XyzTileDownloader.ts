@@ -22,6 +22,18 @@ export interface DownloadFailure {
 
 export type WmsCrs = 'EPSG:3857' | 'EPSG:5514';
 
+export type UrlPatternCandidates = string | string[];
+
+export interface XyzTilePlan {
+    zoom: number;
+    numTilesX: number;
+    numTilesY: number;
+    totalTiles: number;
+    widthPixels: number;
+    heightPixels: number;
+    metersPerPixel: number;
+}
+
 const gpsToTile = (lat: number, lon: number, zoom: number): { x: number; y: number } => {
   const n = Math.pow(2, zoom);
   const xtile = Math.floor((lon + 180.0) / 360.0 * n);
@@ -57,7 +69,21 @@ function mapProxyFailureHint(url: string): string {
     if (url.includes('/xyz-proxy/') || url.includes('/wms-proxy/')) {
         return ' (production hosting is missing the map proxy route; use the PHP proxy deployment files)';
     }
+    if (url.includes('allorigins.win') || url.includes('corsproxy.io') || url.includes('codetabs.com') || url.includes('thingproxy.freeboard.io')) {
+        return ' (public CORS proxy fallback failed)';
+    }
     return '';
+}
+
+function toUrlPatterns(urlPattern: UrlPatternCandidates): string[] {
+    return Array.isArray(urlPattern) ? urlPattern : [urlPattern];
+}
+
+function summarizeCandidateFailures(failures: { url: string; error: string }[]): string {
+    if (failures.length === 0) return 'No URL candidates were attempted';
+    const first = failures[0];
+    const suffix = failures.length > 1 ? `; ${failures.length - 1} fallback candidate(s) also failed` : '';
+    return `${first.error}${suffix}`;
 }
 
 function parseSjtskBbox(sjtskBbox: string): [number, number, number, number] {
@@ -74,8 +100,97 @@ function parseSjtskBbox(sjtskBbox: string): [number, number, number, number] {
     return [minX, minY, maxX, maxY];
 }
 
+export function estimateXyzTilePlan(sjtskBbox: string, zoom: number): XyzTilePlan {
+    const [minX, minY, maxX, maxY] = parseSjtskBbox(sjtskBbox);
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    const widthMeters = Math.abs(maxX - minX);
+    const heightMeters = Math.abs(maxY - minY);
+    const centerGps = proj4('EPSG:5514', 'EPSG:4326').forward([centerX, centerY]);
+    const lon = centerGps[0];
+    const lat = centerGps[1];
+    const centerTile = gpsToTile(lat, lon, zoom);
+    const mpp = metersPerPixel(lat, zoom);
+    const metersPerTile = mpp * TILE_SIZE;
+    const paddingTiles = 1;
+    const tileE = Math.ceil((widthMeters / 2) / metersPerTile) + paddingTiles;
+    const tileW = Math.ceil((widthMeters / 2) / metersPerTile) + paddingTiles;
+    const tileN = Math.ceil((heightMeters / 2) / metersPerTile) + paddingTiles;
+    const tileS = Math.ceil((heightMeters / 2) / metersPerTile) + paddingTiles;
+    const xMin = centerTile.x - tileW;
+    const xMax = centerTile.x + tileE;
+    const yMin = centerTile.y - tileN;
+    const yMax = centerTile.y + tileS;
+    const numTilesX = xMax - xMin + 1;
+    const numTilesY = yMax - yMin + 1;
+
+    return {
+        zoom,
+        numTilesX,
+        numTilesY,
+        totalTiles: numTilesX * numTilesY,
+        widthPixels: numTilesX * TILE_SIZE,
+        heightPixels: numTilesY * TILE_SIZE,
+        metersPerPixel: mpp,
+    };
+}
+
+function getTileBudget(requestedResolution: number): { maxTileAxis: number; maxTiles: number } {
+    const resolution = Number.isFinite(requestedResolution) ? requestedResolution : 4096;
+    const maxTileAxis = Math.max(4, Math.min(16, Math.ceil(resolution / TILE_SIZE)));
+    return {
+        maxTileAxis,
+        maxTiles: Math.max(25, Math.min(96, maxTileAxis * maxTileAxis)),
+    };
+}
+
+export function selectBestXyzZoom(
+    sjtskBbox: string,
+    maxZoom: number = 18,
+    requestedResolution: number = 4096,
+    minZoom: number = 12
+): XyzTilePlan {
+    const { maxTileAxis, maxTiles } = getTileBudget(requestedResolution);
+    const startZoom = Math.max(minZoom, Math.floor(maxZoom));
+
+    for (let zoom = startZoom; zoom >= minZoom; zoom--) {
+        const plan = estimateXyzTilePlan(sjtskBbox, zoom);
+        if (plan.numTilesX <= maxTileAxis && plan.numTilesY <= maxTileAxis && plan.totalTiles <= maxTiles) {
+            return plan;
+        }
+    }
+
+    return estimateXyzTilePlan(sjtskBbox, minZoom);
+}
+
+let webpCanvasSupport: boolean | null = null;
+
+function supportsCanvasFormat(format: string): boolean {
+    if (typeof document === 'undefined') return false;
+    if (format === 'image/webp' && webpCanvasSupport !== null) return webpCanvasSupport;
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    const supported = canvas.toDataURL(format).startsWith(`data:${format}`);
+    if (format === 'image/webp') webpCanvasSupport = supported;
+    return supported;
+}
+
+export function getPreferredTextureFormat(inputFormat: string = 'image/jpeg'): string {
+    if (inputFormat === 'image/png') return 'image/png';
+    return supportsCanvasFormat('image/webp') ? 'image/webp' : inputFormat;
+}
+
+function canvasToTextureDataUrl(canvas: HTMLCanvasElement, inputFormat: string): string {
+    const outputFormat = getPreferredTextureFormat(inputFormat);
+    const quality = outputFormat === 'image/webp' ? 0.98 : outputFormat === 'image/jpeg' ? 0.95 : 1.0;
+    const dataUrl = canvas.toDataURL(outputFormat, quality);
+    if (dataUrl.startsWith(`data:${outputFormat}`)) return dataUrl;
+    return canvas.toDataURL(inputFormat, inputFormat === 'image/jpeg' ? 0.92 : 1.0);
+}
+
 export async function downloadWmsImage(
-    urlPattern: string,
+    urlPattern: UrlPatternCandidates,
     sjtskBbox: string, // S-JTSK bounding box
     width: number,
     height: number,
@@ -105,11 +220,12 @@ export async function downloadWmsImage(
         requestBbox = `${Math.min(bl3857[0], tr3857[0])},${Math.min(bl3857[1], tr3857[1])},${Math.max(bl3857[0], tr3857[0])},${Math.max(bl3857[1], tr3857[1])}`;
     }
 
-    const url = urlPattern
+    const urls = toUrlPatterns(urlPattern).map(pattern => pattern
         .replace('{bbox}', requestBbox)
         .replace('{width}', width.toString())
         .replace('{height}', height.toString())
-        .replace('{crs}', encodeURIComponent(crs));
+        .replace('{crs}', encodeURIComponent(crs))
+    );
 
     if (onProgress) onProgress({ current: 0, total: 1 });
 
@@ -121,30 +237,40 @@ export async function downloadWmsImage(
     ctx.fillStyle = '#cccccc';
     ctx.fillRect(0, 0, width, height);
 
+    const candidateFailures: { url: string; error: string }[] = [];
     try {
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error(`WMS fetch failed: ${resp.status} ${resp.statusText}${mapProxyFailureHint(url)}`);
-        const blob = await resp.blob();
-        const img = await createImageBitmap(blob);
-        ctx.drawImage(img, 0, 0, width, height);
+        for (const url of urls) {
+            try {
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error(`WMS fetch failed: ${resp.status} ${resp.statusText}${mapProxyFailureHint(url)}`);
+                const blob = await resp.blob();
+                const img = await createImageBitmap(blob);
+                ctx.drawImage(img, 0, 0, width, height);
+                return {
+                    dataUrl: canvasToTextureDataUrl(canvas, format),
+                    sjtskBbox: expandedSjtskBbox,
+                    totalTiles: 1,
+                    successfulTiles: 1,
+                    failedTiles: [],
+                };
+            } catch (e) {
+                const error = e instanceof Error ? e.message : String(e);
+                candidateFailures.push({ url, error });
+                console.warn(`Failed to fetch WMS candidate`, { url, error });
+            }
+        }
+
+        throw new Error(summarizeCandidateFailures(candidateFailures));
     } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
         throw new Error(`Failed to fetch WMS image: ${message}`);
     } finally {
         if (onProgress) onProgress({ current: 1, total: 1 });
     }
-
-    return {
-        dataUrl: canvas.toDataURL(format, format === 'image/jpeg' ? 0.85 : 1.0),
-        sjtskBbox: expandedSjtskBbox,
-        totalTiles: 1,
-        successfulTiles: 1,
-        failedTiles: [],
-    };
 }
 
 export async function downloadTiledXyz(
-    urlPattern: string,
+    urlPattern: UrlPatternCandidates,
     sjtskBbox: string, // S-JTSK bounding box
     format: string = 'image/jpeg',
     onProgress?: (p: Progress) => void,
@@ -221,8 +347,8 @@ export async function downloadTiledXyz(
     let successfulTiles = 0;
     const failedTiles: DownloadFailure[] = [];
 
-    const fetchTile = async (tx: number, ty: number) => {
-        let url = urlPattern
+    const buildTileUrl = (pattern: string, tx: number, ty: number): string => {
+        let url = pattern
             .replace('{z}', zoom.toString())
             .replace('{x}', tx.toString())
             .replace('{y}', ty.toString())
@@ -238,25 +364,40 @@ export async function downloadTiledXyz(
             const bboxStr = `${bl3857[0]},${bl3857[1]},${tr3857[0]},${tr3857[1]}`;
             url = url.replace('{bbox}', bboxStr);
         }
-        
-        try {
-            const resp = await fetch(url);
-            if (!resp.ok) throw new Error(`Tile fetch failed: ${resp.status} ${resp.statusText}${mapProxyFailureHint(url)}`);
-            const blob = await resp.blob();
-            const img = await createImageBitmap(blob);
-            
-            const dx = (tx - xMin) * TILE_SIZE;
-            const dy = (ty - yMin) * TILE_SIZE;
-            ctx.drawImage(img, dx, dy, TILE_SIZE, TILE_SIZE);
-            successfulTiles++;
-        } catch (e) {
-            const error = e instanceof Error ? e.message : String(e);
-            failedTiles.push({ z: zoom, x: tx, y: ty, url, error });
-            console.warn(`Failed to fetch tile ${zoom}/${tx}/${ty}`, e);
-        } finally {
-            current++;
-            if (onProgress) onProgress({ current, total });
+        return url;
+    };
+
+    const fetchTile = async (tx: number, ty: number) => {
+        const urls = toUrlPatterns(urlPattern).map(pattern => buildTileUrl(pattern, tx, ty));
+        const candidateFailures: { url: string; error: string }[] = [];
+
+        for (const url of urls) {
+            try {
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error(`Tile fetch failed: ${resp.status} ${resp.statusText}${mapProxyFailureHint(url)}`);
+                const blob = await resp.blob();
+                const img = await createImageBitmap(blob);
+                
+                const dx = (tx - xMin) * TILE_SIZE;
+                const dy = (ty - yMin) * TILE_SIZE;
+                ctx.drawImage(img, dx, dy, TILE_SIZE, TILE_SIZE);
+                successfulTiles++;
+                return;
+            } catch (e) {
+                const error = e instanceof Error ? e.message : String(e);
+                candidateFailures.push({ url, error });
+                console.warn(`Failed to fetch tile candidate ${zoom}/${tx}/${ty}`, { url, error });
+            }
         }
+
+        const firstUrl = urls[0] || '';
+        failedTiles.push({
+            z: zoom,
+            x: tx,
+            y: ty,
+            url: firstUrl,
+            error: summarizeCandidateFailures(candidateFailures),
+        });
     };
 
     const queue: [number, number][] = [];
@@ -269,7 +410,14 @@ export async function downloadTiledXyz(
     const concurrency = 6;
     for (let i = 0; i < queue.length; i += concurrency) {
         const batch = queue.slice(i, i + concurrency);
-        await Promise.all(batch.map(([tx, ty]) => fetchTile(tx, ty)));
+        await Promise.all(batch.map(async ([tx, ty]) => {
+            try {
+                await fetchTile(tx, ty);
+            } finally {
+                current++;
+                if (onProgress) onProgress({ current, total });
+            }
+        }));
     }
 
     if (successfulTiles === 0) {
@@ -279,7 +427,7 @@ export async function downloadTiledXyz(
     }
 
     return {
-        dataUrl: canvas.toDataURL(format, format === 'image/jpeg' ? 0.85 : 1.0),
+        dataUrl: canvasToTextureDataUrl(canvas, format),
         sjtskBbox: exactSjtskBbox,
         totalTiles: total,
         successfulTiles,

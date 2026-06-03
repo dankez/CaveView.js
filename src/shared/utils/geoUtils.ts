@@ -1,5 +1,5 @@
 import proj4 from 'proj4';
-import { buildMapProxyUrl } from './mapProxyUrls';
+import { buildMapProxyUrlCandidates } from './mapProxyUrls';
 
 // S-JTSK Coordinate System Definition
 export const SJTSK_DEF = "+proj=krovak +lat_0=49.5 +lon_0=24.83333333333333 +alpha=30.28813972222222 +k=0.9999 +x_0=0 +y_0=0 +ellps=bessel +towgs84=570.8,85.7,462.8,4.998,1.587,5.261,3.56 +units=m +no_defs";
@@ -58,28 +58,32 @@ export async function fetchAltitudeFromZbgis(lat: number, lon: number): Promise<
         mapExtent: extent,
         imageDisplay: '100,100,96',
     };
-    const url = buildMapProxyUrl(
+    const directUrl = `https://zbgis.skgeodesy.sk/zbgis/rest/services/LLS_DMR5/MapServer/identify?${new URLSearchParams(identifyParams).toString()}`;
+    const urls = buildMapProxyUrlCandidates(
         'zbgis',
         'LLS_DMR5/MapServer/identify',
         identifyParams,
-        `/xyz-proxy/zbgis/LLS_DMR5/MapServer/identify?${new URLSearchParams(identifyParams).toString()}`
+        `/xyz-proxy/zbgis/LLS_DMR5/MapServer/identify?${new URLSearchParams(identifyParams).toString()}`,
+        directUrl
     );
 
-    try {
-        const resp = await fetch(url);
-        if (!resp.ok) return null;
-        const json = await resp.json();
-        
-        if (json.results && json.results.length > 0) {
-            // Identify returns attributes. For raster layers, look for "Pixel Value"
-            const result = json.results[0];
-            const val = parseFloat(result.attributes['Pixel Value'] || result.value);
-            if (!isNaN(val) && val > -500 && val < 9000) {
-                return val;
+    for (const url of urls) {
+        try {
+            const resp = await fetch(url);
+            if (!resp.ok) continue;
+            const json = await resp.json();
+            
+            if (json.results && json.results.length > 0) {
+                // Identify returns attributes. For raster layers, look for "Pixel Value"
+                const result = json.results[0];
+                const val = parseFloat(result.attributes['Pixel Value'] || result.value);
+                if (!isNaN(val) && val > -500 && val < 9000) {
+                    return val;
+                }
             }
+        } catch (e) {
+            console.error("Elevation fetch failed:", e);
         }
-    } catch (e) {
-        console.error("Elevation fetch failed:", e);
     }
     return null;
 }

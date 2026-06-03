@@ -44,8 +44,8 @@
     "hash": "3df1767acce966488a9cbe54be0ee3b0"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/App.tsx": {
-    "mtime": 1780422166.4712362,
-    "hash": "28312f9d490473a586d91442f08f53e3"
+    "mtime": 1780480929.6257374,
+    "hash": "e7bad056411da8961ed246fc12955f8f"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/main.tsx": {
     "mtime": 1776409952.8888268,
@@ -124,20 +124,20 @@
     "hash": "44efc0412f76864f9f7b4b06f74a5cc9"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/geoUtils.ts": {
-    "mtime": 1780470261.4670134,
-    "hash": "49f2cf2af223261be97a89eaedcfb71f"
+    "mtime": 1780472972.242169,
+    "hash": "0dc20f17ac2f00a337323d95297fa871"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/XyzTileDownloader.ts": {
-    "mtime": 1780470261.7550101,
-    "hash": "a93b0d2e218f3b68ec76ad12571fb21a"
+    "mtime": 1780481018.243891,
+    "hash": "428f1a340ee49baeac7412fc591a88db"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/surfaceBounds.ts": {
     "mtime": 1780398983.4691274,
     "hash": "fd5972ce5a1577655be231fcfe8f6a28"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/mapProxyUrls.ts": {
-    "mtime": 1780470260.759021,
-    "hash": "bea34e09471f193a44e923151d7b81c4"
+    "mtime": 1780472971.8171756,
+    "hash": "9f501710949540cc055127639cf67b6c"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/modelDefaults.ts": {
     "mtime": 1780405918.0417843,
@@ -152,12 +152,12 @@
     "hash": "096c8bd08673f2219bfbca6ab329c5c3"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/__tests__/mapProxyUrls.test.ts": {
-    "mtime": 1780470262.0210073,
-    "hash": "6be8f5b606786281df11eb1fe130c45f"
+    "mtime": 1780472972.381167,
+    "hash": "b4912a80090793fabba94e32cffee25e"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/__tests__/XyzTileDownloader.test.ts": {
-    "mtime": 1780399192.9092512,
-    "hash": "eb13abcb8519ddab5aaad7f817e57474"
+    "mtime": 1780480929.8397355,
+    "hash": "43f6219dd03615893b14bf7c3a888632"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/__tests__/surfaceBounds.test.ts": {
     "mtime": 1780399157.2641747,
@@ -212,8 +212,8 @@
     "hash": "42a6454e1f1ab492fcff2aefc6ccfd34"
   },
   "/home/dankez/cave3d/CaveView-modernized/src/v1/components/CaveViewer3D.tsx": {
-    "mtime": 1780470261.227016,
-    "hash": "cfb96c00545b3dbea405c8db40ccc029"
+    "mtime": 1780480929.4087396,
+    "hash": "6a1fc706f5411518a100c61cbcfbeb60"
   },
   "/home/dankez/cave3d/CaveView-modernized/legacy/js/CV2Plugins.js": {
     "mtime": 1776409952.8108265,
