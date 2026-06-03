@@ -7,6 +7,7 @@ import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-
 import { reconstructSurface } from '@shared/utils/surfaceReconstruction'
 
 import { downloadTiledXyz, downloadWmsImage, type DownloadResult, type Progress, type WmsCrs } from '@shared/utils/XyzTileDownloader'
+import { buildMapProxyUrl } from '@shared/utils/mapProxyUrls'
 import { 
   Stations, 
   StationLabels, 
@@ -909,28 +910,60 @@ const REMOTE_TEXTURE_SOURCES: Record<string, RemoteTextureSource> = {
     provider: 'ZBGIS',
     format: 'image/jpeg',
     maxZoom: 19,
-    url: '/xyz-proxy/zbgis/Ortofoto/MapServer/tile/{z}/{y}/{x}?blankTile=false',
+    url: buildMapProxyUrl(
+      'zbgis',
+      'Ortofoto/MapServer/tile/{z}/{y}/{x}',
+      { blankTile: 'false' },
+      '/xyz-proxy/zbgis/Ortofoto/MapServer/tile/{z}/{y}/{x}?blankTile=false'
+    ),
   },
   'wms-shadow': {
     type: 'xyz',
     provider: 'ZBGIS',
     format: 'image/jpeg',
     maxZoom: 19,
-    url: '/xyz-proxy/zbgis/LLS_DMR5/MapServer/tile/{z}/{y}/{x}?blankTile=false',
+    url: buildMapProxyUrl(
+      'zbgis',
+      'LLS_DMR5/MapServer/tile/{z}/{y}/{x}',
+      { blankTile: 'false' },
+      '/xyz-proxy/zbgis/LLS_DMR5/MapServer/tile/{z}/{y}/{x}?blankTile=false'
+    ),
   },
   'wms-orto-freemap': {
     type: 'xyz',
     provider: 'Freemap',
     format: 'image/jpeg',
     maxZoom: 23,
-    url: '/xyz-proxy/freemap-orto/{z}/{x}/{y}.jpg',
+    url: buildMapProxyUrl(
+      'freemap-orto',
+      '{z}/{x}/{y}.jpg',
+      {},
+      '/xyz-proxy/freemap-orto/{z}/{x}/{y}.jpg'
+    ),
   },
   'wms-geology': {
     type: 'wms',
     provider: 'ŠGÚDŠ',
     format: 'image/jpeg',
     crs: 'EPSG:5514',
-    url: '/wms-proxy/geology?service=WMS&request=GetMap&layers=0%2C1%2C2&styles=&format=image%2Fjpeg&transparent=false&version=1.3.0&width={width}&height={height}&crs=EPSG%3A5514&bbox={bbox}',
+    url: buildMapProxyUrl(
+      'geology',
+      '',
+      {
+        service: 'WMS',
+        request: 'GetMap',
+        layers: '0,1,2',
+        styles: '',
+        format: 'image/jpeg',
+        transparent: 'false',
+        version: '1.3.0',
+        width: '{width}',
+        height: '{height}',
+        crs: 'EPSG:5514',
+        bbox: '{bbox}',
+      },
+      '/wms-proxy/geology?service=WMS&request=GetMap&layers=0%2C1%2C2&styles=&format=image%2Fjpeg&transparent=false&version=1.3.0&width={width}&height={height}&crs=EPSG%3A5514&bbox={bbox}'
+    ),
   },
 };
 

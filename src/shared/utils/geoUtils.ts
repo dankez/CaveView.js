@@ -1,4 +1,5 @@
 import proj4 from 'proj4';
+import { buildMapProxyUrl } from './mapProxyUrls';
 
 // S-JTSK Coordinate System Definition
 export const SJTSK_DEF = "+proj=krovak +lat_0=49.5 +lon_0=24.83333333333333 +alpha=30.28813972222222 +k=0.9999 +x_0=0 +y_0=0 +ellps=bessel +towgs84=570.8,85.7,462.8,4.998,1.587,5.261,3.56 +units=m +no_defs";
@@ -47,7 +48,22 @@ export async function fetchAltitudeFromZbgis(lat: number, lon: number): Promise<
     // However, for consistency with the rest of the app, we can use a proxy if needed.
     // For now we'll try direct.
     // We use the proxy defined in vite.config.ts to avoid CORS issues
-    const url = `/xyz-proxy/zbgis/LLS_DMR5/MapServer/identify?f=json&geometry=${encodeURIComponent(geometry)}&geometryType=esriGeometryPoint&sr=5514&layers=all&tolerance=1&mapExtent=${extent}&imageDisplay=100,100,96`;
+    const identifyParams = {
+        f: 'json',
+        geometry,
+        geometryType: 'esriGeometryPoint',
+        sr: '5514',
+        layers: 'all',
+        tolerance: '1',
+        mapExtent: extent,
+        imageDisplay: '100,100,96',
+    };
+    const url = buildMapProxyUrl(
+        'zbgis',
+        'LLS_DMR5/MapServer/identify',
+        identifyParams,
+        `/xyz-proxy/zbgis/LLS_DMR5/MapServer/identify?${new URLSearchParams(identifyParams).toString()}`
+    );
 
     try {
         const resp = await fetch(url);

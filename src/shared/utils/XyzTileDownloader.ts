@@ -50,6 +50,16 @@ export interface DownloadResult {
     failedTiles?: DownloadFailure[];
 }
 
+function mapProxyFailureHint(url: string): string {
+    if (url.includes('map-proxy.php')) {
+        return ' (check that map-proxy.php was copied to hosting and PHP can fetch external HTTPS URLs)';
+    }
+    if (url.includes('/xyz-proxy/') || url.includes('/wms-proxy/')) {
+        return ' (production hosting is missing the map proxy route; use the PHP proxy deployment files)';
+    }
+    return '';
+}
+
 function parseSjtskBbox(sjtskBbox: string): [number, number, number, number] {
     const parts = sjtskBbox.split(',').map(Number);
     if (parts.length !== 4 || !parts.every(Number.isFinite)) {
@@ -113,7 +123,7 @@ export async function downloadWmsImage(
 
     try {
         const resp = await fetch(url);
-        if (!resp.ok) throw new Error(`WMS fetch failed: ${resp.status} ${resp.statusText}`);
+        if (!resp.ok) throw new Error(`WMS fetch failed: ${resp.status} ${resp.statusText}${mapProxyFailureHint(url)}`);
         const blob = await resp.blob();
         const img = await createImageBitmap(blob);
         ctx.drawImage(img, 0, 0, width, height);
@@ -231,7 +241,7 @@ export async function downloadTiledXyz(
         
         try {
             const resp = await fetch(url);
-            if (!resp.ok) throw new Error(`Tile fetch failed: ${resp.status} ${resp.statusText}`);
+            if (!resp.ok) throw new Error(`Tile fetch failed: ${resp.status} ${resp.statusText}${mapProxyFailureHint(url)}`);
             const blob = await resp.blob();
             const img = await createImageBitmap(blob);
             
