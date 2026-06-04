@@ -32,6 +32,16 @@ Rules:
 - full-resolution geometry still builds a BVH tree for precise raycasting,
 - moving LOD skips BVH generation because it is temporary and lower density.
 
+### Initial terrain LOD
+
+Large LOX DTM surfaces first render with the same lower-density terrain used during movement, then switch to full detail after a short idle delay.
+
+Impact:
+
+- the model appears sooner on first load,
+- the first frame avoids building full-resolution terrain tiles and BVH trees immediately,
+- contour labels wait for full detail so their first calculation does not add to the initial stall.
+
 ### Terrain build cleanup
 
 Terrain height min/max is computed once per surface and shared by all terrain tiles. BVH data is disposed when a tile geometry is replaced.

@@ -6,6 +6,67 @@ import type { ParsedCave, ViewerOptions, StationLabel, Vec3 } from '@shared/type
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+type CaveTexturePreset = ViewerOptions['caveTexture']
+
+interface CaveMaterialPreset {
+  texturePath: string | null
+  color: string
+  roughness: number
+  metalness: number
+  bumpScale: number
+  cavityStrength: number
+  edgeStrength: number
+  heightShadeStrength: number
+  edgeColor: string
+}
+
+const CAVE_MATERIAL_PRESETS: Record<CaveTexturePreset, CaveMaterialPreset> = {
+  limestone: {
+    texturePath: '/assets/cave_limestone.png',
+    color: '#ffffff',
+    roughness: 0.68,
+    metalness: 0.0,
+    bumpScale: 0.72,
+    cavityStrength: 0.36,
+    edgeStrength: 0.11,
+    heightShadeStrength: 0.2,
+    edgeColor: '#dbeafe',
+  },
+  dolomite: {
+    texturePath: null,
+    color: '#f5efe4',
+    roughness: 0.8,
+    metalness: 0.0,
+    bumpScale: 0.48,
+    cavityStrength: 0.46,
+    edgeStrength: 0.18,
+    heightShadeStrength: 0.26,
+    edgeColor: '#fdebd3',
+  },
+  grey_limestone: {
+    texturePath: null,
+    color: '#eef6ff',
+    roughness: 0.82,
+    metalness: 0.0,
+    bumpScale: 0.44,
+    cavityStrength: 0.5,
+    edgeStrength: 0.2,
+    heightShadeStrength: 0.28,
+    edgeColor: '#bae6fd',
+  },
+  technical: {
+    texturePath: null,
+    color: '#dbeafe',
+    roughness: 0.82,
+    metalness: 0.0,
+    bumpScale: 0.42,
+    cavityStrength: 0.56,
+    edgeStrength: 0.22,
+    heightShadeStrength: 0.3,
+    edgeColor: '#7dd3fc',
+  },
+}
+
 function solveAffine(matches: { src: {x:number, y:number}, dst: {x:number, y:number} }[]) {
   const n = matches.length
   let sx=0, sy=0, sxx=0, syy=0, sxy=0, dx=0, dy=0, dxx=0, dxy=0, dyx=0, dyy=0
@@ -276,6 +337,62 @@ if (uScrapViewMode == 3 && !scrapIsSection) discard;`
     );
 }
 
+function applyScrapWallDepthShader(
+  shader: any,
+  visual: {
+    cavityStrength: number
+    edgeStrength: number
+    heightShadeStrength: number
+    edgeColor: string
+  }
+) {
+  shader.uniforms.uScrapCavityStrength = { value: visual.cavityStrength };
+  shader.uniforms.uScrapEdgeStrength = { value: visual.edgeStrength };
+  shader.uniforms.uScrapHeightShadeStrength = { value: visual.heightShadeStrength };
+  shader.uniforms.uScrapEdgeColor = { value: new THREE.Color(visual.edgeColor) };
+
+  shader.fragmentShader = shader.fragmentShader
+    .replace(
+      '#include <common>',
+      `#include <common>
+uniform float uScrapCavityStrength;
+uniform float uScrapEdgeStrength;
+uniform float uScrapHeightShadeStrength;
+uniform vec3 uScrapEdgeColor;`
+    )
+    .replace(
+      'vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;',
+      `vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;
+vec3 scrapModelNormal = normalize(vScrapModelNormal);
+float scrapWallFactor = smoothstep(0.18, 0.95, 1.0 - abs(scrapModelNormal.y));
+float scrapCeilingFactor = smoothstep(0.58, 1.0, vScrapRelHeight);
+float scrapFloorFactor = smoothstep(0.58, 1.0, 1.0 - vScrapRelHeight);
+float scrapCavity = clamp(scrapWallFactor * 0.58 + scrapCeilingFactor * 0.2 + scrapFloorFactor * 0.1, 0.0, 1.0);
+float scrapRim = pow(1.0 - abs(dot(normalize(normal), normalize(vViewPosition))), 2.25);
+float scrapHeightShade = mix(0.86, 1.08, clamp(vScrapRelHeight, 0.0, 1.0));
+outgoingLight *= max(0.18, 1.0 - scrapCavity * uScrapCavityStrength);
+outgoingLight *= mix(1.0, scrapHeightShade, uScrapHeightShadeStrength);
+outgoingLight += uScrapEdgeColor * scrapRim * uScrapEdgeStrength;`
+    );
+}
+
+function applyScrapCombinedShader(
+  shader: any,
+  viewMode: number,
+  heightThreshold: number,
+  angleThreshold: number,
+  sectionWidth: number,
+  visual: {
+    cavityStrength: number
+    edgeStrength: number
+    heightShadeStrength: number
+    edgeColor: string
+  }
+) {
+  applyScrapSelectiveViewShader(shader, viewMode, heightThreshold, angleThreshold, sectionWidth);
+  applyScrapWallDepthShader(shader, visual);
+}
+
 export function buildScrapsGeo(cave: ParsedCave, withColors: boolean, smooth: boolean, organicLevel: number): THREE.BufferGeometry | null {
   if (!cave.scraps?.length) return null
 
@@ -424,7 +541,7 @@ export const ClippingEdges = React.memo(({ geo, planes, active, color = "#ff4444
 export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitude, smooth, showRender, caveTexture, renderOpacity, isMoving, options, ...props }: {
   cave: ParsedCave; opacity: number
   showSolid: boolean; showWire: boolean; showAltitude: boolean; smooth: boolean; showRender: boolean
-  caveTexture: 'limestone' | 'dolomite' | 'grey_limestone'
+  caveTexture: CaveTexturePreset
   renderOpacity: number
   isMoving: boolean
   options: ViewerOptions
@@ -548,6 +665,7 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
   const solidGeo = geos.solid
   const altGeo = geos.alt
  
+  const materialPreset = CAVE_MATERIAL_PRESETS[caveTexture] || CAVE_MATERIAL_PRESETS.limestone
   const reliefTex = useMemo(() => createCaveReliefTexture(), [])
   const reliefStrength = Math.max(0, Math.min(1, options.scrapsRelief ?? 0.35))
   const reliefMap = reliefStrength > 0 ? reliefTex : null
@@ -557,8 +675,14 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
   const scrapAngleThreshold = Math.max(0, Math.min(0.95, options.scrapsAngleThreshold ?? 0))
   const scrapSectionWidth = Math.max(0.005, Math.min(0.5, options.scrapsSectionWidth ?? 0.08))
   const scrapFilterKey = `${scrapFilterMode}-${scrapHeightThreshold.toFixed(2)}-${scrapAngleThreshold.toFixed(2)}-${scrapSectionWidth.toFixed(2)}`
+  const scrapVisualKey = `${caveTexture}-${reliefStrength.toFixed(2)}-${materialPreset.cavityStrength.toFixed(2)}-${materialPreset.edgeStrength.toFixed(2)}`
   const applyScrapFilter = (shader: any) => {
-    applyScrapSelectiveViewShader(shader, scrapFilterMode, scrapHeightThreshold, scrapAngleThreshold, scrapSectionWidth)
+    applyScrapCombinedShader(shader, scrapFilterMode, scrapHeightThreshold, scrapAngleThreshold, scrapSectionWidth, {
+      cavityStrength: materialPreset.cavityStrength,
+      edgeStrength: materialPreset.edgeStrength,
+      heightShadeStrength: materialPreset.heightShadeStrength,
+      edgeColor: materialPreset.edgeColor,
+    })
   }
 
   useEffect(() => {
@@ -568,17 +692,19 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
   const [rockTex, setRockTex] = useState<THREE.Texture | null>(null)
 
   useEffect(() => {
-    let path = '/assets/cave_limestone.png'
-    if (caveTexture === 'dolomite') path = '/assets/cave_rock.png'
-    if (caveTexture === 'grey_limestone') path = '/assets/cave_granite.png'
+    if (!materialPreset.texturePath) {
+      setRockTex(null)
+      return
+    }
     
-    const tex = new THREE.TextureLoader().load(path)
+    const tex = new THREE.TextureLoader().load(materialPreset.texturePath)
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping
     tex.repeat.set(10, 10)
+    tex.colorSpace = THREE.SRGBColorSpace
     setRockTex(tex)
     
     return () => tex.dispose()
-  }, [caveTexture])
+  }, [materialPreset.texturePath])
 
   return (
     <>
@@ -586,15 +712,15 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
       {showSolid && !showRender && solidGeo && (
         <mesh geometry={solidGeo} renderOrder={5}>
           <meshStandardMaterial
-            key={`solid-${scrapFilterKey}`}
+            key={`solid-${scrapFilterKey}-${scrapVisualKey}`}
             color={options.colorScraps}
             side={THREE.DoubleSide}
             transparent={opacity < 1}
             opacity={opacity}
-            roughness={0.48}
-            metalness={0.0}
+            roughness={materialPreset.roughness}
+            metalness={materialPreset.metalness}
             bumpMap={reliefMap}
-            bumpScale={reliefStrength * (smooth ? 0.28 : 0.48)}
+            bumpScale={reliefStrength * materialPreset.bumpScale * (smooth ? 0.46 : 0.78)}
             polygonOffset
             polygonOffsetFactor={1}
             polygonOffsetUnits={1}
@@ -608,16 +734,18 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
       {showRender && solidGeo && (
         <mesh geometry={solidGeo} renderOrder={4}>
           <meshStandardMaterial
-            key={`render-${scrapFilterKey}`}
-            map={rockTex}
-            color={caveTexture === 'grey_limestone' ? '#f3f4f6' : '#ffffff'}
+            key={`render-${scrapFilterKey}-${scrapVisualKey}`}
+            map={rockTex || null}
+            color={materialPreset.color}
             side={THREE.DoubleSide}
             transparent={renderOpacity < 1}
             opacity={renderOpacity}
-            roughness={0.5}
-            metalness={0}
+            roughness={materialPreset.roughness}
+            metalness={materialPreset.metalness}
+            emissive={caveTexture === 'technical' ? '#07111f' : '#000000'}
+            emissiveIntensity={caveTexture === 'technical' ? 0.08 : 0}
             bumpMap={reliefMap}
-            bumpScale={reliefStrength * (smooth ? 0.36 : 0.62)}
+            bumpScale={reliefStrength * materialPreset.bumpScale * (smooth ? 0.58 : 1.0)}
             polygonOffset
             polygonOffsetFactor={0.5}
             polygonOffsetUnits={0.5}
@@ -631,15 +759,15 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
       {showAltitude && altGeo && (
         <mesh geometry={altGeo} renderOrder={3}>
           <meshStandardMaterial
-            key={`altitude-${scrapFilterKey}`}
+            key={`altitude-${scrapFilterKey}-${scrapVisualKey}`}
             vertexColors
             side={THREE.DoubleSide}
             transparent={opacity < 1}
             opacity={opacity}
-            roughness={0.5}
-            metalness={0.0}
+            roughness={materialPreset.roughness}
+            metalness={materialPreset.metalness}
             bumpMap={reliefMap}
-            bumpScale={reliefStrength * (smooth ? 0.22 : 0.4)}
+            bumpScale={reliefStrength * materialPreset.bumpScale * (smooth ? 0.38 : 0.68)}
             clippingPlanes={props.clippingPlanes}
             onBeforeCompile={applyScrapFilter}
           />

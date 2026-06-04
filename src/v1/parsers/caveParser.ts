@@ -80,7 +80,7 @@ export function parseLox(buffer: ArrayBuffer, onProgress?: (msg: string) => void
       bitmapUrl:      null, // will be populated in main thread
       bitmapCalib:    terrain.bitmapCalib ?? null,
       centerOffset:   { x: 0, y: 0, z: 0 },
-      ...(sjtskBounds ? { sjtskBbox: sjtskBounds.bbox, sjtskAspect: sjtskBounds.aspect } : {}),
+      ...(sjtskBounds ? { sjtskBbox: sjtskBounds.bbox, sjtskBboxSource: sjtskBounds.sourceCrs, sjtskAspect: sjtskBounds.aspect } : {}),
     })
   }
 

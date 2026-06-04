@@ -8,6 +8,7 @@ import { reconstructSurface } from '@shared/utils/surfaceReconstruction'
 
 import { downloadTiledXyz, downloadWmsImage, selectBestXyzZoom, type DownloadResult, type Progress, type TextureDownloadInspector, type WmsCrs } from '@shared/utils/XyzTileDownloader'
 import { buildMapProxyUrlCandidates } from '@shared/utils/mapProxyUrls'
+import { getTextureBboxInDtmCrs } from '@shared/utils/surfaceBounds'
 import { 
   Stations, 
   StationLabels, 
@@ -1048,20 +1049,21 @@ function getWmsImageSize(sjtskBbox: string, requestedSize: number): { width: num
 
 const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCount, imgSize, imgSizeUniformRef, xyzCalib, heightRange, ...props }: any) => {
   const [geo, setGeo] = useState<THREE.BufferGeometry | null>(null);
-  const terrainSubsample = props.isMoving
+  const terrainSubsample = props.isMoving || !props.terrainReadyForFullDetail
     ? getMovingTerrainSubsample(surface.dtm.samples, surface.dtm.lines)
     : 1;
+  const buildPreciseBvh = terrainSubsample === 1 && props.terrainReadyForFullDetail;
 
   useEffect(() => {
     const data = buildTerrainTileData(surface, colStart, rowStart, colCount, rowCount, imgSize, terrainSubsample, heightRange);
-    const g = buildTerrainGeo(data, terrainSubsample === 1);
+    const g = buildTerrainGeo(data, buildPreciseBvh);
     setGeo(g);
     return () => {
       // @ts-ignore
       if (g.boundsTree) g.disposeBoundsTree();
       g.dispose();
     };
-  }, [surface, colStart, rowStart, colCount, rowCount, imgSize, terrainSubsample, heightRange]);
+  }, [surface, colStart, rowStart, colCount, rowCount, imgSize, terrainSubsample, heightRange, buildPreciseBvh]);
 
   const contourUniforms = useMemo(() => ({
     uMajorInterval: { value: props.contourInterval || 10.0 },
@@ -1191,7 +1193,11 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
     
     if (isCustom && calib) {
       textureUniforms.uCalib0.value.set(calib.p1.mx, calib.p1.my, calib.p2.mx, calib.p2.my);
-      textureUniforms.uCalib1.value.set(calib.p1.x, calib.p1.y, calib.p2.x, calib.p2.y);
+      if (calib.source === 'sjtsk-bbox') {
+        textureUniforms.uCalib1.value.set(0, 0, imgSize[0], imgSize[1]);
+      } else {
+        textureUniforms.uCalib1.value.set(calib.p1.x, calib.p1.y, calib.p2.x, calib.p2.y);
+      }
     } else if (isWmsXyz && xyzCalib) {
       textureUniforms.uCalib0.value.set(xyzCalib[0], xyzCalib[1], xyzCalib[2], xyzCalib[3]);
       textureUniforms.uCalib1.value.set(0, 0, imgSize[0], imgSize[1]);
@@ -1342,6 +1348,19 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
 const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, onTextureDownloadInfo, ...props }: any) => {
   const { samples, lines } = surface.dtm;
   const heightRange = useMemo(() => getTerrainHeightRange(surface), [surface]);
+  const initialTerrainSubsample = useMemo(() => getMovingTerrainSubsample(samples, lines), [samples, lines]);
+  const [terrainReadyForFullDetail, setTerrainReadyForFullDetail] = useState(initialTerrainSubsample <= 1);
+
+  useEffect(() => {
+    setTerrainReadyForFullDetail(initialTerrainSubsample <= 1);
+    if (initialTerrainSubsample <= 1) return;
+
+    const detailTimer = window.setTimeout(() => {
+      setTerrainReadyForFullDetail(true);
+    }, 1200);
+
+    return () => window.clearTimeout(detailTimer);
+  }, [initialTerrainSubsample, surface]);
   
   const tiles = useMemo(() => {
     const t = [];
@@ -1518,8 +1537,9 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, onTe
             for (const u of imgSizeUniformRef.current) u.value = newSize;
           }
 
-          // CRITICAL: Update the UV calibration using the EXACT BBOX from the downloaded image!
-          const [ex0, ey0, ex1, ey1] = result.sjtskBbox.split(',').map(Number);
+          // Use the exact downloaded bbox, converted to the terrain's native CRS when LOX DTM is UTM.
+          const textureBounds = getTextureBboxInDtmCrs(surface.dtm, result.sjtskBbox, surface.sjtskBboxSource);
+          const [ex0, ey0, ex1, ey1] = (textureBounds?.bbox || result.sjtskBbox).split(',').map(Number);
           setXyzCalib([ex0, ey0, ex1, ey1]);
 
           setWmsLoading(false);
@@ -1617,6 +1637,7 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, onTe
           texture={texture} imgSize={imgSize} 
           xyzCalib={xyzCalib}
           heightRange={heightRange}
+          terrainReadyForFullDetail={terrainReadyForFullDetail}
           imgSizeUniformRef={imgSizeUniformRef}
         />
       ))}
@@ -1625,7 +1646,7 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, onTe
         <mesh position={hoveredSurf} renderOrder={100} geometry={hoverGeo} material={hoverMat} />
       )}
 
-      {props.showContours && props.options.showContourLabels && (
+      {props.showContours && props.options.showContourLabels && terrainReadyForFullDetail && (
         <ContourLabels 
           surface={surface} 
           majorInterval={props.contourInterval || 10.0} 
@@ -1856,18 +1877,12 @@ const CaveViewer3D = ({
     >
       <SceneBackground texture={bgTexture} color={o.colorBackground} />
       <RaycasterManager />
-      <ambientLight intensity={0.25} /> {/* Znížené pre lepší kontrast tieňov */}
-      <directionalLight position={[1, 3, 1]}    intensity={0.6} />
-      <directionalLight position={[-2, 1, -2]} intensity={0.3} />
-      
-      {/* ── Svetlo pre zvýraznenie reliéfu (Hillshading) ── */}
-      <directionalLight 
-        position={[5, 1, 5]} 
-        intensity={1.2} 
-        color="#ffffff" 
-      />
-      
-      <directionalLight position={[0, -2, 0]}   intensity={0.05} />
+      <ambientLight intensity={0.16} />
+      <hemisphereLight color="#dbeafe" groundColor="#1e293b" intensity={0.34} />
+      <directionalLight position={[4, 6, 3]} intensity={0.92} color="#ffffff" />
+      <directionalLight position={[-5, 2, -4]} intensity={0.26} color="#bfdbfe" />
+      <directionalLight position={[-4, 5, 6]} intensity={0.48} color="#7dd3fc" />
+      <directionalLight position={[0, -3, 2]} intensity={0.09} color="#fef3c7" />
  
       {/* ── Terrain (Fixed in world space) ── */}
       {(o.showSurfaceMesh || o.showSurfaceMeshWire || o.showSurfaceTexture || o.showSurfaceNetwork || o.showContours) && cave.surfaces?.map((surf: CaveSurface, i: number) => (

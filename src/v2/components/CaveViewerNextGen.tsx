@@ -362,8 +362,12 @@ const CaveViewerNextGen = ({
         activeAnomalyId={activeAnomalyId}
       />
       
-      <ambientLight intensity={0.5} />
-      <pointLight position={[10, 10, 10]} />
+      <ambientLight intensity={0.16} />
+      <hemisphereLight color="#dbeafe" groundColor="#1e293b" intensity={0.34} />
+      <directionalLight position={[4, 6, 3]} intensity={0.9} color="#ffffff" />
+      <directionalLight position={[-5, 2, -4]} intensity={0.24} color="#bfdbfe" />
+      <directionalLight position={[-4, 5, 6]} intensity={0.46} color="#7dd3fc" />
+      <directionalLight position={[0, -3, 2]} intensity={0.08} color="#fef3c7" />
 
       <EDLPass strength={o.edlStrength || 1.0} radius={o.edlRadius || 1.0} />
 
