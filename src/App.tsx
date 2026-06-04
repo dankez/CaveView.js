@@ -840,7 +840,7 @@ export default function App() {
     showEntrances:       true,
     showEntranceLabels:  true,
     showGrid:            false,
-    showGizmo:           true,
+    showGizmo:           false,
     colorGrid:           '#222222',
     colorBoundingBox:    '#990000',
     showBoundingBox:     false,
