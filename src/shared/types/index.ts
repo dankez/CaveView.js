@@ -80,6 +80,8 @@ export interface CaveSurface {
   bitmapCalib?: Calibration | null
   /** Real-world S-JTSK bounding box for WMS fetching */
   sjtskBbox?: string
+  /** Coordinate source used to derive sjtskBbox */
+  sjtskBboxSource?: 'EPSG:5514' | 'UTM'
   /** Aspect ratio of the S-JTSK bounding box */
   sjtskAspect?: number
   /** Same centering offset as applied to all cave coords */
@@ -91,6 +93,27 @@ export interface CaveSurface {
     width: number;
     height: number;
   }
+}
+
+export interface SurfaceTextureCalibrationPoint {
+  /** Image pixel X coordinate, or 0 for bbox-based calibration */
+  x: number
+  /** Image pixel Y coordinate, or 0 for bbox-based calibration */
+  y: number
+  /** Surface/map X coordinate in the surface's native CRS */
+  mx: number
+  /** Surface/map Y coordinate in the surface's native CRS */
+  my: number
+  /** Optional WGS84 latitude for Therion calibration files */
+  lat?: number
+  /** Optional WGS84 longitude for Therion calibration files */
+  lon?: number
+}
+
+export interface SurfaceTextureCalibration {
+  source?: 'therion' | 'sjtsk-bbox'
+  p1: SurfaceTextureCalibrationPoint
+  p2: SurfaceTextureCalibrationPoint
 }
 
 export interface ParsedCave {
@@ -159,7 +182,7 @@ export interface ViewerOptions {
   smoothScraps:        boolean
   accurateScraps:      boolean
   showRenderCave:      boolean
-  caveTexture:         'limestone' | 'dolomite' | 'grey_limestone'
+  caveTexture:         'limestone' | 'dolomite' | 'grey_limestone' | 'technical'
   renderOpacity:       number
   organicLevel:        number
   organicVoxelSize:     number   // Debug / Tuning: veľkosť voxlu
@@ -208,10 +231,7 @@ export interface ViewerOptions {
   surfaceTextureOffset: { x: number, y: number }
   surfaceTextureScale:  { x: number, y: number }
   surfaceOffset:        { x: number, y: number, z: number }
-  surfaceTextureCalibration?: {
-    p1: { x: number, y: number, lat: number, lon: number },
-    p2: { x: number, y: number, lat: number, lon: number }
-  } | null
+  surfaceTextureCalibration?: SurfaceTextureCalibration | null
   placedCaver:         { pos: [number, number, number], pose: 'standing' | 'crawling' } | null
   // Colors
   colorBackground:   string

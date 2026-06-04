@@ -13,6 +13,7 @@
 - **S-JTSK definícia:** GPS, TIFF reprojekcia a XYZ terrain používajú jednotnú definíciu súradnicového systému.
 - **LOX wall režimy:** Obnovené samostatné render vetvy pre klasické steny jaskyne: solid farba, organic/smoothed, 3D render textúra, wireframe a color-by-height.
 - **XYZ/WMS scraping povrchov:** LOX/DTM povrchy teraz dostávajú S-JTSK bbox z kalibrácie rohov mriežky, downloader už nevracia sivý placeholder ako úspech pri nulovom počte stiahnutých dlaždíc a geologická mapa ide cez WMS v EPSG:5514. Pred opravou boli overené limity zdrojov: ZBGIS ortofoto/DMR5 prakticky z15-z19, Freemap DMR5 shading z15-z18, Freemap ortofoto dostupné minimálne z15-z23 na testovacom bode.
+- **XYZ/WMS UV kalibrácia pre UTM LOX:** Stiahnuté S-JTSK textúry sa pri UTM kalibrovaných LOX povrchoch prevádzajú späť do natívneho CRS DTM pred UV mapovaním. Vygenerovaný S-JTSK kalibračný TXT sa dá znova načítať pri custom JPG/PNG textúre.
 - **STL cave walls:** STL modely sa už neotvárajú v LiDAR NextGen point-cloud režime, takže v bočnom paneli znova funguje farba stien, 3D render, wireframe a farebné podľa výšky.
 - **STL/plastickosť stien:** Mesh steny majú procedurálne reliéfne tieňovanie a nový ovládač plasticity, pričom STL modely sa načítajú s plne nepriehľadnou stenou a silnejším relief defaultom.
 - **STL selektívne zobrazenie:** STL mesh steny podporujú režimy Všetko, Podlaha, Strop a Rez na rovnakom `relHeight` princípe ako PLY segmentácia.

@@ -8,6 +8,7 @@ import type { TextureDownloadInspector } from '@shared/utils/XyzTileDownloader'
 import { clearBrowserTileCache } from '@shared/utils/tileCache'
 import { calculateVolumeAndProfile, analyzeLiDARAnomalies } from '@shared/utils/speleoAnalysis'
 import { getSjtskBoundsFromDtm } from '@shared/utils/surfaceBounds'
+import { createSurfaceTextureCalibrationFromSjtskBbox, parseSjtskBboxCalibrationText } from '@shared/utils/surfaceTextureCalibration'
 import { getDefaultPointCloudSize, getPreferredEngineForFile } from '@shared/utils/modelDefaults'
 import type { LiDARAnomaly } from '@shared/utils/speleoAnalysis'
 
@@ -1097,6 +1098,20 @@ export default function App() {
     const reader = new FileReader()
     reader.onload = (ev) => {
       const text = ev.target?.result as string
+      const sjtskBbox = parseSjtskBboxCalibrationText(text)
+      if (sjtskBbox && cave.surfaces?.[0]) {
+        const calibration = createSurfaceTextureCalibrationFromSjtskBbox(cave.surfaces[0], sjtskBbox)
+        if (calibration) {
+          setOpts(p => ({
+            ...p,
+            surfaceTextureCalibration: calibration,
+            surfaceTextureSource: 'custom',
+            showSurfaceTexture: true
+          }))
+        }
+        return
+      }
+
       // Match [x1 y1 lat1 lon1 x2 y2 lat2 lon2]
       const match = text.match(/\[\s*([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)\s*\]/)
       if (match) {
@@ -1108,9 +1123,12 @@ export default function App() {
           setOpts(p => ({
             ...p,
             surfaceTextureCalibration: {
-              p1: { x: x1, y: y1, lat: lat1, lon: lon1, mx: m1[0] - (cave.centerOffset?.x || 0), my: m1[1] - (cave.centerOffset?.y || 0) },
-              p2: { x: x2, y: y2, lat: lat2, lon: lon2, mx: m2[0] - (cave.centerOffset?.x || 0), my: m2[1] - (cave.centerOffset?.y || 0) }
-            } as any
+              source: 'therion',
+              p1: { x: x1, y: y1, lat: lat1, lon: lon1, mx: m1[0], my: m1[1] },
+              p2: { x: x2, y: y2, lat: lat2, lon: lon2, mx: m2[0], my: m2[1] }
+            },
+            surfaceTextureSource: 'custom',
+            showSurfaceTexture: true
           }))
         }
       }
@@ -1633,6 +1651,7 @@ export default function App() {
         const sjtskBounds = getSjtskBoundsFromDtm(surf.dtm);
         if (sjtskBounds) {
           surf.sjtskBbox = sjtskBounds.bbox;
+          surf.sjtskBboxSource = sjtskBounds.sourceCrs;
           surf.sjtskAspect = sjtskBounds.aspect;
         }
         const b = surf.bounds!;
@@ -1706,6 +1725,7 @@ export default function App() {
       const sjtskBounds = getSjtskBoundsFromDtm(newSurface.dtm);
       if (sjtskBounds) {
         newSurface.sjtskBbox = sjtskBounds.bbox;
+        newSurface.sjtskBboxSource = sjtskBounds.sourceCrs;
         newSurface.sjtskAspect = sjtskBounds.aspect;
         
         // Default initially to orthophoto
@@ -3356,6 +3376,48 @@ export default function App() {
                                 aria-checked={opts.showRenderCave} tabIndex={0} />
                             </div>
 
+                            <div style={{ marginTop: 8, padding: '0 4px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '6px' }}>
+                                <span>{lang === 'sk' ? 'Materiál stien' : 'Wall material'}</span>
+                                <span style={{ color: '#4fc3f7' }}>{opts.showRenderCave ? (lang === 'sk' ? '3D aktívny' : '3D active') : (lang === 'sk' ? 'zapne 3D' : 'enables 3D')}</span>
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px' }}>
+                                {[
+                                  { id: 'limestone', label: lang === 'sk' ? 'Vápenec' : 'Limestone', swatch: '#d8d2bf' },
+                                  { id: 'dolomite', label: 'Dolomit', swatch: '#e8dccb' },
+                                  { id: 'grey_limestone', label: lang === 'sk' ? 'Sivý' : 'Grey', swatch: '#dbeafe' },
+                                  { id: 'technical', label: lang === 'sk' ? 'Tech' : 'Tech', swatch: '#7dd3fc' },
+                                ].map(preset => (
+                                  <button
+                                    key={preset.id}
+                                    onClick={() => setOpts(p => ({ ...p, caveTexture: preset.id as any, showRenderCave: true }))}
+                                    style={{
+                                      minHeight: '34px',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      gap: '3px',
+                                      fontSize: '8px',
+                                      lineHeight: 1.05,
+                                      padding: '5px 2px',
+                                      borderRadius: '5px',
+                                      border: opts.caveTexture === preset.id ? '1px solid rgba(125,211,252,0.8)' : '1px solid rgba(148,163,184,0.16)',
+                                      background: opts.caveTexture === preset.id ? 'rgba(14,165,233,0.18)' : 'rgba(30,41,59,0.5)',
+                                      color: opts.caveTexture === preset.id ? '#e0f2fe' : '#cbd5e1',
+                                      cursor: 'pointer',
+                                      boxShadow: opts.caveTexture === preset.id ? '0 0 0 1px rgba(14,165,233,0.18) inset' : 'none',
+                                      transitionProperty: 'background, border-color, color, transform',
+                                      transitionDuration: '120ms',
+                                    }}
+                                  >
+                                    <span style={{ width: 13, height: 13, borderRadius: '50%', background: preset.swatch, boxShadow: '0 0 0 1px rgba(255,255,255,0.18) inset' }} />
+                                    <span>{preset.label}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
                             <div className="toggle-row">
                               <label className="toggle-label">{t('cave.wire') || 'Drôtený model'}</label>
                               <div className={`switch${opts.scrapsWireframe ? ' on' : ''}`}
@@ -3688,7 +3750,7 @@ export default function App() {
                         </button>
 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '10px', color: '#94a3b8' }}>{lang === 'sk' ? 'Súbor .txt (Therion)' : 'Therion .txt calib'}</span>
+                          <span style={{ fontSize: '10px', color: '#94a3b8' }}>{lang === 'sk' ? 'Súbor .txt (Therion/S-JTSK)' : 'Therion/S-JTSK .txt calib'}</span>
                           <button onClick={() => calibFileInputRef.current?.click()} className="btn-mini" style={{ color: '#fbbf24', borderColor: 'rgba(251,191,36,0.3)', padding: '2px 8px' }}>
                             {lang === 'sk' ? 'Nahrať' : 'Load'}
                           </button>
