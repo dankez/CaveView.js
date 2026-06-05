@@ -1,11 +1,28 @@
-# LochViewer - Speleological Viewer (v2.2.0)
+# LochViewer - Speleological Viewer (v2.3.0)
 
 [🇸🇰 Slovenská verzia nižšie / Slovak version below](#slovenská-verzia)
 
 A modern web application for 3D visualization and analysis of cave systems, built with React, Three.js, and React-Three-Fiber.
 
+## 🚀 Version 2.3: Surface Textures, Wall Rendering & Terrain LOD
+Version 2.3 focuses on precise map texture calibration, more plastic cave wall rendering, STL workflows, and faster startup for large LOX terrain surfaces.
+
+### 🗺️ Surface Textures & Calibration
+- **S-JTSK/UTM texture alignment**: Downloaded map textures are calibrated in the terrain's native coordinate system, including UTM-calibrated LOX surfaces.
+- **Reusable calibration files**: Generated S-JTSK calibration text files can be loaded back with custom JPG/PNG textures.
+- **Tile cache inspector**: Map downloads expose cache, fallback, zoom, and download statistics for debugging hosted deployments.
+
+### 🪨 Cave Walls & STL
+- **Material presets**: Limestone, dolomite, grey limestone, and technical render presets improve cave wall readability.
+- **Plastic wall shading**: Cavity shading, rim light, procedural relief, and improved lights make LOX/STL walls read as solid surfaces.
+- **STL floor/ceiling/section modes**: STL models support the same floor, ceiling, and section filtering workflow as PLY mesh models.
+
+### ⚡ Large Terrain Performance
+- **Initial terrain LOD**: Large LOX DTM surfaces first render at lower density, then switch to full detail after the initial idle delay.
+- **Cleaner default view**: The rotation gizmo is disabled by default and can still be enabled from the settings sidebar.
+
 ## 🚀 Version 2.2: NextGen Engine
-The new **NextGen (v2)** engine represents a major leap in performance and visual quality, specifically designed for massive LiDAR data and real-world geographic context.
+The **NextGen (v2)** engine represents a major leap in performance and visual quality, specifically designed for massive LiDAR data and real-world geographic context.
 
 ### 🎛️ Integrated Sidebar UI (Master Switch)
 - **Engine Master Switch**: Version 2.2 includes a unified sidebar where you can toggle between **Standard (v1)** and **NextGen (v2)** directly in the "Cave Walls" section using the **LIDAR NEXTGEN** switch.
@@ -130,12 +147,29 @@ LochViewer prioritizes user security and data protection. An independent securit
 
 ---
 <a name="slovenská-verzia"></a>
-# LochViewer - Speleologický Prehliadač (v2.2.0)
+# LochViewer - Speleologický Prehliadač (v2.3.0)
 
 Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémov, postavená na technológiách React, Three.js a React-Three-Fiber.
 
+## 🚀 Verzia 2.3: Textúry povrchu, steny a Terrain LOD
+Verzia 2.3 sa zameriava na presnú kalibráciu mapových textúr, plastickejšie steny jaskyne, STL workflow a rýchlejší štart veľkých LOX povrchov.
+
+### 🗺️ Textúry povrchu a kalibrácia
+- **S-JTSK/UTM zarovnanie textúr**: Stiahnuté mapové textúry sa kalibrujú v natívnom súradnicovom systéme povrchu, vrátane UTM LOX modelov.
+- **Opätovne použiteľná kalibrácia**: Vygenerované S-JTSK kalibračné TXT súbory sa dajú načítať späť pri custom JPG/PNG textúrach.
+- **Tile cache inspector**: Sťahovanie má prehľad cache, fallbackov, zoomu a download štatistík pre ladenie hostingu.
+
+### 🪨 Steny jaskyne a STL
+- **Material presets**: Vápenec, dolomit, sivý vápenec a technický render zlepšujú čitateľnosť stien.
+- **Plastické tieňovanie stien**: Cavity shading, rim light, procedurálny reliéf a lepšie svetlá robia LOX/STL steny pevnejšie čitateľné.
+- **STL floor/ceiling/section režimy**: STL modely podporujú rovnaké filtrovanie podlahy, stropu a rezu ako PLY mesh modely.
+
+### ⚡ Výkon veľkých povrchov
+- **Initial terrain LOD**: Veľké LOX DTM povrchy sa najprv zobrazia v nižšej hustote a po krátkom idle prepne aplikácia plný detail.
+- **Čistejší default pohľad**: Rotačné gizmo je predvolene vypnuté a dá sa zapnúť v sidebare.
+
 ## 🚀 Verzia 2.2: NextGen Engine
-Nový engine **NextGen (v2)** predstavuje zásadný skok vo výkone a vizuálnej kvalite, navrhnutý špeciálne pre masívne LiDAR dáta a reálny geografický kontext.
+Engine **NextGen (v2)** predstavuje zásadný skok vo výkone a vizuálnej kvalite, navrhnutý špeciálne pre masívne LiDAR dáta a reálny geografický kontext.
 
 ### 🎛️ Integrované UI v sidebare (Master Switch)
 - **Hlavný vypínač motora**: Verzia 2.2 prináša zjednotené ovládanie. V sekcii "Steny jaskyne" nájdete prepínač **LIDAR NEXTGEN**, ktorý okamžite prepne celú scénu do moderného režimu.

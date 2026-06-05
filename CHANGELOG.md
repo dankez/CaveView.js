@@ -1,6 +1,12 @@
 # Changelog
 
-## [Unreleased] - Stabilizácia a bezpečnosť
+## [Unreleased]
+- Zatiaľ bez zmien.
+
+## [2.3.0] - 2026-06-05
+### Nové
+- **Welcome screen verzia:** Úvodná obrazovka zobrazuje aktuálnu verziu z `package.json`, takže H1 a verzia na prvej strane sa aktualizujú z jedného zdroja pravdy.
+
 ### Opravené
 - **Blob URL a GPU cleanup:** Modelové bitmapy, PLY Blob URL, používateľské textúry, podlahové mapy, Mapbox terrain a nahrávky teraz uvoľňujú Blob/Three.js zdroje pri výmene alebo unmount.
 - **Bezpečný iframe embed:** Generovaný iframe kód escapuje HTML atribúty a orezáva rozmery na rozumný rozsah.
@@ -18,9 +24,10 @@
 - **STL/plastickosť stien:** Mesh steny majú procedurálne reliéfne tieňovanie a nový ovládač plasticity, pričom STL modely sa načítajú s plne nepriehľadnou stenou a silnejším relief defaultom.
 - **STL selektívne zobrazenie:** STL mesh steny podporujú režimy Všetko, Podlaha, Strop a Rez na rovnakom `relHeight` princípe ako PLY segmentácia.
 - **Mobilný welcome screen:** Úvodná obrazovka má kompaktný mobilný layout, viditeľné testovacie modely v prvom viewporte a bez horizontálneho pretekania.
+- **Rotačné gizmo:** Rotačné gizmo je predvolene vypnuté, ale zostáva dostupné cez prepínač v nastaveniach.
 
 ### Dokumentácia
-- README má aktuálnu verziu 2.2.0, opravený odkaz na bezpečnostný audit, doplnený STL formát v anglickej časti a presnejší text o verejnej povahe `VITE_` klientskych kľúčov.
+- README má aktuálnu verziu 2.3.0, opravený odkaz na bezpečnostný audit, doplnený STL formát v anglickej časti a presnejší text o verejnej povahe `VITE_` klientskych kľúčov.
 
 ## [2.2.0] - 2026-06-01
 ### Podpora 3D Mesh formátu STL

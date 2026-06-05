@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect, Suspense, useMemo } from 'react'
 import * as THREE from 'three'
 import proj4 from 'proj4'
+import packageJson from '../package.json'
 import { SJTSK_DEF, fetchAltitudeFromZbgis, wgs84ToJtsk } from '@shared/utils/geoUtils'
 import { tryUtmToWgs84, tryJtskToWgs84 } from "@shared/utils/coords";
 import type { ParsedCave, ViewerOptions, CaveSurface, StationLabel, Vec3 } from '@shared/types'
@@ -14,6 +15,48 @@ import type { LiDARAnomaly } from '@shared/utils/speleoAnalysis'
 
 const CaveViewer3D = React.lazy(() => import('@v1/components/CaveViewer3D'))
 const CaveViewerNextGen = React.lazy(() => import('@v2/components/CaveViewerNextGen'))
+const APP_VERSION = packageJson.version
+
+const WELCOME_CHANGELOG = [
+  {
+    version: APP_VERSION,
+    badge: 'Aktuálne',
+    group: 'Povrchy, textúry a plastickosť',
+    items: [
+      'Presné lepenie S-JTSK mapových textúr aj na UTM LOX povrchy',
+      'STL/LOX steny majú plastickejšie svetlá, cavity shading a material presets',
+      'Veľké LOX DTM povrchy štartujú rýchlejšie cez počiatočné terrain LOD',
+      'Rotačné gizmo je predvolene vypnuté a dá sa zapnúť v nastaveniach',
+    ],
+  },
+  {
+    version: '2.2.0',
+    group: 'STL a cave wall rendering',
+    items: [
+      'Podpora binárnych a ASCII STL modelov',
+      'STL modely používajú rovnaké režimy ako cave walls',
+      'Podlaha, strop a rez fungujú pre STL na rovnakom princípe ako PLY',
+    ],
+  },
+  {
+    version: '2.1.0',
+    group: 'Parting line a stabilizácia',
+    items: [
+      'Nová segmentácia podlahy a stropu cez geometrický stred',
+      'Presnejšie režimy floor, ceiling a section pre mesh modely',
+      'Typová čistka a rýchlejší prenos dát medzi workerom a UI',
+    ],
+  },
+  {
+    version: '2.0.2',
+    group: 'UI a NextGen integrácia',
+    items: [
+      'NextGen engine je zapojený priamo v sekcii Steny jaskyne',
+      'Sidebar zobrazuje relevantné ovládanie podľa aktívneho motora',
+      'Drôtený model a vrstevnice fungujú nezávisle od ostatných vrstiev',
+    ],
+  },
+]
 
 async function parseGeoTiffLazy(
   buffer: ArrayBuffer,
@@ -2213,12 +2256,11 @@ export default function App() {
         .welcome-main::before { content: ""; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 800px; height: 800px; background: radial-gradient(circle at center, rgba(59, 130, 246, 0.03) 0%, transparent 70%); pointer-events: none; }
         .welcome-sidebar { width: 350px; background: rgba(15,23,42,0.5); border-left: 1px solid #1e293b; padding: 2.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.5rem; text-align: left; backdrop-filter: blur(10px); }
 
-        .welcome-version { font-size: 0.8rem; color: #6366f1; font-weight: 700; background: rgba(99,102,241,0.1); padding: 4px 12px; border-radius: 6px; display: inline-block; margin-top: 0.75rem; border: 1px solid rgba(99,102,241,0.2); }
-        .changelog-title { font-size: 12px; font-weight: 800; color: #f8fafc; text-transform: uppercase; letter-spacing: .2em; margin-bottom: 1.5rem; display: flex; alignItems: center; gap: 10px; }
+        .welcome-version { font-size: 0.78rem; color: #a5b4fc; font-weight: 800; background: rgba(99,102,241,0.12); padding: 4px 12px; border-radius: 6px; display: inline-block; margin-top: 0.75rem; border: 1px solid rgba(99,102,241,0.24); letter-spacing:.06em; }
+        .changelog-title { font-size: 12px; font-weight: 800; color: #f8fafc; text-transform: uppercase; letter-spacing: .2em; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; }
         .changelog-ver { font-size: 13px; font-weight: 700; color: #6366f1; margin-top: 2rem; margin-bottom: 0.8rem; border-bottom: 1px solid rgba(99,102,241,0.1); padding-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
-        .changelog-ver:after { content: "NEW"; font-size: 8px; background: #3b82f6; color: white; padding: 1px 4px; border-radius: 3px; opacity: 0; }
-        .changelog-ver:first-of-type:after { opacity: 1; }
         .changelog-ver:first-of-type { margin-top: 0; }
+        .changelog-badge { font-size: 8px; background: #3b82f6; color: white; padding: 2px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing:.08em; }
         .changelog-list { list-style: none; padding: 0; margin: 0; }
         .changelog-item { font-size: 11.5px; color: #94a3b8; margin-bottom: 0.7rem; line-height: 1.6; display: flex; gap: 10px; }
         .changelog-item:before { content: "→"; color: #6366f1; flex-shrink: 0; font-weight: bold; }
@@ -2508,8 +2550,9 @@ export default function App() {
             <div className="welcome-main">
               <div style={{ textAlign: 'center' }}>
                 <div className="logo-icon">🏔️</div>
-                <h1 className="logo-title" style={{ marginBottom: '0.2rem' }}>LochViewer 2.1</h1>
+                <h1 className="logo-title" style={{ marginBottom: '0.2rem' }}>LochViewer v{APP_VERSION}</h1>
                 <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 600, letterSpacing: '0.05em' }}>by DankeZ</div>
+                <div className="welcome-version">aktuálna verzia v{APP_VERSION}</div>
                 <p className="logo-sub" style={{ marginTop: '1.2rem' }}>{t('welcome.sub')}</p>
               </div>
 
@@ -2581,49 +2624,20 @@ export default function App() {
                 História verzií
               </div>
 
-              <div className="changelog-ver">v2.0.1 (Dnes)</div>
-              <div className="changelog-group">Farby & Analytické Rezy</div>
-              <ul className="changelog-list">
-                <li className="changelog-item">Vlastné farby pre LiDAR cez Color Picker</li>
-                <li className="changelog-item">Ladenie plasticity pre hlboké tiene a detaily</li>
-                <li className="changelog-item">Dynamické zvýraznenie hrán rezov (Clipping Highlight)</li>
-                <li className="changelog-item">Jemné ladenie veľkosti bodov (krok 0.05)</li>
-                <li className="changelog-item">Plná synchronizácia orezávacej logiky s verziou v1</li>
-              </ul>
-
-              <div className="changelog-ver">v2.0.0</div>
-              <div className="changelog-group">NextGen Engine & LiDAR LOD</div>
-              <ul className="changelog-list">
-                <li className="changelog-item">Úplne nový motor pre mračná bodov (LOD Streaming)</li>
-                <li className="changelog-item">Eye-Dome Lighting (EDL) pre špičkovú plasticitu</li>
-                <li className="changelog-item">Mapbox 3D Terrain integrácia</li>
-                <li className="changelog-item">Street View navigácia a Undo (Ctrl+Z)</li>
-              </ul>
-
-              <div className="changelog-ver">v1.3.0</div>
-              <div className="changelog-group">Jadro & Algoritmy</div>
-              <ul className="changelog-list">
-                <li className="changelog-item">Silk/Fabric algoritmus pre organické modely</li>
-                <li className="changelog-item">Angle-Weighted Normals pre hladký povrch</li>
-                <li className="changelog-item">Surface Nets (Dual Contouring) integrácia</li>
-                <li className="changelog-item">Oprava presnosti Triangle Mesh (Taubin)</li>
-              </ul>
-
-              <div className="changelog-ver">v1.2.0</div>
-              <div className="changelog-group">Konektivita</div>
-              <ul className="changelog-list">
-                <li className="changelog-item">Google Drive integrácia (Binary Upload)</li>
-                <li className="changelog-item">Podpora pre externé hostovanie modelov</li>
-                <li className="changelog-item">Zabezpečené zdieľanie cez iFrame</li>
-              </ul>
-
-              <div className="changelog-ver">v1.1.0</div>
-              <div className="changelog-group">Analýza</div>
-              <ul className="changelog-list">
-                <li className="changelog-item">Profilové rezy a meranie vzdialeností</li>
-                <li className="changelog-item">Kalibrácia orientácie modelu</li>
-                <li className="changelog-item">Lokalizácia do slovenčiny</li>
-              </ul>
+              {WELCOME_CHANGELOG.map(entry => (
+                <React.Fragment key={entry.version}>
+                  <div className="changelog-ver">
+                    <span>v{entry.version}</span>
+                    {entry.badge && <span className="changelog-badge">{entry.badge}</span>}
+                  </div>
+                  <div className="changelog-group">{entry.group}</div>
+                  <ul className="changelog-list">
+                    {entry.items.map(item => (
+                      <li className="changelog-item" key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </React.Fragment>
+              ))}
             </div>
           </div>
         )}

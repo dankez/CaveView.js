@@ -1,4 +1,8 @@
 import { expect, test } from '@playwright/test';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const packageJson = require('../package.json') as { version: string };
 
 test.describe('Mobile welcome screen', () => {
   test('keeps upload and sample models visible without horizontal overflow', async ({ page, isMobile }) => {
@@ -7,6 +11,8 @@ test.describe('Mobile welcome screen', () => {
     await page.goto('/');
 
     await expect(page.locator('.welcome')).toBeVisible();
+    await expect(page.getByRole('heading', { name: `LochViewer v${packageJson.version}` })).toBeVisible();
+    await expect(page.locator('.welcome-version')).toContainText(`v${packageJson.version}`);
     await expect(page.locator('.dropzone')).toBeVisible();
     await expect(page.locator('.welcome-samples')).toBeVisible();
 
