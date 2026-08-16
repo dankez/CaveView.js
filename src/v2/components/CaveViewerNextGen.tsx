@@ -14,6 +14,7 @@ import {
   Character3D, 
   ManualConnection 
 } from '@shared/components/CaveSharedElements'
+import { TectonicPlaneVisual } from '@shared/components/TectonicPlaneVisual'
 import { Scraps } from '@shared/components/Scraps'
 import type { ParsedCave, ViewerOptions, StationLabel, CaveViewerNextGenProps, Vec3, ViewerCameraSnapshot } from '@shared/types'
 import type { LiDARAnomaly } from '@shared/utils/speleoAnalysis'
@@ -438,6 +439,14 @@ const CaveViewerNextGen = ({
 
         {selectedStations && selectedStations.length === 2 && (
           <ManualConnection p1={selectedStations[0].pos} p2={selectedStations[1].pos} />
+        )}
+
+        {selectedStations && selectedStations.length === 3 && (
+          <TectonicPlaneVisual
+            p1={selectedStations[0].pos}
+            p2={selectedStations[1].pos}
+            p3={selectedStations[2].pos}
+          />
         )}
 
         {o.placedCaver && (

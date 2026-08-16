@@ -316,8 +316,8 @@ export interface CaveViewerNextGenProps {
   onCameraUpdate?: (data: ViewerCameraSnapshot) => void;
   onStatusChange?: (status: { msg: string, type: 'info' | 'error' | 'success' | 'progress', progress?: number } | null) => void;
   fitTrigger?: number;
-  selectedStations?: StationLabel[];
-  activeProfilePoints?: StationLabel[] | null;
+  selectedStations?: any[];
+  activeProfilePoints?: any[] | null;
   isMeasuringMode: boolean;
   manualConnection?: { p1: Vec3, p2: Vec3 } | null;
   anomalies?: any[];

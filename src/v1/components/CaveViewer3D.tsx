@@ -17,6 +17,7 @@ import {
   Character3D, 
   ManualConnection 
 } from '@shared/components/CaveSharedElements'
+import { TectonicPlaneVisual } from '@shared/components/TectonicPlaneVisual'
 import { Scraps, ClippingEdges } from '@shared/components/Scraps'
 import { elevColor, normZ } from '@shared/utils/colorUtils'
 import type { ParsedCave, StationLabel, CaveSurface, Segment, ViewerCameraSnapshot } from '@shared/types'
@@ -2014,6 +2015,13 @@ const CaveViewer3D = ({
         </group>
 
         {manualConnection && <ManualConnection p1={manualConnection.p1} p2={manualConnection.p2} />}
+        {selectedStations && selectedStations.length === 3 && (
+          <TectonicPlaneVisual
+            p1={selectedStations[0].pos}
+            p2={selectedStations[1].pos}
+            p3={selectedStations[2].pos}
+          />
+        )}
       </group>
  
       {/* ── Auto-fit pri zmene jaskyne alebo aktivácii triggera ── */}

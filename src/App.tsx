@@ -20,6 +20,7 @@ import type { ParsedCave, ViewerOptions, CaveSurface, StationLabel, Vec3, Viewer
 import type { TextureDownloadInspector } from '@shared/utils/XyzTileDownloader'
 import { clearBrowserTileCache } from '@shared/utils/tileCache'
 import { calculateVolumeAndProfile } from '@shared/utils/speleoAnalysis'
+import { calculateTectonics } from '@shared/utils/tectonics'
 import { getSjtskBoundsFromDtm } from '@shared/utils/surfaceBounds'
 import { createSurfaceTextureCalibrationFromSjtskBbox, parseSjtskBboxCalibrationText } from '@shared/utils/surfaceTextureCalibration'
 import { getDefaultPointCloudSize, getPreferredEngineForFile } from '@shared/utils/modelDefaults'
@@ -370,6 +371,7 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
 }) {
   const [posOffset, setPosOffset] = useState({ x: 0, y: 0 })
   const dragRef = useRef<{ startX: number; startY: number; isDragging: boolean }>({ startX: 0, startY: 0, isDragging: false })
+  const [copied, setCopied] = useState(false)
   
   // State for manual GPS entry
   const [editGps, setEditGps] = useState(false)
@@ -381,6 +383,18 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
   if (stations.length === 0) return null
   const st1 = stations[0]
   const st2 = stations.length > 1 ? stations[1] : null
+  const st3 = stations.length > 2 ? stations[2] : null
+
+  // Tectonic analysis for 3 points
+  const tectonics = useMemo(() => {
+    if (!st1 || !st2 || !st3) return null
+    return calculateTectonics(
+      { x: st1.origX, y: st1.origY, z: st1.altitude },
+      { x: st2.origX, y: st2.origY, z: st2.altitude },
+      { x: st3.origX, y: st3.origY, z: st3.altitude },
+      lang
+    )
+  }, [st1, st2, st3, lang])
 
   // Initialize inputs when station changes or enters edit mode
   useEffect(() => {
@@ -417,9 +431,30 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
     setEditGps(false)
   }
 
+  const handleCopyTectonics = () => {
+    if (!tectonics || !st1 || !st2 || !st3) return
+    const text = [
+      `=== ${t('measuring.tectonicsTitle')} ===`,
+      `${t('measuring.dip')}: ${tectonics.dipAngle.toFixed(1)}°`,
+      `${t('measuring.dipDirection')}: ${tectonics.dipDirection.toFixed(1)}° (${tectonics.cardinalDirection})`,
+      `${t('measuring.strike')}: ${Math.round(tectonics.strike[0]).toString().padStart(3, '0')}° - ${Math.round(tectonics.strike[1]).toString().padStart(3, '0')}°`,
+      `Notation: ${tectonics.notation} (${tectonics.cardinalDirection})`,
+      `${t('measuring.normalVector')}: [${tectonics.normal.map(n => n.toFixed(3)).join(', ')}]`,
+      `${t('measuring.triangleArea')}: ${tectonics.area.toFixed(2)} m²`,
+      `${t('measuring.perimeter')}: ${tectonics.perimeter.toFixed(2)} m`,
+      `Points:`,
+      `  P1: ${st1.name} (${st1.origX.toFixed(2)}, ${st1.origY.toFixed(2)}, ${st1.altitude.toFixed(2)})`,
+      `  P2: ${st2.name} (${st2.origX.toFixed(2)}, ${st2.origY.toFixed(2)}, ${st2.altitude.toFixed(2)})`,
+      `  P3: ${st3.name} (${st3.origX.toFixed(2)}, ${st3.origY.toFixed(2)}, ${st3.altitude.toFixed(2)})`,
+    ].join('\n')
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2500)
+  }
+
   // Pôvodná poloha karty
-  const cx = Math.min(Math.max(st1.screenX, 280), window.innerWidth - 320)
-  const cy = Math.min(Math.max(st1.screenY + 20, 60), window.innerHeight - 450)
+  const cx = Math.min(Math.max(st1.screenX, 280), window.innerWidth - 340)
+  const cy = Math.min(Math.max(st1.screenY + 20, 60), window.innerHeight - 480)
 
   const handleMouseDown = (e: React.MouseEvent) => {
     dragRef.current = {
@@ -445,21 +480,33 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
 
   const Row = ({ label, value, sub }: { label: string; value: string; sub?: string }) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
-      padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,.06)', gap: 8 }}>
+      padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,.06)', gap: 8 }}>
       <span style={{ fontSize: 11, color: '#94a3b8', flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 600, textAlign: 'right', fontFamily: 'monospace' }}>
+      <span style={{ fontSize: 12, color: '#e2e8f0', fontWeight: 600, textAlign: 'right', fontFamily: 'monospace' }}>
         {value}{sub && <span style={{ fontSize: 10, color: '#64748b', marginLeft: 4 }}>{sub}</span>}
       </span>
     </div>
   )
 
+  const headerTitle = stations.length === 1
+    ? st1.name
+    : stations.length === 2
+    ? `${t('measuring.selection')}: ${st1.name} → ${st2?.name}`
+    : `${t('measuring.tectonicsTitle')}`
+
+  const headerSub = stations.length === 3
+    ? `${st1.name} • ${st2?.name} • ${st3?.name}`
+    : null
+
   return (
     <div style={{
-      position: 'fixed', left: cx + posOffset.x, top: cy + posOffset.y, zIndex: 200, minWidth: 280,
+      position: 'fixed', left: cx + posOffset.x, top: cy + posOffset.y, zIndex: 200, minWidth: 300, maxWidth: 360,
       background: 'linear-gradient(135deg,rgba(8,15,35,.97),rgba(15,25,50,.97))',
-      border: '1px solid rgba(79,195,247,.35)',
+      border: stations.length === 3 ? '1px solid rgba(192,132,252,.5)' : '1px solid rgba(79,195,247,.35)',
       borderRadius: 14, padding: '16px 18px',
-      boxShadow: '0 8px 40px rgba(0,0,0,.7),0 0 0 1px rgba(79,195,247,.1)',
+      boxShadow: stations.length === 3 
+        ? '0 8px 40px rgba(0,0,0,.8), 0 0 20px rgba(168,85,247,.25)'
+        : '0 8px 40px rgba(0,0,0,.7),0 0 0 1px rgba(79,195,247,.1)',
       backdropFilter: 'blur(12px)',
       fontFamily: 'Inter, system-ui, sans-serif',
       userSelect: 'text',
@@ -473,10 +520,21 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4fc3f7', boxShadow: '0 0 6px #4fc3f7' }} />
-          <span style={{ fontSize: 15, fontWeight: 700, color: '#e2e8f0', letterSpacing: '0.01em' }}>
-            {stations.length === 1 ? st1.name : `${t('measuring.selection')}: ${st1.name} → ${st2?.name}`}
-          </span>
+          <div style={{ 
+            width: 8, height: 8, borderRadius: '50%', 
+            background: stations.length === 3 ? '#c084fc' : '#4fc3f7', 
+            boxShadow: stations.length === 3 ? '0 0 8px #c084fc' : '0 0 6px #4fc3f7' 
+          }} />
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#e2e8f0', letterSpacing: '0.01em' }}>
+              {headerTitle}
+            </div>
+            {headerSub && (
+              <div style={{ fontSize: 10, color: '#c084fc', fontWeight: 600 }}>
+                {headerSub}
+              </div>
+            )}
+          </div>
         </div>
         <button onClick={onClose} style={{
           background: '#ef4444', border: 'none', color: '#fff', cursor: 'pointer',
@@ -485,120 +543,124 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
         }} title={t('ui.close')} aria-label={t('ui.close')}>✕</button>
       </div>
 
-      {/* Podrobnosti bodu */}
-      {stations.map((st, i) => (
-        <div key={i} style={{ marginBottom: stations.length > 1 ? 12 : 0 }}>
-          {stations.length > 1 && (
-            <div style={{ fontSize: 10, color: i === 0 ? '#fbbf24' : '#ef4444', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
-              {i === 0 ? t('measuring.startPoint') : t('measuring.endPoint')}
-            </div>
-          )}
-          {st.idx !== -1 ? (
-            <Row label={t('stations.title')} value={`#${st.idx}`} sub={`(${st.name})`} />
-          ) : (
-            <Row label={t('stations.coordinates')} value={st.name} />
-          )}
-          
-          {!editGps ? (
-            <Row label={t('stations.altitude')} value={`${st.altitude.toFixed(2)} m`} sub="n.m." />
-          ) : (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
-              <span style={{ fontSize: 11, color: '#94a3b8' }}>{t('stations.altitude')}</span>
-              <input 
-                type="text" value={altInput} onChange={e => setAltInput(e.target.value)}
-                style={{ width: 80, background: 'rgba(0,0,0,0.3)', border: '1px solid #4fc3f7', color: '#fff', fontSize: 12, textAlign: 'right', borderRadius: 4, padding: '2px 4px' }}
-              />
-            </div>
-          )}
-
-          {st.distToSurf !== null && (
-            <Row
-              label={t('stations.depth')}
-              value={Math.abs(st.distToSurf).toFixed(1) + ' m'}
-              sub={st.distToSurf >= 0 ? `(${t('terrain.title').toLowerCase()})` : `(nad ${t('terrain.title').toLowerCase()})`}
-            />
-          )}
-
-          {/* GPS Section */}
-          {stations.length === 1 && (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '10px 0 2px' }}>
-                <div style={{ fontSize: 10, color: '#4fc3f7', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                  GPS WGS84 {st.gps ? (st.gps.zone ? `(UTM ${st.gps.zone}N)` : `(${st.gps.epsg})`) : ''}
-                </div>
-                {!editGps && (
-                  <button 
-                    onClick={() => setEditGps(true)}
-                    style={{ background: 'none', border: 'none', color: '#4fc3f7', cursor: 'pointer', fontSize: 10, textDecoration: 'underline', padding: 0 }}
-                  >
-                    {st.gps ? t('ui.edit') : t('ui.add')}
-                  </button>
-                )}
+      {/* Zoznam vybraných bodov */}
+      <div style={{ maxHeight: stations.length === 3 ? '130px' : 'none', overflowY: stations.length === 3 ? 'auto' : 'visible', marginBottom: 8 }}>
+        {stations.map((st, i) => (
+          <div key={i} style={{ marginBottom: stations.length > 1 ? 8 : 0, background: stations.length > 1 ? 'rgba(255,255,255,0.02)' : 'none', padding: stations.length > 1 ? '4px 6px' : 0, borderRadius: 6 }}>
+            {stations.length > 1 && (
+              <div style={{ fontSize: 9, color: i === 0 ? '#fbbf24' : i === 1 ? '#ef4444' : '#c084fc', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 2 }}>
+                {i === 0 ? `1. ${t('measuring.startPoint')}` : i === 1 ? `2. ${t('measuring.endPoint')}` : `3. ${t('measuring.point3')}`}: {st.name}
               </div>
-
-              {!editGps ? (
-                st.gps ? (
-                  <>
-                    <Row label="Latitude" value={`${st.gps.lat.toFixed(6)}°`} />
-                    <Row label="Longitude" value={`${st.gps.lon.toFixed(6)}°`} />
-                    <div style={{ marginTop: 4 }}>
-                      <a
-                        href={`https://maps.google.com/?q=${st.gps.lat.toFixed(6)},${st.gps.lon.toFixed(6)}`}
-                        target="_blank" rel="noopener noreferrer"
-                        style={{ fontSize: 11, color: '#4fc3f7', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
-                      >
-                        🗺️ {t('ui.googleMaps')}
-                      </a>
-                    </div>
-                  </>
-                ) : (
-                  <Row label="GPS" value={t('measuring.unavailable')} sub="" />
-                )
+            )}
+            {stations.length === 1 && (
+              st.idx !== -1 ? (
+                <Row label={t('stations.title')} value={`#${st.idx}`} sub={`(${st.name})`} />
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 11, color: '#94a3b8', width: 60 }}>Lat</span>
-                    <input 
-                      type="text" placeholder="48.123456" value={latInput} onChange={e => setLatInput(e.target.value)}
-                      style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: 12, borderRadius: 4, padding: '4px' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 11, color: '#94a3b8', width: 60 }}>Lon</span>
-                    <input 
-                      type="text" placeholder="17.123456" value={lonInput} onChange={e => setLonInput(e.target.value)}
-                      style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: 12, borderRadius: 4, padding: '4px' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                    <button 
-                      onClick={handleFetchAlt} disabled={isFetchingAlt}
-                      style={{ flex: 1, padding: '6px', background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 6, color: '#4fc3f7', cursor: 'pointer', fontSize: 10, fontWeight: 700 }}
-                    >
-                      {isFetchingAlt ? t('ui.loadingAltitude') : t('ui.fetchAltitude')}
-                    </button>
-                    <button 
-                      onClick={handleApplyGps}
-                      style={{ flex: 1, padding: '6px', background: '#3b82f6', border: 'none', borderRadius: 6, color: 'white', cursor: 'pointer', fontSize: 10, fontWeight: 700 }}
-                    >
-                      {t('ui.apply')}
-                    </button>
-                    <button 
-                      onClick={() => setEditGps(false)}
-                      style={{ padding: '6px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 6, color: '#fff', cursor: 'pointer', fontSize: 10 }}
-                    >
-                      {t('ui.cancel')}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      ))}
+                <Row label={t('stations.coordinates')} value={st.name} />
+              )
+            )}
+            
+            {(!editGps || stations.length > 1) ? (
+              <Row label={t('stations.altitude')} value={`${st.altitude.toFixed(2)} m`} sub="n.m." />
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+                <span style={{ fontSize: 11, color: '#94a3b8' }}>{t('stations.altitude')}</span>
+                <input 
+                  type="text" value={altInput} onChange={e => setAltInput(e.target.value)}
+                  style={{ width: 80, background: 'rgba(0,0,0,0.3)', border: '1px solid #4fc3f7', color: '#fff', fontSize: 12, textAlign: 'right', borderRadius: 4, padding: '2px 4px' }}
+                />
+              </div>
+            )}
 
-      {/* Meranie ak sú zvolené dva body */}
-      {st1 && st2 && (() => {
+            {st.distToSurf !== null && stations.length === 1 && (
+              <Row
+                label={t('stations.depth')}
+                value={Math.abs(st.distToSurf).toFixed(1) + ' m'}
+                sub={st.distToSurf >= 0 ? `(${t('terrain.title').toLowerCase()})` : `(nad ${t('terrain.title').toLowerCase()})`}
+              />
+            )}
+
+            {/* GPS Section pre 1 bod */}
+            {stations.length === 1 && (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '10px 0 2px' }}>
+                  <div style={{ fontSize: 10, color: '#4fc3f7', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    GPS WGS84 {st.gps ? (st.gps.zone ? `(UTM ${st.gps.zone}N)` : `(${st.gps.epsg})`) : ''}
+                  </div>
+                  {!editGps && (
+                    <button 
+                      onClick={() => setEditGps(true)}
+                      style={{ background: 'none', border: 'none', color: '#4fc3f7', cursor: 'pointer', fontSize: 10, textDecoration: 'underline', padding: 0 }}
+                    >
+                      {st.gps ? t('ui.edit') : t('ui.add')}
+                    </button>
+                  )}
+                </div>
+
+                {!editGps ? (
+                  st.gps ? (
+                    <>
+                      <Row label="Latitude" value={`${st.gps.lat.toFixed(6)}°`} />
+                      <Row label="Longitude" value={`${st.gps.lon.toFixed(6)}°`} />
+                      <div style={{ marginTop: 4 }}>
+                        <a
+                          href={`https://maps.google.com/?q=${st.gps.lat.toFixed(6)},${st.gps.lon.toFixed(6)}`}
+                          target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: 11, color: '#4fc3f7', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
+                        >
+                          🗺️ {t('ui.googleMaps')}
+                        </a>
+                      </div>
+                    </>
+                  ) : (
+                    <Row label="GPS" value={t('measuring.unavailable')} sub="" />
+                  )
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 11, color: '#94a3b8', width: 60 }}>Lat</span>
+                      <input 
+                        type="text" placeholder="48.123456" value={latInput} onChange={e => setLatInput(e.target.value)}
+                        style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: 12, borderRadius: 4, padding: '4px' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 11, color: '#94a3b8', width: 60 }}>Lon</span>
+                      <input 
+                        type="text" placeholder="17.123456" value={lonInput} onChange={e => setLonInput(e.target.value)}
+                        style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: 12, borderRadius: 4, padding: '4px' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                      <button 
+                        onClick={handleFetchAlt} disabled={isFetchingAlt}
+                        style={{ flex: 1, padding: '6px', background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 6, color: '#4fc3f7', cursor: 'pointer', fontSize: 10, fontWeight: 700 }}
+                      >
+                        {isFetchingAlt ? t('ui.loadingAltitude') : t('ui.fetchAltitude')}
+                      </button>
+                      <button 
+                        onClick={handleApplyGps}
+                        style={{ flex: 1, padding: '6px', background: '#3b82f6', border: 'none', borderRadius: 6, color: 'white', cursor: 'pointer', fontSize: 10, fontWeight: 700 }}
+                      >
+                        {t('ui.apply')}
+                      </button>
+                      <button 
+                        onClick={() => setEditGps(false)}
+                        style={{ padding: '6px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 6, color: '#fff', cursor: 'pointer', fontSize: 10 }}
+                      >
+                        {t('ui.cancel')}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Meranie ak sú zvolené presne dva body */}
+      {stations.length === 2 && st1 && st2 && (() => {
         const dx = st2.origX - st1.origX
         const dy = st2.origY - st1.origY
         const dz = st2.altitude - st1.altitude
@@ -607,8 +669,8 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
         const az = (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360
         const inc = Math.asin(dz / dist3D) * 180 / Math.PI
         return (
-          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,.1)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, color: '#ef4444', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <div style={{ marginTop: 8, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, color: '#ef4444', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               <div style={{ width: 14, height: 2, borderBottom: '2px dashed #ef4444' }}></div>
               {t('measuring.title')}
             </div>
@@ -620,6 +682,54 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
           </div>
         )
       })()}
+
+      {/* Tektonické meranie roviny z 3 bodov */}
+      {stations.length === 3 && tectonics && (
+        <div style={{ marginTop: 8, paddingTop: 10, borderTop: '1px solid rgba(192,132,252,.3)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#c084fc', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <span style={{ fontSize: 14 }}>📐</span>
+              {t('measuring.tectonicsTitle')}
+            </div>
+            <span style={{ fontSize: 11, background: '#7e22ce', color: '#fff', fontWeight: 700, padding: '2px 6px', borderRadius: 4 }}>
+              {tectonics.notation} {tectonics.cardinalDirection}
+            </span>
+          </div>
+
+          <Row label={t('measuring.dip')} value={`${tectonics.dipAngle.toFixed(1)}°`} />
+          <Row label={t('measuring.dipDirection')} value={`${tectonics.dipDirection.toFixed(1)}°`} sub={`(${tectonics.cardinalDirection})`} />
+          <Row label={t('measuring.strike')} value={`${Math.round(tectonics.strike[0]).toString().padStart(3, '0')}° - ${Math.round(tectonics.strike[1]).toString().padStart(3, '0')}°`} />
+          <Row label={t('measuring.normalVector')} value={`[${tectonics.normal.map(n => n.toFixed(2)).join(', ')}]`} />
+          <Row label={t('measuring.triangleArea')} value={`${tectonics.area.toFixed(2)} m²`} />
+          <Row label={t('measuring.perimeter')} value={`${tectonics.perimeter.toFixed(2)} m`} />
+
+          {/* Copy data button */}
+          <div style={{ marginTop: 8, display: 'flex', gap: 6 }}>
+            <button
+              onClick={handleCopyTectonics}
+              style={{
+                flex: 1,
+                padding: '6px 10px',
+                background: copied ? '#10b981' : 'rgba(192,132,252,0.15)',
+                border: copied ? '1px solid #10b981' : '1px solid rgba(192,132,252,0.4)',
+                borderRadius: 6,
+                color: copied ? '#fff' : '#c084fc',
+                cursor: 'pointer',
+                fontSize: 11,
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 5,
+                transition: 'all 0.2s',
+              }}
+            >
+              <span>{copied ? '✓' : '📋'}</span>
+              <span>{copied ? t('measuring.copied') : t('measuring.copyData')}</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Mierka - Jaskyniar */}
       {stations.length === 1 && !editGps && (
@@ -659,7 +769,7 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
         </button>
       )}
 
-      <div style={{ marginTop: 12 }}>
+      <div style={{ marginTop: 10 }}>
         <button 
           className="btn-back" 
           style={{ width: '100%', padding: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8', borderRadius: '6px', cursor: 'pointer', fontSize: '11px' }} 
@@ -670,8 +780,8 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
       </div>
 
       {/* Footer hint */}
-      <div style={{ marginTop: 14, fontSize: 10, color: '#64748b', textAlign: 'center' }}>
-        {stations.length === 1 ? t('ui.hint1') : t('ui.hint2')}
+      <div style={{ marginTop: 12, fontSize: 10, color: '#64748b', textAlign: 'center' }}>
+        {stations.length === 1 ? t('ui.hint1') : stations.length === 2 ? t('ui.hint2') : (lang === 'sk' ? 'Kliknutím na ďalší bod začnete nové meranie' : 'Click another point to start a new measurement')}
       </div>
     </div>
   )
@@ -1774,8 +1884,13 @@ export default function App() {
     
     setSelectedStations(prev => {
       if (!isMeasuringMode && !ctrlKey) return [newSt]
-      if (prev.length === 1 && (prev[0].origX !== newSt.origX || prev[0].origY !== newSt.origY)) {
+      if (prev.length === 1 && (prev[0].origX !== newSt.origX || prev[0].origY !== newSt.origY || prev[0].altitude !== newSt.altitude)) {
         return [prev[0], newSt]
+      }
+      if (prev.length === 2 && 
+          (prev[0].origX !== newSt.origX || prev[0].origY !== newSt.origY || prev[0].altitude !== newSt.altitude) &&
+          (prev[1].origX !== newSt.origX || prev[1].origY !== newSt.origY || prev[1].altitude !== newSt.altitude)) {
+        return [prev[0], prev[1], newSt]
       }
       return [newSt]
     })
@@ -1849,8 +1964,13 @@ export default function App() {
 
     setSelectedStations(prev => {
       if (!isMeasuringMode && !ctrlKey) return [newSt]
-      if (prev.length === 1 && (prev[0].origX !== newSt.origX || prev[0].origY !== newSt.origY)) {
+      if (prev.length === 1 && (prev[0].origX !== newSt.origX || prev[0].origY !== newSt.origY || prev[0].altitude !== newSt.altitude)) {
         return [prev[0], newSt]
+      }
+      if (prev.length === 2 && 
+          (prev[0].origX !== newSt.origX || prev[0].origY !== newSt.origY || prev[0].altitude !== newSt.altitude) &&
+          (prev[1].origX !== newSt.origX || prev[1].origY !== newSt.origY || prev[1].altitude !== newSt.altitude)) {
+        return [prev[0], prev[1], newSt]
       }
       return [newSt]
     })
