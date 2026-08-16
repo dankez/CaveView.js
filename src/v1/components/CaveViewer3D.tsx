@@ -960,42 +960,64 @@ interface RemoteTextureSource {
 
 const REMOTE_TEXTURE_SOURCES: Record<string, RemoteTextureSource> = {
   'wms-orto': {
-    type: 'xyz',
+    type: 'wms',
     provider: 'ZBGIS',
     format: 'image/jpeg',
-    maxZoom: 19,
+    crs: 'EPSG:5514',
     url: buildMapProxyUrlCandidates(
-      'zbgis',
-      'Ortofoto/MapServer/tile/{z}/{y}/{x}',
-      { blankTile: 'false' },
-      '/xyz-proxy/zbgis/Ortofoto/MapServer/tile/{z}/{y}/{x}?blankTile=false',
-      'https://zbgis.skgeodesy.sk/zbgis/rest/services/Ortofoto/MapServer/tile/{z}/{y}/{x}?blankTile=false'
+      'zbgis-wms-orto',
+      '',
+      {
+        service: 'WMS',
+        version: '1.3.0',
+        request: 'GetMap',
+        layers: '1',
+        styles: 'default',
+        crs: 'EPSG:5514',
+        format: 'image/jpeg',
+        width: '{width}',
+        height: '{height}',
+        bbox: '{bbox}',
+      },
+      '/wms-proxy/orto?service=WMS&version=1.3.0&request=GetMap&layers=1&styles=default&crs=EPSG%3A5514&format=image%2Fjpeg&width={width}&height={height}&bbox={bbox}',
+      'https://zbgisws.skgeodesy.sk/zbgis_ortofoto_wms/service.svc/get?service=WMS&version=1.3.0&request=GetMap&layers=1&styles=default&crs=EPSG%3A5514&format=image%2Fjpeg&width={width}&height={height}&bbox={bbox}'
     ),
   },
   'wms-shadow': {
-    type: 'xyz',
+    type: 'wms',
     provider: 'ZBGIS',
     format: 'image/jpeg',
-    maxZoom: 18,
+    crs: 'EPSG:5514',
     url: buildMapProxyUrlCandidates(
-      'zbgis',
-      'LLS_DMR5/MapServer/tile/{z}/{y}/{x}',
-      { blankTile: 'false' },
-      '/xyz-proxy/zbgis/LLS_DMR5/MapServer/tile/{z}/{y}/{x}?blankTile=false',
-      'https://zbgis.skgeodesy.sk/zbgis/rest/services/LLS_DMR5/MapServer/tile/{z}/{y}/{x}?blankTile=false'
+      'zbgis-wms-shadow',
+      '',
+      {
+        service: 'WMS',
+        version: '1.3.0',
+        request: 'GetMap',
+        layers: '1',
+        styles: 'default',
+        crs: 'EPSG:5514',
+        format: 'image/jpeg',
+        width: '{width}',
+        height: '{height}',
+        bbox: '{bbox}',
+      },
+      '/wms-proxy/shadow?service=WMS&version=1.3.0&request=GetMap&layers=1&styles=default&crs=EPSG%3A5514&format=image%2Fjpeg&width={width}&height={height}&bbox={bbox}',
+      'https://zbgisws.skgeodesy.sk/zbgis_dmr_wms/service.svc/get?service=WMS&version=1.3.0&request=GetMap&layers=1&styles=default&crs=EPSG%3A5514&format=image%2Fjpeg&width={width}&height={height}&bbox={bbox}'
     ),
   },
   'wms-orto-freemap': {
     type: 'xyz',
     provider: 'Freemap',
     format: 'image/jpeg',
-    maxZoom: 23,
+    maxZoom: 20,
     url: buildMapProxyUrlCandidates(
       'freemap-orto',
       '{z}/{x}/{y}.jpg',
       {},
       '/xyz-proxy/freemap-orto/{z}/{x}/{y}.jpg',
-      'https://ofmozaika.tiles.freemap.sk/{z}/{x}/{y}.jpg'
+      'https://tiles.freemap.sk/o/{z}/{x}/{y}.jpg'
     ),
   },
   'wms-geology': {

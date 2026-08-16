@@ -28,6 +28,14 @@ $sources = [
     ],
 ];
 
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Headers: *');
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
 function fail(int $status, string $message): void
 {
     http_response_code($status);
@@ -77,10 +85,15 @@ function proxyWithCurl(string $targetUrl): void
         CURLOPT_HEADER => true,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_MAXREDIRS => 3,
-        CURLOPT_CONNECTTIMEOUT => 8,
-        CURLOPT_TIMEOUT => 25,
-        CURLOPT_USERAGENT => 'CaveView-map-proxy/2.1',
-        CURLOPT_HTTPHEADER => ['Accept: image/*, application/json, text/plain, */*'],
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => 0,
+        CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        CURLOPT_HTTPHEADER => [
+            'Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+            'Referer: https://zbgis.skgeodesy.sk/',
+        ],
     ]);
 
     $response = curl_exec($ch);

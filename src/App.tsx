@@ -4553,10 +4553,10 @@ export default function App() {
                               style={{ background: '#1e293b', color: 'white', border: '1px solid #334155', borderRadius: '4px', fontSize: '10px', padding: '2px 4px', outline: 'none', maxWidth: '200px' }}
                             >
                               <option value="custom">{lang === 'sk' ? 'Súbor (JPG/PNG/Lox)' : 'Custom File (JPG/PNG/Lox)'}</option>
-                               <option value="wms-orto">XYZ Scraping: Ortofotomapa (ZBGIS)</option>
-                              <option value="wms-orto-freemap">XYZ Scraping: Ortofotomapa (Freemap)</option>
-                              <option value="wms-shadow">XYZ Scraping: DMR Tieňovaný reliéf</option>
-                              <option value="wms-geology">XYZ Scraping: Geologická mapa (ŠGÚDŠ)</option>
+                              <option value="wms-orto">WMS: Ortofotomapa (ZBGIS GKÚ)</option>
+                              <option value="wms-orto-freemap">XYZ: Ortofotomapa (Freemap)</option>
+                              <option value="wms-shadow">WMS: DMR5 Tieňovaný reliéf (ZBGIS GKÚ)</option>
+                              <option value="wms-geology">WMS: Geologická mapa (ŠGÚDŠ)</option>
                               <option value="none">{lang === 'sk' ? 'Vypnutá' : 'None'}</option>
                             </select>
                           </div>
