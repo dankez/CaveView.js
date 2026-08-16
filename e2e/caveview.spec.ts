@@ -31,6 +31,18 @@ test.describe('LochViewer Robust E2E Test', () => {
       
       // Pockame, kym sa otvori sidebar (nečakáme na SK text, lebo jazyk ešte nemusí byť SK)
       await expect(page.locator('.sidebar-container.open')).toBeVisible({ timeout: 5000 });
+
+      const sidebar = page.locator('.sidebar');
+      await sidebar.evaluate((el) => {
+        el.scrollTop = el.scrollHeight;
+      });
+      const floatingCloseBtn = page.getByRole('button', { name: /Close settings|Zavrieť nastavenia/ }).first();
+      await expect(floatingCloseBtn).toBeVisible();
+      await floatingCloseBtn.click();
+      await expect(page.locator('.sidebar-container.open')).toBeHidden();
+
+      await menuBtn.click();
+      await expect(page.locator('.sidebar-container.open')).toBeVisible({ timeout: 5000 });
     }
 
     // 6. Prepnutie jazyka na Slovenčinu

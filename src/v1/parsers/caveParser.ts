@@ -1,5 +1,6 @@
 import { tryUtmToWgs84, tryJtskToWgs84 } from "@shared/utils/coords";
 import { getSjtskBoundsFromDtm } from "@shared/utils/surfaceBounds";
+import { hasUsefulPointColors } from "@shared/utils/pointCloudColors";
 import type { Vec3, Segment, Scrap, StationLabel, Calibration, CaveSurface, ParsedCave } from "@shared/types";
 
 /**
@@ -615,6 +616,8 @@ export function parsePly(buffer: ArrayBuffer, onProgress?: (msg: string) => void
   const outPoints = new Float32Array(Math.min(vertexCount, MAX_POINTS) * 3);
   const hasColors = !!(propIdx.r && propIdx.g && propIdx.b);
   const outColors    = hasColors     ? new Float32Array(outPoints.length)               : new Float32Array(0);
+  const hasNativeNormals = !!(propIdx.nx && propIdx.ny && propIdx.nz);
+  const outNormals   = hasNativeNormals ? new Float32Array(outPoints.length)             : new Float32Array(0);
   const hasNativeCls = propIdx.class !== undefined;
   const outCls       = hasNativeCls  ? new Uint8Array(Math.min(vertexCount, MAX_POINTS)) : new Uint8Array(0);
   const hasIntensity = propIdx.intensity !== undefined;
@@ -663,6 +666,11 @@ export function parsePly(buffer: ArrayBuffer, onProgress?: (msg: string) => void
       outColors[o3+1] = pointColors[i*3+1];
       outColors[o3+2] = pointColors[i*3+2];
     }
+    if (hasNativeNormals) {
+      outNormals[o3]   = pointNormals[i*3];
+      outNormals[o3+1] = pointNormals[i*3+1];
+      outNormals[o3+2] = pointNormals[i*3+2];
+    }
     if (hasNativeCls) outCls[targetIndex] = pointClassification[i];
     if (hasIntensity) outIntensity[targetIndex] = pointIntensity[i];
   }
@@ -671,6 +679,7 @@ export function parsePly(buffer: ArrayBuffer, onProgress?: (msg: string) => void
 
   const finalPoints  = outPoints.subarray(0, outCount * 3);
   const finalColors  = hasColors ? outColors.subarray(0, outCount * 3) : null;
+  const finalNormals = hasNativeNormals ? outNormals.subarray(0, outCount * 3) : null;
   const finalCls     = hasNativeCls ? outCls.subarray(0, outCount) : null;
   const finalInt     = hasIntensity ? outIntensity.subarray(0, outCount) : null;
 
@@ -695,7 +704,10 @@ export function parsePly(buffer: ArrayBuffer, onProgress?: (msg: string) => void
     isLiDAR: true,
     points:               new Float32Array(finalPoints),
     pointColors:          finalColors  ? new Float32Array(finalColors)  : new Float32Array(outCount * 3),
-    pointNormals:         new Float32Array(0),   // normály generuje GPU, nepotrebujeme prenášať
+    hasPointColors:       hasColors,
+    hasUsablePointColors: hasColors && hasUsefulPointColors(finalColors || undefined, outCount),
+    pointNormals:         finalNormals ? new Float32Array(finalNormals) : new Float32Array(0),
+    hasPointNormals:      hasNativeNormals,
     pointIntensity:       finalInt     ? new Float32Array(finalInt)     : new Float32Array(0),
     pointClassification:  finalCls     ? new Uint8Array(finalCls)       : new Uint8Array(0),
   };

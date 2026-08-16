@@ -3,7 +3,7 @@ import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls, GizmoHelper, GizmoViewport, TransformControls } from '@react-three/drei'
 import * as THREE from 'three'
 import gsap from 'gsap'
-import { PointCloudLOD } from './PointCloudLOD'
+import { PointCloudDirect, PointCloudLOD } from './PointCloudLOD'
 import { EDLPass } from './EDLPass'
 import MapboxTerrain from './MapboxTerrain'
 import { 
@@ -15,7 +15,7 @@ import {
   ManualConnection 
 } from '@shared/components/CaveSharedElements'
 import { Scraps } from '@shared/components/Scraps'
-import type { ParsedCave, ViewerOptions, StationLabel, CaveViewerNextGenProps, Vec3 } from '@shared/types'
+import type { ParsedCave, ViewerOptions, StationLabel, CaveViewerNextGenProps, Vec3, ViewerCameraSnapshot } from '@shared/types'
 import type { LiDARAnomaly } from '@shared/utils/speleoAnalysis'
 
 const SceneBackground = ({ texture, color }: { texture: THREE.Texture | null, color: string }) => {
@@ -29,6 +29,42 @@ const SceneBackground = ({ texture, color }: { texture: THREE.Texture | null, co
       texture?.dispose()
     }
   }, [scene, texture, color])
+  return null
+}
+
+const CameraMonitor = ({ controlsRef, onUpdate }: {
+  controlsRef: React.RefObject<any>,
+  onUpdate?: (data: ViewerCameraSnapshot) => void
+}) => {
+  const { camera, size } = useThree()
+
+  useEffect(() => {
+    if (!onUpdate) return
+
+    const update = () => {
+      const target = controlsRef.current?.target || new THREE.Vector3(0, 0, 0)
+      const dist = camera.position.distanceTo(target)
+      const perspective = camera as THREE.PerspectiveCamera
+      camera.updateMatrixWorld(true)
+      onUpdate({
+        dist,
+        fov: perspective.fov || 55,
+        width: size.width,
+        height: size.height,
+        aspect: perspective.aspect || size.width / Math.max(size.height, 1),
+        near: perspective.near || 0.1,
+        far: perspective.far || 10000,
+        position: camera.position.toArray() as [number, number, number],
+        quaternion: camera.quaternion.toArray() as [number, number, number, number],
+        target: target.toArray() as [number, number, number],
+      })
+    }
+
+    const timer = setInterval(update, 200)
+    update()
+    return () => clearInterval(timer)
+  }, [camera, controlsRef, onUpdate, size])
+
   return null
 }
 
@@ -414,8 +450,28 @@ const CaveViewerNextGen = ({
             pointSize={o.pointCloudSize || 1.0} 
             brightness={o.pointCloudBrightness || 1.0}
             plasticity={o.pointCloudPlasticity || 1.0}
+            pointShape={o.pointCloudShape || 'diamond'}
             colorMode={o.pointCloudColorMode || 'original'}
-            customColor={o.pointCloudCustomColor || '#ffffff'}
+            customColor={o.pointCloudCustomColor || '#b3a694'}
+            highlightColor={o.colorClippingEdges || '#ff4444'}
+            minZ={cave.bounds.min.z}
+            maxZ={cave.bounds.max.z}
+            clippingPlanes={caveClippingPlanes}
+            viewMode={o.pointCloudViewMode || 'all'}
+            heightThreshold={o.pointCloudHeightThreshold ?? 0.4}
+            angleThreshold={o.pointCloudAngleThreshold ?? 0.5}
+          />
+        )}
+
+        {!cave.pointCloudUrl && cave.points && cave.pointCount > 0 && (
+          <PointCloudDirect
+            cave={cave}
+            pointSize={o.pointCloudSize || 1.0}
+            brightness={o.pointCloudBrightness || 1.0}
+            plasticity={o.pointCloudPlasticity || 1.0}
+            pointShape={o.pointCloudShape || 'diamond'}
+            colorMode={o.pointCloudColorMode || 'original'}
+            customColor={o.pointCloudCustomColor || '#b3a694'}
             highlightColor={o.colorClippingEdges || '#ff4444'}
             minZ={cave.bounds.min.z}
             maxZ={cave.bounds.max.z}
@@ -536,6 +592,7 @@ const CaveViewerNextGen = ({
         dampingFactor={0.05}
         onChange={handleCameraChange}
       />
+      <CameraMonitor controlsRef={controlsRef} onUpdate={onCameraUpdate} />
     </Canvas>
   )
 }

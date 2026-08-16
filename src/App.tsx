@@ -1,21 +1,83 @@
 import React, { useState, useRef, useCallback, useEffect, Suspense, useMemo } from 'react'
 import * as THREE from 'three'
 import proj4 from 'proj4'
+import {
+  CheckCircle2 as CheckCircleIcon,
+  Circle as CircleIcon,
+  Diamond as DiamondIcon,
+  Eraser as EraserIcon,
+  Hexagon as HexagonIcon,
+  MousePointer2 as MousePointerIcon,
+  RotateCcw as RotateCcwIcon,
+  Square as SquareIcon,
+  Undo2 as UndoIcon,
+  X as XIcon,
+} from 'lucide-react'
 import packageJson from '../package.json'
 import { SJTSK_DEF, fetchAltitudeFromZbgis, wgs84ToJtsk } from '@shared/utils/geoUtils'
 import { tryUtmToWgs84, tryJtskToWgs84 } from "@shared/utils/coords";
-import type { ParsedCave, ViewerOptions, CaveSurface, StationLabel, Vec3 } from '@shared/types'
+import type { ParsedCave, ViewerOptions, CaveSurface, StationLabel, Vec3, ViewerCameraSnapshot, PointCloudShape } from '@shared/types'
 import type { TextureDownloadInspector } from '@shared/utils/XyzTileDownloader'
 import { clearBrowserTileCache } from '@shared/utils/tileCache'
-import { calculateVolumeAndProfile, analyzeLiDARAnomalies } from '@shared/utils/speleoAnalysis'
+import { calculateVolumeAndProfile } from '@shared/utils/speleoAnalysis'
 import { getSjtskBoundsFromDtm } from '@shared/utils/surfaceBounds'
 import { createSurfaceTextureCalibrationFromSjtskBbox, parseSjtskBboxCalibrationText } from '@shared/utils/surfaceTextureCalibration'
 import { getDefaultPointCloudSize, getPreferredEngineForFile } from '@shared/utils/modelDefaults'
+import { renderLidarPlanMapToDataUrl, type LidarPlanMapData } from '@shared/utils/lidarPlanMap'
+import {
+  cloneLidarEditSnapshot,
+  downsampleStrokePoints,
+  filterLidarPointsByMask,
+  selectProjectedLidarPoints,
+  type LidarEditMode,
+  type LidarScreenPoint,
+} from '@shared/utils/lidarPointEditing'
 import type { LiDARAnomaly } from '@shared/utils/speleoAnalysis'
+import { DEFAULT_POINT_CLOUD_SHAPE, POINT_CLOUD_SHAPE_OPTIONS } from '@v2/components/pointCloudShape'
+import { hasRenderablePointColors } from '@shared/utils/pointCloudColors'
 
 const CaveViewer3D = React.lazy(() => import('@v1/components/CaveViewer3D'))
 const CaveViewerNextGen = React.lazy(() => import('@v2/components/CaveViewerNextGen'))
 const APP_VERSION = packageJson.version
+
+const POINT_CLOUD_SHAPE_ICONS: Record<PointCloudShape, typeof SquareIcon> = {
+  square: SquareIcon,
+  sphere: CircleIcon,
+  diamond: DiamondIcon,
+  hex: HexagonIcon,
+}
+
+const POINT_CLOUD_SHAPE_LABELS_SK: Record<PointCloudShape, string> = {
+  square: 'Štvorec',
+  sphere: 'Guľôčka',
+  diamond: 'Kosoštvorec',
+  hex: 'Šesťuholník',
+}
+
+const POINT_CLOUD_SHAPE_LABELS_EN: Record<PointCloudShape, string> = {
+  square: 'Square',
+  sphere: 'Sphere',
+  diamond: 'Diamond',
+  hex: 'Hex',
+}
+
+type SpeleoWorkerMessage =
+  | { type: 'status'; requestId: number; message: string | null }
+  | { type: 'done'; requestId: number; anomalies: LiDARAnomaly[] }
+  | { type: 'error'; requestId: number; error: string }
+
+type LidarPlanMapPreview = {
+  dataUrl: string;
+  width: number;
+  height: number;
+  usedPoints: number;
+  occupiedCells: number;
+  cellSize: number;
+};
+
+type LidarPlanMapWorkerMessage =
+  | { type: 'done'; requestId: number; data: LidarPlanMapData }
+  | { type: 'error'; requestId: number; error: string }
 
 const WELCOME_CHANGELOG = [
   {
@@ -92,6 +154,7 @@ import { getBrowserLanguage, getTranslation, Language, languages } from '@shared
 // ── Google Drive Config (Vymeň za tvoje reálne kľúče v .env súbore) ──
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || ''
+const LIDAR_CAVE_COLOR_FALLBACK = '#b3a694'
 
 const htmlAttrEscapes: Record<string, string> = {
   '&': '&amp;',
@@ -99,6 +162,13 @@ const htmlAttrEscapes: Record<string, string> = {
   "'": '&#39;',
   '<': '&lt;',
   '>': '&gt;'
+}
+
+function normalizeLidarCaveColor(primary?: string, fallback?: string): string {
+  const isUsable = (color?: string) => /^#[0-9a-f]{6}$/i.test(color || '') && color!.toLowerCase() !== '#ffffff'
+  if (isUsable(primary)) return primary!.toLowerCase()
+  if (isUsable(fallback)) return fallback!.toLowerCase()
+  return LIDAR_CAVE_COLOR_FALLBACK
 }
 
 function escapeHtmlAttribute(value: string): string {
@@ -818,7 +888,7 @@ export default function App() {
   const t = useCallback((key: string) => getTranslation(lang, key), [lang])
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isModelMoving, setIsModelMoving] = useState(false)
-  const [cameraData, setCameraData] = useState<{ dist: number, fov: number, height: number } | null>(null)
+  const [cameraData, setCameraData] = useState<ViewerCameraSnapshot | null>(null)
   const [processingInfo, setProcessingInfo] = useState<string | null>(null)
   const [appStatus, setAppStatus] = useState<{ msg: string; type: 'info' | 'error' | 'success' | 'progress'; progress?: number } | null>(null)
   const [downloadableTexture, setDownloadableTexture] = useState<{ dataUrl: string, bbox: string } | null>(null)
@@ -829,9 +899,25 @@ export default function App() {
   const [anomalies, setAnomalies] = useState<LiDARAnomaly[]>([])
   const [activeAnomalyId, setActiveAnomalyId] = useState<string | null>(null)
   const [isLiDARAnalyzing, setIsLiDARAnalyzing] = useState(false)
+  const [isLidarMapGenerating, setIsLidarMapGenerating] = useState(false)
+  const [lidarPlanMapPreview, setLidarPlanMapPreview] = useState<LidarPlanMapPreview | null>(null)
+  const [lidarEditMode, setLidarEditMode] = useState<LidarEditMode>('off')
+  const [lidarBrushSize, setLidarBrushSize] = useState(42)
+  const [lidarEditStroke, setLidarEditStroke] = useState<LidarScreenPoint[]>([])
+  const [lidarEditCursor, setLidarEditCursor] = useState<LidarScreenPoint | null>(null)
+  const [lidarKeepSelectionCount, setLidarKeepSelectionCount] = useState(0)
+  const [lidarEditBusy, setLidarEditBusy] = useState(false)
+  const [lidarEditRemovedCount, setLidarEditRemovedCount] = useState(0)
   const [selectedSegmentProfile, setSelectedSegmentProfile] = useState<any | null>(null)
 
-
+  const lidarWorkerRef = useRef<Worker | null>(null)
+  const lidarMapWorkerRef = useRef<Worker | null>(null)
+  const lidarAnalysisRequestId = useRef(0)
+  const lidarMapRequestId = useRef(0)
+  const lidarKeepMaskRef = useRef<Uint8Array | null>(null)
+  const lidarOriginalCaveRef = useRef<ParsedCave | null>(null)
+  const lidarUndoCaveRef = useRef<ParsedCave | null>(null)
+  const lidarActiveStrokeRef = useRef<LidarScreenPoint[]>([])
   const surfNextId = useRef(1)
   const managedObjectUrls = useRef<Set<string>>(new Set())
 
@@ -940,6 +1026,7 @@ export default function App() {
     pointCloudColorMode: 'original',
     pointCloudCustomColor: '#b3a694',
     pointCloudPlasticity: 1.0,
+    pointCloudShape: DEFAULT_POINT_CLOUD_SHAPE,
     pointCloudViewMode: 'all',
     pointCloudHeightThreshold: 0.1,
     pointCloudAngleThreshold: 0.3,
@@ -1002,6 +1089,460 @@ export default function App() {
     });
     setTimeout(() => setAppStatus(null), 2500);
   }, [lang]);
+
+  useEffect(() => {
+    return () => {
+      lidarAnalysisRequestId.current += 1;
+      lidarWorkerRef.current?.terminate();
+      lidarWorkerRef.current = null;
+      lidarMapRequestId.current += 1;
+      lidarMapWorkerRef.current?.terminate();
+      lidarMapWorkerRef.current = null;
+    }
+  }, []);
+
+  const cancelLiDARAnalysis = useCallback(() => {
+    lidarAnalysisRequestId.current += 1;
+    lidarWorkerRef.current?.terminate();
+    lidarWorkerRef.current = null;
+    setIsLiDARAnalyzing(false);
+    setAppStatus({
+      msg: lang === 'sk' ? 'LiDAR analýza zrušená' : 'LiDAR analysis cancelled',
+      type: 'info',
+    });
+    setTimeout(() => setAppStatus(null), 1800);
+  }, [lang]);
+
+  const runLiDARAnalysis = useCallback(() => {
+    if (!cave?.points || cave.pointCount === 0) return;
+
+    lidarWorkerRef.current?.terminate();
+    const requestId = lidarAnalysisRequestId.current + 1;
+    lidarAnalysisRequestId.current = requestId;
+    setIsLiDARAnalyzing(true);
+    setActiveAnomalyId(null);
+    setAppStatus({
+      msg: lang === 'sk' ? 'Pripravujem LiDAR dáta...' : 'Preparing LiDAR data...',
+      type: 'progress',
+    });
+
+    try {
+      const points = cave.points.slice();
+      const pointNormals = cave.pointNormals ? cave.pointNormals.slice() : null;
+      const worker = new Worker(new URL('./shared/workers/speleo.worker.ts', import.meta.url), { type: 'module' });
+      lidarWorkerRef.current = worker;
+
+      const finishRequest = () => {
+        if (lidarWorkerRef.current === worker) {
+          lidarWorkerRef.current = null;
+        }
+        worker.terminate();
+      };
+
+      worker.onmessage = (event: MessageEvent<SpeleoWorkerMessage>) => {
+        const message = event.data;
+        if (!message || message.requestId !== lidarAnalysisRequestId.current || lidarWorkerRef.current !== worker) return;
+
+        if (message.type === 'status') {
+          if (message.message) {
+            setAppStatus({ msg: message.message, type: 'progress' });
+          }
+          return;
+        }
+
+        finishRequest();
+        setIsLiDARAnalyzing(false);
+
+        if (message.type === 'done') {
+          setAnomalies(message.anomalies);
+          setAppStatus({
+            msg: lang === 'sk'
+              ? `LiDAR analýza hotová: ${message.anomalies.length} nálezov`
+              : `LiDAR analysis finished: ${message.anomalies.length} findings`,
+            type: 'success',
+          });
+          setTimeout(() => {
+            if (lidarAnalysisRequestId.current === requestId) setAppStatus(null);
+          }, 2500);
+        } else {
+          setAppStatus({
+            msg: lang === 'sk' ? `LiDAR analýza zlyhala: ${message.error}` : `LiDAR analysis failed: ${message.error}`,
+            type: 'error',
+          });
+        }
+      };
+
+      worker.onerror = (event) => {
+        if (lidarAnalysisRequestId.current !== requestId || lidarWorkerRef.current !== worker) return;
+        finishRequest();
+        setIsLiDARAnalyzing(false);
+        setAppStatus({
+          msg: lang === 'sk'
+            ? `LiDAR worker zlyhal: ${event.message}`
+            : `LiDAR worker failed: ${event.message}`,
+          type: 'error',
+        });
+      };
+
+      const transferables: Transferable[] = [points.buffer as ArrayBuffer];
+      if (pointNormals) transferables.push(pointNormals.buffer as ArrayBuffer);
+      worker.postMessage({
+        type: 'analyze-lidar',
+        requestId,
+        points,
+        pointNormals,
+        pointCount: cave.pointCount,
+        segments: cave.segments || [],
+      }, transferables);
+    } catch (error) {
+      lidarWorkerRef.current?.terminate();
+      lidarWorkerRef.current = null;
+      setIsLiDARAnalyzing(false);
+      setAppStatus({
+        msg: lang === 'sk'
+          ? `LiDAR analýza sa nepodarila spustiť: ${error instanceof Error ? error.message : String(error)}`
+          : `Unable to start LiDAR analysis: ${error instanceof Error ? error.message : String(error)}`,
+        type: 'error',
+      });
+    }
+  }, [cave, lang]);
+
+  const cancelLidarPlanMap = useCallback(() => {
+    lidarMapRequestId.current += 1;
+    lidarMapWorkerRef.current?.terminate();
+    lidarMapWorkerRef.current = null;
+    setIsLidarMapGenerating(false);
+    setAppStatus({
+      msg: lang === 'sk' ? 'Generovanie 2D mapy zrušené' : '2D map generation cancelled',
+      type: 'info',
+    });
+    setTimeout(() => setAppStatus(null), 1800);
+  }, [lang]);
+
+  const generateLidarPlanMap = useCallback(() => {
+    if (!cave?.points || cave.pointCount === 0) return;
+
+    lidarMapWorkerRef.current?.terminate();
+    const requestId = lidarMapRequestId.current + 1;
+    lidarMapRequestId.current = requestId;
+    setIsLidarMapGenerating(true);
+    setAppStatus({
+      msg: lang === 'sk' ? 'Skladám 2D pôdorys z LiDAR bodov...' : 'Building 2D plan map from LiDAR points...',
+      type: 'progress',
+    });
+
+    try {
+      const points = cave.points.slice();
+      const pointClassification = cave.pointClassification && cave.pointClassification.length > 0
+        ? cave.pointClassification.slice()
+        : null;
+      const worker = new Worker(new URL('./shared/workers/lidarPlanMap.worker.ts', import.meta.url), { type: 'module' });
+      lidarMapWorkerRef.current = worker;
+
+      const finishRequest = () => {
+        if (lidarMapWorkerRef.current === worker) {
+          lidarMapWorkerRef.current = null;
+        }
+        worker.terminate();
+      };
+
+      worker.onmessage = (event: MessageEvent<LidarPlanMapWorkerMessage>) => {
+        const message = event.data;
+        if (!message || message.requestId !== lidarMapRequestId.current || lidarMapWorkerRef.current !== worker) return;
+
+        finishRequest();
+        setIsLidarMapGenerating(false);
+
+        if (message.type === 'done') {
+          const rendered = renderLidarPlanMapToDataUrl(message.data, {
+            contourInterval: 0.5,
+            minOutlineLengthMeters: 5,
+            minContourLengthMeters: 5,
+          });
+          setLidarPlanMapPreview({
+            ...rendered,
+            usedPoints: message.data.usedPoints,
+            occupiedCells: message.data.occupiedCells,
+            cellSize: message.data.cellSize,
+          });
+          setAppStatus({
+            msg: lang === 'sk' ? '2D mapa z LiDAR modelu je hotová' : 'LiDAR 2D plan map is ready',
+            type: 'success',
+          });
+          setTimeout(() => {
+            if (lidarMapRequestId.current === requestId) setAppStatus(null);
+          }, 2200);
+        } else {
+          setAppStatus({
+            msg: lang === 'sk' ? `Generovanie mapy zlyhalo: ${message.error}` : `Map generation failed: ${message.error}`,
+            type: 'error',
+          });
+        }
+      };
+
+      worker.onerror = (event) => {
+        if (lidarMapRequestId.current !== requestId || lidarMapWorkerRef.current !== worker) return;
+        finishRequest();
+        setIsLidarMapGenerating(false);
+        setAppStatus({
+          msg: lang === 'sk'
+            ? `Worker mapy zlyhal: ${event.message}`
+            : `Map worker failed: ${event.message}`,
+          type: 'error',
+        });
+      };
+
+      const transferables: Transferable[] = [points.buffer as ArrayBuffer];
+      if (pointClassification) transferables.push(pointClassification.buffer as ArrayBuffer);
+      worker.postMessage({
+        type: 'build-lidar-plan-map',
+        requestId,
+        points,
+        pointCount: cave.pointCount,
+        pointClassification,
+        options: { targetSize: 1024, contourInterval: 0.5, minOutlineLengthMeters: 5, minContourLengthMeters: 5 },
+      }, transferables);
+    } catch (error) {
+      lidarMapWorkerRef.current?.terminate();
+      lidarMapWorkerRef.current = null;
+      setIsLidarMapGenerating(false);
+      setAppStatus({
+        msg: lang === 'sk'
+          ? `Generovanie mapy sa nepodarilo spustiť: ${error instanceof Error ? error.message : String(error)}`
+          : `Unable to start map generation: ${error instanceof Error ? error.message : String(error)}`,
+        type: 'error',
+      });
+    }
+  }, [cave, lang]);
+
+  const clearLidarKeepSelection = useCallback(() => {
+    lidarKeepMaskRef.current = null;
+    setLidarKeepSelectionCount(0);
+  }, []);
+
+  const getActiveViewerCanvas = useCallback((): HTMLCanvasElement | null => {
+    const id = opts.engine === 'v2' ? 'nextgen-cave-canvas' : 'main-cave-canvas';
+    const canvasById = document.getElementById(id) as HTMLCanvasElement | null;
+    if (canvasById) return canvasById;
+    const canvases = Array.from(document.querySelectorAll('canvas')) as HTMLCanvasElement[];
+    return canvases.find(canvas => {
+      const rect = canvas.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && !String(canvas.className || '').includes('bg-canvas');
+    }) || null;
+  }, [opts.engine]);
+
+  const getLidarPointerPoint = useCallback((event: React.PointerEvent<HTMLElement>): LidarScreenPoint | null => {
+    const canvas = getActiveViewerCanvas();
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+    return {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    };
+  }, [getActiveViewerCanvas]);
+
+  const pushLidarUndoSnapshot = useCallback((source: ParsedCave) => {
+    lidarUndoCaveRef.current = cloneLidarEditSnapshot(source);
+  }, []);
+
+  const commitEditedLidarCave = useCallback((nextCave: ParsedCave, removedCount: number) => {
+    const hasRenderableColors = hasRenderablePointColors(nextCave);
+    setCave(nextCave);
+    if (!hasRenderableColors) {
+      setOpts(prev => ({
+        ...prev,
+        pointCloudColorMode: prev.pointCloudColorMode === 'elevation' ? 'elevation' : 'natural',
+        pointCloudCustomColor: normalizeLidarCaveColor(prev.pointCloudCustomColor, prev.colorScraps),
+      }));
+    }
+    setAnomalies([]);
+    setActiveAnomalyId(null);
+    setLidarPlanMapPreview(null);
+    setLidarEditRemovedCount(prev => prev + removedCount);
+  }, []);
+
+  const applyLidarMaskEdit = useCallback((mask: Uint8Array, keepSelected: boolean) => {
+    if (!cave?.points || cave.pointCount === 0) return 0;
+    const result = filterLidarPointsByMask(cave, mask, keepSelected);
+    if (result.removedCount <= 0) return 0;
+    if (result.keptCount < 8) {
+      setAppStatus({
+        msg: lang === 'sk' ? 'Úprava by zmazala takmer celý LiDAR model' : 'Edit would remove almost the whole LiDAR model',
+        type: 'error',
+      });
+      return 0;
+    }
+
+    pushLidarUndoSnapshot(cave);
+    commitEditedLidarCave(result.cave, result.removedCount);
+    return result.removedCount;
+  }, [cave, commitEditedLidarCave, lang, pushLidarUndoSnapshot]);
+
+  const selectLidarStrokePoints = useCallback((stroke: LidarScreenPoint[], existingMask?: Uint8Array | null) => {
+    if (!cave?.points || cave.pointCount === 0 || !cameraData) return null;
+    const canvas = getActiveViewerCanvas();
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    const sampledStroke = downsampleStrokePoints(stroke, Math.max(4, lidarBrushSize * 0.35));
+    return selectProjectedLidarPoints(
+      cave,
+      cameraData,
+      { width: rect.width, height: rect.height },
+      sampledStroke,
+      lidarBrushSize,
+      existingMask,
+      opts.caveCalibrationOffset
+    );
+  }, [cameraData, cave, getActiveViewerCanvas, lidarBrushSize, opts.caveCalibrationOffset]);
+
+  const applyLidarEditStroke = useCallback((stroke: LidarScreenPoint[], mode: LidarEditMode) => {
+    if (mode === 'off' || stroke.length === 0 || lidarEditBusy) return;
+    if (!cameraData) {
+      setAppStatus({
+        msg: lang === 'sk' ? 'Kamera ešte nie je pripravená na LiDAR editáciu' : 'Camera is not ready for LiDAR editing yet',
+        type: 'error',
+      });
+      return;
+    }
+
+    setLidarEditBusy(true);
+    window.requestAnimationFrame(() => {
+      try {
+        const selection = selectLidarStrokePoints(stroke, mode === 'keep' ? lidarKeepMaskRef.current : null);
+        if (!selection || selection.newlySelectedCount === 0) {
+          setAppStatus({
+            msg: lang === 'sk' ? 'Ťah neoznačil žiadne LiDAR body' : 'Brush stroke did not select any LiDAR points',
+            type: 'info',
+          });
+          return;
+        }
+
+        if (mode === 'keep') {
+          lidarKeepMaskRef.current = selection.mask;
+          setLidarKeepSelectionCount(selection.selectedCount);
+          setAppStatus({
+            msg: lang === 'sk'
+              ? `Označené na ponechanie: ${selection.selectedCount.toLocaleString()} bodov`
+              : `Marked to keep: ${selection.selectedCount.toLocaleString()} points`,
+            type: 'info',
+          });
+          return;
+        }
+
+        const removed = applyLidarMaskEdit(selection.mask, false);
+        if (removed > 0) {
+          setAppStatus({
+            msg: lang === 'sk'
+              ? `Guma zmazala ${removed.toLocaleString()} bodov`
+              : `Eraser removed ${removed.toLocaleString()} points`,
+            type: 'success',
+          });
+        }
+      } finally {
+        setLidarEditBusy(false);
+      }
+    });
+  }, [applyLidarMaskEdit, cameraData, lang, lidarEditBusy, selectLidarStrokePoints]);
+
+  const applyLidarKeepSelection = useCallback(() => {
+    const mask = lidarKeepMaskRef.current;
+    if (!mask || lidarKeepSelectionCount === 0) {
+      setAppStatus({
+        msg: lang === 'sk' ? 'Najprv označ body, ktoré chceš ponechať' : 'Mark points to keep first',
+        type: 'info',
+      });
+      return;
+    }
+
+    const removed = applyLidarMaskEdit(mask, true);
+    if (removed > 0) {
+      clearLidarKeepSelection();
+      setLidarEditMode('off');
+      setAppStatus({
+        msg: lang === 'sk'
+          ? `Ponechané označené body, zmazané ${removed.toLocaleString()} bodov`
+          : `Kept marked points, removed ${removed.toLocaleString()} points`,
+        type: 'success',
+      });
+    }
+  }, [applyLidarMaskEdit, clearLidarKeepSelection, lang, lidarKeepSelectionCount]);
+
+  const undoLidarEdit = useCallback(() => {
+    const snapshot = lidarUndoCaveRef.current;
+    if (!snapshot) return;
+    const current = cave ? cloneLidarEditSnapshot(cave) : null;
+    setCave(cloneLidarEditSnapshot(snapshot));
+    lidarUndoCaveRef.current = current;
+    clearLidarKeepSelection();
+    setAnomalies([]);
+    setActiveAnomalyId(null);
+    setLidarPlanMapPreview(null);
+    setAppStatus({
+      msg: lang === 'sk' ? 'LiDAR úprava vrátená späť' : 'LiDAR edit undone',
+      type: 'success',
+    });
+  }, [cave, clearLidarKeepSelection, lang]);
+
+  const resetLidarEdits = useCallback(() => {
+    const original = lidarOriginalCaveRef.current;
+    if (!original) return;
+    if (cave) pushLidarUndoSnapshot(cave);
+    setCave(cloneLidarEditSnapshot(original));
+    clearLidarKeepSelection();
+    setLidarEditRemovedCount(0);
+    setAnomalies([]);
+    setActiveAnomalyId(null);
+    setLidarPlanMapPreview(null);
+    setAppStatus({
+      msg: lang === 'sk' ? 'LiDAR body obnovené z pôvodného modelu' : 'LiDAR points restored from original model',
+      type: 'success',
+    });
+  }, [cave, clearLidarKeepSelection, lang, pushLidarUndoSnapshot]);
+
+  const beginLidarEditStroke = useCallback((event: React.PointerEvent<HTMLElement>) => {
+    if (lidarEditMode === 'off' || lidarEditBusy || !cave?.points || cave.pointCount === 0) return;
+    const point = getLidarPointerPoint(event);
+    if (!point) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    lidarActiveStrokeRef.current = [point];
+    setLidarEditCursor(point);
+    setLidarEditStroke([point]);
+  }, [cave, getLidarPointerPoint, lidarEditBusy, lidarEditMode]);
+
+  const moveLidarEditStroke = useCallback((event: React.PointerEvent<HTMLElement>) => {
+    if (lidarActiveStrokeRef.current.length === 0) {
+      const hoverPoint = getLidarPointerPoint(event);
+      setLidarEditCursor(hoverPoint);
+      return;
+    }
+    const point = getLidarPointerPoint(event);
+    if (!point) return;
+    event.preventDefault();
+    const stroke = lidarActiveStrokeRef.current;
+    const last = stroke[stroke.length - 1];
+    const dx = point.x - last.x;
+    const dy = point.y - last.y;
+    if (dx * dx + dy * dy < 9) return;
+    stroke.push(point);
+    setLidarEditCursor(point);
+    setLidarEditStroke([...stroke]);
+  }, [getLidarPointerPoint]);
+
+  const endLidarEditStroke = useCallback((event: React.PointerEvent<HTMLElement>) => {
+    if (lidarActiveStrokeRef.current.length === 0) return;
+    event.preventDefault();
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // Pointer capture can already be released by the browser on touch cancellation.
+    }
+    const stroke = lidarActiveStrokeRef.current;
+    lidarActiveStrokeRef.current = [];
+    setLidarEditStroke([]);
+    applyLidarEditStroke(stroke, lidarEditMode);
+  }, [applyLidarEditStroke, lidarEditMode]);
 
   // ─── DEFINÍCIA ŠABLÓN ────────────────────────────────────────────────────────
   const THEMES = {
@@ -1508,13 +2049,20 @@ export default function App() {
       })
     }
 
+    revokeCaveObjectUrls(lidarOriginalCaveRef.current)
     const isPLY = parsed.pointCount > 0
+    lidarUndoCaveRef.current = null
+    lidarKeepMaskRef.current = null
+    setLidarKeepSelectionCount(0)
+    setLidarEditRemovedCount(0)
+    setLidarEditMode('off')
 
     // NextGen support: Create Blob URL for point cloud data for PLY files
     if (isPLY && buffer) {
       const blob = new Blob([buffer], { type: 'application/octet-stream' });
       parsed.pointCloudUrl = trackObjectUrl(URL.createObjectURL(blob));
     }
+    lidarOriginalCaveRef.current = isPLY ? cloneLidarEditSnapshot(parsed) : null
 
     setCave(prev => {
       revokeCaveObjectUrls(prev)
@@ -1886,6 +2434,15 @@ export default function App() {
 
   const handleReset = () => {
     setAppState('welcome'); setLoadedFile(null)
+    revokeCaveObjectUrls(lidarOriginalCaveRef.current)
+    lidarOriginalCaveRef.current = null
+    lidarUndoCaveRef.current = null
+    lidarKeepMaskRef.current = null
+    setLidarKeepSelectionCount(0)
+    setLidarEditRemovedCount(0)
+    setLidarEditMode('off')
+    setLidarEditStroke([])
+    setLidarEditCursor(null)
     setCave(prev => {
       revokeCaveObjectUrls(prev)
       return null
@@ -2326,6 +2883,41 @@ export default function App() {
         /* Sidebar */
         .sidebar-container { display: flex; flex-shrink: 0; z-index: 100; }
         .sidebar{width:230px;background:rgba(8,12,24,.97);border-left:1px solid rgba(255,255,255,.05);padding:.9rem;display:flex;flex-direction:column;gap:1rem;overflow-y:auto;flex-shrink:0;height:100%;max-height:100%}
+        .mobile-sidebar-close{display:none;align-items:center;justify-content:center;gap:.45rem;position:fixed;right:calc(1rem + env(safe-area-inset-right));bottom:calc(1rem + env(safe-area-inset-bottom));z-index:10001;min-height:48px;max-width:calc(100vw - 2rem);padding:0 1rem;border:1px solid rgba(248,113,113,.5);border-radius:8px;background:rgba(220,38,38,.94);color:#fff;font-size:.95rem;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 14px 36px rgba(0,0,0,.48);backdrop-filter:blur(8px);transition:background .2s,transform .2s,box-shadow .2s}
+        .mobile-sidebar-close:hover{background:#dc2626;box-shadow:0 16px 42px rgba(0,0,0,.58)}
+        .mobile-sidebar-close:active{transform:translateY(1px)}
+        .mobile-sidebar-close-icon{width:20px;height:20px;flex-shrink:0}
+        .lidar-edit-panel{margin:0 0 12px;padding:10px;border:1px solid rgba(20,184,166,.22);border-radius:8px;background:rgba(15,23,42,.72);box-shadow:0 10px 28px rgba(0,0,0,.2)}
+        .lidar-edit-panel.active{border-color:rgba(45,212,191,.55);box-shadow:0 0 0 1px rgba(45,212,191,.1),0 12px 34px rgba(0,0,0,.28)}
+        .lidar-edit-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;color:#ccfbf1}
+        .lidar-edit-title{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0}
+        .lidar-edit-title svg{width:16px;height:16px}
+        .lidar-edit-count{font-variant-numeric:tabular-nums;font-size:10px;color:#5eead4;background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.18);border-radius:6px;padding:3px 6px}
+        .lidar-edit-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+        .lidar-edit-toolbar.secondary{margin:8px 0 0}
+        .lidar-edit-btn,.lidar-icon-btn{min-height:40px;border:1px solid rgba(148,163,184,.22);border-radius:8px;background:rgba(30,41,59,.7);color:#dbeafe;font-family:inherit;font-size:11px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition-property:background,border-color,color,transform,opacity;transition-duration:.16s}
+        .lidar-edit-btn svg,.lidar-icon-btn svg{width:16px;height:16px;flex-shrink:0}
+        .lidar-edit-btn:hover:not(:disabled),.lidar-icon-btn:hover:not(:disabled){background:rgba(51,65,85,.9);border-color:rgba(148,163,184,.42)}
+        .lidar-edit-btn:active:not(:disabled),.lidar-icon-btn:active:not(:disabled){transform:scale(.96)}
+        .lidar-edit-btn:disabled,.lidar-icon-btn:disabled{opacity:.42;cursor:not-allowed}
+        .lidar-edit-btn.danger.active{background:rgba(220,38,38,.22);border-color:rgba(248,113,113,.62);color:#fecaca}
+        .lidar-edit-btn.keep.active,.lidar-edit-btn.keep:not(:disabled):hover{background:rgba(13,148,136,.2);border-color:rgba(45,212,191,.56);color:#99f6e4}
+        .lidar-brush-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;margin-top:4px;color:#94a3b8;font-size:10px;font-weight:800}
+        .lidar-brush-row input{width:100%;accent-color:#14b8a6}
+        .lidar-brush-row span{font-variant-numeric:tabular-nums;color:#5eead4}
+        .lidar-keep-row{display:grid;grid-template-columns:1fr auto 40px;align-items:center;gap:6px;margin-top:8px}
+        .lidar-keep-row>span{font-variant-numeric:tabular-nums;color:#5eead4;font-size:11px;font-weight:900;background:rgba(2,6,23,.7);border:1px solid rgba(20,184,166,.18);border-radius:8px;padding:8px 10px;min-height:40px;display:flex;align-items:center}
+        .lidar-icon-btn{width:40px;padding:0}
+        .lidar-edit-overlay{position:absolute;inset:0;z-index:35;cursor:none;touch-action:none;user-select:none}
+        .lidar-edit-overlay.busy{cursor:progress}
+        .lidar-edit-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+        .lidar-edit-brush{fill:rgba(20,184,166,.1);stroke:#5eead4;stroke-width:2;vector-effect:non-scaling-stroke;filter:drop-shadow(0 0 8px rgba(20,184,166,.45))}
+        .lidar-edit-overlay.mode-erase .lidar-edit-brush{fill:rgba(239,68,68,.1);stroke:#fca5a5;filter:drop-shadow(0 0 8px rgba(239,68,68,.45))}
+        .lidar-edit-trail{fill:none;stroke:#5eead4;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;opacity:.86}
+        .lidar-edit-overlay.mode-erase .lidar-edit-trail{stroke:#fca5a5}
+        .lidar-edit-floating{position:absolute;left:12px;bottom:12px;display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 10px;border:1px solid rgba(20,184,166,.34);border-radius:8px;background:rgba(2,6,23,.82);color:#ccfbf1;font-size:11px;font-weight:900;backdrop-filter:blur(8px);box-shadow:0 12px 30px rgba(0,0,0,.32)}
+        .lidar-edit-overlay.mode-erase .lidar-edit-floating{border-color:rgba(248,113,113,.4);color:#fecaca}
+        .lidar-edit-floating span{font-variant-numeric:tabular-nums;color:#5eead4}
         .sidebar::-webkit-scrollbar{width:5px}
         .sidebar::-webkit-scrollbar-track{background:rgba(0,0,0,0.1)}
         .sidebar::-webkit-scrollbar-thumb{background:rgba(99,179,237,0.3);border-radius:10px}
@@ -2490,6 +3082,13 @@ export default function App() {
         .share-close-btn:hover { background: #dc2626; }
         .share-open-link { display: block; font-size: 10px; color: #6366f1; text-align: center; margin-top: 0.75rem; text-decoration: none; }
         .share-open-link:hover { text-decoration: underline; }
+        .plan-map-dialog { position:relative; background:#0f172a; border:1px solid #1e293b; border-radius:12px; width:min(96vw, 980px); max-height:92vh; padding:1rem; box-shadow:0 24px 80px rgba(0,0,0,.7); display:flex; flex-direction:column; gap:.75rem; }
+        .plan-map-title { display:flex; align-items:center; justify-content:space-between; gap:.75rem; color:#f8fafc; font-size:1rem; font-weight:800; }
+        .plan-map-image-wrap { background:#f6f4ee; border:1px solid #334155; border-radius:8px; overflow:auto; display:flex; justify-content:center; align-items:flex-start; max-height:68vh; }
+        .plan-map-image { display:block; max-width:100%; height:auto; image-rendering:auto; }
+        .plan-map-meta { display:flex; flex-wrap:wrap; gap:.5rem; color:#94a3b8; font-size:11px; }
+        .plan-map-meta span { background:#020617; border:1px solid #1e293b; border-radius:6px; padding:.35rem .5rem; }
+        .plan-map-actions { display:flex; gap:.5rem; justify-content:flex-end; flex-wrap:wrap; }
 
         .share-input-row { display: flex; gap: 8px; margin-bottom: 1.2rem; }
         .share-url-input { flex: 1; background: #020617; border: 1px solid #1e293b; border-radius: 8px; padding: 0.6rem 0.8rem; font-size: 13px; color: #f1f5f9; outline: none; }
@@ -2522,7 +3121,8 @@ export default function App() {
             display: flex; position: fixed; inset: 0; z-index: 9999; width: 100vw; height: 100vh;
             background: rgba(8,12,24,.96); backdrop-filter: blur(12px);
           }
-          .sidebar { width: 100%; height: 100%; border-left: none; padding: 2rem 1.5rem; }
+          .sidebar { width: 100%; height: 100%; border-left: none; padding: 2rem 1.5rem 6rem; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+          .sidebar-container.open .mobile-sidebar-close { display: inline-flex; }
           .btn-menu { display: flex !important; }
           .tb-file, .tb-badge, .tb-stat { display: none; }
           .s-label { font-size: 0.9rem; margin-top: 1rem; color: #a0aec0; }
@@ -2922,10 +3522,48 @@ export default function App() {
                         onSurfaceOffsetChange={(offset) => setOpts(prev => ({ ...prev, surfaceOffset: offset }))}
                       />
                     )}
-                  </ErrorBoundary>
-                </Suspense>
+	                  </ErrorBoundary>
+	                </Suspense>
 
-                {/* Station detail card overlay */}
+                {lidarEditMode !== 'off' && cave.pointCount > 0 && (
+                  <div
+                    className={`lidar-edit-overlay mode-${lidarEditMode}${lidarEditBusy ? ' busy' : ''}`}
+                    onPointerDown={beginLidarEditStroke}
+                    onPointerMove={moveLidarEditStroke}
+                    onPointerUp={endLidarEditStroke}
+                    onPointerCancel={endLidarEditStroke}
+                    onPointerLeave={() => {
+                      if (lidarActiveStrokeRef.current.length === 0) setLidarEditCursor(null);
+                    }}
+                  >
+                    <svg className="lidar-edit-svg" aria-hidden="true">
+                      {lidarEditStroke.length > 1 && (
+                        <polyline
+                          points={lidarEditStroke.map(point => `${point.x},${point.y}`).join(' ')}
+                          className="lidar-edit-trail"
+                        />
+                      )}
+                      {lidarEditCursor && (
+                        <circle
+                          cx={lidarEditCursor.x}
+                          cy={lidarEditCursor.y}
+                          r={lidarBrushSize}
+                          className="lidar-edit-brush"
+                        />
+                      )}
+                    </svg>
+                    <div className="lidar-edit-floating">
+                      {lidarEditMode === 'erase'
+                        ? (lang === 'sk' ? 'Guma' : 'Erase')
+                        : (lang === 'sk' ? 'Ponechať' : 'Keep')}
+                      {lidarEditMode === 'keep' && lidarKeepSelectionCount > 0 && (
+                        <span>{lidarKeepSelectionCount.toLocaleString()}</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+	                {/* Station detail card overlay */}
                 {selectedStations.length > 0 && showStationCard && (
                     <StationDetailCard
                       stations={selectedStations}
@@ -3215,8 +3853,8 @@ export default function App() {
                     </div>
 
                     {/* MAIN NEXTGEN SWITCH - only for point-cloud models */}
-                    {cave.pointCount > 0 && (
-                      <div className="toggle-row" style={{ background: 'rgba(99,102,241,0.1)', padding: '8px', borderRadius: '8px', marginBottom: '12px', border: '1px solid rgba(99,102,241,0.2)' }}>
+	                    {cave.pointCount > 0 && (
+	                      <div className="toggle-row" style={{ background: 'rgba(99,102,241,0.1)', padding: '8px', borderRadius: '8px', marginBottom: '12px', border: '1px solid rgba(99,102,241,0.2)' }}>
                         <label className="toggle-label" style={{ color: '#a5b4fc', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>blur_on</span>
                           {lang === 'sk' ? 'LIDAR NEXTGEN' : 'LiDAR NEXTGEN'}
@@ -3224,10 +3862,108 @@ export default function App() {
                         <div className={`switch${opts.engine === 'v2' ? ' on' : ''}`}
                           onClick={() => setOpts(p => ({ ...p, engine: p.engine === 'v2' ? 'v1' : 'v2' }))} role="switch"
                           aria-checked={opts.engine === 'v2'} tabIndex={0} />
+	                      </div>
+	                    )}
+
+                    {cave.pointCount > 0 && (
+                      <div className={`lidar-edit-panel${lidarEditMode !== 'off' ? ' active' : ''}`}>
+                        <div className="lidar-edit-header">
+                          <span className="lidar-edit-title">
+                            <EraserIcon aria-hidden="true" />
+                            {lang === 'sk' ? 'LiDAR editácia' : 'LiDAR editing'}
+                          </span>
+                          <span className="lidar-edit-count">{cave.pointCount.toLocaleString()}</span>
+                        </div>
+
+                        <div className="lidar-edit-toolbar">
+                          <button
+                            type="button"
+                            className={`lidar-edit-btn danger${lidarEditMode === 'erase' ? ' active' : ''}`}
+                            onClick={() => setLidarEditMode(mode => mode === 'erase' ? 'off' : 'erase')}
+                            disabled={lidarEditBusy}
+                            title={lang === 'sk' ? 'Guma' : 'Eraser'}
+                          >
+                            <EraserIcon aria-hidden="true" />
+                            <span>{lang === 'sk' ? 'Guma' : 'Erase'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            className={`lidar-edit-btn keep${lidarEditMode === 'keep' ? ' active' : ''}`}
+                            onClick={() => setLidarEditMode(mode => mode === 'keep' ? 'off' : 'keep')}
+                            disabled={lidarEditBusy}
+                            title={lang === 'sk' ? 'Ponechať označené body' : 'Keep marked points'}
+                          >
+                            <MousePointerIcon aria-hidden="true" />
+                            <span>{lang === 'sk' ? 'Ponechať' : 'Keep'}</span>
+                          </button>
+                        </div>
+
+                        <div className="lidar-brush-row">
+                          <label>{lang === 'sk' ? 'Štetec' : 'Brush'}</label>
+                          <input
+                            type="range"
+                            min={16}
+                            max={120}
+                            step={2}
+                            value={lidarBrushSize}
+                            onChange={event => setLidarBrushSize(Number(event.target.value))}
+                            disabled={lidarEditBusy}
+                          />
+                          <span>{lidarBrushSize}px</span>
+                        </div>
+
+                        {lidarEditMode === 'keep' && (
+                          <div className="lidar-keep-row">
+                            <span>{lidarKeepSelectionCount.toLocaleString()}</span>
+                            <button
+                              type="button"
+                              className="lidar-edit-btn keep"
+                              onClick={applyLidarKeepSelection}
+                              disabled={lidarEditBusy || lidarKeepSelectionCount === 0}
+                              title={lang === 'sk' ? 'Použiť výber' : 'Apply selection'}
+                            >
+                              <CheckCircleIcon aria-hidden="true" />
+                              <span>{lang === 'sk' ? 'Použiť' : 'Apply'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="lidar-icon-btn"
+                              onClick={clearLidarKeepSelection}
+                              disabled={lidarEditBusy || lidarKeepSelectionCount === 0}
+                              title={lang === 'sk' ? 'Zrušiť výber' : 'Clear selection'}
+                              aria-label={lang === 'sk' ? 'Zrušiť výber' : 'Clear selection'}
+                            >
+                              <XIcon aria-hidden="true" />
+                            </button>
+                          </div>
+                        )}
+
+                        <div className="lidar-edit-toolbar secondary">
+                          <button
+                            type="button"
+                            className="lidar-edit-btn"
+                            onClick={undoLidarEdit}
+                            disabled={lidarEditBusy || !lidarUndoCaveRef.current}
+                            title={lang === 'sk' ? 'Vrátiť poslednú úpravu' : 'Undo last edit'}
+                          >
+                            <UndoIcon aria-hidden="true" />
+                            <span>Undo</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="lidar-edit-btn"
+                            onClick={resetLidarEdits}
+                            disabled={lidarEditBusy || !lidarOriginalCaveRef.current || lidarEditRemovedCount === 0}
+                            title={lang === 'sk' ? 'Obnoviť pôvodný LiDAR' : 'Restore original LiDAR'}
+                          >
+                            <RotateCcwIcon aria-hidden="true" />
+                            <span>Reset</span>
+                          </button>
+                        </div>
                       </div>
                     )}
 
-                    {/* CASE A: NEXTGEN IS ON (v2 Engine) */}
+	                    {/* CASE A: NEXTGEN IS ON (v2 Engine) */}
                     {opts.engine === 'v2' && cave.pointCount > 0 ? (
                       <div style={{ padding: '0 4px' }}>
                         <div style={{ marginBottom: 12 }}>
@@ -3261,6 +3997,29 @@ export default function App() {
                             value={opts.pointCloudPlasticity}
                             onChange={e => setOpts(p => ({ ...p, pointCloudPlasticity: Number(e.target.value) }))}
                             className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+                        </div>
+
+                        <div style={{ marginBottom: 12 }}>
+                          <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, display: 'block', marginBottom: 6 }}>
+                            {lang === 'sk' ? 'TVAR BODOV' : 'POINT SHAPE'}
+                          </label>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            {POINT_CLOUD_SHAPE_OPTIONS.map(option => {
+                              const shape = option.id;
+                              const ShapeIcon = POINT_CLOUD_SHAPE_ICONS[shape];
+                              const active = (opts.pointCloudShape ?? DEFAULT_POINT_CLOUD_SHAPE) === shape;
+                              const label = lang === 'sk' ? POINT_CLOUD_SHAPE_LABELS_SK[shape] : POINT_CLOUD_SHAPE_LABELS_EN[shape];
+                              return (
+                                <button key={shape} onClick={() => setOpts(p => ({ ...p, pointCloudShape: shape }))}
+                                  title={label}
+                                  style={{ flex: '1 1 45%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '5px', minHeight: 30, fontSize: '9px', padding: '5px 3px', borderRadius: '4px', border: 'none', cursor: 'pointer',
+                                    background: active ? '#6366f1' : 'rgba(30,41,59,0.5)', color: 'white' }}>
+                                  <ShapeIcon size={13} strokeWidth={2.2} aria-hidden="true" />
+                                  <span>{label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
 
                         <div style={{ marginBottom: 12 }}>
@@ -4039,20 +4798,35 @@ export default function App() {
                     </div>
                     
                     <button 
-                      onClick={async () => {
-                        if (!cave) return;
-                        setIsLiDARAnalyzing(true);
-                        setTimeout(() => {
-                          const results = analyzeLiDARAnomalies(cave);
-                          setAnomalies(results);
-                          setIsLiDARAnalyzing(false);
-                        }, 600);
-                      }}
+                      onClick={isLiDARAnalyzing ? cancelLiDARAnalysis : runLiDARAnalysis}
                       className="btn-back"
                       style={{ width: '100%', marginBottom: '8px', background: 'rgba(147, 51, 234, 0.1)', color: '#c084fc', borderColor: 'rgba(147, 51, 234, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '6px', fontSize: '10px' }}
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>youtube_searched_for</span>
-                      <span>{isLiDARAnalyzing ? (lang === 'sk' ? 'Skenujem priestory...' : 'Scanning spaces...') : (lang === 'sk' ? 'Detegovať komíny, okná a pukliny' : 'Detect Chimneys & Windows')}</span>
+                      <span>{isLiDARAnalyzing ? (lang === 'sk' ? 'Zrušiť LiDAR analýzu' : 'Cancel LiDAR analysis') : (lang === 'sk' ? 'Detegovať komíny, okná a pukliny' : 'Detect Chimneys & Windows')}</span>
+                    </button>
+
+                    <button
+                      onClick={isLidarMapGenerating ? cancelLidarPlanMap : generateLidarPlanMap}
+                      className="btn-back"
+                      disabled={!cave.points || cave.pointCount === 0}
+                      style={{
+                        width: '100%',
+                        marginBottom: '8px',
+                        background: 'rgba(15,118,110,0.12)',
+                        color: '#5eead4',
+                        borderColor: 'rgba(20,184,166,0.25)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        padding: '6px',
+                        fontSize: '10px',
+                        opacity: (!cave.points || cave.pointCount === 0) ? 0.45 : 1
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>map</span>
+                      <span>{isLidarMapGenerating ? (lang === 'sk' ? 'Zrušiť kreslenie mapy' : 'Cancel map drawing') : (lang === 'sk' ? 'Nakresliť 2D mapu z LiDARu' : 'Draw 2D LiDAR map')}</span>
                     </button>
 
                     {anomalies.length > 0 ? (
@@ -4266,6 +5040,17 @@ export default function App() {
                   ))}
                 </div>
               </aside>
+              {isMobileMenuOpen && (
+                <button
+                  type="button"
+                  className="mobile-sidebar-close"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  aria-label={lang === 'sk' ? 'Zavrieť nastavenia' : 'Close settings'}
+                >
+                  <XIcon className="mobile-sidebar-close-icon" aria-hidden="true" />
+                  <span>{lang === 'sk' ? 'Zavrieť nastavenia' : 'Close settings'}</span>
+                </button>
+              )}
               </div>}
             <ScaleBar cameraData={cameraData} />
             <ColorScaleLegend caveLegend={legendCave} surfLegend={legendSurf} lang={lang} />
@@ -4274,6 +5059,54 @@ export default function App() {
         </div>
       )}
     </div>
+
+      {/* ── LIDAR PLAN MAP PREVIEW ── */}
+      {lidarPlanMapPreview && (
+        <div className="share-overlay" onClick={() => setLidarPlanMapPreview(null)}>
+          <div className="plan-map-dialog" onClick={e => e.stopPropagation()}>
+            <div className="plan-map-title">
+              <span>{lang === 'sk' ? '2D mapa z LiDAR modelu' : '2D map from LiDAR model'}</span>
+              <button className="share-close-btn" onClick={() => setLidarPlanMapPreview(null)}>✕</button>
+            </div>
+            <div className="plan-map-image-wrap">
+              <img
+                src={lidarPlanMapPreview.dataUrl}
+                className="plan-map-image"
+                alt={lang === 'sk' ? 'Pôdorys jaskyne z LiDAR modelu' : 'Cave plan map from LiDAR model'}
+              />
+            </div>
+            <div className="plan-map-meta">
+              <span>{lidarPlanMapPreview.width} × {lidarPlanMapPreview.height}px</span>
+              <span>{lidarPlanMapPreview.usedPoints.toLocaleString()} {lang === 'sk' ? 'bodov' : 'points'}</span>
+              <span>{lidarPlanMapPreview.occupiedCells.toLocaleString()} {lang === 'sk' ? 'buniek' : 'cells'}</span>
+              <span>{lidarPlanMapPreview.cellSize.toFixed(2)} m/px</span>
+            </div>
+            <div className="plan-map-actions">
+              <button
+                className="share-copy-btn"
+                style={{ flex: 0, background: '#334155' }}
+                onClick={() => setLidarPlanMapPreview(null)}
+              >
+                {t('ui.close')}
+              </button>
+              <button
+                className="share-copy-btn"
+                style={{ flex: 0 }}
+                onClick={() => {
+                  const link = document.createElement('a');
+                  link.href = lidarPlanMapPreview.dataUrl;
+                  link.download = `${loadedFile?.name?.replace(/\.[^.]+$/, '') || 'lidar-cave'}-2d-map.png`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+              >
+                {lang === 'sk' ? 'Uložiť PNG' : 'Save PNG'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── SHARE DIALOG ── */}
       {shareDialogOpen && (

@@ -24,6 +24,31 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          const normalized = id.replace(/\\/g, '/');
+          if (normalized.includes('/node_modules/react/') || normalized.includes('/node_modules/react-dom/')) {
+            return 'vendor-react';
+          }
+          if (normalized.includes('/node_modules/@react-three/')) {
+            return 'vendor-r3f';
+          }
+          if (normalized.includes('/node_modules/three/') || normalized.includes('/node_modules/three-mesh-bvh/')) {
+            return 'vendor-three';
+          }
+          if (normalized.includes('/node_modules/geotiff/') || normalized.includes('/node_modules/proj4/') || normalized.includes('/node_modules/three-geo/')) {
+            return 'vendor-geo';
+          }
+          if (normalized.includes('/node_modules/gsap/')) {
+            return 'vendor-utils';
+          }
+        },
+      },
+    },
+  },
   server: {
     proxy: {
       // ZBGIS Ortofoto — GKÚ

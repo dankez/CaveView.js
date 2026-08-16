@@ -19,7 +19,7 @@ import {
 } from '@shared/components/CaveSharedElements'
 import { Scraps, ClippingEdges } from '@shared/components/Scraps'
 import { elevColor, normZ } from '@shared/utils/colorUtils'
-import type { ParsedCave, StationLabel, CaveSurface, Segment } from '@shared/types'
+import type { ParsedCave, StationLabel, CaveSurface, Segment, ViewerCameraSnapshot } from '@shared/types'
 import type { SelStation } from '../../App'
 import type { ViewerOptions } from '@shared/types'
 
@@ -1686,7 +1686,7 @@ function RaycasterManager() {
   return null
 }
 
-function CameraMonitor({ onUpdate }: { onUpdate: (data: { dist: number, fov: number, height: number }) => void }) {
+function CameraMonitor({ onUpdate }: { onUpdate: (data: ViewerCameraSnapshot) => void }) {
   const { camera, size } = useThree()
   
   useEffect(() => {
@@ -1697,9 +1697,23 @@ function CameraMonitor({ onUpdate }: { onUpdate: (data: { dist: number, fov: num
       const dist = camera.position.distanceTo(target)
       // @ts-ignore
       const fov = camera.fov || 55
-      onUpdate({ dist, fov, height: size.height })
+      const perspective = camera as THREE.PerspectiveCamera
+      camera.updateMatrixWorld(true)
+      onUpdate({
+        dist,
+        fov,
+        width: size.width,
+        height: size.height,
+        aspect: perspective.aspect || size.width / Math.max(size.height, 1),
+        near: perspective.near || 0.1,
+        far: perspective.far || 10000,
+        position: camera.position.toArray() as [number, number, number],
+        quaternion: camera.quaternion.toArray() as [number, number, number, number],
+        target: target.toArray() as [number, number, number],
+      })
     }
     const timer = setInterval(update, 200)
+    update()
     return () => clearInterval(timer)
   }, [camera, size, onUpdate])
   
@@ -1736,7 +1750,7 @@ interface Props {
   onSurfaceClick?: (origX: number, origY: number, altitude: number, screenX: number, screenY: number) => void
   onBackgroundClick?: () => void
   onMoveStateChange?: (moving: boolean) => void
-  onCameraUpdate?: (data: { dist: number, fov: number, height: number }) => void
+  onCameraUpdate?: (data: ViewerCameraSnapshot) => void
   onProcessingStart?: (info: string) => void
   onProcessingEnd?: () => void
   onStatusChange?: (status: { msg: string; type: 'info' | 'error' | 'success' | 'progress'; progress?: number } | null) => void

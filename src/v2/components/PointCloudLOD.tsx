@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { useThree, useFrame } from '@react-three/fiber';
-import type { LiDARWorkerMessage } from '@shared/types';
+import type { LiDARWorkerMessage, ParsedCave, PointCloudShape } from '@shared/types';
+import { hasRenderablePointColors, hasUsefulPointColors } from '@shared/utils/pointCloudColors';
+import { DEFAULT_POINT_CLOUD_SHAPE, getPointCloudShapeUniform } from './pointCloudShape';
 
 const vertexShader = `
 #include <clipping_planes_pars_vertex>
@@ -25,10 +27,11 @@ void main() {
     vIntensity = intensity;
     vRelHeight = relHeight; // NEW
     vWorldZ = position.y; // In v2, Y is altitude
-    vModelNormal = normal; // NEW
+    vModelNormal = length(normal) > 0.001 ? normal : vec3(0.0); // NEW
     
     // Transform normal to view space (pre headlight lighting)
-    vNormal = normalize(normalMatrix * normal);
+    vec3 rawViewNormal = normalMatrix * normal;
+    vNormal = length(rawViewNormal) > 0.001 ? normalize(rawViewNormal) : vec3(0.0);
 
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
     gl_Position = projectionMatrix * mvPosition;
@@ -60,11 +63,37 @@ uniform vec3 customColor;
 uniform vec3 highlightColor;
 uniform float minZ;
 uniform float maxZ;
+uniform int uHasUsableVertexColors;
+uniform int pointShape; // 0 square, 1 sphere, 2 rounded diamond, 3 hex
 
 // Real-time GPU segmenter uniforms
 uniform int uViewMode; // 0: All, 1: Floor, 2: Ceiling, 3: Contour Floor, 4: Heatmap Floor
 uniform float uHeightThreshold; // threshold for relHeight (0.0 to 1.0)
 uniform float uAngleThreshold;  // threshold for normal.y (0.0 to 1.0)
+
+float getPointShapeAlpha(vec2 coord) {
+    if (pointShape == 0) {
+        return 1.0;
+    }
+
+    if (pointShape == 1) {
+        float circleDist = dot(coord, coord);
+        return 1.0 - smoothstep(0.92, 1.0, circleDist);
+    }
+
+    if (pointShape == 2) {
+        vec2 diamondCoord = vec2(
+            coord.x * 0.82 + coord.y * 0.32,
+            -coord.x * 0.32 + coord.y * 0.82
+        );
+        float diamondDist = abs(diamondCoord.x) + abs(diamondCoord.y);
+        return 1.0 - smoothstep(0.92, 1.02, diamondDist);
+    }
+
+    vec2 hexCoord = abs(coord);
+    float hexDist = max(hexCoord.x * 0.8660254 + hexCoord.y * 0.5, hexCoord.y);
+    return 1.0 - smoothstep(0.88, 0.98, hexDist);
+}
 
 vec3 getElevationColor(float z) {
     float t = clamp((z - minZ) / (maxZ - minZ), 0.0, 1.0);
@@ -87,6 +116,10 @@ vec3 getElevationColor(float z) {
 }
 
 void main() {
+    vec2 spriteCoord = gl_PointCoord * 2.0 - 1.0;
+    float shapeAlpha = getPointShapeAlpha(spriteCoord);
+    if (shapeAlpha <= 0.02) discard;
+
     // 0. Manual Clipping with Highlight Logic
     float minClipDist = 10000.0;
     bool hasClip = false;
@@ -154,17 +187,27 @@ void main() {
     } else if (colorMode == 2) {
         baseColor = customColor; 
     } else {
-        // Original mode: use vertex color with a safe fallback for pure white/black
-        baseColor = vColor;
-        if (length(vColor) < 0.05 || length(vColor) > 1.7) {
-            baseColor = vec3(0.85);
+        // Original mode: trust vertex colors only when the source declared real color data.
+        if (uHasUsableVertexColors == 1) {
+            baseColor = vColor;
+        } else {
+            baseColor = customColor;
         }
     }
     
     // 2. Lighting calculation (Headlight effect)
     vec3 lightDir = normalize(vec3(0.2, 0.2, 1.0));
     float dotNL = dot(vNormal, lightDir);
-    float diffuse = (length(vNormal) > 0.01) ? max(dotNL, 0.0) : 0.6;
+    float spriteShade = 1.0;
+    float spriteDiffuse = 0.5;
+    if (pointShape == 1) {
+        float spriteDist = dot(spriteCoord, spriteCoord);
+        float spriteDepth = sqrt(max(0.0, 1.0 - spriteDist));
+        spriteShade = mix(0.72, 1.12, spriteDepth);
+        vec3 pointSpriteNormal = normalize(vec3(spriteCoord.x * 0.45, -spriteCoord.y * 0.45, spriteDepth));
+        spriteDiffuse = max(dot(pointSpriteNormal, lightDir), 0.0);
+    }
+    float diffuse = (length(vNormal) > 0.01) ? max(dotNL, 0.0) : spriteDiffuse;
     
     // 3. Intensity influence
     float baseIntensityEffect = 0.4 + vIntensity * 0.6;
@@ -174,7 +217,8 @@ void main() {
     float ambient = 0.4;
     float light = (ambient + (diffuse * 0.6 * plasticity)) * brightness;
     
-    vec3 finalColor = baseColor * light * brightIntensity;
+    vec3 finalColor = baseColor * light * brightIntensity * spriteShade;
+    finalColor *= mix(0.94, 1.03, shapeAlpha);
     
     // 5. Gamma correction
     finalColor = pow(finalColor, vec3(0.8 / clamp(brightness, 0.5, 2.0)));
@@ -188,6 +232,22 @@ void main() {
     gl_FragColor = vec4(finalColor, 1.0);
 }
 `;
+
+type PointCloudRenderProps = {
+  pointSize?: number;
+  brightness?: number;
+  plasticity?: number;
+  pointShape?: PointCloudShape;
+  colorMode?: 'original' | 'elevation' | 'natural';
+  customColor?: string;
+  highlightColor?: string;
+  minZ?: number;
+  maxZ?: number;
+  clippingPlanes?: THREE.Plane[];
+  viewMode?: 'all' | 'floor' | 'ceiling' | 'contour' | 'heatmap';
+  heightThreshold?: number;
+  angleThreshold?: number;
+};
 
 interface ChunkData {
   id: string;
@@ -203,25 +263,12 @@ interface ChunkData {
   };
 }
 
-export const PointCloudLOD: React.FC<{ 
-  url: string; 
-  pointSize?: number; 
-  brightness?: number;
-  plasticity?: number;
-  colorMode?: 'original' | 'elevation' | 'natural';
-  customColor?: string;
-  highlightColor?: string;
-  minZ?: number;
-  maxZ?: number;
-  clippingPlanes?: THREE.Plane[];
-  viewMode?: 'all' | 'floor' | 'ceiling' | 'contour' | 'heatmap'; // NEW
-  heightThreshold?: number; // NEW
-  angleThreshold?: number;  // NEW
-}> = ({ 
+export const PointCloudLOD: React.FC<PointCloudRenderProps & { url: string }> = ({
   url, 
   pointSize = 1.0, 
   brightness = 1.0, 
   plasticity = 1.0,
+  pointShape = DEFAULT_POINT_CLOUD_SHAPE,
   colorMode = 'original',
   customColor = '#ffffff',
   highlightColor = '#ff4444',
@@ -245,6 +292,7 @@ export const PointCloudLOD: React.FC<{
 
   const modeInt = colorMode === 'elevation' ? 1 : colorMode === 'natural' ? 2 : 0;
   const viewModeInt = viewMode === 'floor' ? 1 : viewMode === 'ceiling' ? 2 : viewMode === 'contour' ? 3 : viewMode === 'heatmap' ? 4 : 0; // NEW
+  const shapeInt = getPointCloudShapeUniform(pointShape);
   const threeColor = useMemo(() => new THREE.Color(customColor), [customColor]);
   const threeHighlightColor = useMemo(() => new THREE.Color(highlightColor), [highlightColor]);
 
@@ -271,11 +319,13 @@ export const PointCloudLOD: React.FC<{
             pointSize: { value: pointSize },
             brightness: { value: brightness },
             plasticity: { value: plasticity },
+            pointShape: { value: shapeInt },
             colorMode: { value: modeInt },
             customColor: { value: threeColor },
             highlightColor: { value: threeHighlightColor },
             minZ: { value: minZ },
             maxZ: { value: maxZ },
+            uHasUsableVertexColors: { value: hasUsefulPointColors(data.colors, data.vertexCount || 0) ? 1 : 0 },
             uViewMode: { value: viewModeInt },
             uHeightThreshold: { value: heightThreshold },
             uAngleThreshold: { value: angleThreshold }
@@ -341,6 +391,7 @@ export const PointCloudLOD: React.FC<{
         if (material.uniforms.pointSize) material.uniforms.pointSize.value = pointSize;
         if (material.uniforms.brightness) material.uniforms.brightness.value = brightness;
         if (material.uniforms.plasticity) material.uniforms.plasticity.value = plasticity;
+        if (material.uniforms.pointShape) material.uniforms.pointShape.value = shapeInt;
         if (material.uniforms.colorMode) material.uniforms.colorMode.value = modeInt;
         if (material.uniforms.customColor) material.uniforms.customColor.value = threeColor;
         if (material.uniforms.highlightColor) material.uniforms.highlightColor.value = threeHighlightColor;
@@ -353,7 +404,7 @@ export const PointCloudLOD: React.FC<{
       material.clippingPlanes = clippingPlanes;
       material.needsUpdate = true;
     });
-  }, [pointSize, brightness, plasticity, colorMode, customColor, highlightColor, threeColor, threeHighlightColor, minZ, maxZ, clippingPlanes, chunks, viewMode, heightThreshold, angleThreshold]); // NEW dependencies
+  }, [pointSize, brightness, plasticity, shapeInt, colorMode, customColor, highlightColor, threeColor, threeHighlightColor, minZ, maxZ, clippingPlanes, chunks, viewMode, heightThreshold, angleThreshold]); // NEW dependencies
 
   useFrame(() => {
     const frustum = frustumRef.current;
@@ -373,4 +424,208 @@ export const PointCloudLOD: React.FC<{
       ))}
     </group>
   );
+};
+
+function buildDirectRelHeights(cave: ParsedCave): Float32Array {
+  const points = cave.points;
+  const count = cave.pointCount;
+  const relHeights = new Float32Array(count);
+  if (!points || count === 0) return relHeights;
+
+  const cellSize = Math.max(0.2, Math.max(cave.bounds.size.x, cave.bounds.size.y, 1) / 280);
+  const invCell = 1 / cellSize;
+  const columns = new Map<string, { min: number; max: number }>();
+
+  for (let i = 0; i < count; i++) {
+    const p = i * 3;
+    const key = `${Math.floor(points[p] * invCell)},${Math.floor(points[p + 1] * invCell)}`;
+    const z = points[p + 2];
+    const column = columns.get(key);
+    if (column) {
+      if (z < column.min) column.min = z;
+      if (z > column.max) column.max = z;
+    } else {
+      columns.set(key, { min: z, max: z });
+    }
+  }
+
+  for (let i = 0; i < count; i++) {
+    const p = i * 3;
+    const key = `${Math.floor(points[p] * invCell)},${Math.floor(points[p + 1] * invCell)}`;
+    const column = columns.get(key);
+    if (!column) {
+      relHeights[i] = 0;
+      continue;
+    }
+    const halfHeight = (column.max - column.min) / 2;
+    relHeights[i] = halfHeight > 0.02 ? (points[p + 2] - (column.min + column.max) / 2) / halfHeight : -1;
+  }
+
+  return relHeights;
+}
+
+function hasDirectPointColors(cave: ParsedCave): boolean {
+  const count = cave.pointCount;
+  if (!cave.pointColors || cave.pointColors.length < count * 3) return false;
+  return hasRenderablePointColors(cave, count);
+}
+
+function hasDirectPointNormals(cave: ParsedCave): boolean {
+  const count = cave.pointCount;
+  if (!cave.pointNormals || cave.pointNormals.length < count * 3) return false;
+  if (cave.hasPointNormals === false) return false;
+  return true;
+}
+
+export const PointCloudDirect: React.FC<PointCloudRenderProps & { cave: ParsedCave }> = ({
+  cave,
+  pointSize = 1.0,
+  brightness = 1.0,
+  plasticity = 1.0,
+  pointShape = DEFAULT_POINT_CLOUD_SHAPE,
+  colorMode = 'original',
+  customColor = '#ffffff',
+  highlightColor = '#ff4444',
+  minZ = -100,
+  maxZ = 100,
+  clippingPlanes = [],
+  viewMode = 'all',
+  heightThreshold = 0.4,
+  angleThreshold = 0.5,
+}) => {
+  const modeInt = colorMode === 'elevation' ? 1 : colorMode === 'natural' ? 2 : 0;
+  const viewModeInt = viewMode === 'floor' ? 1 : viewMode === 'ceiling' ? 2 : viewMode === 'contour' ? 3 : viewMode === 'heatmap' ? 4 : 0;
+  const shapeInt = getPointCloudShapeUniform(pointShape);
+  const threeColor = useMemo(() => new THREE.Color(customColor), [customColor]);
+  const threeHighlightColor = useMemo(() => new THREE.Color(highlightColor), [highlightColor]);
+  const hasSourceVertexColors = useMemo(
+    () => hasDirectPointColors(cave),
+    [cave]
+  );
+
+  const geometry = useMemo(() => {
+    const count = cave.pointCount;
+    const source = cave.points;
+    if (!source || count === 0) return null;
+
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+    const normals = new Float32Array(count * 3);
+    const intensity = new Float32Array(count);
+    const relHeight = buildDirectRelHeights(cave);
+    const hasColors = hasSourceVertexColors && !!cave.pointColors && cave.pointColors.length >= count * 3;
+    const hasNormals = hasDirectPointNormals(cave);
+    const hasIntensity = !!cave.pointIntensity && cave.pointIntensity.length >= count;
+
+    for (let i = 0; i < count; i++) {
+      const src = i * 3;
+      positions[src] = source[src];
+      positions[src + 1] = source[src + 2];
+      positions[src + 2] = -source[src + 1];
+
+      if (hasColors) {
+        colors[src] = cave.pointColors![src];
+        colors[src + 1] = cave.pointColors![src + 1];
+        colors[src + 2] = cave.pointColors![src + 2];
+      } else {
+        colors[src] = 0;
+        colors[src + 1] = 0;
+        colors[src + 2] = 0;
+      }
+
+      if (hasNormals) {
+        normals[src] = cave.pointNormals![src];
+        normals[src + 1] = cave.pointNormals![src + 2];
+        normals[src + 2] = -cave.pointNormals![src + 1];
+      }
+
+      intensity[i] = hasIntensity ? cave.pointIntensity![i] : 1;
+    }
+
+    const directGeometry = new THREE.BufferGeometry();
+    directGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    directGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    directGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+    directGeometry.setAttribute('intensity', new THREE.BufferAttribute(intensity, 1));
+    directGeometry.setAttribute('relHeight', new THREE.BufferAttribute(relHeight, 1));
+    directGeometry.computeBoundingSphere();
+    return directGeometry;
+  }, [cave, hasSourceVertexColors]);
+
+  const material = useMemo(() => new THREE.ShaderMaterial({
+    uniforms: {
+      pointSize: { value: pointSize },
+      brightness: { value: brightness },
+      plasticity: { value: plasticity },
+      pointShape: { value: shapeInt },
+      colorMode: { value: modeInt },
+      customColor: { value: threeColor },
+      highlightColor: { value: threeHighlightColor },
+      minZ: { value: minZ },
+      maxZ: { value: maxZ },
+      uHasUsableVertexColors: { value: hasSourceVertexColors ? 1 : 0 },
+      uViewMode: { value: viewModeInt },
+      uHeightThreshold: { value: heightThreshold },
+      uAngleThreshold: { value: angleThreshold },
+    },
+    vertexShader,
+    fragmentShader,
+    transparent: false,
+    depthWrite: true,
+    depthTest: true,
+    clipping: true,
+    clippingPlanes,
+    side: THREE.DoubleSide,
+  }), []);
+
+  useEffect(() => {
+    if (!geometry) return undefined;
+    return () => {
+      geometry.dispose();
+    };
+  }, [geometry]);
+
+  useEffect(() => {
+    return () => {
+      material.dispose();
+    };
+  }, [material]);
+
+  useEffect(() => {
+    material.uniforms.pointSize.value = pointSize;
+    material.uniforms.brightness.value = brightness;
+    material.uniforms.plasticity.value = plasticity;
+    material.uniforms.pointShape.value = shapeInt;
+    material.uniforms.colorMode.value = modeInt;
+    material.uniforms.customColor.value = threeColor;
+    material.uniforms.highlightColor.value = threeHighlightColor;
+    material.uniforms.minZ.value = minZ;
+    material.uniforms.maxZ.value = maxZ;
+    material.uniforms.uHasUsableVertexColors.value = hasSourceVertexColors ? 1 : 0;
+    material.uniforms.uViewMode.value = viewModeInt;
+    material.uniforms.uHeightThreshold.value = heightThreshold;
+    material.uniforms.uAngleThreshold.value = angleThreshold;
+    material.clippingPlanes = clippingPlanes;
+    material.needsUpdate = true;
+  }, [
+    material,
+    pointSize,
+    brightness,
+    plasticity,
+    shapeInt,
+    modeInt,
+    threeColor,
+    threeHighlightColor,
+    minZ,
+    maxZ,
+    hasSourceVertexColors,
+    viewModeInt,
+    heightThreshold,
+    angleThreshold,
+    clippingPlanes,
+  ]);
+
+  if (!geometry) return null;
+
+  return <points geometry={geometry} material={material} frustumCulled={false} />;
 };

@@ -90,10 +90,46 @@ D 10 10 10
       expect(result.pointColors![0]).toBeCloseTo(32768 / 65535);
       expect(result.pointColors![1]).toBeCloseTo(128 / 255);
       expect(result.pointColors![2]).toBeCloseTo(0.5);
+      expect(result.hasPointColors).toBe(true);
+      expect(result.hasPointNormals).toBe(false);
       expect(result.pointIntensity![0]).toBeCloseTo(1);
       expect(result.pointIntensity![1]).toBeCloseTo(32768 / 65535);
       expect(result.pointClassification![0]).toBe(10);
       expect(result.pointClassification![1]).toBe(2);
+    });
+
+    it('preserves PLY normals for edited LiDAR direct rendering', () => {
+      const header = [
+        'ply',
+        'format binary_little_endian 1.0',
+        'element vertex 1',
+        'property float x',
+        'property float y',
+        'property float z',
+        'property float nx',
+        'property float ny',
+        'property float nz',
+        'end_header',
+        ''
+      ].join('\n');
+
+      const buffer = makeBinaryPly(header, 24, dv => {
+        dv.setFloat32(0, 10, true);
+        dv.setFloat32(4, 20, true);
+        dv.setFloat32(8, 30, true);
+        dv.setFloat32(12, 0.25, true);
+        dv.setFloat32(16, -0.5, true);
+        dv.setFloat32(20, 0.75, true);
+      });
+
+      const result = parsePly(buffer);
+
+      expect(result.pointNormals).toHaveLength(3);
+      expect(result.pointNormals![0]).toBeCloseTo(0.25);
+      expect(result.pointNormals![1]).toBeCloseTo(-0.5);
+      expect(result.pointNormals![2]).toBeCloseTo(0.75);
+      expect(result.hasPointColors).toBe(false);
+      expect(result.hasPointNormals).toBe(true);
     });
   });
 });

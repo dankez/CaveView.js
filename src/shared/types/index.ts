@@ -131,11 +131,27 @@ export interface ParsedCave {
   hasSurface:    boolean
   points?:       Float32Array // Points as [x, y, z, ...]
   pointColors?:  Float32Array // Points as [r, g, b, ...] (0-1)
+  hasPointColors?: boolean // True when source data declared real point colors
+  hasUsablePointColors?: boolean // True when source colors are visually useful, not white/black placeholders
   pointNormals?: Float32Array // Points as [nx, ny, nz, ...]
+  hasPointNormals?: boolean // True when source data declared real point normals
   pointIntensity?: Float32Array // Intensity values
   pointClassification?: Uint8Array // Classification codes
   isLiDAR?:      boolean      // Added for point clouds
   pointCloudUrl?: string      // URL for streaming point cloud
+}
+
+export interface ViewerCameraSnapshot {
+  dist: number
+  fov: number
+  width: number
+  height: number
+  aspect: number
+  near: number
+  far: number
+  position: [number, number, number]
+  quaternion: [number, number, number, number]
+  target: [number, number, number]
 }
 
 export interface SurveyData {
@@ -150,6 +166,8 @@ export interface SurveyData {
 }
 
 // ─── ViewerOptions ────────────────────────────────────────────────────────────
+export type PointCloudShape = 'square' | 'sphere' | 'diamond' | 'hex'
+
 export interface ViewerOptions {
   // Engine selection
   engine:              'v1' | 'v2'
@@ -222,6 +240,7 @@ export interface ViewerOptions {
   pointCloudColorMode: 'original' | 'elevation' | 'natural'
   pointCloudCustomColor: string
   pointCloudPlasticity: number
+  pointCloudShape: PointCloudShape
   pointCloudViewMode: 'all' | 'floor' | 'ceiling' | 'contour' | 'heatmap'
   pointCloudHeightThreshold: number
   pointCloudAngleThreshold: number
@@ -294,7 +313,7 @@ export interface CaveViewerNextGenProps {
   cave: ParsedCave;
   options: ViewerOptions;
   onStationClick?: (idx: number, screenX: number, screenY: number, ctrlKey: boolean, point?: any) => void;
-  onCameraUpdate?: (data: { dist: number, fov: number, height: number }) => void;
+  onCameraUpdate?: (data: ViewerCameraSnapshot) => void;
   onStatusChange?: (status: { msg: string, type: 'info' | 'error' | 'success' | 'progress', progress?: number } | null) => void;
   fitTrigger?: number;
   selectedStations?: StationLabel[];

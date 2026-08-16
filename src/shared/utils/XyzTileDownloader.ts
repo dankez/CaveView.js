@@ -304,6 +304,7 @@ export async function downloadWmsImage(
                 const blob = await resp.blob();
                 const img = await createImageBitmap(blob);
                 ctx.drawImage(img, 0, 0, width, height);
+                img.close?.();
                 const dataUrl = canvasToTextureDataUrl(canvas, format);
                 const finishedAt = Date.now();
                 return {
@@ -502,6 +503,7 @@ export async function downloadTiledXyz(
                     const dx = (tx - xMin) * TILE_SIZE;
                     const dy = (ty - yMin) * TILE_SIZE;
                     ctx.drawImage(img, dx, dy, TILE_SIZE, TILE_SIZE);
+                    img.close?.();
                     inspector.cacheHits++;
                     inspector.bytesFromCache += cachedBlob.size;
                     successfulTiles++;
@@ -527,6 +529,7 @@ export async function downloadTiledXyz(
                 const dx = (tx - xMin) * TILE_SIZE;
                 const dy = (ty - yMin) * TILE_SIZE;
                 ctx.drawImage(img, dx, dy, TILE_SIZE, TILE_SIZE);
+                img.close?.();
                 inspector.networkTiles++;
                 inspector.bytesDownloaded += blob.size;
                 if (index > 0) inspector.fallbackTiles++;

@@ -1,1025 +1,1061 @@
 {
-  "/home/dankez/cave3d/CaveView-modernized/rollup.config.mjs": {
+  "/home/dankez/AI-projekty/CaveView-modernized/rollup.config.mjs": {
     "mtime": 1776280433.1706715,
     "hash": "cf27d523e9330d9eac7e40f216c9c729"
   },
-  "/home/dankez/cave3d/CaveView-modernized/test-merge.mjs": {
+  "/home/dankez/AI-projekty/CaveView-modernized/test-merge.mjs": {
     "mtime": 1777201521.7377317,
     "hash": "e99ff4fe13e6889743e82b3b71b646d3"
   },
-  "/home/dankez/cave3d/CaveView-modernized/rollup.graph.mjs": {
+  "/home/dankez/AI-projekty/CaveView-modernized/rollup.graph.mjs": {
     "mtime": 1776280433.1706715,
     "hash": "8c9989e45ed9c396d194fff4a30c4b42"
   },
-  "/home/dankez/cave3d/CaveView-modernized/rollup-babel.config.mjs": {
+  "/home/dankez/AI-projekty/CaveView-modernized/rollup-babel.config.mjs": {
     "mtime": 1776280433.1706715,
     "hash": "713dfaee0dd64425b02311cb4bb6aee6"
   },
-  "/home/dankez/cave3d/CaveView-modernized/rollup-gl.mjs": {
+  "/home/dankez/AI-projekty/CaveView-modernized/rollup-gl.mjs": {
     "mtime": 1776280433.1706715,
     "hash": "1a4fb1c9680cdea7a78ffe64450eacda"
   },
-  "/home/dankez/cave3d/CaveView-modernized/vite.config.ts": {
-    "mtime": 1780399093.3889902,
-    "hash": "997c48baa8fa0c9390edac027b66f67a"
+  "/home/dankez/AI-projekty/CaveView-modernized/vite.config.ts": {
+    "mtime": 1780638527.6690931,
+    "hash": "d76901152a4dc816c7e91bc7ec9ab860"
   },
-  "/home/dankez/cave3d/CaveView-modernized/inspect_lox.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/inspect_lox.ts": {
     "mtime": 1777201521.1537378,
     "hash": "23b480ba483577eb756295f923b7bacd"
   },
-  "/home/dankez/cave3d/CaveView-modernized/playwright.config.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/playwright.config.ts": {
     "mtime": 1778571744.450511,
     "hash": "86211a98527655e999e3f3e031357ee9"
   },
-  "/home/dankez/cave3d/CaveView-modernized/parseTest.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/parseTest.ts": {
     "mtime": 1778175284.1489606,
     "hash": "f73035793bc69cd59e6cbfaa5080f878"
   },
-  "/home/dankez/cave3d/CaveView-modernized/eslint.config.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/eslint.config.js": {
     "mtime": 1778338898.5242484,
     "hash": "75fd6f3bbb1933245b43221c9668a041"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/vite-env.d.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/vite-env.d.ts": {
     "mtime": 1780470261.0060184,
     "hash": "3df1767acce966488a9cbe54be0ee3b0"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/App.tsx": {
-    "mtime": 1780635355.1975071,
-    "hash": "cb5ee33b9b58367b1dce1e701575b178"
+  "/home/dankez/AI-projekty/CaveView-modernized/src/App.tsx": {
+    "mtime": 1780670423.2097137,
+    "hash": "ffa79de8f912ff0731a25b230a591cb5"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/main.tsx": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/main.tsx": {
     "mtime": 1776409952.8888268,
     "hash": "6ae1d7f14c4f267fbb8a816063c4d248"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/v2/parsers/plyLoader.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/v2/parsers/plyLoader.ts": {
     "mtime": 1780391322.5350018,
     "hash": "394ccb05ed230cd351eb2ebbfe9abb28"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/v2/parsers/pointcloud.worker.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/v2/parsers/pointcloud.worker.ts": {
     "mtime": 1780339382.5369353,
     "hash": "3366db8a170a5e0c121a211ce0374124"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/v2/parsers/__tests__/plyLoader.test.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/v2/parsers/__tests__/plyLoader.test.ts": {
     "mtime": 1780391427.01519,
     "hash": "b04552a98024e56a1e5fcdf27858971c"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/v2/parsers/__tests__/segmentation.test.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/v2/parsers/__tests__/segmentation.test.ts": {
     "mtime": 1780391588.0798855,
     "hash": "0f3ce57abeb5d99462c647281cca0540"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/v2/components/MapboxTerrain.tsx": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/v2/components/pointCloudShape.ts": {
+    "mtime": 1780669903.8060813,
+    "hash": "4d2201c93fa1faf846d863eca592615c"
+  },
+  "/home/dankez/AI-projekty/CaveView-modernized/src/v2/components/MapboxTerrain.tsx": {
     "mtime": 1780391265.1144338,
     "hash": "acd3354b060f7bebd4155e134fbad875"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/v2/components/index.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/v2/components/index.ts": {
     "mtime": 1779130533.9450557,
     "hash": "89d6b626d850604204a6fae283b21542"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/v2/components/CaveViewerNextGen.tsx": {
-    "mtime": 1780566355.6871116,
-    "hash": "d6791d1da5474146e616405713d61fb8"
+  "/home/dankez/AI-projekty/CaveView-modernized/src/v2/components/CaveViewerNextGen.tsx": {
+    "mtime": 1780669845.4036999,
+    "hash": "cf4267c3432f8bc1edb14c327077c705"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/v2/components/EDLPass.tsx": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/v2/components/EDLPass.tsx": {
     "mtime": 1779262061.3809218,
     "hash": "3a9a60c2a48ab2215f379fba9c67e369"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/v2/components/PointCloudLOD.tsx": {
-    "mtime": 1780391450.5140033,
-    "hash": "3e3c2af795d2d8aab12908f9856d4370"
+  "/home/dankez/AI-projekty/CaveView-modernized/src/v2/components/PointCloudLOD.tsx": {
+    "mtime": 1780670417.6337705,
+    "hash": "e2b07fbf098df4c1afced06769918c3b"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/test/setup.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/v2/components/__tests__/pointCloudShape.test.ts": {
+    "mtime": 1780669786.0653331,
+    "hash": "b6d4f0302a5434e4753e8cc35626fb15"
+  },
+  "/home/dankez/AI-projekty/CaveView-modernized/src/test/setup.ts": {
     "mtime": 1777201521.7377317,
     "hash": "2738192d873926416ef65845370f4713"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/i18n/de.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/i18n/de.ts": {
     "mtime": 1780421713.917662,
     "hash": "cb01a492fdcc755c3e9a5e5f8c5cdb42"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/i18n/sk.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/i18n/sk.ts": {
     "mtime": 1780421703.457729,
     "hash": "246aa6373913776786d89890be1eecba"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/i18n/fr.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/i18n/fr.ts": {
     "mtime": 1780421710.2736855,
     "hash": "82533e37663630bf3718916935c5f110"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/i18n/index.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/i18n/index.ts": {
     "mtime": 1777201521.7367318,
     "hash": "fe8379cea7f18f48709bbcc7aacac98e"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/i18n/en.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/i18n/en.ts": {
     "mtime": 1780421706.908707,
     "hash": "54de7d14db791673f2aa8e0418346b42"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/types/index.ts": {
-    "mtime": 1780593840.2937014,
-    "hash": "ed6d13db99c3f5e217a915253a85bfcb"
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/types/index.ts": {
+    "mtime": 1780670396.7859828,
+    "hash": "42c2622c6cf56773804fe807ec367d2c"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/speleoAnalysis.ts": {
-    "mtime": 1779286325.1345992,
-    "hash": "b2924281a10fff8e18c2e7cc67d8869f"
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/speleoAnalysis.ts": {
+    "mtime": 1780638346.832011,
+    "hash": "2a6956c98fa392a37f5a462a8bf0580e"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/colorUtils.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/colorUtils.ts": {
     "mtime": 1780381280.9706745,
     "hash": "44efc0412f76864f9f7b4b06f74a5cc9"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/geoUtils.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/lidarPointEditing.ts": {
+    "mtime": 1780670405.9368896,
+    "hash": "b079ecf1cc27680bcb17733df1d852ef"
+  },
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/geoUtils.ts": {
     "mtime": 1780472972.242169,
     "hash": "0dc20f17ac2f00a337323d95297fa871"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/surfaceTextureCalibration.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/surfaceTextureCalibration.ts": {
     "mtime": 1780593875.776388,
     "hash": "74f2830cfd5408d284e485ec86f3da8a"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/tileCache.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/tileCache.ts": {
     "mtime": 1780506084.2171574,
     "hash": "6f00fa46ef83cd46aeaa7bec72ad19e5"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/XyzTileDownloader.ts": {
-    "mtime": 1780505877.941503,
-    "hash": "c1da04df10b9622002aa666b272436e3"
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/pointCloudColors.ts": {
+    "mtime": 1780670392.2790287,
+    "hash": "7b38ad80719c8fcdd3a27d53ceafc0b9"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/surfaceBounds.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/XyzTileDownloader.ts": {
+    "mtime": 1780638353.7679377,
+    "hash": "dc5f024d8a9202198671dd265cc74d15"
+  },
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/surfaceBounds.ts": {
     "mtime": 1780594038.8159287,
     "hash": "774379a4010e77516edfc81b008c2709"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/mapProxyUrls.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/mapProxyUrls.ts": {
     "mtime": 1780472971.8171756,
     "hash": "9f501710949540cc055127639cf67b6c"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/modelDefaults.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/modelDefaults.ts": {
     "mtime": 1780405918.0417843,
     "hash": "c6f240821426eec1dcacc88aaa3d533e"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/coords.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/lidarPlanMap.ts": {
+    "mtime": 1780648357.7468228,
+    "hash": "3345d7c7b3762b50c5014f2f7bcac824"
+  },
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/coords.ts": {
     "mtime": 1780391221.8877516,
     "hash": "a258830788e8fd3ea8bb9b0d5122d1a2"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/surfaceReconstruction.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/surfaceReconstruction.ts": {
     "mtime": 1778142441.5857043,
     "hash": "096c8bd08673f2219bfbca6ab329c5c3"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/__tests__/surfaceTextureCalibration.test.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/__tests__/lidarPointEditing.test.ts": {
+    "mtime": 1780670439.602547,
+    "hash": "9ece0be4c012190a1d4ff2ef4d8b6e64"
+  },
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/__tests__/surfaceTextureCalibration.test.ts": {
     "mtime": 1780593966.6375782,
     "hash": "0dfb3ac3e05cb025b0eaf3f8e99c03e1"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/__tests__/mapProxyUrls.test.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/__tests__/mapProxyUrls.test.ts": {
     "mtime": 1780472972.381167,
     "hash": "b4912a80090793fabba94e32cffee25e"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/__tests__/XyzTileDownloader.test.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/__tests__/lidarPlanMap.test.ts": {
+    "mtime": 1780648384.1725533,
+    "hash": "bfb914257a8f7c19e7eec9bf84b1a8c2"
+  },
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/__tests__/XyzTileDownloader.test.ts": {
     "mtime": 1780506032.8809557,
     "hash": "ba367b4623ebbfa949e519f7b1f431d1"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/__tests__/surfaceBounds.test.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/__tests__/surfaceBounds.test.ts": {
     "mtime": 1780593951.9687095,
     "hash": "1159ca3e71f109c14c17d5a13f9ac610"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/utils/__tests__/modelDefaults.test.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/__tests__/modelDefaults.test.ts": {
     "mtime": 1780405925.521698,
     "hash": "661c56abbeb02fa7f62e1c667b926e3e"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/components/CalibrationModal.tsx": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/CalibrationModal.tsx": {
     "mtime": 1780391233.7156653,
     "hash": "8bb845c79d8d859bb4363cc8cb4dc27a"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/components/CaveSharedElements.tsx": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/CaveSharedElements.tsx": {
     "mtime": 1779295944.985921,
     "hash": "5d5646c4a4714bde94c9b34d63ac43e2"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/components/Scraps.tsx": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/Scraps.tsx": {
     "mtime": 1780599524.1222696,
     "hash": "743d3200dfdee12ee6ed53fd2bf405fe"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/shared/core/constants.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/core/constants.ts": {
     "mtime": 1776409952.8878267,
     "hash": "e4f797092a42bd1f051236d1eddcd356"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/v1/parsers/stlParser.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/workers/speleo.worker.ts": {
+    "mtime": 1780638362.9478402,
+    "hash": "3bd684162e97295d9a2fed84e67e13b6"
+  },
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/workers/lidarPlanMap.worker.ts": {
+    "mtime": 1780648370.7106907,
+    "hash": "bf45072c740103e8833e08f9883e6ec0"
+  },
+  "/home/dankez/AI-projekty/CaveView-modernized/src/v1/parsers/stlParser.ts": {
     "mtime": 1780386920.904326,
     "hash": "3227af473ce85b081299cc4cfced3427"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/v1/parsers/th2Parser.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/v1/parsers/th2Parser.ts": {
     "mtime": 1779130533.8690565,
     "hash": "554c1d623f0940445dbda4a5b86d9e5c"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/v1/parsers/tiffParser.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/v1/parsers/tiffParser.ts": {
     "mtime": 1779130533.8820562,
     "hash": "0c340534026bd247df5447efd6bd3891"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/v1/parsers/parser.worker.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/v1/parsers/parser.worker.ts": {
     "mtime": 1780350756.478024,
     "hash": "cdfc7b1a1f7539b88f329096b6c8949e"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/v1/parsers/caveParser.ts": {
-    "mtime": 1780589475.63838,
-    "hash": "a4273ca47f5c1240abd81a9522de8f78"
+  "/home/dankez/AI-projekty/CaveView-modernized/src/v1/parsers/caveParser.ts": {
+    "mtime": 1780670412.1918259,
+    "hash": "ab7d06fdb9d54bf03b88e0391d15c9d4"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/v1/parsers/__tests__/caveParser.test.ts": {
-    "mtime": 1780391441.2050772,
-    "hash": "13e45900867cab7808d65b3316d18d03"
+  "/home/dankez/AI-projekty/CaveView-modernized/src/v1/parsers/__tests__/caveParser.test.ts": {
+    "mtime": 1780655836.1642861,
+    "hash": "e431f1ceedec84b040386517f2e05891"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/v1/parsers/__tests__/stlParser.test.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/src/v1/parsers/__tests__/stlParser.test.ts": {
     "mtime": 1780350844.5851376,
     "hash": "42a6454e1f1ab492fcff2aefc6ccfd34"
   },
-  "/home/dankez/cave3d/CaveView-modernized/src/v1/components/CaveViewer3D.tsx": {
-    "mtime": 1780594034.3159692,
-    "hash": "1c6a8f4ee7405f8fdf6476e7c7c19392"
+  "/home/dankez/AI-projekty/CaveView-modernized/src/v1/components/CaveViewer3D.tsx": {
+    "mtime": 1780648747.1288483,
+    "hash": "5c9a30e629909af0cbc05e064722a20f"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/CV2Plugins.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/CV2Plugins.js": {
     "mtime": 1776409952.8108265,
     "hash": "4493691219b2a8654819bd6efe6ebfce"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/CV2.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/CV2.js": {
     "mtime": 1776409952.8108265,
     "hash": "ebd836624427968312e693c6785ee35b"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/Three.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/Three.js": {
     "mtime": 1776409952.8108265,
     "hash": "fc0e54cc4683ff83bbf197f53f026a97"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/HUD.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/hud/HUD.js": {
     "mtime": 1776409952.8118265,
     "hash": "62c4f3fbb172cca435f7c468ed25e2ca"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/CursorControl.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/hud/CursorControl.js": {
     "mtime": 1776409952.8118265,
     "hash": "5c23bd107b5098f6bc73b3e346d2480f"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/AngleScale.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/hud/AngleScale.js": {
     "mtime": 1776409952.8118265,
     "hash": "be450bf8edf2848ff31e255e273185cd"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/HudObject.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/hud/HudObject.js": {
     "mtime": 1776409952.8118265,
     "hash": "88043be70b33bb49cefc18bd32840c1f"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/ScaleBar.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/hud/ScaleBar.js": {
     "mtime": 1776409952.8128264,
     "hash": "f2ff1f35ce3e9bc4b22861f6c6415c31"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/LinearScale.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/hud/LinearScale.js": {
     "mtime": 1776409952.8118265,
     "hash": "1b4cc6fe066bf29a6312fdaf9854c15e"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/CompassControl.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/hud/CompassControl.js": {
     "mtime": 1776409952.8118265,
     "hash": "df0b9d1282364ab3be736a3b70cff005"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/Orb.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/hud/Orb.js": {
     "mtime": 1776409952.8118265,
     "hash": "acdf02eedb3a362655116c08178511c0"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/AHIControl.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/hud/AHIControl.js": {
     "mtime": 1776409952.8118265,
     "hash": "be74bff3dee23e041507ec339eb20f7c"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/ProgressDial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/hud/ProgressDial.js": {
     "mtime": 1776409952.8128264,
     "hash": "79ece4a2aca613639f71331bddfdaf00"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/CursorScale.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/hud/CursorScale.js": {
     "mtime": 1776409952.8118265,
     "hash": "527847d424f28b3aaf97a1d0f86627d3"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/Scale.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/hud/Scale.js": {
     "mtime": 1776409952.8128264,
     "hash": "1eca8a76828daeb7d4fe6f0691beb3ef"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/AHI.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/hud/AHI.js": {
     "mtime": 1776409952.8118265,
     "hash": "710fc5ce1006fa30993bc2730ad0ffe8"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/Compass.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/hud/Compass.js": {
     "mtime": 1776409952.8118265,
     "hash": "72d6a81ece4a08aafeab4d5820c9b834"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/hud/Control.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/hud/Control.js": {
     "mtime": 1776409952.8118265,
     "hash": "97cf4a15a39874ef675d2c80bdeb2db8"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/WorkerLoader.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/loaders/WorkerLoader.js": {
     "mtime": 1776409952.8128264,
     "hash": "fd88614c70e3bc83359b7757b24404d5"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/SurveyDataCollector.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/loaders/SurveyDataCollector.js": {
     "mtime": 1776409952.8128264,
     "hash": "dd23666f53d46088dedd59700f2cd31c"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/CaveLoader.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/loaders/CaveLoader.js": {
     "mtime": 1776409952.8128264,
     "hash": "99940570d1e6b5345c054b62307f89fc"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/FileLoader.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/loaders/FileLoader.js": {
     "mtime": 1776409952.8128264,
     "hash": "899aa0936a126aa572978ff577414cb3"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/svx3dLoader.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/loaders/svx3dLoader.js": {
     "mtime": 1776409952.8128264,
     "hash": "1fae6a00c24d1b7778d7e0d38dce409f"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/TerrainMeshLoader.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/loaders/TerrainMeshLoader.js": {
     "mtime": 1776409952.8128264,
     "hash": "a1f89078d75947ea671cbad313611be9"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/HeightMapLoader.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/loaders/HeightMapLoader.js": {
     "mtime": 1776409952.8128264,
     "hash": "69240a2aa094703686527b0920f7b6f4"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/pltLoader.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/loaders/pltLoader.js": {
     "mtime": 1779261756.5881698,
     "hash": "27c3fe959e818385380f2647ebcca209"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/loaders/loxLoader.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/loaders/loxLoader.js": {
     "mtime": 1776409952.8128264,
     "hash": "392a18b79504ceacafd21f5096e7df52"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/DistanceFieldPlugin.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/plugins/DistanceFieldPlugin.js": {
     "mtime": 1776409952.8148265,
     "hash": "1bcd3dd057e5001694a3e682d56e71e1"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/ARPlugin.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/plugins/ARPlugin.js": {
     "mtime": 1776409952.8148265,
     "hash": "24436e5099fad99fa2762248f10ebd5f"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/Three.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/plugins/Three.js": {
     "mtime": 1776409952.8148265,
     "hash": "64a527873d17ec97e984b2ff28040772"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/OSFilePlugin.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/plugins/OSFilePlugin.js": {
     "mtime": 1776409952.8148265,
     "hash": "63b60a4fe353c0a8c6b81c8b6555deb6"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/LocationPlugin.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/plugins/LocationPlugin.js": {
     "mtime": 1776409952.8148265,
     "hash": "43455c35875e0a300ac5d81baa650555"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/distanceField/DistanceFieldShader.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/plugins/distanceField/DistanceFieldShader.js": {
     "mtime": 1776409952.8148265,
     "hash": "fe3b6ca340932d89f8ea011a359800f7"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/distanceField/FullScreenQuad.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/plugins/distanceField/FullScreenQuad.js": {
     "mtime": 1776409952.8148265,
     "hash": "49d0125bc711d02a0a2b72604c5e715d"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/distanceField/DistanceFieldFilterPass.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/plugins/distanceField/DistanceFieldFilterPass.js": {
     "mtime": 1776409952.8148265,
     "hash": "9b1552d9ae7f1ae029724785b25a2037"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/distanceField/DistanceFieldPass.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/plugins/distanceField/DistanceFieldPass.js": {
     "mtime": 1776409952.8148265,
     "hash": "6c7ece7deab7265b46cc66926de3d787"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/plugins/distanceField/DistanceFieldFilterShader.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/plugins/distanceField/DistanceFieldFilterShader.js": {
     "mtime": 1776409952.8148265,
     "hash": "43bbb52a2b7be7eb1189b60279a0ef64"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/EntrancePointMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/EntrancePointMaterial.js": {
     "mtime": 1776409952.8128264,
     "hash": "6ed9b2eeb2163f9fce297388ba20aa3d"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/DepthMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/DepthMaterial.js": {
     "mtime": 1776409952.8128264,
     "hash": "771945ef27e5ba5d6d8fc3175b7a110d"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/WaterMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/WaterMaterial.js": {
     "mtime": 1776409952.8138266,
     "hash": "1d225ff20b7c6661499ea4853e486f80"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/Line2Material.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/Line2Material.js": {
     "mtime": 1776409952.8128264,
     "hash": "e7654af11981a20af7f66b3359410f0d"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/SurveyLineMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/SurveyLineMaterial.js": {
     "mtime": 1777201521.1807375,
     "hash": "1f935315d47d5924e1cf1033d9cbde16"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/Materials.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/Materials.js": {
     "mtime": 1777461675.2779534,
     "hash": "27a203b049b9c966062b4a3b91d7c4f1"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/GlyphMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/GlyphMaterial.js": {
     "mtime": 1776409952.8128264,
     "hash": "9bff34b53f158930b5f5c67b76619831"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/WallMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/WallMaterial.js": {
     "mtime": 1776409952.8138266,
     "hash": "7d094f568cd9b3a52b71928192b9ed1d"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/StationMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/StationMaterial.js": {
     "mtime": 1777201521.1807375,
     "hash": "a49d422c8275f5806f6b0e89c6d117cc"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/HypsometricMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/HypsometricMaterial.js": {
     "mtime": 1776409952.8128264,
     "hash": "c0556e20ee47a309461da02981fa13e1"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/ContourMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/ContourMaterial.js": {
     "mtime": 1777462221.39721,
     "hash": "398fc6ffed1451b33d391b8352a7dbca"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/GlyphAtlas.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/GlyphAtlas.js": {
     "mtime": 1776409952.8128264,
     "hash": "a9dda08f81a738239a564b9c928f379b"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/CloudPointsMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/CloudPointsMaterial.js": {
     "mtime": 1777728503.6761427,
     "hash": "392e996878a5835c45b535ccf67420a4"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/TerrainOverlayMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/TerrainOverlayMaterial.js": {
     "mtime": 1776409952.8138266,
     "hash": "6813147271065e34bf5db7985e92f761"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/CursorMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/CursorMaterial.js": {
     "mtime": 1776409952.8128264,
     "hash": "b53ed5beaa99fd1c09e1702c77b89347"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/DepthMapMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/DepthMapMaterial.js": {
     "mtime": 1776409952.8128264,
     "hash": "c8d331e30547bfca5ceb95ef59298af0"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/DepthCursorMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/DepthCursorMaterial.js": {
     "mtime": 1776409952.8128264,
     "hash": "cb840bfeaf56b57edaded6efeeec613d"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/MissingMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/MissingMaterial.js": {
     "mtime": 1776409952.8128264,
     "hash": "ff396070866c65b2baa75aec02401b68"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/CommonTerrainMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/CommonTerrainMaterial.js": {
     "mtime": 1776409952.8128264,
     "hash": "9a840deed6c2e44519d09ccade566f39"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/HeightMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/HeightMaterial.js": {
     "mtime": 1776409952.8128264,
     "hash": "249a51ff754ccf4443371315e77cba2c"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/ExtendedPointsMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/ExtendedPointsMaterial.js": {
     "mtime": 1776409952.8128264,
     "hash": "8ec43a2bc02894d599d616340c5a65d9"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/ClusterMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/ClusterMaterial.js": {
     "mtime": 1776409952.8128264,
     "hash": "3ea55f7702e824206d0aa704ef4541f7"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/PopupMaterial.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/PopupMaterial.js": {
     "mtime": 1776409952.8128264,
     "hash": "813173b6eb66594d9ea79d702923c109"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/materials/shaders/Shaders.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/materials/shaders/Shaders.js": {
     "mtime": 1776409952.8138266,
     "hash": "79bfa6fd3e0a70c32decfe7e8a633589"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/LoxTerrainGeometry.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/terrain/LoxTerrainGeometry.js": {
     "mtime": 1776409952.8148265,
     "hash": "0f018a615b258dbbc78382c0c7e5c02c"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/EPSG4326TileSet.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/terrain/EPSG4326TileSet.js": {
     "mtime": 1776409952.8148265,
     "hash": "7d06bb18bed8b276018a208dc75336a3"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/CommonTerrain.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/terrain/CommonTerrain.js": {
     "mtime": 1776409952.8148265,
     "hash": "6f486d51b458f40f0118d246d7010cb2"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/TerrainTileGeometry.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/terrain/TerrainTileGeometry.js": {
     "mtime": 1776589322.1074197,
     "hash": "e0bbbbb9985abc8218e98e59c35c84ea"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/HeightLookup.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/terrain/HeightLookup.js": {
     "mtime": 1776409952.8148265,
     "hash": "96df6e38feb652a3b85c5c3e97294b2d"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/FlatTileGeometry.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/terrain/FlatTileGeometry.js": {
     "mtime": 1776409952.8148265,
     "hash": "ca6d0071d8c9c7d4236285502d130593"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/Overlay.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/terrain/Overlay.js": {
     "mtime": 1776589322.1074197,
     "hash": "0d8aa952a3276f69504ac3a3185d22cf"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/WebTerrain.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/terrain/WebTerrain.js": {
     "mtime": 1776589322.1084197,
     "hash": "e74371b799251e9a46d09e730dfa4d5a"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/Tile.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/terrain/Tile.js": {
     "mtime": 1776589322.1074197,
     "hash": "793056c342badb131edfeb2945019065"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/TerrainMeshGeometry.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/terrain/TerrainMeshGeometry.js": {
     "mtime": 1776409952.8148265,
     "hash": "76a61c1af19bfed8964555894640bba3"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/LoxTerrain.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/terrain/LoxTerrain.js": {
     "mtime": 1776409952.8148265,
     "hash": "1930962bfea2a387988149b2e920cf36"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/terrain/EPSG3857TileSet.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/terrain/EPSG3857TileSet.js": {
     "mtime": 1776409952.8148265,
     "hash": "ab2c3baf0e48d69ca70497c18f94eec8"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/LineSegments2.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/LineSegments2.js": {
     "mtime": 1776409952.8118265,
     "hash": "fa53df0647fbe55ec907375e54c57c86"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/GlyphStringGeometry.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/GlyphStringGeometry.js": {
     "mtime": 1776409952.8118265,
     "hash": "ee91feff015198ce0eaaa0f2344a82d8"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/lib.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/lib.js": {
     "mtime": 1776409952.8118265,
     "hash": "1fa63ac4a34afe6a8120d961a8143954"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/ColourCache.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/ColourCache.js": {
     "mtime": 1776409952.8108265,
     "hash": "e9812c681aec4408f927d9aea4071a91"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/defaultTheme.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/defaultTheme.js": {
     "mtime": 1776409952.8118265,
     "hash": "df99da452a59656d29ed2512d27c8240"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/CommonAttributes.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/CommonAttributes.js": {
     "mtime": 1776409952.8108265,
     "hash": "73ef587076fc7b284fd6dab6471bd6e4"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/LineSegmentsGeometry.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/LineSegmentsGeometry.js": {
     "mtime": 1777201521.1657376,
     "hash": "cad1cdb77224283da777b42f80cb3384"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/GLTFExporter.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/GLTFExporter.js": {
     "mtime": 1776409952.8118265,
     "hash": "b0b8ae7d98f186f87e64d4417926e030"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/unpackRGBA.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/unpackRGBA.js": {
     "mtime": 1776409952.8118265,
     "hash": "ff1b439693ab7c870a1a9795d8f81318"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/Cfg.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/Cfg.js": {
     "mtime": 1776409952.8108265,
     "hash": "77549e8bcd044f91557360a67241afc1"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/Tree.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/Tree.js": {
     "mtime": 1776409952.8118265,
     "hash": "0426a0135600ef2171bdcc5a53bf8516"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/ModelSource.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/ModelSource.js": {
     "mtime": 1776409952.8118265,
     "hash": "3812250e8efe1d12106f72a4bb734442"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/TextureLookup.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/TextureLookup.js": {
     "mtime": 1776409952.8118265,
     "hash": "c3b7ff15937caf67ba82e1c0b815a72e"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/RenderUtils.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/RenderUtils.js": {
     "mtime": 1776409952.8118265,
     "hash": "0471d990c76659edea4af76c094f7e1e"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/GlyphString.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/GlyphString.js": {
     "mtime": 1776409952.8118265,
     "hash": "303c32b78264c4a10f435a5c1815963b"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/SurveyColourMapper.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/SurveyColourMapper.js": {
     "mtime": 1777201521.1677377,
     "hash": "9693429c2a09deaee1e6fe6b593d2a48"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/Colours.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/Colours.js": {
     "mtime": 1776409952.8108265,
     "hash": "80aeed265091763f90b2719b70025f1f"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/SurveyBox.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/SurveyBox.js": {
     "mtime": 1776409952.8118265,
     "hash": "519499b85933bc3e27af4a13da4aeca4"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/StationPosition.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/StationPosition.js": {
     "mtime": 1776409952.8118265,
     "hash": "e4f8662d27b4ac2273a4d44912dc0375"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/constants.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/constants.js": {
     "mtime": 1776409952.8118265,
     "hash": "a35886763798b9a69db633e773071ac1"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/WorkerPool.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/WorkerPool.js": {
     "mtime": 1776409952.8118265,
     "hash": "b995395ed924b6ad234df923d90447e7"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/core/TextureCache.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/core/TextureCache.js": {
     "mtime": 1779261756.5881698,
     "hash": "0946986d13bb803bb672183803f54451"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/public/Segment.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/public/Segment.js": {
     "mtime": 1776409952.8148265,
     "hash": "6a2131270a868b5f7b3e2bb81e57bc14"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/public/PublicFactory.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/public/PublicFactory.js": {
     "mtime": 1776409952.8148265,
     "hash": "c91ba3c87c2e61630d5838d1197635f9"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/public/Station.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/public/Station.js": {
     "mtime": 1776409952.8148265,
     "hash": "9341e1246a31692ca34d49499aea3703"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/public/Leg.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/public/Leg.js": {
     "mtime": 1776409952.8148265,
     "hash": "02ee2c13ad286bee0d81f0d5462c81df"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/StationPopup.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/StationPopup.js": {
     "mtime": 1776409952.8158264,
     "hash": "e65fac1e042e9eb9fab5b2b062140d1d"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/TracePanel.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/TracePanel.js": {
     "mtime": 1776409952.8158264,
     "hash": "f1ba004a3801237d0f989f00bb6d28e1"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/RoutePanel.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/RoutePanel.js": {
     "mtime": 1776409952.8158264,
     "hash": "e3a4afafc65237ab6ae48518357c6f07"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/HelpPage.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/HelpPage.js": {
     "mtime": 1776409952.8158264,
     "hash": "9f428e7d0945be19c27c614318b7860f"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/CaveViewUI.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/CaveViewUI.js": {
     "mtime": 1776589322.1084197,
     "hash": "d7fd12c23fb93f667e28e038f586f4da"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/Panel.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/Panel.js": {
     "mtime": 1776409952.8158264,
     "hash": "910600bf995ab4da3b0c63a4819a971e"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/StationDistancePopup.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/StationDistancePopup.js": {
     "mtime": 1776409952.8158264,
     "hash": "c0b56ece4c0a2b519a1ee746593c2fcb"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/ExportPage.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/ExportPage.js": {
     "mtime": 1776409952.8158264,
     "hash": "506d176143cf8c08be5a57cd4fe0bae8"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/KeyboardControls.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/KeyboardControls.js": {
     "mtime": 1776409952.8158264,
     "hash": "16e1efd47a725de2a0b2b0c74f628301"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/CanvasPopup.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/CanvasPopup.js": {
     "mtime": 1776409952.8158264,
     "hash": "71894490c165126af4925f93cf163746"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/StationNameLabel.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/StationNameLabel.js": {
     "mtime": 1776409952.8158264,
     "hash": "da21d0bfee6dead0d89db3334e8c859f"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SurfacePage.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/SurfacePage.js": {
     "mtime": 1777462255.663851,
     "hash": "b485d3cfb8df883af73aba76f871a9ca"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SegmentPopup.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/SegmentPopup.js": {
     "mtime": 1776409952.8158264,
     "hash": "7a7ab3d403ebae57708a225cc6f7eb57"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/ImagePopup.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/ImagePopup.js": {
     "mtime": 1776409952.8158264,
     "hash": "97f8b507dd2b675760ca6d0eb9c78396"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/Page.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/Page.js": {
     "mtime": 1779261756.57117,
     "hash": "79bed8459b0a51cdbc769e949935779d"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/FileSelector.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/FileSelector.js": {
     "mtime": 1776409952.8158264,
     "hash": "43a407805f3ea4ba1e28bcfd9e1a3698"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/Popup.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/Popup.js": {
     "mtime": 1776409952.8158264,
     "hash": "0560dac6f7d94fcaa36a9e6fb46e6e0a"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SelectionPage.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/SelectionPage.js": {
     "mtime": 1779261756.57117,
     "hash": "cce587db165d6fb4b6c9bae437a8ad25"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SelectionTreePage.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/SelectionTreePage.js": {
     "mtime": 1779261756.57117,
     "hash": "22ada27292ade31a08233b83a29d6eb9"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/PointerControls.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/PointerControls.js": {
     "mtime": 1776409952.8158264,
     "hash": "a4ae57f122ed3fa6a9d2ee1a9d4760e3"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SelectionCommonPage.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/SelectionCommonPage.js": {
     "mtime": 1779261756.57117,
     "hash": "d77b49882cdbce57ad13ed240ebde658"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/EditPage.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/EditPage.js": {
     "mtime": 1776409952.8158264,
     "hash": "6337ccad488db6827f8999cb2cc8a17f"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/SettingsPage.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/SettingsPage.js": {
     "mtime": 1776409952.8158264,
     "hash": "ee64dbd73b07df451760e056d968142d"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/OrbitControls.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/OrbitControls.js": {
     "mtime": 1776409952.8158264,
     "hash": "2885bfa2ae231c59255212c0e9239e94"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/Frame.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/Frame.js": {
     "mtime": 1776409952.8158264,
     "hash": "8aa96bc7c362b45469675db120ba5d9b"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/ui/InfoPage.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/ui/InfoPage.js": {
     "mtime": 1776409952.8158264,
     "hash": "39470dc126953ebad1ffe5f6124c46a2"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Survey.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/Survey.js": {
     "mtime": 1777201521.1827376,
     "hash": "9eae9d1c26e2d0011a038ddeb47800c9"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Snapshot.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/Snapshot.js": {
     "mtime": 1776409952.8168266,
     "hash": "17eea6350e1c9fb5449381ddbf3faf88"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Entrances.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/Entrances.js": {
     "mtime": 1776409952.8168266,
     "hash": "69d9c475a185970ee09e47becc428dba"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Grid.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/Grid.js": {
     "mtime": 1776409952.8168266,
     "hash": "4daef3b692a23a1c80aa4b1baaca1e88"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/ViewState.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/ViewState.js": {
     "mtime": 1776409952.8168266,
     "hash": "06079d3701e399d8b9386081c6d204b6"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Segments.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/Segments.js": {
     "mtime": 1776409952.8168266,
     "hash": "1a3b604d1b504d82e81c5c673e9fb681"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/PointIndicator.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/PointIndicator.js": {
     "mtime": 1779261756.57117,
     "hash": "a97c93f532b87964676fbef55fa3bf82"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/StationLabels.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/StationLabels.js": {
     "mtime": 1777201521.1817374,
     "hash": "4967dd52f6d3a4484637ddd99fdcbfbc"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/CameraMove.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/CameraMove.js": {
     "mtime": 1776409952.8158264,
     "hash": "253c6056c682cc012aa2d3d68d155799"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/SurveyMetadata.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/SurveyMetadata.js": {
     "mtime": 1776409952.8168266,
     "hash": "ca5fd5955815f4ea7508828f5496e9c2"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Selection.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/Selection.js": {
     "mtime": 1776409952.8168266,
     "hash": "c7cdafac3058028ba5305d5c5149fa17"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/CaveViewer.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/CaveViewer.js": {
     "mtime": 1777461721.04547,
     "hash": "1f78a6ae718a92bd5ab591d78088550e"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/StationMarkers.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/StationMarkers.js": {
     "mtime": 1776409952.8168266,
     "hash": "903f5131ea08d3f3f4c122ab3f418340"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Stations.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/Stations.js": {
     "mtime": 1777201521.1827376,
     "hash": "1201a7be245a6910ce485dbecbaf942c"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Legs.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/Legs.js": {
     "mtime": 1777201521.1817374,
     "hash": "c8467c908ef5e9d563b3944bf196c84b"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Routes.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/Routes.js": {
     "mtime": 1776409952.8168266,
     "hash": "87ccb563c85edcb470710873f5f8c563"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/DyeTraces.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/DyeTraces.js": {
     "mtime": 1776409952.8168266,
     "hash": "f4840b87f58c8e568a1b21fd62a1c44c"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/ClusterMarkers.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/ClusterMarkers.js": {
     "mtime": 1776409952.8158264,
     "hash": "f39a437253355e7874018017967dd3ee"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/LightingManager.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/LightingManager.js": {
     "mtime": 1776409952.8168266,
     "hash": "8e710d7da815db1ea81c714928c23965"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/AnaglyphEffect.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/AnaglyphEffect.js": {
     "mtime": 1776409952.8158264,
     "hash": "641cd18b7fc4c60c878c045c57d9e11c"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Point.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/Point.js": {
     "mtime": 1776409952.8168266,
     "hash": "dbbb1b63b08802bc87e6f6724100383a"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/ExportGltf.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/ExportGltf.js": {
     "mtime": 1776409952.8168266,
     "hash": "14cc90446a77b416c742989931f7894e"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/CameraManager.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/CameraManager.js": {
     "mtime": 1779261756.57117,
     "hash": "449f6080127b4604a3e4f646d4d5a703"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/Marker.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/Marker.js": {
     "mtime": 1776409952.8168266,
     "hash": "4a8dd1f2475ed1edb0ef4ee021f84942"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/walls/buildModels.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/walls/buildModels.js": {
     "mtime": 1777728462.682631,
     "hash": "f9c48c432940cd3edeb56a129a8990a9"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/walls/buildCrossSections.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/walls/buildCrossSections.js": {
     "mtime": 1776409952.8168266,
     "hash": "0f8e7576df2e6a3d5f00a0b324ed5a73"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/walls/WallBuilders.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/walls/WallBuilders.js": {
     "mtime": 1776409952.8168266,
     "hash": "189f5041e1c859d6b552a6fa470cfbee"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/walls/buildScraps.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/walls/buildScraps.js": {
     "mtime": 1776409952.8168266,
     "hash": "0900790efab0b9d44a607806ab7ccd79"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/js/viewer/walls/Walls.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/js/viewer/walls/Walls.js": {
     "mtime": 1777201521.1827376,
     "hash": "e1054797a754b11fe6f2377ca5247e13"
   },
-  "/home/dankez/cave3d/CaveView-modernized/tools/chroma.min.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/tools/chroma.min.js": {
     "mtime": 1776280433.1706715,
     "hash": "e766d3f5e75c65ca501135eabdca2c9f"
   },
-  "/home/dankez/cave3d/CaveView-modernized/tools/makeColours.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/tools/makeColours.js": {
     "mtime": 1776280433.1706715,
     "hash": "4b62e101dbc4e1d72530958d0b8f8c68"
   },
-  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/index.tsx": {
+  "/home/dankez/AI-projekty/CaveView-modernized/test_model/map-downloader-for-therion-main/index.tsx": {
     "mtime": 1768380035.0,
     "hash": "a6db34dac786540fd7ae835aaa6f543f"
   },
-  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/types.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/test_model/map-downloader-for-therion-main/types.ts": {
     "mtime": 1768380035.0,
     "hash": "99af123725d3428314623d0524fc5b78"
   },
-  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/App.tsx": {
+  "/home/dankez/AI-projekty/CaveView-modernized/test_model/map-downloader-for-therion-main/App.tsx": {
     "mtime": 1768380035.0,
     "hash": "8be007ffe983fc965294596279b98a61"
   },
-  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/vite.config.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/test_model/map-downloader-for-therion-main/vite.config.ts": {
     "mtime": 1768380035.0,
     "hash": "b02247fc15de1a3ff3a9cb4c1bbe3fa1"
   },
-  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/translations.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/test_model/map-downloader-for-therion-main/translations.ts": {
     "mtime": 1768380035.0,
     "hash": "b39fe37084c5f8dc4ceb431c75ec66b8"
   },
-  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/geology.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/geology.ts": {
     "mtime": 1768380035.0,
     "hash": "473bccf6d6ad3dbb328d8802dc2ed097"
   },
-  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/freemap.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/freemap.ts": {
     "mtime": 1768380035.0,
     "hash": "2b21101f43efd48f1666cbbceae1fe0b"
   },
-  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/zbgis.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/zbgis.ts": {
     "mtime": 1768380035.0,
     "hash": "98ee3ae39404165a2c9c035fdfce7e7a"
   },
-  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/historical.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/historical.ts": {
     "mtime": 1768380035.0,
     "hash": "1316e44c89c96f71bb3406c660cc8c3c"
   },
-  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/gn_ortofoto.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/gn_ortofoto.ts": {
     "mtime": 1768380035.0,
     "hash": "fbabb862815ff25823d81ed68dd8c169"
   },
-  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/ortofoto.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/ortofoto.ts": {
     "mtime": 1768380035.0,
     "hash": "75a0e028d4248fcc378b96f3e953650e"
   },
-  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/index.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/index.ts": {
     "mtime": 1768380035.0,
     "hash": "0babc6679881079d558e21d63f3e1ad0"
   },
-  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/zbgis_orto.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/zbgis_orto.ts": {
     "mtime": 1768380035.0,
     "hash": "46896f6e72944e9e804e3104f54d0fd3"
   },
-  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/zbgis_teren.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/zbgis_teren.ts": {
     "mtime": 1768380035.0,
     "hash": "36bddc2188739f057e3035a67c39db57"
   },
-  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/terrain2.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/test_model/map-downloader-for-therion-main/sources/terrain2.ts": {
     "mtime": 1768380035.0,
     "hash": "b33124032bb28d15fe11d4d3ca6f81eb"
   },
-  "/home/dankez/cave3d/CaveView-modernized/scratch/test_proj4.js": {
+  "/home/dankez/AI-projekty/CaveView-modernized/scratch/test_proj4.js": {
     "mtime": 1777970016.5038202,
     "hash": "5e7173424ef1b31ce71756f9dc5d1a07"
   },
-  "/home/dankez/cave3d/CaveView-modernized/e2e/welcome-mobile.spec.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/e2e/welcome-mobile.spec.ts": {
     "mtime": 1780635426.7615933,
     "hash": "becfeb2f311db0d28802711b636aab2a"
   },
-  "/home/dankez/cave3d/CaveView-modernized/e2e/stl-render.spec.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/e2e/stl-render.spec.ts": {
     "mtime": 1780412840.3375442,
     "hash": "f9c3dd945ff7b9dff354bf1df31197c6"
   },
-  "/home/dankez/cave3d/CaveView-modernized/e2e/bigmodel.spec.ts": {
+  "/home/dankez/AI-projekty/CaveView-modernized/e2e/bigmodel.spec.ts": {
     "mtime": 1778571744.449511,
     "hash": "76d744330484f776edb025c453866c48"
   },
-  "/home/dankez/cave3d/CaveView-modernized/e2e/caveview.spec.ts": {
-    "mtime": 1778571744.450511,
-    "hash": "f996d6c1df1f7b866dd23f6dfcd87d6d"
+  "/home/dankez/AI-projekty/CaveView-modernized/e2e/caveview.spec.ts": {
+    "mtime": 1780635842.6905513,
+    "hash": "818c183b9684a57e02d69fc84ba5cce8"
   },
-  "/home/dankez/cave3d/CaveView-modernized/public/map-proxy.php": {
+  "/home/dankez/AI-projekty/CaveView-modernized/public/map-proxy.php": {
     "mtime": 1780470406.12642,
     "hash": "9545c92f62290b7597d0fcd2e14e1cd6"
   },
-  "/home/dankez/cave3d/CaveView-modernized/index.html": {
+  "/home/dankez/AI-projekty/CaveView-modernized/index.html": {
     "mtime": 1777586097.977669,
     "hash": "0b1aa3fc2813dd8497d8a286088d8535"
   },
-  "/home/dankez/cave3d/CaveView-modernized/README.md": {
+  "/home/dankez/AI-projekty/CaveView-modernized/README.md": {
     "mtime": 1780635341.5796833,
     "hash": "ef99dd39723ef2d5404e1e92d505a6a2"
   },
-  "/home/dankez/cave3d/CaveView-modernized/ALGORITHMS.md": {
+  "/home/dankez/AI-projekty/CaveView-modernized/ALGORITHMS.md": {
     "mtime": 1780340181.4282796,
     "hash": "d36a5322a24f7ad2ab64605a2ad96562"
   },
-  "/home/dankez/cave3d/CaveView-modernized/BLOG_DRAFT.md": {
+  "/home/dankez/AI-projekty/CaveView-modernized/BLOG_DRAFT.md": {
     "mtime": 1777564573.9556322,
     "hash": "c1870c04c463048a48a5e9923c4381b5"
   },
-  "/home/dankez/cave3d/CaveView-modernized/CHANGELOG.md": {
-    "mtime": 1780635324.956899,
-    "hash": "4df3dd74f0b300c4f2f172b61b6a7836"
+  "/home/dankez/AI-projekty/CaveView-modernized/CHANGELOG.md": {
+    "mtime": 1780670517.3677576,
+    "hash": "4390def67dd0233834dfd45c6e17d0e5"
   },
-  "/home/dankez/cave3d/CaveView-modernized/agents.md": {
+  "/home/dankez/AI-projekty/CaveView-modernized/agents.md": {
     "mtime": 1777201521.1427379,
     "hash": "17d97ec55a736b38933357a590a72a02"
   },
-  "/home/dankez/cave3d/CaveView-modernized/scratch.md": {
+  "/home/dankez/AI-projekty/CaveView-modernized/scratch.md": {
     "mtime": 1776280433.1706715,
     "hash": "9915027def59c1b2379df691433dc479"
   },
-  "/home/dankez/cave3d/CaveView-modernized/DOC_SHARE.md": {
+  "/home/dankez/AI-projekty/CaveView-modernized/DOC_SHARE.md": {
     "mtime": 1777367601.13146,
     "hash": "2056d63bee80616393d0513ed7719703"
   },
-  "/home/dankez/cave3d/CaveView-modernized/AGENTS.md": {
+  "/home/dankez/AI-projekty/CaveView-modernized/AGENTS.md": {
     "mtime": 1777585327.0354273,
     "hash": "8ee39dcfe68a23b3797b02648930d699"
   },
-  "/home/dankez/cave3d/CaveView-modernized/GEMINI.md": {
+  "/home/dankez/AI-projekty/CaveView-modernized/GEMINI.md": {
     "mtime": 1779027994.727135,
     "hash": "abad9b21e02b4e287e45d68837caef4a"
   },
-  "/home/dankez/cave3d/CaveView-modernized/handleStationClick_fix.txt": {
+  "/home/dankez/AI-projekty/CaveView-modernized/handleStationClick_fix.txt": {
     "mtime": 1779031540.139157,
     "hash": "8240b1b7dbabeda3ed736b66cc44b809"
   },
-  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/index.html": {
+  "/home/dankez/AI-projekty/CaveView-modernized/test_model/map-downloader-for-therion-main/index.html": {
     "mtime": 1768380035.0,
     "hash": "89ce72617e8a6d3025e67720612f028b"
   },
-  "/home/dankez/cave3d/CaveView-modernized/test_model/map-downloader-for-therion-main/README.md": {
+  "/home/dankez/AI-projekty/CaveView-modernized/test_model/map-downloader-for-therion-main/README.md": {
     "mtime": 1768380035.0,
     "hash": "044bcffd474fe2ef042dfbeb5e1e1154"
   },
-  "/home/dankez/cave3d/CaveView-modernized/public/privacy.html": {
+  "/home/dankez/AI-projekty/CaveView-modernized/public/privacy.html": {
     "mtime": 1777640815.9362934,
     "hash": "30c1af7a72f6192e4390b5b6a248d42c"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/images/logo-alpha.svg": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/images/logo-alpha.svg": {
     "mtime": 1776409952.8108265,
     "hash": "f7468bde0ef9cd0a6caf41870407512a"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/images/logo.svg": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/images/logo.svg": {
     "mtime": 1776409952.8108265,
     "hash": "bbf3e568e8b4e31eb150c908ce7ed75e"
   },
-  "/home/dankez/cave3d/CaveView-modernized/legacy/images/disc.svg": {
+  "/home/dankez/AI-projekty/CaveView-modernized/legacy/images/disc.svg": {
     "mtime": 1776409952.8108265,
     "hash": "3dd7c799cdc42b11f35bbf135dd4d65b"
   },
-  "/home/dankez/cave3d/CaveView-modernized/public/assets/cave_limestone.png": {
+  "/home/dankez/AI-projekty/CaveView-modernized/public/assets/cave_limestone.png": {
     "mtime": 1777201521.2167373,
     "hash": "01c7a7aad43dbd04901d8457e3ef8fdc"
   },
-  "/home/dankez/cave3d/CaveView-modernized/public/assets/cave_granite.png": {
+  "/home/dankez/AI-projekty/CaveView-modernized/public/assets/cave_granite.png": {
     "mtime": 1777201521.2077372,
     "hash": "13611a3b9866e815a4073ff805fbdc31"
   },
-  "/home/dankez/cave3d/CaveView-modernized/public/assets/caver_crawling.png": {
+  "/home/dankez/AI-projekty/CaveView-modernized/public/assets/caver_crawling.png": {
     "mtime": 1777201521.2527368,
     "hash": "2504163006ad0ace2c7a2e266ab5529a"
   },
-  "/home/dankez/cave3d/CaveView-modernized/public/assets/cave_rock.png": {
+  "/home/dankez/AI-projekty/CaveView-modernized/public/assets/cave_rock.png": {
     "mtime": 1777201521.2357368,
     "hash": "75a9aa16c5819e8bc3ddfe93de78fcb0"
   },
-  "/home/dankez/cave3d/CaveView-modernized/public/assets/caver_standing.png": {
+  "/home/dankez/AI-projekty/CaveView-modernized/public/assets/caver_standing.png": {
     "mtime": 1777201521.2637367,
     "hash": "02d6cd476f470cba428ca02079da2789"
   }

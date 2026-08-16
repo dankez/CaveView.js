@@ -138,17 +138,20 @@ function estimateLRUDFromGeometry(p1: THREE.Vector3, p2: THREE.Vector3, dir: THR
 function raycastScraps(origin: THREE.Vector3, dir: THREE.Vector3, scraps: any[]): number | null {
   let minDist = Infinity;
   const ray = new THREE.Ray(origin, dir);
+  const a = new THREE.Vector3();
+  const b = new THREE.Vector3();
+  const c = new THREE.Vector3();
+  const target = new THREE.Vector3();
 
   // Traverse scraps triangles
   for (const scrap of scraps) {
     const v = scrap.vertices;
     for (const face of scrap.faces) {
       if (face.length < 3) continue;
-      const a = new THREE.Vector3(v[face[0]].x, v[face[0]].y, v[face[0]].z);
-      const b = new THREE.Vector3(v[face[1]].x, v[face[1]].y, v[face[1]].z);
-      const c = new THREE.Vector3(v[face[2]].x, v[face[2]].y, v[face[2]].z);
+      a.set(v[face[0]].x, v[face[0]].y, v[face[0]].z);
+      b.set(v[face[1]].x, v[face[1]].y, v[face[1]].z);
+      c.set(v[face[2]].x, v[face[2]].y, v[face[2]].z);
 
-      const target = new THREE.Vector3();
       const hit = ray.intersectTriangle(a, b, c, true, target);
       if (hit) {
         const dist = origin.distanceTo(target);
@@ -161,26 +164,31 @@ function raycastScraps(origin: THREE.Vector3, dir: THREE.Vector3, scraps: any[])
 
 /** Estimates distance to a point cloud in a specific direction with a small angular tolerance */
 function estimateDistanceToPointCloud(origin: THREE.Vector3, dir: THREE.Vector3, points: Float32Array, pointCount: number): number | null {
-  let minDist = Infinity;
+  let minDistSq = Infinity;
   const maxDistance = 25.0; // boundary limit
+  const maxDistanceSq = maxDistance * maxDistance;
+  const minDistanceSq = 0.01;
   const maxAngleTolerance = 0.15; // rad (approx 8 degrees)
+  const minDirectionCos = Math.cos(maxAngleTolerance);
 
   for (let i = 0; i < pointCount; i++) {
     const px = points[i*3];
     const py = points[i*3+1];
     const pz = points[i*3+2];
 
-    const toPt = new THREE.Vector3(px - origin.x, py - origin.y, pz - origin.z);
-    const dist = toPt.length();
-    if (dist > maxDistance || dist < 0.1) continue;
+    const dx = px - origin.x;
+    const dy = py - origin.y;
+    const dz = pz - origin.z;
+    const distSq = dx * dx + dy * dy + dz * dz;
+    if (distSq > maxDistanceSq || distSq < minDistanceSq) continue;
 
-    toPt.normalize();
-    const angle = toPt.angleTo(dir);
-    if (angle < maxAngleTolerance) {
-      if (dist < minDist) minDist = dist;
+    const invDist = 1 / Math.sqrt(distSq);
+    const directionCos = (dx * dir.x + dy * dir.y + dz * dir.z) * invDist;
+    if (directionCos > minDirectionCos) {
+      if (distSq < minDistSq) minDistSq = distSq;
     }
   }
-  return minDist !== Infinity ? minDist : null;
+  return minDistSq !== Infinity ? Math.sqrt(minDistSq) : null;
 }
 
 /**
@@ -275,13 +283,16 @@ export function analyzeLiDARAnomalies(cave: ParsedCave, onStatus?: (msg: string)
   const MAX_UP = Math.ceil((maxZ - minZ) / VS) + 2;
   type ColKey = string;
   const colCeil = new Map<ColKey, number>(); // "ix,iy" -> ceil distance in voxels
+  const trajectoryByColumn = new Map<ColKey, { x: number; y: number; z: number }>();
 
   trajectory.forEach(tp => {
     const tx = Math.floor(tp.x / VS);
     const ty = Math.floor(tp.y / VS);
     const tz = Math.floor(tp.z / VS);
-    if (!colCeil.has(`${tx},${ty}`)) {
-      colCeil.set(`${tx},${ty}`, ceilHeight(tx, ty, tz, MAX_UP));
+    const key = `${tx},${ty}`;
+    if (!colCeil.has(key)) {
+      colCeil.set(key, ceilHeight(tx, ty, tz, MAX_UP));
+      trajectoryByColumn.set(key, tp);
     }
   });
 
@@ -293,7 +304,7 @@ export function analyzeLiDARAnomalies(cave: ParsedCave, onStatus?: (msg: string)
 
   const tooClose = (x: number, y: number, z: number, type: string) =>
     usedPositions.some(u => u.type === type &&
-      Math.sqrt((u.x-x)**2 + (u.y-y)**2 + (u.z-z)**2) < MIN_SEPARATION);
+      (u.x-x)**2 + (u.y-y)**2 + (u.z-z)**2 < MIN_SEPARATION * MIN_SEPARATION);
 
   colCeil.forEach((myH, key) => {
     const [ix, iy] = key.split(',').map(Number);
@@ -319,9 +330,7 @@ export function analyzeLiDARAnomalies(cave: ParsedCave, onStatus?: (msg: string)
     const worldX = (ix + 0.5) * VS;
     const worldY = (iy + 0.5) * VS;
     // find floor Z for this column
-    const trajPt = trajectory.find(tp =>
-      Math.floor(tp.x/VS) === ix && Math.floor(tp.y/VS) === iy
-    );
+    const trajPt = trajectoryByColumn.get(key);
     const floorZ = trajPt ? trajPt.z : minZ + 1.3;
     const worldZ = floorZ + (myH * VS) / 2;
     const heightM = myH * VS;
@@ -441,11 +450,17 @@ export function analyzeLiDARAnomalies(cave: ParsedCave, onStatus?: (msg: string)
       const [bx, by, bz] = key.split(',').map(Number);
       const nx = bx * bucketSize, ny = by * bucketSize, nz = bz * bucketSize;
       const normalVec = new THREE.Vector3(nx, ny, nz).normalize();
+      const minNormalCos = Math.cos(0.12);
 
       let sumX = 0, sumY = 0, sumZ = 0, ptCount = 0;
       for (let i = 0; i < count; i += 20) {
-        const pVec = new THREE.Vector3(normals[i*3], normals[i*3+1], normals[i*3+2]).normalize();
-        if (pVec.angleTo(normalVec) < 0.12) {
+        const px = normals[i*3];
+        const py = normals[i*3+1];
+        const pz = normals[i*3+2];
+        const len = Math.hypot(px, py, pz);
+        if (len === 0) continue;
+        const directionCos = (px * normalVec.x + py * normalVec.y + pz * normalVec.z) / len;
+        if (directionCos > minNormalCos) {
           sumX += points[i*3]; sumY += points[i*3+1]; sumZ += points[i*3+2];
           ptCount++;
         }
@@ -472,5 +487,3 @@ export function analyzeLiDARAnomalies(cave: ParsedCave, onStatus?: (msg: string)
   if (onStatus) onStatus(null as any);
   return anomalies;
 }
-
-
