@@ -1765,6 +1765,89 @@ function AutoFit({ cave, trigger }: { cave: ParsedCave, trigger?: number }) {
   return null
 }
 
+// ─── Orthographic / Perspective Projection Switcher ──────────────────────────
+/**
+ * Listens to options.cameraProjection and smoothly swaps between
+ * PerspectiveCamera (fov=55) and OrthographicCamera while keeping the
+ * current orbit target and view direction intact.
+ */
+function ProjectionController({ projection, cave }: { projection: 'perspective' | 'orthographic', cave: ParsedCave }) {
+  const { camera, set, size, scene, controls } = useThree() as any
+  const modeRef = useRef<'perspective' | 'orthographic'>(projection)
+
+  useEffect(() => {
+    if (modeRef.current === projection) return
+    modeRef.current = projection
+
+    // Orbit target (what the camera is looking at)
+    const target = controls?.target
+      ? controls.target.clone()
+      : new THREE.Vector3(cave.bounds.center.x, cave.bounds.center.z, -cave.bounds.center.y)
+
+    const currentPos = camera.position.clone()
+    const dir = currentPos.clone().sub(target)
+    const dist = dir.length()
+
+    const b = cave.bounds
+    const diag = Math.sqrt(b.size.x ** 2 + b.size.y ** 2 + b.size.z ** 2)
+    const far = Math.max(diag * 30, 10000)
+
+    if (projection === 'orthographic') {
+      // Switch to OrthographicCamera
+      // frustum half-size matches visible size at current distance with fov=55
+      const halfFov = (55 * Math.PI) / 180 / 2
+      const frustumHalf = dist * Math.tan(halfFov)
+      const aspect = size.width / size.height
+
+      const ortho = new THREE.OrthographicCamera(
+        -frustumHalf * aspect, frustumHalf * aspect,
+        frustumHalf, -frustumHalf,
+        0.01, far
+      )
+      ortho.position.copy(currentPos)
+      ortho.lookAt(target)
+      ortho.updateProjectionMatrix()
+      set({ camera: ortho })
+      // Restore orbit controls target
+      if (controls && controls.target) {
+        controls.target.copy(target)
+        controls.object = ortho
+        controls.update()
+      }
+    } else {
+      // Switch back to PerspectiveCamera
+      const persp = new THREE.PerspectiveCamera(55, size.width / size.height, 0.1, far)
+      persp.position.copy(currentPos)
+      persp.lookAt(target)
+      persp.updateProjectionMatrix()
+      set({ camera: persp })
+      if (controls && controls.target) {
+        controls.target.copy(target)
+        controls.object = persp
+        controls.update()
+      }
+    }
+  }, [projection])  // intentionally omit deep deps — camera/controls refs are stable
+
+  // Keep orthographic frustum in sync with window resize
+  useFrame(() => {
+    if (projection !== 'orthographic') return
+    if (!(camera instanceof THREE.OrthographicCamera)) return
+    const target = controls?.target ?? new THREE.Vector3()
+    const dist = camera.position.distanceTo(target)
+    const halfFov = (55 * Math.PI) / 180 / 2
+    const frustumHalf = dist * Math.tan(halfFov)
+    const aspect = size.width / size.height
+    camera.left = -frustumHalf * aspect
+    camera.right = frustumHalf * aspect
+    camera.top = frustumHalf
+    camera.bottom = -frustumHalf
+    camera.updateProjectionMatrix()
+  })
+
+  return null
+}
+
 // ─── Main Canvas ──────────────────────────────────────────────────────────────
 interface Props {
   cave: ParsedCave
@@ -1914,6 +1997,7 @@ const CaveViewer3D = ({
     >
       <SceneBackground texture={bgTexture} color={o.colorBackground} />
       <RaycasterManager />
+      <ProjectionController projection={o.cameraProjection ?? 'perspective'} cave={cave} />
       <ambientLight intensity={0.16} />
       <hemisphereLight color="#dbeafe" groundColor="#1e293b" intensity={0.34} />
       <directionalLight position={[4, 6, 3]} intensity={0.92} color="#ffffff" />

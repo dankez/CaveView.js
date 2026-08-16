@@ -291,6 +291,7 @@ export interface ViewerOptions {
   excludeModelFromClipping: boolean
   caveCalibrationOffset: { x: number, y: number, z: number }
   terrainCalibrationMode: boolean
+  cameraProjection: 'perspective' | 'orthographic'
 }
 
 export interface LiDARWorkerMessage {

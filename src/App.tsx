@@ -998,6 +998,7 @@ export default function App() {
   const t = useCallback((key: string) => getTranslation(lang, key), [lang])
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isModelMoving, setIsModelMoving] = useState(false)
+  const [sidebarTab, setSidebarTab] = useState<'cave' | 'terrain' | 'analysis'>('cave')
   const [cameraData, setCameraData] = useState<ViewerCameraSnapshot | null>(null)
   const [processingInfo, setProcessingInfo] = useState<string | null>(null)
   const [appStatus, setAppStatus] = useState<{ msg: string; type: 'info' | 'error' | 'success' | 'progress'; progress?: number } | null>(null)
@@ -1072,6 +1073,7 @@ export default function App() {
   }, [cameraData])
   const [opts, setOpts] = useState<ViewerOptions>({
     engine:              'v1',
+    cameraProjection:    'perspective',
     showSplay:           false,
     showStations:        true,
     showStationNames:    false,
@@ -3500,6 +3502,24 @@ export default function App() {
                 </button>
               )}
 
+              {/* Camera Projection Toggle: Perspective ↔ Orthographic */}
+              <div className="hide-mobile-flex" style={{ display: 'flex', gap: '2px', background: '#0f172a', padding: '2px', borderRadius: '6px', border: '1px solid #1e293b', marginRight: '6px' }}>
+                {(['perspective', 'orthographic'] as const).map(mode => (
+                  <button key={mode} onClick={() => setOpts(p => ({ ...p, cameraProjection: mode }))}
+                    title={mode === 'perspective' ? (lang === 'sk' ? 'Perspektívna projekcia' : 'Perspective projection') : (lang === 'sk' ? 'Ortografická / Izometrická projekcia' : 'Orthographic / Isometric projection')}
+                    style={{
+                      padding: '4px 9px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                      background: opts.cameraProjection === mode ? '#334155' : 'transparent',
+                      color: opts.cameraProjection === mode ? '#f8fafc' : '#64748b'
+                    }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '14px', display: 'block' }}>
+                      {mode === 'perspective' ? 'view_in_ar' : 'deployed_code'}
+                    </span>
+                    {mode === 'perspective' ? (lang === 'sk' ? 'Perspektíva' : 'Persp') : (lang === 'sk' ? 'Izometria' : 'Ortho')}
+                  </button>
+                ))}
+              </div>
+
               <button
                 className={`btn-back hide-mobile-flex${isMeasuringMode ? ' active' : ''}`}
                 style={{
@@ -3780,6 +3800,37 @@ export default function App() {
                     <div className="info-row"><span>{t('file.scraps')}</span><span className="info-val">{cave.scrapCount.toLocaleString()}</span></div>
                   )}
                 </div>
+
+                {/* ─── SIDEBAR TAB BAR ─────────────────────────────────────────────────────── */}
+                <div style={{
+                  display: 'flex', gap: '2px', background: 'rgba(15,23,42,0.9)', padding: '4px',
+                  borderRadius: '10px', border: '1px solid rgba(51,65,85,0.6)', margin: '12px 0 16px',
+                  position: 'sticky', top: 0, zIndex: 10, backdropFilter: 'blur(8px)'
+                }}>
+                  {([
+                    { id: 'cave',     icon: 'domain',      label: lang === 'sk' ? 'Jaskyňa' : 'Cave' },
+                    { id: 'terrain',  icon: 'terrain',     label: lang === 'sk' ? 'Terén' : 'Terrain' },
+                    { id: 'analysis', icon: 'architecture', label: lang === 'sk' ? 'Analýza' : 'Analysis' },
+                  ] as const).map(tab => (
+                    <button key={tab.id} onClick={() => setSidebarTab(tab.id)}
+                      style={{
+                        flex: 1, padding: '7px 4px', fontSize: '10px', fontWeight: 700, borderRadius: '7px',
+                        border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
+                        background: sidebarTab === tab.id ? '#1e3a5f' : 'transparent',
+                        color: sidebarTab === tab.id ? '#60a5fa' : '#64748b',
+                        boxShadow: sidebarTab === tab.id ? '0 1px 6px rgba(59,130,246,0.25)' : 'none',
+                        transition: 'all 0.15s ease'
+                      }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{tab.icon}</span>
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* ═══════════════════════════════════════════════════════════════════════════ */}
+                {/* TAB 1: JASKYŇA & 3D ZOBRAZENIE                                           */}
+                {/* ═══════════════════════════════════════════════════════════════════════════ */}
+                {sidebarTab === 'cave' && <div>
 
                 {/* ── ANALÝZA PRIESTOROVÝCH REZOV ── */}
                 <div style={{ marginBottom: '20px' }}>
@@ -4406,6 +4457,13 @@ export default function App() {
                 )}
 
                 {/* ── TERÉN (surface) ── */}
+                </div>}{/* end cave tab */}
+
+                {/* ═══════════════════════════════════════════════════════════════════════════ */}
+                {/* TAB 2: TERÉN & MAPY (GIS)                                                 */}
+                {/* ═══════════════════════════════════════════════════════════════════════════ */}
+                {sidebarTab === 'terrain' && <div>
+
                 {cave && (
                   <div>
                     <div className="s-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -4799,6 +4857,11 @@ export default function App() {
                   </div>
                 )}
 
+                </div>}{/* end terrain tab */}
+
+                {/* Stations, Colors & Cinematic — cave tab (bottom) */}
+                {sidebarTab === 'cave' && <div>
+
                 <div>
                   <div className="s-label">{t('stations.title')}</div>
                   <div className="toggle-row">
@@ -4879,7 +4942,14 @@ export default function App() {
                 </div>
 
                 {/* ─── SPELEO & GEOLÓGIA ────────────────────────────────────────────────── */}
-                <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem' }}>
+                </div>}{/* end cave tab (stations+colors) */}
+
+                {/* ═══════════════════════════════════════════════════════════════════════════ */}
+                {/* TAB 3: ANALÝZA & MERANIE                                                   */}
+                {/* ═══════════════════════════════════════════════════════════════════════════ */}
+                {sidebarTab === 'analysis' && <div>
+
+                <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
                   <div className="s-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(147, 51, 234, 0.1)', borderLeft: '4px solid #a855f7' }}>
                     <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#c084fc' }}>insights</span>
                     {lang === 'sk' ? 'SPELEO & GEOLÓGIA' : 'SPELEO & GEOLOGY'}
@@ -5185,6 +5255,10 @@ export default function App() {
                     )}
                   </div>
                 </div>
+                </div>}{/* end analysis tab */}
+
+                {/* Help, Presentation, Legend — cave tab (bottom) */}
+                {sidebarTab === 'cave' && <div>
 
                 <div>
                   <div className="s-label">{t('ui.help')}</div>
@@ -5303,6 +5377,7 @@ export default function App() {
                     </div>
                   ))}
                 </div>
+                </div>}{/* end cave tab (help+legend) */}
               </aside>
               {isMobileMenuOpen && (
                 <button
