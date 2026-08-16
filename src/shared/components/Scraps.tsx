@@ -546,10 +546,11 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
   isMoving: boolean
   options: ViewerOptions
   clippingPlanes?: THREE.Plane[]
+  onSurfaceClick?: (origX: number, origY: number, altitude: number, screenX: number, screenY: number) => void
   onProcessingStart?: (i: string) => void
   onProcessingEnd?: () => void
 }) => {
-  const { onProcessingStart, onProcessingEnd } = props as any;
+  const { onProcessingStart, onProcessingEnd, onSurfaceClick } = props as any;
   const [geos, setGeos] = useState<{ solid: THREE.BufferGeometry | null, alt: THREE.BufferGeometry | null }>({ solid: null, alt: null })
   const [floorTex, setFloorTex] = useState<THREE.Texture | null>(null)
   const [floorAffine, setFloorAffine] = useState<{a:number,b:number,c:number,d:number,e:number,f:number} | null>(null)
@@ -706,11 +707,25 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
     return () => tex.dispose()
   }, [materialPreset.texturePath])
 
+  const handlePointerDown = (e: any) => {
+    if (!onSurfaceClick) return
+    e.stopPropagation()
+    const p = e.point
+    if (!p) return
+    const ox = cave.centerOffset?.x || 0
+    const oy = cave.centerOffset?.y || 0
+    const oz = cave.centerOffset?.z || 0
+    const realX = p.x + ox
+    const realY = -p.z + oy
+    const realZ = p.y + oz
+    onSurfaceClick(realX, realY, realZ, e.clientX, e.clientY)
+  }
+
   return (
     <>
       {/* ── Tieňovaný solid mesh ── */}
       {showSolid && !showRender && solidGeo && (
-        <mesh geometry={solidGeo} renderOrder={5}>
+        <mesh geometry={solidGeo} renderOrder={5} onPointerDown={handlePointerDown}>
           <meshStandardMaterial
             key={`solid-${scrapFilterKey}-${scrapVisualKey}`}
             color={options.colorScraps}
@@ -732,7 +747,7 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
 
       {/* ── Realistický render mode s textúrou ── */}
       {showRender && solidGeo && (
-        <mesh geometry={solidGeo} renderOrder={4}>
+        <mesh geometry={solidGeo} renderOrder={4} onPointerDown={handlePointerDown}>
           <meshStandardMaterial
             key={`render-${scrapFilterKey}-${scrapVisualKey}`}
             map={rockTex || null}
@@ -757,7 +772,7 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
 
       {/* ── Farebné podľa výšky ── */}
       {showAltitude && altGeo && (
-        <mesh geometry={altGeo} renderOrder={3}>
+        <mesh geometry={altGeo} renderOrder={3} onPointerDown={handlePointerDown}>
           <meshStandardMaterial
             key={`altitude-${scrapFilterKey}-${scrapVisualKey}`}
             vertexColors
@@ -776,7 +791,7 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
 
       {/* ── Pôdorysná Mapa (Projektovaná) ── */}
       {floorTex && floorAffine && solidGeo && (
-        <mesh geometry={solidGeo} renderOrder={6}>
+        <mesh geometry={solidGeo} renderOrder={6} onPointerDown={handlePointerDown}>
           <meshBasicMaterial 
             map={floorTex} 
             transparent 

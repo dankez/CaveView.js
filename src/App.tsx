@@ -4885,7 +4885,151 @@ export default function App() {
                     {lang === 'sk' ? 'SPELEO & GEOLÓGIA' : 'SPELEO & GEOLOGY'}
                   </div>
 
-                  {/* 1. 3D Kalibrácia Terénu (Gizmo) */}
+                  {/* 1. Tektonika & Geológia (3-bodový sklonomer a spádnica) */}
+                  <div style={{ background: 'rgba(30,41,59,0.3)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
+                    <div style={{ fontSize: '10px', color: '#e2e8f0', marginBottom: '6px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#c084fc' }}>architecture</span>
+                      {lang === 'sk' ? 'Tektonické meranie (3 body: Sklon & Spádnica)' : 'Tectonic Plane (Dip & Dip Direction)'}
+                    </div>
+
+                    <p style={{ fontSize: '9px', color: '#94a3b8', margin: '0 0 8px 0', lineHeight: '1.35' }}>
+                      {lang === 'sk' 
+                        ? 'Vyberte 3 body na stene jaskyne, vrstve alebo v teréne. Systém automaticky vypočíta normálu, sklon po spádnici a azimut.' 
+                        : 'Pick 3 points on cave wall, bedding plane or terrain to calculate dip, dip direction and strike.'}
+                    </p>
+
+                    <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                      <button
+                        onClick={() => setIsMeasuringMode(!isMeasuringMode)}
+                        className={`btn-back${isMeasuringMode ? ' active' : ''}`}
+                        style={{
+                          flex: 1,
+                          background: isMeasuringMode ? '#6366f1' : 'rgba(99,102,241,0.12)',
+                          color: isMeasuringMode ? '#ffffff' : '#a5b4fc',
+                          borderColor: isMeasuringMode ? '#818cf8' : 'rgba(99,102,241,0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          padding: '6px 8px',
+                          fontSize: '10px',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>{isMeasuringMode ? 'check_circle' : 'touch_app'}</span>
+                        <span>{isMeasuringMode ? (lang === 'sk' ? 'Meranie aktívne' : 'Measuring active') : (lang === 'sk' ? 'Aktivovať výber 3 bodov' : 'Enable 3-Point Picker')}</span>
+                      </button>
+
+                      {selectedStations.length > 0 && (
+                        <button
+                          onClick={() => setSelectedStations([])}
+                          className="btn-back"
+                          style={{
+                            background: 'rgba(239,68,68,0.1)',
+                            color: '#f87171',
+                            borderColor: 'rgba(239,68,68,0.25)',
+                            padding: '6px 8px',
+                            fontSize: '10px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                          title={lang === 'sk' ? 'Resetovať vybrané body' : 'Reset points'}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>restart_alt</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Stav výberu bodov */}
+                    <div style={{ 
+                      fontSize: '9px', 
+                      padding: '5px 8px', 
+                      borderRadius: '4px', 
+                      background: selectedStations.length === 3 ? 'rgba(16,185,129,0.12)' : selectedStations.length > 0 ? 'rgba(245,158,11,0.12)' : 'rgba(15,23,42,0.6)',
+                      border: `1px solid ${selectedStations.length === 3 ? 'rgba(16,185,129,0.3)' : selectedStations.length > 0 ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.05)'}`,
+                      color: selectedStations.length === 3 ? '#6ee7b7' : selectedStations.length > 0 ? '#fcd34d' : '#94a3b8',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginBottom: selectedStations.length === 3 ? '8px' : '0'
+                    }}>
+                      <span>
+                        {selectedStations.length === 0 && (lang === 'sk' ? 'Kliknite na 1. bod v 3D scéne' : 'Click 1st point in 3D scene')}
+                        {selectedStations.length === 1 && (lang === 'sk' ? 'Vybraný 1. bod. Kliknite na 2. bod' : 'Point 1 selected. Click 2nd point')}
+                        {selectedStations.length === 2 && (lang === 'sk' ? 'Vybrané 2 body. Kliknite na 3. bod' : 'Points 1 & 2 selected. Click 3rd point')}
+                        {selectedStations.length === 3 && (lang === 'sk' ? 'Rovina kompletne zameraná' : 'Plane fully measured')}
+                      </span>
+                      <span style={{ fontWeight: 'bold', fontFamily: 'monospace' }}>
+                        {selectedStations.length}/3
+                      </span>
+                    </div>
+
+                    {/* Ak sú vybrané 3 body, zobrazíme živé výsledky priamo v bočnom paneli */}
+                    {selectedStations.length === 3 && (() => {
+                      const tect = calculateTectonics(selectedStations[0].pos, selectedStations[1].pos, selectedStations[2].pos, lang);
+                      if (!tect) return null;
+                      return (
+                        <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                            <div style={{ background: '#0f172a', padding: '6px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                              <div style={{ color: '#64748b', fontSize: '8px' }}>{t('tectonics.dip')}</div>
+                              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#60a5fa', fontFamily: 'monospace' }}>
+                                {tect.dipAngle.toFixed(1)}°
+                              </div>
+                            </div>
+                            <div style={{ background: '#0f172a', padding: '6px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                              <div style={{ color: '#64748b', fontSize: '8px' }}>{t('tectonics.dipDirection')}</div>
+                              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#4ade80', fontFamily: 'monospace' }}>
+                                {tect.dipDirection.toFixed(1)}° <span style={{ fontSize: '10px', color: '#86efac' }}>({tect.cardinalDirection})</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ background: '#0f172a', padding: '6px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)', fontSize: '9px', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span>{t('tectonics.strike')}:</span>
+                              <strong style={{ color: '#fde047', fontFamily: 'monospace' }}>{`${tect.strike[0].toFixed(0)}° - ${tect.strike[1].toFixed(0)}°`}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span>{t('tectonics.triangleArea')}:</span>
+                              <strong style={{ color: '#e2e8f0', fontFamily: 'monospace' }}>{tect.area.toFixed(2)} m²</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span>Geol. zápis:</span>
+                              <strong style={{ color: '#c084fc', fontFamily: 'monospace' }}>{tect.notation}</strong>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              const strikeStr = `${tect.strike[0].toFixed(0)}° - ${tect.strike[1].toFixed(0)}°`;
+                              const text = `Tektonika / Geológia:\nSklon po spádnici: ${tect.dipAngle.toFixed(1)}°\nAzimut spádnice: ${tect.dipDirection.toFixed(1)}° (${tect.cardinalDirection})\nSmer vrstvy (Strike): ${strikeStr}\nPlocha: ${tect.area.toFixed(2)} m²\nGeol. zápis: ${tect.notation}`;
+                              navigator.clipboard.writeText(text);
+                            }}
+                            className="btn-back"
+                            style={{
+                              width: '100%',
+                              background: 'rgba(192,132,252,0.12)',
+                              color: '#c084fc',
+                              borderColor: 'rgba(192,132,252,0.25)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
+                              padding: '5px',
+                              fontSize: '9px'
+                            }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>content_copy</span>
+                            <span>{t('tectonics.copyData')}</span>
+                          </button>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* 2. 3D Kalibrácia Terénu (Gizmo) */}
                   <div style={{ background: 'rgba(30,41,59,0.3)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
                     <div className="toggle-row" style={{ border: 'none', padding: 0, marginBottom: '6px' }}>
                       <label className="toggle-label" style={{ fontSize: '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>

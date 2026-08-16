@@ -1960,6 +1960,7 @@ const CaveViewer3D = ({
             isMoving={isMoving}
             options={o}
             clippingPlanes={caveClippingPlanes}
+            onSurfaceClick={onSurfaceClick}
           />
         )}
         
