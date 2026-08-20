@@ -40,6 +40,7 @@ import { hasRenderablePointColors } from '@shared/utils/pointCloudColors'
 const CaveViewer3D = React.lazy(() => import('@v1/components/CaveViewer3D'))
 const CaveViewerNextGen = React.lazy(() => import('@v2/components/CaveViewerNextGen'))
 const APP_VERSION = packageJson.version
+const GIT_COMMIT = typeof __GIT_COMMIT__ !== 'undefined' ? __GIT_COMMIT__ : ''
 
 const POINT_CLOUD_SHAPE_ICONS: Record<PointCloudShape, typeof SquareIcon> = {
   square: SquareIcon,
@@ -84,12 +85,14 @@ const WELCOME_CHANGELOG = [
   {
     version: APP_VERSION,
     badge: 'Aktuálne',
-    group: 'Povrchy, textúry a plastickosť',
+    group: 'Kamera, Tektonika, UI & WMS mapy',
     items: [
-      'Presné lepenie S-JTSK mapových textúr aj na UTM LOX povrchy',
-      'STL/LOX steny majú plastickejšie svetlá, cavity shading a material presets',
-      'Veľké LOX DTM povrchy štartujú rýchlejšie cez počiatočné terrain LOD',
-      'Rotačné gizmo je predvolene vypnuté a dá sa zapnúť v nastaveniach',
+      'Prepínanie kamery Perspektíva ↔ Ortografická projekcia v hornej lište pre axonometriu',
+      'Nový 3-záložkový bočný panel (Jaskyňa / Terén / Analýza)',
+      '3-bodové meranie štruktúrnej geológie a tektoniky (dip, strike, normála a 3D rovina)',
+      'Interaktívny 3D raycasting a klikanie priamo na steny jaskyne (LOX scraps)',
+      'Oficiálny GKÚ ZBGIS WMS servis s CORS & SSL bypass proxy',
+      'LiDAR 2D pôdorysná mapa s workerom, editácia bodov a tvary mračna bodov',
     ],
   },
   {
@@ -3274,7 +3277,7 @@ export default function App() {
                 <div className="logo-icon">🏔️</div>
                 <h1 className="logo-title" style={{ marginBottom: '0.2rem' }}>LochViewer v{APP_VERSION}</h1>
                 <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 600, letterSpacing: '0.05em' }}>by DankeZ</div>
-                <div className="welcome-version">aktuálna verzia v{APP_VERSION}</div>
+                <div className="welcome-version">aktuálna verzia v{APP_VERSION}{GIT_COMMIT ? ` (${GIT_COMMIT})` : ''}</div>
                 <p className="logo-sub" style={{ marginTop: '1.2rem' }}>{t('welcome.sub')}</p>
               </div>
 

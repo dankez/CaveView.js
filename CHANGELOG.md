@@ -1,25 +1,16 @@
 # Changelog
 
-## [Unreleased]
+## [2.3.0] - 2026-08-20
 ### Nové
-- **Mobilné nastavenia:** Na otvorenom mobilnom sidebare je plávajúce tlačidlo `Zavrieť nastavenia`, takže používateľ nemusí po zmene voľby scrollovať späť hore.
-- **LiDAR tvary bodov:** v2 point-cloud má v sidebare prepínač tvaru bodov: štvorec, guľôčka, zaoblený kosoštvorec a šesťuholník. Prepnutie mení iba GPU sprite tvar, nie dáta modelu.
-- **2D mapa z LiDAR modelu:** Speleo sekcia vie vygenerovať PNG pôdorys z celého LiDAR modelu: vyčistený floor povrch s plynulým hillshade tieňovaním, vrstevnice a hrubý čierny obrys kreslený hladkou Bézierovou líniou. Vrstevnice sa kreslia z extra vyhladeného povrchu po 0.5 m, párne 2 m línie sú jemne hrubšie a krátke segmenty pod 5 m, kamene, kvaple a malé vnútorné nedokonalosti sa berú ako šum.
-- **LiDAR guma:** Sidebar má grafickú editáciu LiDAR bodov s režimom `Guma`, reverzným režimom `Ponechať`, veľkosťou štetca, Undo a Reset. Po editácii sa v2 render prepne na editované body z pamäte, aby sa nevracal k pôvodnému PLY streamu.
-
-### Opravené
-- **LiDAR farba po erase/keep:** Editovaný point-cloud už rozlišuje deklarované RGB atribúty od skutočne použiteľných farieb. Biele/placeholder RGB dáta po gume neblokujú `Vlastná` farbu a direct render používa rovnaké rozhodovanie ako shader fallback.
-- **LiDAR guma zachová vzhľad modelu:** Po erase/keep už editovaný v2 point-cloud nespadne do bieleho modelu; shader zachováva štvorcové LiDAR body a fallback farbu modelu aj pri chýbajúcich PLY farbách alebo normálach.
-- **LiDAR Cave color po erase:** Editovaný point-cloud už explicitne rozlišuje použiteľné PLY farby od bielych/čiernych placeholderov, pri nefarbených dátach prepne `PLY/original` na `Vlastná` Cave color, vlastná farba jaskyne sa prenesie aj po odmazaní bodov a WebGL canvas sa hľadá aj fallbackom, keď mu R3F nepriradí DOM id.
-- **LiDAR atribúty po erase:** Guma už pri filtrovaní zachováva pôvodné PLY farby podľa explicitných `hasPointColors`/`hasPointNormals` metadát a PLY parser prenáša aj normály, takže editovaný direct render nestráca pôvodnú farebnosť a plastickosť.
-
-### Výkon
-- **LiDAR analýza mimo UI threadu:** Detekcia komínov, okien a puklín beží vo Web Workeri s priebežným statusom a možnosťou zrušenia.
-- **Speleo výpočty:** Raycast LRUD a point-cloud vzdialenosti znižujú počet dočasných `THREE.Vector3` alokácií a používajú lacnejšie dot-product porovnania namiesto `angleTo`.
-- **Mapové dlaždice:** XYZ/WMS downloader po vykreslení volá `ImageBitmap.close()`, čím znižuje memory pressure pri väčších textúrach.
-- **Bundle chunking:** Vite build rozdeľuje React, Three.js, R3F/Drei, geo knižnice a GSAP do samostatných vendor chunkov pre lepšie cachovanie.
-
-## [2.3.0] - 2026-06-05
+- **Prepínanie kamery (Perspektíva ↔ Ortografia):** Nové tlačidlo v hornej lište umožňuje okamžité prepnutie medzi perspektívnym 3D pohľadom a ortografickou projekciou pre presné technické axonometrie a rezy.
+- **3-záložkový bočný panel:** Prehľadnejšie členenie ovládacích prvkov do 3 hlavných kategórií: `Jaskyňa`, `Terén` a `Analýza`.
+- **Tektonické 3-bodové merania:** Samostatný geologický panel pre výpočet sklonu (*dip*), smeru sklonu (*dip direction*), smeru vrstvy (*strike*), plochy a normály roviny z 3 kliknutých bodov s 3D vizualizáciou roviny a spádnice.
+- **3D interakcia so stenami jaskyne (LOX scraps):** Zapnutý raycasting a klikanie priamo na trojuholníkovú sieť stien jaskyne pre merania vzdialeností a tektoniky.
+- **Oficiálny GKÚ ZBGIS WMS servis:** Prechod na oficiálne WMS mapové služby Geodetického a kartografického ústavu SR s podporou CORS a SSL proxy.
+- **LiDAR 2D mapa z modelu:** Generovanie PNG pôdorysu z celého LiDAR modelu s vyčisteným povrchom, hillshade tieňovaním, vrstevnicami a plynulým obrysom.
+- **LiDAR tvary bodov & guma:** Prepínač tvaru bodov (štvorec, guľôčka, kosoštvorec, šesťuholník) a grafická editácia/mazanie bodov štetcom priamo v prehliadači s podporou Undo/Reset.
+- **Zobrazenie Git commitu na Welcome screene:** Úvodná obrazovka pri verzii zobrazuje presný hash commitu pre jednoduché overenie nasadenej verzie.
+- **Mobilné nastavenia:** Plávajúce tlačidlo `Zavrieť nastavenia` na otvorenom mobilnom paneli.
 ### Nové
 - **Welcome screen verzia:** Úvodná obrazovka zobrazuje aktuálnu verziu z `package.json`, takže H1 a verzia na prvej strane sa aktualizujú z jedného zdroja pravdy.
 
