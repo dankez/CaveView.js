@@ -4,13 +4,26 @@
 
 A modern web application for 3D visualization and analysis of cave systems, built with React, Three.js, and React-Three-Fiber.
 
-## 🚀 Version 2.3: Surface Textures, Wall Rendering & Terrain LOD
-Version 2.3 focuses on precise map texture calibration, more plastic cave wall rendering, STL workflows, and faster startup for large LOX terrain surfaces.
+## 🚀 Version 2.3: Orthographic Projections, Structural Geology & High-Performance Rendering
+Version 2.3 introduces complete orthographic projection and technical view presets, 3-point tectonic measurements, precise map texture calibration, plastic cave wall shading, and multi-threaded LiDAR plan map generation.
 
-### 🗺️ Surface Textures & Calibration
+### 📐 Camera Projections & Technical View Presets
+- **Perspective ↔ Orthographic Toggle**: Instant switch between natural 3D depth and technical axonometric projection without distance distortion (in topbar and via `O` key).
+- **1-Click View Presets**:
+  - 📐 **Plan View (`1`)**: Vertical top-down view aligned with Grid North for exact cave surveying.
+  - ↔️ **Longitudinal Profile (`2`)**: True-scale front profile (South → North).
+  - ↕️ **Cross Section (`3`)**: True-scale side profile (West → East).
+  - 🧊 **3D Isometric View (`4`)**: Spatial axonometry with preserved camera target.
+- **Full Dual-Engine Parity**: Available across both Engine v1 (LOX/3D/PLT/STL) and Engine v2 (NextGen LiDAR Point Clouds).
+
+### ⛏️ Structural Geology & Tectonics (3-Point Measurements)
+- **Planar Measurement**: Pick 3 points on cave walls, bedding planes, or surface terrain to calculate dip angle, dip direction, strike intersection line, plane area, and surface normal.
+- **3D Plane Visualization**: Interactive 3D visual rendering of the fitted plane and dip slope line directly in the cave model.
+
+### 🗺️ Surface Textures & Official GKÚ ZBGIS WMS
+- **Official GKÚ WMS Service**: Direct integration with the Slovak Geodetic and Cartographic Institute for official orthophotos and DMR hillshade.
 - **S-JTSK/UTM texture alignment**: Downloaded map textures are calibrated in the terrain's native coordinate system, including UTM-calibrated LOX surfaces.
 - **Reusable calibration files**: Generated S-JTSK calibration text files can be loaded back with custom JPG/PNG textures.
-- **Tile cache inspector**: Map downloads expose cache, fallback, zoom, and download statistics for debugging hosted deployments.
 
 ### 🪨 Cave Walls & STL
 - **Material presets**: Limestone, dolomite, grey limestone, and technical render presets improve cave wall readability.
@@ -151,13 +164,26 @@ LochViewer prioritizes user security and data protection. An independent securit
 
 Moderná webová aplikácia pre 3D vizualizáciu a analýzu jaskynných systémov, postavená na technológiách React, Three.js a React-Three-Fiber.
 
-## 🚀 Verzia 2.3: Textúry povrchu, steny a Terrain LOD
-Verzia 2.3 sa zameriava na presnú kalibráciu mapových textúr, plastickejšie steny jaskyne, STL workflow a rýchlejší štart veľkých LOX povrchov.
+## 🚀 Verzia 2.3: Ortogonálne zobrazenie, Štruktúrna geológia a Výkonný rendering
+Verzia 2.3 prináša kompletné ortogonálne (axonometrické) zobrazenie s rýchlymi technickými pohľadmi, 3-bodové tektonické merania, oficiálny GKÚ ZBGIS WMS servis, plastické tieňovanie stien a generovanie 2D máp z LiDAR modelov.
 
-### 🗺️ Textúry povrchu a kalibrácia
+### 📐 Projekcia kamery a Technické pohľady
+- **Prepínač Perspektíva ↔ Ortogonálne zobrazenie**: Okamžitý prechod medzi prirodzenou 3D perspektívou a technickou axonometriou bez skreslenia vzdialeností (v hornej lište a cez kláves `O`).
+- **Rýchle pohľady na 1 klik**:
+  - 📐 **Pôdorys (`1`)**: Kolmý pohľad zhora zarovnaný so severom pre presné speleologické mapovanie.
+  - ↔️ **Pozdĺžny profil (`2`)**: Čelný pohľad (Juh → Sever) v reálnej mierke.
+  - ↕️ **Priečny profil / Bokorys (`3`)**: Bočný profil (Západ → Východ).
+  - 🧊 **3D Izometria (`4`)**: Axonometrický priestorový pohľad.
+- **Plná podpora oboch motorov**: Funkčné v Engine v1 (LOX/3D/PLT/STL) aj v Engine v2 (NextGen LiDAR Point Clouds).
+
+### ⛏️ Štruktúrna geológia a Tektonika (3-bodové meranie)
+- **Meranie roviny**: Výber 3 bodov na stene jaskyne, pukline alebo v teréne pre automatický výpočet sklonu po spádnici (*dip*), azimutu spádnice (*dip direction*), smeru vrstvy (*strike*), plochy a normály roviny.
+- **3D vizualizácia roviny**: Vykreslenie preloženej 3D roviny a spádnice priamo v modeli.
+
+### 🗺️ Textúry povrchu a Oficiálny GKÚ ZBGIS WMS
+- **Oficiálny GKÚ WMS servis**: Priama integrácia s portálom Geodetického a kartografického ústavu SR pre ortofotomapy a DMR tieňovanie.
 - **S-JTSK/UTM zarovnanie textúr**: Stiahnuté mapové textúry sa kalibrujú v natívnom súradnicovom systéme povrchu, vrátane UTM LOX modelov.
 - **Opätovne použiteľná kalibrácia**: Vygenerované S-JTSK kalibračné TXT súbory sa dajú načítať späť pri custom JPG/PNG textúrach.
-- **Tile cache inspector**: Sťahovanie má prehľad cache, fallbackov, zoomu a download štatistík pre ladenie hostingu.
 
 ### 🪨 Steny jaskyne a STL
 - **Material presets**: Vápenec, dolomit, sivý vápenec a technický render zlepšujú čitateľnosť stien.
