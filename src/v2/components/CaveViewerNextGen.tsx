@@ -16,6 +16,7 @@ import {
 } from '@shared/components/CaveSharedElements'
 import { TectonicPlaneVisual } from '@shared/components/TectonicPlaneVisual'
 import { Scraps } from '@shared/components/Scraps'
+import { ProjectionController } from '@shared/components/ProjectionController'
 import type { ParsedCave, ViewerOptions, StationLabel, CaveViewerNextGenProps, Vec3, ViewerCameraSnapshot } from '@shared/types'
 import type { LiDARAnomaly } from '@shared/utils/speleoAnalysis'
 
@@ -389,6 +390,7 @@ const CaveViewerNextGen = ({
       camera={{ fov: 55, near: 0.1, far: Math.max(diag * 20, 10000) }}
     >
       <SceneBackground texture={bgTexture} color={o.colorBackground} />
+      <ProjectionController projection={o.cameraProjection ?? 'perspective'} cave={cave} controlsRef={controlsRef} />
       <NavigationHandler 
         isMeasuringMode={isMeasuringMode} 
         controlsRef={controlsRef} 

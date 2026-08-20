@@ -159,6 +159,17 @@ export const fr = {
     title: "Échelle humaine",
     standing: "Debout (1.8m)",
     crawling: "Rampant (0.5m)",
-    remove: "Supprimer le spéléo",
+    remove: "Supprimer spéléologue",
+  },
+  projection: {
+    title: "Projection et Vues",
+    perspective: "Perspective",
+    orthographic: "Orthographique",
+    perspectiveDesc: "Perspective 3D naturelle avec points de fuite",
+    orthographicDesc: "Vue technique sans distorsion (axonométrique)",
+    planView: "Plan (Haut)",
+    profileView: "Profil (Face)",
+    sectionView: "Coupe (Profil)",
+    isoView: "Isométrique (3D)",
   }
 };

@@ -1430,6 +1430,33 @@ export default function App() {
     }
   }, [cave, lang]);
 
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) return
+      if (e.ctrlKey || e.altKey || e.metaKey) return
+
+      if (e.key === 'o' || e.key === 'O') {
+        setOpts(p => ({
+          ...p,
+          cameraProjection: p.cameraProjection === 'orthographic' ? 'perspective' : 'orthographic'
+        }))
+      } else if (e.key === '1') {
+        setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+        window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'top' } }))
+      } else if (e.key === '2') {
+        setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+        window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'front' } }))
+      } else if (e.key === '3') {
+        setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+        window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'side' } }))
+      } else if (e.key === '4') {
+        window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'iso' } }))
+      }
+    }
+    window.addEventListener('keydown', handleGlobalKeyDown)
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown)
+  }, [])
+
   const clearLidarKeepSelection = useCallback(() => {
     lidarKeepMaskRef.current = null;
     setLidarKeepSelectionCount(0);
@@ -3505,22 +3532,92 @@ export default function App() {
                 </button>
               )}
 
-              {/* Camera Projection Toggle: Perspective ↔ Orthographic */}
-              <div className="hide-mobile-flex" style={{ display: 'flex', gap: '2px', background: '#0f172a', padding: '2px', borderRadius: '6px', border: '1px solid #1e293b', marginRight: '6px' }}>
-                {(['perspective', 'orthographic'] as const).map(mode => (
-                  <button key={mode} onClick={() => setOpts(p => ({ ...p, cameraProjection: mode }))}
-                    title={mode === 'perspective' ? (lang === 'sk' ? 'Perspektívna projekcia' : 'Perspective projection') : (lang === 'sk' ? 'Ortografická / Izometrická projekcia' : 'Orthographic / Isometric projection')}
+              {/* Camera Projection & View Presets Group */}
+              <div className="hide-mobile-flex" style={{ display: 'flex', alignItems: 'center', gap: '5px', marginRight: '6px' }}>
+                {/* Perspective ↔ Orthographic Toggle */}
+                <div style={{ display: 'flex', gap: '2px', background: '#0f172a', padding: '2px', borderRadius: '6px', border: '1px solid #1e293b' }}>
+                  <button
+                    onClick={() => setOpts(p => ({ ...p, cameraProjection: 'perspective' }))}
+                    title={lang === 'sk' ? 'Perspektívna projekcia (3D hĺbka) [Kláves O]' : 'Perspective projection (3D depth) [Key O]'}
                     style={{
-                      padding: '4px 9px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
-                      background: opts.cameraProjection === mode ? '#334155' : 'transparent',
-                      color: opts.cameraProjection === mode ? '#f8fafc' : '#64748b'
+                      padding: '4px 8px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                      background: opts.cameraProjection === 'perspective' ? '#334155' : 'transparent',
+                      color: opts.cameraProjection === 'perspective' ? '#f8fafc' : '#64748b'
                     }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '14px', display: 'block' }}>
-                      {mode === 'perspective' ? 'view_in_ar' : 'deployed_code'}
-                    </span>
-                    {mode === 'perspective' ? (lang === 'sk' ? 'Perspektíva' : 'Persp') : (lang === 'sk' ? 'Izometria' : 'Ortho')}
+                    <span className="material-symbols-outlined" style={{ fontSize: '14px', display: 'block' }}>view_in_ar</span>
+                    {lang === 'sk' ? 'Perspektíva' : 'Persp'}
                   </button>
-                ))}
+                  <button
+                    onClick={() => setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))}
+                    title={lang === 'sk' ? 'Ortogonálna projekcia (technické axonometrické zobrazenie bez skreslenia) [Kláves O]' : 'Orthographic projection (technical axonometric view without distortion) [Key O]'}
+                    style={{
+                      padding: '4px 8px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                      background: opts.cameraProjection === 'orthographic' ? '#0284c7' : 'transparent',
+                      color: opts.cameraProjection === 'orthographic' ? '#ffffff' : '#64748b',
+                      boxShadow: opts.cameraProjection === 'orthographic' ? '0 1px 4px rgba(2,132,199,0.4)' : 'none'
+                    }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '14px', display: 'block' }}>deployed_code</span>
+                    {lang === 'sk' ? 'Ortogonálne' : 'Ortho'}
+                  </button>
+                </div>
+
+                {/* View Angle Presets: Plan (1), Profile (2), Section (3), 3D (4) */}
+                <div style={{ display: 'flex', gap: '2px', background: '#0f172a', padding: '2px', borderRadius: '6px', border: '1px solid #1e293b' }}>
+                  <button
+                    onClick={() => {
+                      setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+                      window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'top' } }))
+                    }}
+                    title={lang === 'sk' ? 'Pôdorys (kolmý pohľad zhora) [Kláves 1]' : 'Plan (Top view) [Key 1]'}
+                    style={{
+                      padding: '4px 6px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px',
+                      background: 'transparent', color: '#94a3b8'
+                    }}>
+                    <span style={{ fontSize: '11px' }}>📐</span>
+                    <span>{lang === 'sk' ? 'Pôdorys' : 'Plan'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+                      window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'front' } }))
+                    }}
+                    title={lang === 'sk' ? 'Pozdĺžny profil (pohľad spredu) [Kláves 2]' : 'Profile (Front view) [Key 2]'}
+                    style={{
+                      padding: '4px 6px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px',
+                      background: 'transparent', color: '#94a3b8'
+                    }}>
+                    <span style={{ fontSize: '11px' }}>↔️</span>
+                    <span>{lang === 'sk' ? 'Profil' : 'Profile'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+                      window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'side' } }))
+                    }}
+                    title={lang === 'sk' ? 'Priečny profil (pohľad zboku) [Kláves 3]' : 'Section (Side view) [Key 3]'}
+                    style={{
+                      padding: '4px 6px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px',
+                      background: 'transparent', color: '#94a3b8'
+                    }}>
+                    <span style={{ fontSize: '11px' }}>↕️</span>
+                    <span>{lang === 'sk' ? 'Bokorys' : 'Section'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'iso' } }))
+                    }}
+                    title={lang === 'sk' ? '3D Izometrický / Axonometrický pohľad [Kláves 4]' : '3D Isometric view [Key 4]'}
+                    style={{
+                      padding: '4px 6px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px',
+                      background: 'transparent', color: '#94a3b8'
+                    }}>
+                    <span style={{ fontSize: '11px' }}>🧊</span>
+                    <span>3D</span>
+                  </button>
+                </div>
               </div>
 
               <button
@@ -4956,6 +5053,96 @@ export default function App() {
                   <div className="s-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(147, 51, 234, 0.1)', borderLeft: '4px solid #a855f7' }}>
                     <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#c084fc' }}>insights</span>
                     {lang === 'sk' ? 'SPELEO & GEOLÓGIA' : 'SPELEO & GEOLOGY'}
+                  </div>
+
+                  {/* 0. Projekcia a Uhly pohľadu */}
+                  <div style={{ background: 'rgba(30,41,59,0.3)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
+                    <div style={{ fontSize: '10px', color: '#e2e8f0', marginBottom: '6px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#38bdf8' }}>videocam</span>
+                      {t('projection.title')}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '8px' }}>
+                      <button
+                        onClick={() => setOpts(p => ({ ...p, cameraProjection: 'perspective' }))}
+                        className={`btn-mini ${opts.cameraProjection === 'perspective' ? 'active' : ''}`}
+                        style={{
+                          background: opts.cameraProjection === 'perspective' ? '#0284c7' : 'rgba(30,41,59,0.6)',
+                          color: opts.cameraProjection === 'perspective' ? '#fff' : '#94a3b8',
+                          padding: '6px 4px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)'
+                        }}
+                      >
+                        {t('projection.perspective')}
+                      </button>
+                      <button
+                        onClick={() => setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))}
+                        className={`btn-mini ${opts.cameraProjection === 'orthographic' ? 'active' : ''}`}
+                        style={{
+                          background: opts.cameraProjection === 'orthographic' ? '#0284c7' : 'rgba(30,41,59,0.6)',
+                          color: opts.cameraProjection === 'orthographic' ? '#fff' : '#94a3b8',
+                          padding: '6px 4px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)'
+                        }}
+                      >
+                        {t('projection.orthographic')}
+                      </button>
+                    </div>
+
+                    <p style={{ fontSize: '8px', color: '#64748b', margin: '0 0 8px 0', lineHeight: '1.3' }}>
+                      {opts.cameraProjection === 'orthographic' ? t('projection.orthographicDesc') : t('projection.perspectiveDesc')}
+                    </p>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+                      <button
+                        onClick={() => {
+                          setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+                          window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'top' } }))
+                        }}
+                        style={{
+                          background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(56,189,248,0.2)', color: '#bae6fd',
+                          padding: '5px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
+                        }}
+                      >
+                        <span>📐</span> {t('projection.planView')}
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+                          window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'front' } }))
+                        }}
+                        style={{
+                          background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(56,189,248,0.2)', color: '#bae6fd',
+                          padding: '5px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
+                        }}
+                      >
+                        <span>↔️</span> {t('projection.profileView')}
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+                          window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'side' } }))
+                        }}
+                        style={{
+                          background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(56,189,248,0.2)', color: '#bae6fd',
+                          padding: '5px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
+                        }}
+                      >
+                        <span>↕️</span> {t('projection.sectionView')}
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'iso' } }))
+                        }}
+                        style={{
+                          background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(56,189,248,0.2)', color: '#bae6fd',
+                          padding: '5px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
+                        }}
+                      >
+                        <span>🧊</span> {t('projection.isoView')}
+                      </button>
+                    </div>
                   </div>
 
                   {/* 1. Tektonika & Geológia (3-bodový sklonomer a spádnica) */}

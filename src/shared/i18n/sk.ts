@@ -160,5 +160,16 @@ export const sk = {
     standing: "Stojaci (1.8m)",
     crawling: "Plaziaci sa (0.5m)",
     remove: "Odstrániť postavu",
+  },
+  projection: {
+    title: "Projekcia a Pohľady",
+    perspective: "Perspektíva",
+    orthographic: "Ortogonálne",
+    perspectiveDesc: "Prirodzená 3D perspektíva s úbežníkmi",
+    orthographicDesc: "Technické zobrazenie bez skreslenia vzdialeností (axonometria)",
+    planView: "Pôdorys (Zhora)",
+    profileView: "Pozdĺžny profil (Spredu)",
+    sectionView: "Priečny profil (Zboku)",
+    isoView: "Izometria (3D)",
   }
 };

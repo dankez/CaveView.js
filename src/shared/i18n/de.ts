@@ -156,9 +156,20 @@ export const de = {
     copyData: "Daten kopieren",
   },
   caver: {
-    title: "Menschlicher Maßstab",
+    title: "Menschliche Skala",
     standing: "Stehend (1.8m)",
     crawling: "Kriechend (0.5m)",
-    remove: "Figur entfernen",
+    remove: "Höhlenforscher entfernen",
+  },
+  projection: {
+    title: "Projektion & Ansichten",
+    perspective: "Perspektive",
+    orthographic: "Orthogonal",
+    perspectiveDesc: "Natürliche 3D-Perspektive",
+    orthographicDesc: "Technische Ansicht ohne Verzerrung (Axonometrie)",
+    planView: "Grundriss (Oben)",
+    profileView: "Profil (Vorne)",
+    sectionView: "Querschnitt (Seite)",
+    isoView: "Isometrie (3D)",
   }
 };

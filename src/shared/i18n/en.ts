@@ -160,5 +160,16 @@ export const en = {
     standing: "Standing (1.8m)",
     crawling: "Crawling (0.5m)",
     remove: "Remove caver",
+  },
+  projection: {
+    title: "Projection & Views",
+    perspective: "Perspective",
+    orthographic: "Orthographic",
+    perspectiveDesc: "Natural 3D perspective with vanishing points",
+    orthographicDesc: "Technical view without distance distortion (axonometric)",
+    planView: "Plan (Top)",
+    profileView: "Profile (Front)",
+    sectionView: "Section (Side)",
+    isoView: "Isometric (3D)",
   }
 };
