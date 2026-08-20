@@ -984,6 +984,7 @@ export default function App() {
   const [lastLoadedBuffer, setLastLoadedBuffer] = useState<ArrayBuffer | null>(null)
   const [gdriveStatus, setGdriveStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle')
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
+  const [activeViewPreset, setActiveViewPreset] = useState<'top' | 'front' | 'side' | 'iso' | null>(null)
 
   useEffect(() => {
     const savedLang = localStorage.getItem('cv-language');
@@ -1436,25 +1437,42 @@ export default function App() {
       if (e.ctrlKey || e.altKey || e.metaKey) return
 
       if (e.key === 'o' || e.key === 'O') {
-        setOpts(p => ({
-          ...p,
-          cameraProjection: p.cameraProjection === 'orthographic' ? 'perspective' : 'orthographic'
-        }))
+        setOpts(p => {
+          const next = p.cameraProjection === 'orthographic' ? 'perspective' : 'orthographic'
+          if (next === 'perspective') setActiveViewPreset(null)
+          return { ...p, cameraProjection: next }
+        })
       } else if (e.key === '1') {
         setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+        setActiveViewPreset('top')
         window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'top' } }))
       } else if (e.key === '2') {
         setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+        setActiveViewPreset('front')
         window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'front' } }))
       } else if (e.key === '3') {
         setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+        setActiveViewPreset('side')
         window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'side' } }))
       } else if (e.key === '4') {
+        setActiveViewPreset('iso')
         window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'iso' } }))
       }
     }
+
+    const handleSetViewEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<{ view: 'top' | 'front' | 'side' | 'iso' }>
+      if (customEvent.detail?.view) {
+        setActiveViewPreset(customEvent.detail.view)
+      }
+    }
+
     window.addEventListener('keydown', handleGlobalKeyDown)
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown)
+    window.addEventListener('cave-set-view', handleSetViewEvent)
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown)
+      window.removeEventListener('cave-set-view', handleSetViewEvent)
+    }
   }, [])
 
   const clearLidarKeepSelection = useCallback(() => {
@@ -3537,7 +3555,10 @@ export default function App() {
                 {/* Perspective ↔ Orthographic Toggle */}
                 <div style={{ display: 'flex', gap: '2px', background: '#0f172a', padding: '2px', borderRadius: '6px', border: '1px solid #1e293b' }}>
                   <button
-                    onClick={() => setOpts(p => ({ ...p, cameraProjection: 'perspective' }))}
+                    onClick={() => {
+                      setOpts(p => ({ ...p, cameraProjection: 'perspective' }))
+                      setActiveViewPreset(null)
+                    }}
                     title={lang === 'sk' ? 'Perspektívna projekcia (3D hĺbka) [Kláves O]' : 'Perspective projection (3D depth) [Key O]'}
                     style={{
                       padding: '4px 8px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
@@ -3545,7 +3566,7 @@ export default function App() {
                       color: opts.cameraProjection === 'perspective' ? '#f8fafc' : '#64748b'
                     }}>
                     <span className="material-symbols-outlined" style={{ fontSize: '14px', display: 'block' }}>view_in_ar</span>
-                    {lang === 'sk' ? 'Perspektíva' : 'Persp'}
+                    <span>{lang === 'sk' ? 'Perspektíva' : 'Persp'}</span>
                   </button>
                   <button
                     onClick={() => setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))}
@@ -3557,7 +3578,8 @@ export default function App() {
                       boxShadow: opts.cameraProjection === 'orthographic' ? '0 1px 4px rgba(2,132,199,0.4)' : 'none'
                     }}>
                     <span className="material-symbols-outlined" style={{ fontSize: '14px', display: 'block' }}>deployed_code</span>
-                    {lang === 'sk' ? 'Ortogonálne' : 'Ortho'}
+                    <span>{lang === 'sk' ? 'Ortogonálne' : 'Ortho'}</span>
+                    <span style={{ fontSize: '7.5px', background: opts.cameraProjection === 'orthographic' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)', padding: '1px 3px', borderRadius: '3px' }}>O</span>
                   </button>
                 </div>
 
@@ -3566,56 +3588,72 @@ export default function App() {
                   <button
                     onClick={() => {
                       setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+                      setActiveViewPreset('top')
                       window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'top' } }))
                     }}
                     title={lang === 'sk' ? 'Pôdorys (kolmý pohľad zhora) [Kláves 1]' : 'Plan (Top view) [Key 1]'}
                     style={{
                       padding: '4px 6px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px',
-                      background: 'transparent', color: '#94a3b8'
+                      background: opts.cameraProjection === 'orthographic' && activeViewPreset === 'top' ? '#0369a1' : 'transparent',
+                      color: opts.cameraProjection === 'orthographic' && activeViewPreset === 'top' ? '#ffffff' : '#94a3b8',
+                      boxShadow: opts.cameraProjection === 'orthographic' && activeViewPreset === 'top' ? '0 0 6px rgba(3,105,161,0.5)' : 'none'
                     }}>
                     <span style={{ fontSize: '11px' }}>📐</span>
                     <span>{lang === 'sk' ? 'Pôdorys' : 'Plan'}</span>
+                    <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.1)', padding: '1px 3px', borderRadius: '3px' }}>1</span>
                   </button>
 
                   <button
                     onClick={() => {
                       setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+                      setActiveViewPreset('front')
                       window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'front' } }))
                     }}
                     title={lang === 'sk' ? 'Pozdĺžny profil (pohľad spredu) [Kláves 2]' : 'Profile (Front view) [Key 2]'}
                     style={{
                       padding: '4px 6px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px',
-                      background: 'transparent', color: '#94a3b8'
+                      background: opts.cameraProjection === 'orthographic' && activeViewPreset === 'front' ? '#0369a1' : 'transparent',
+                      color: opts.cameraProjection === 'orthographic' && activeViewPreset === 'front' ? '#ffffff' : '#94a3b8',
+                      boxShadow: opts.cameraProjection === 'orthographic' && activeViewPreset === 'front' ? '0 0 6px rgba(3,105,161,0.5)' : 'none'
                     }}>
                     <span style={{ fontSize: '11px' }}>↔️</span>
                     <span>{lang === 'sk' ? 'Profil' : 'Profile'}</span>
+                    <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.1)', padding: '1px 3px', borderRadius: '3px' }}>2</span>
                   </button>
 
                   <button
                     onClick={() => {
                       setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+                      setActiveViewPreset('side')
                       window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'side' } }))
                     }}
                     title={lang === 'sk' ? 'Priečny profil (pohľad zboku) [Kláves 3]' : 'Section (Side view) [Key 3]'}
                     style={{
                       padding: '4px 6px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px',
-                      background: 'transparent', color: '#94a3b8'
+                      background: opts.cameraProjection === 'orthographic' && activeViewPreset === 'side' ? '#0369a1' : 'transparent',
+                      color: opts.cameraProjection === 'orthographic' && activeViewPreset === 'side' ? '#ffffff' : '#94a3b8',
+                      boxShadow: opts.cameraProjection === 'orthographic' && activeViewPreset === 'side' ? '0 0 6px rgba(3,105,161,0.5)' : 'none'
                     }}>
                     <span style={{ fontSize: '11px' }}>↕️</span>
                     <span>{lang === 'sk' ? 'Bokorys' : 'Section'}</span>
+                    <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.1)', padding: '1px 3px', borderRadius: '3px' }}>3</span>
                   </button>
 
                   <button
                     onClick={() => {
+                      setActiveViewPreset('iso')
                       window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'iso' } }))
                     }}
                     title={lang === 'sk' ? '3D Izometrický / Axonometrický pohľad [Kláves 4]' : '3D Isometric view [Key 4]'}
                     style={{
                       padding: '4px 6px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px',
-                      background: 'transparent', color: '#94a3b8'
+                      background: activeViewPreset === 'iso' ? '#0369a1' : 'transparent',
+                      color: activeViewPreset === 'iso' ? '#ffffff' : '#94a3b8',
+                      boxShadow: activeViewPreset === 'iso' ? '0 0 6px rgba(3,105,161,0.5)' : 'none'
                     }}>
                     <span style={{ fontSize: '11px' }}>🧊</span>
                     <span>3D</span>
+                    <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.1)', padding: '1px 3px', borderRadius: '3px' }}>4</span>
                   </button>
                 </div>
               </div>
@@ -3667,6 +3705,41 @@ export default function App() {
                       {l.toUpperCase()}
                     </button>
                   ))}
+                </div>
+
+                <div className="show-mobile-flex" style={{ alignItems: 'center', gap: '4px' }}>
+                  <button
+                    onClick={() => {
+                      setOpts(p => {
+                        const next = p.cameraProjection === 'orthographic' ? 'perspective' : 'orthographic'
+                        if (next === 'perspective') setActiveViewPreset(null)
+                        return { ...p, cameraProjection: next }
+                      })
+                    }}
+                    style={{
+                      background: opts.cameraProjection === 'orthographic' ? '#0284c7' : 'rgba(30,41,59,0.8)',
+                      border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: '#fff', padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center'
+                    }}
+                    title={opts.cameraProjection === 'orthographic' ? 'Ortogonálne' : 'Perspektíva'}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                      {opts.cameraProjection === 'orthographic' ? 'deployed_code' : 'view_in_ar'}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+                      setActiveViewPreset('top')
+                      window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'top' } }))
+                    }}
+                    style={{
+                      background: opts.cameraProjection === 'orthographic' && activeViewPreset === 'top' ? '#0369a1' : 'rgba(30,41,59,0.8)',
+                      border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: '#fff', padding: '6px 8px', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center'
+                    }}
+                    title="Pôdorys / Plan View"
+                  >
+                    <span>📐</span>
+                  </button>
                 </div>
 
                 <button 
@@ -5095,52 +5168,64 @@ export default function App() {
                       <button
                         onClick={() => {
                           setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+                          setActiveViewPreset('top')
                           window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'top' } }))
                         }}
                         style={{
-                          background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(56,189,248,0.2)', color: '#bae6fd',
-                          padding: '5px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
+                          background: opts.cameraProjection === 'orthographic' && activeViewPreset === 'top' ? '#0369a1' : 'rgba(15,23,42,0.8)',
+                          border: '1px solid rgba(56,189,248,0.3)', color: '#bae6fd',
+                          padding: '5px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                          boxShadow: opts.cameraProjection === 'orthographic' && activeViewPreset === 'top' ? '0 0 6px rgba(3,105,161,0.5)' : 'none'
                         }}
                       >
-                        <span>📐</span> {t('projection.planView')}
+                        <span>📐</span> {t('projection.planView')} <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.15)', padding: '1px 3px', borderRadius: '3px' }}>1</span>
                       </button>
 
                       <button
                         onClick={() => {
                           setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+                          setActiveViewPreset('front')
                           window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'front' } }))
                         }}
                         style={{
-                          background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(56,189,248,0.2)', color: '#bae6fd',
-                          padding: '5px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
+                          background: opts.cameraProjection === 'orthographic' && activeViewPreset === 'front' ? '#0369a1' : 'rgba(15,23,42,0.8)',
+                          border: '1px solid rgba(56,189,248,0.3)', color: '#bae6fd',
+                          padding: '5px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                          boxShadow: opts.cameraProjection === 'orthographic' && activeViewPreset === 'front' ? '0 0 6px rgba(3,105,161,0.5)' : 'none'
                         }}
                       >
-                        <span>↔️</span> {t('projection.profileView')}
+                        <span>↔️</span> {t('projection.profileView')} <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.15)', padding: '1px 3px', borderRadius: '3px' }}>2</span>
                       </button>
 
                       <button
                         onClick={() => {
                           setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+                          setActiveViewPreset('side')
                           window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'side' } }))
                         }}
                         style={{
-                          background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(56,189,248,0.2)', color: '#bae6fd',
-                          padding: '5px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
+                          background: opts.cameraProjection === 'orthographic' && activeViewPreset === 'side' ? '#0369a1' : 'rgba(15,23,42,0.8)',
+                          border: '1px solid rgba(56,189,248,0.3)', color: '#bae6fd',
+                          padding: '5px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                          boxShadow: opts.cameraProjection === 'orthographic' && activeViewPreset === 'side' ? '0 0 6px rgba(3,105,161,0.5)' : 'none'
                         }}
                       >
-                        <span>↕️</span> {t('projection.sectionView')}
+                        <span>↕️</span> {t('projection.sectionView')} <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.15)', padding: '1px 3px', borderRadius: '3px' }}>3</span>
                       </button>
 
                       <button
                         onClick={() => {
+                          setActiveViewPreset('iso')
                           window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'iso' } }))
                         }}
                         style={{
-                          background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(56,189,248,0.2)', color: '#bae6fd',
-                          padding: '5px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
+                          background: activeViewPreset === 'iso' ? '#0369a1' : 'rgba(15,23,42,0.8)',
+                          border: '1px solid rgba(56,189,248,0.3)', color: '#bae6fd',
+                          padding: '5px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                          boxShadow: activeViewPreset === 'iso' ? '0 0 6px rgba(3,105,161,0.5)' : 'none'
                         }}
                       >
-                        <span>🧊</span> {t('projection.isoView')}
+                        <span>🧊</span> {t('projection.isoView')} <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.15)', padding: '1px 3px', borderRadius: '3px' }}>4</span>
                       </button>
                     </div>
                   </div>
