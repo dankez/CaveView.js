@@ -18,6 +18,8 @@ This project uses a **Dual-Engine** architecture:
 - **Type Safety:** Use shared types from `@shared/types` to ensure cross-engine compatibility.
 - **Performance First:** Heavy processing (parsing, indexing) MUST be offloaded to Web Workers.
 - **LiDAR Benchmark:** The "Erna" model (6.2M points) is the primary performance benchmark. Always verify 60 FPS in v2 before committing engine changes.
+- **AST Code Search & Refactor:** Use `ast-grep` (`sg run -p ...`) for structural multi-line code search, syntax-aware refactoring, and AST inspections across TS/TSX.
+- **E2E & Visual Verification:** Use `playwright-cli` for automated browser interactions, UI validation, and screenshot captures.
 
 ## graphify
 This project has a graphify knowledge graph at graphify-out/.
@@ -27,3 +29,4 @@ Rules:
 - If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
 - For cross-module "how does X relate to Y" questions, prefer `graphify query "<question>"`, `graphify path "<A>" "<B>"`, or `graphify explain "<concept>"` over grep — these traverse the graph's EXTRACTED + INFERRED edges instead of scanning files
 - After modifying code files in this session, run `graphify update .` to keep the graph current (AST-only, no API cost)
+
