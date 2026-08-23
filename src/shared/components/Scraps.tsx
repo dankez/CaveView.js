@@ -2,6 +2,7 @@ import React, { useMemo, useEffect, useState, useRef } from 'react'
 import * as THREE from 'three'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { elevColor, normZ } from '@shared/utils/colorUtils'
+import { buildSplayWallGeometry } from '@shared/utils/surfaceReconstruction'
 import type { ParsedCave, ViewerOptions, StationLabel, Vec3 } from '@shared/types'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -24,46 +25,46 @@ const CAVE_MATERIAL_PRESETS: Record<CaveTexturePreset, CaveMaterialPreset> = {
   limestone: {
     texturePath: '/assets/cave_limestone.png',
     color: '#ffffff',
-    roughness: 0.68,
+    roughness: 0.65,
     metalness: 0.0,
-    bumpScale: 0.72,
-    cavityStrength: 0.36,
-    edgeStrength: 0.11,
-    heightShadeStrength: 0.2,
-    edgeColor: '#dbeafe',
+    bumpScale: 0.5,
+    cavityStrength: 0.22,
+    edgeStrength: 0.1,
+    heightShadeStrength: 0.15,
+    edgeColor: '#e2e8f0',
   },
   dolomite: {
     texturePath: null,
-    color: '#f5efe4',
-    roughness: 0.8,
+    color: '#f8fafc',
+    roughness: 0.7,
     metalness: 0.0,
-    bumpScale: 0.48,
-    cavityStrength: 0.46,
-    edgeStrength: 0.18,
-    heightShadeStrength: 0.26,
-    edgeColor: '#fdebd3',
+    bumpScale: 0.4,
+    cavityStrength: 0.24,
+    edgeStrength: 0.12,
+    heightShadeStrength: 0.18,
+    edgeColor: '#f1f5f9',
   },
   grey_limestone: {
     texturePath: null,
-    color: '#eef6ff',
-    roughness: 0.82,
+    color: '#f1f5f9',
+    roughness: 0.7,
     metalness: 0.0,
-    bumpScale: 0.44,
-    cavityStrength: 0.5,
-    edgeStrength: 0.2,
-    heightShadeStrength: 0.28,
-    edgeColor: '#bae6fd',
+    bumpScale: 0.38,
+    cavityStrength: 0.25,
+    edgeStrength: 0.12,
+    heightShadeStrength: 0.18,
+    edgeColor: '#cbd5e1',
   },
   technical: {
     texturePath: null,
-    color: '#dbeafe',
-    roughness: 0.82,
+    color: '#f8fafc',
+    roughness: 0.65,
     metalness: 0.0,
-    bumpScale: 0.42,
-    cavityStrength: 0.56,
-    edgeStrength: 0.22,
-    heightShadeStrength: 0.3,
-    edgeColor: '#7dd3fc',
+    bumpScale: 0.35,
+    cavityStrength: 0.22,
+    edgeStrength: 0.12,
+    heightShadeStrength: 0.18,
+    edgeColor: '#93c5fd',
   },
 }
 
@@ -369,9 +370,9 @@ float scrapCeilingFactor = smoothstep(0.58, 1.0, vScrapRelHeight);
 float scrapFloorFactor = smoothstep(0.58, 1.0, 1.0 - vScrapRelHeight);
 float scrapCavity = clamp(scrapWallFactor * 0.58 + scrapCeilingFactor * 0.2 + scrapFloorFactor * 0.1, 0.0, 1.0);
 float scrapRim = pow(1.0 - abs(dot(normalize(normal), normalize(vViewPosition))), 2.25);
-float scrapHeightShade = mix(0.86, 1.08, clamp(vScrapRelHeight, 0.0, 1.0));
-outgoingLight *= max(0.18, 1.0 - scrapCavity * uScrapCavityStrength);
-outgoingLight *= mix(1.0, scrapHeightShade, uScrapHeightShadeStrength);
+float scrapHeightShade = mix(0.92, 1.06, clamp(vScrapRelHeight, 0.0, 1.0));
+outgoingLight *= max(0.42, 1.0 - scrapCavity * uScrapCavityStrength * 0.45);
+outgoingLight *= mix(1.0, scrapHeightShade, uScrapHeightShadeStrength * 0.7);
 outgoingLight += uScrapEdgeColor * scrapRim * uScrapEdgeStrength;`
     );
 }
@@ -394,7 +395,12 @@ function applyScrapCombinedShader(
 }
 
 export function buildScrapsGeo(cave: ParsedCave, withColors: boolean, smooth: boolean, organicLevel: number): THREE.BufferGeometry | null {
-  if (!cave.scraps?.length) return null
+  if (!cave.scraps?.length) {
+    if (cave.segments && cave.segments.some((s: any) => s.type === 'splay')) {
+      return buildSplayWallGeometry(cave, { withColors, organicLevel: Math.round(organicLevel * 2) })
+    }
+    return null
+  }
 
   let minZ = Infinity, maxZ = -Infinity
   let numVertices = 0
@@ -538,12 +544,13 @@ export const ClippingEdges = React.memo(({ geo, planes, active, color = "#ff4444
   );
 });
 
-export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitude, smooth, showRender, caveTexture, renderOpacity, isMoving, options, ...props }: {
+export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAltitude, smooth, showRender, caveTexture, renderOpacity, isMoving, isFullyIdle, options, ...props }: {
   cave: ParsedCave; opacity: number
   showSolid: boolean; showWire: boolean; showAltitude: boolean; smooth: boolean; showRender: boolean
   caveTexture: CaveTexturePreset
   renderOpacity: number
   isMoving: boolean
+  isFullyIdle?: boolean
   options: ViewerOptions
   clippingPlanes?: THREE.Plane[]
   onSurfaceClick?: (origX: number, origY: number, altitude: number, screenX: number, screenY: number) => void
@@ -721,17 +728,23 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
     onSurfaceClick(realX, realY, realZ, e.clientX, e.clientY)
   }
 
+  const fullyIdle = isFullyIdle !== undefined ? isFullyIdle : !isMoving;
+  const effectiveOpacity = fullyIdle ? opacity : 1.0;
+  const effectiveTransparent = fullyIdle && opacity < 1.0;
+  const effectiveRenderOpacity = fullyIdle ? renderOpacity : 1.0;
+  const effectiveRenderTransparent = fullyIdle && renderOpacity < 1.0;
+
   return (
     <>
       {/* ── Tieňovaný solid mesh ── */}
       {showSolid && !showRender && solidGeo && (
-        <mesh geometry={solidGeo} renderOrder={5} onPointerDown={handlePointerDown}>
+        <mesh geometry={solidGeo} renderOrder={5} onPointerDown={onSurfaceClick ? handlePointerDown : undefined}>
           <meshStandardMaterial
             key={`solid-${scrapFilterKey}-${scrapVisualKey}`}
             color={options.colorScraps}
             side={THREE.DoubleSide}
-            transparent={opacity < 1}
-            opacity={opacity}
+            transparent={effectiveTransparent}
+            opacity={effectiveOpacity}
             roughness={materialPreset.roughness}
             metalness={materialPreset.metalness}
             bumpMap={reliefMap}
@@ -747,14 +760,14 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
 
       {/* ── Realistický render mode s textúrou ── */}
       {showRender && solidGeo && (
-        <mesh geometry={solidGeo} renderOrder={4} onPointerDown={handlePointerDown}>
+        <mesh geometry={solidGeo} renderOrder={4} onPointerDown={onSurfaceClick ? handlePointerDown : undefined}>
           <meshStandardMaterial
             key={`render-${scrapFilterKey}-${scrapVisualKey}`}
             map={rockTex || null}
             color={materialPreset.color}
             side={THREE.DoubleSide}
-            transparent={renderOpacity < 1}
-            opacity={renderOpacity}
+            transparent={effectiveRenderTransparent}
+            opacity={effectiveRenderOpacity}
             roughness={materialPreset.roughness}
             metalness={materialPreset.metalness}
             emissive={caveTexture === 'technical' ? '#07111f' : '#000000'}
@@ -772,13 +785,13 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
 
       {/* ── Farebné podľa výšky ── */}
       {showAltitude && altGeo && (
-        <mesh geometry={altGeo} renderOrder={3} onPointerDown={handlePointerDown}>
+        <mesh geometry={altGeo} renderOrder={3} onPointerDown={onSurfaceClick ? handlePointerDown : undefined}>
           <meshStandardMaterial
             key={`altitude-${scrapFilterKey}-${scrapVisualKey}`}
             vertexColors
             side={THREE.DoubleSide}
-            transparent={opacity < 1}
-            opacity={opacity}
+            transparent={effectiveTransparent}
+            opacity={effectiveOpacity}
             roughness={materialPreset.roughness}
             metalness={materialPreset.metalness}
             bumpMap={reliefMap}
@@ -791,7 +804,7 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
 
       {/* ── Pôdorysná Mapa (Projektovaná) ── */}
       {floorTex && floorAffine && solidGeo && (
-        <mesh geometry={solidGeo} renderOrder={6} onPointerDown={handlePointerDown}>
+        <mesh geometry={solidGeo} renderOrder={6} onPointerDown={onSurfaceClick ? handlePointerDown : undefined}>
           <meshBasicMaterial 
             map={floorTex} 
             transparent 
@@ -842,10 +855,10 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
       )}
 
       {/* ── Drôtený model ── */}
-      {(showWire || isMoving) && solidGeo && (
+      {showWire && solidGeo && (
         <mesh geometry={solidGeo} renderOrder={10}>
           <meshBasicMaterial color={options.colorScrapsWire} wireframe depthWrite={false} transparent={true}
-            opacity={isMoving ? 0.3 : (showSolid || showAltitude ? 0.28 : 0.65)} 
+            opacity={showSolid || showAltitude ? 0.28 : 0.65} 
             clippingPlanes={props.clippingPlanes} />
         </mesh>
       )}

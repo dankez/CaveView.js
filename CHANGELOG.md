@@ -1,5 +1,39 @@
 # Changelog
 
+## [2.4.15] - 2026-08-23
+### Optimalizácia UI & HUD
+- **Optimalizácia pozície smerovej ružice (Compass Rose):**
+  - Smerová ružica (azimut & severka) premiestnená do ľavého horného rohu 3D plátna (`top: 18px, left: 18px`), čím sa úplne eliminovalo prekrývanie s výškovým farebným indikátorom (`ColorScaleLegend`) v spodnom rohu.
+  - Pôvodná poloha karty detailu stanice (`StationDetailCard`) upravená na `top: 92px`, aby pri kliknutí na bod plynulo nadväzovala pod ružicu bez kolízie.
+
+## [2.4.0] - 2026-08-21
+### Nové & Vylepšené
+- **Nová zjednodušená horná lišta (Clean Top Bar):**
+  - Odstránené nadbytočné textové popisy a duplicitné tlačidlá pohľadov `[1]`, `[2]`, `[3]`, `[4]` (axonometrické a kolmé pohľady sú plynulo riadené cez interaktívnu osovú ružicu / Viewport Gizmo).
+  - Všetky nástroje sú usporiadané do čistých, moderných piktogramov v definovanom poradí: Export PNG, Ortogonál/Perspektíva, Zoom to Fit, Centerline, Model stien, Povrchový terén, Bounding Box, Horizontálny rez Z, Splays, Meranie, Farebná schéma, Výškový systém.
+- **3-Stavové cyklické tlačidlo merania:**
+  - Jediné tlačidlo v lište cyklicky prepína medzi režimami: `Deaktivované` ➡️ `Vzdialenosti (2 body)` ➡️ `Plocha / Polygón (3+ body)` ➡️ `Deaktivované`.
+- **Vyhradený presúvateľný merací panel (`MeasurementPanel`):**
+  - Okienko merania bolo premiestnené z centra scény na okraj renderovanej plochy s podporou drag & drop presúvania.
+  - Podpora pre meranie 3D vzdialenosti, horizontálnej vzdialenosti, $\Delta H$, azimutu a sklonu pri 2 bodoch.
+  - Podpora pre výpočet plochy $m^2$, obvodu $m$, sklonu roviny (Dip), smeru sklonu a smerníka pri 3 a viacerých bodoch.
+  - Prehľadný zoznam bodov (`P1, P2...`) s tlačidlom ✖ na vymazanie konkrétneho bodu, tlačidlom `[Reštartovať meranie]` a exportom do schránky.
+  - Zamedzené nechcenému automatickému resetu pri kliknutí do 3D modelu.
+- **Karta detailu stanice na okraji (`StationDetailCard`):**
+  - Informačné okienko kliknutej stanice sa ukotvuje na horný ľavý okraj a nezakrýva model v strede obrazovky.
+- **Interaktívne snappovanie bodov & splayov:**
+  - Rozšírená interaktivita `ClickableStations` umožňujúca pohodlne snappovať nielen hlavné polygonové stanice, ale aj koncové body splayov s vizuálnym azúrovým zvýrazňovačom (`#38bdf8`) a kurzorom `crosshair`.
+- **Organická rekonštrukcia stien zo splayov s bisektorovou deliacou rovinou:**
+  - Hlavné polygonové zámery ($A \to B$) sú vylúčené z triangulácie stien, aby nevytvárali neprirodzené vnútorné priečky (zostávajú ako referenčný centerline).
+  - Implementovaná bisektorová deliaca normálová rovina $M = \frac{A+B}{2}$ medzi susednými stanicami, ktorá eliminuje kolidujúce a prekrývajúce sa kužele vo virtuálnych splayoch.
+- **Smerová ružica & Výšková legenda:**
+  - Smerová ružica je umiestnená vertikálne nad výškovou legendou (`bottom: 150px`), aby sa navzájom neprekrývali.
+  - Výšková legenda (`ColorScaleLegend`) plne podporuje a okamžite reaguje na relatívny výškový systém (`REL`) s formátom `+120 m (rel)` a `-35 m (rel)`.
+- **Optimalizovaný Zoom to Fit:**
+  - Prepočet `calculateFitParams()` vyplní celú plochu obrazovky (~85% viewportu) pre perspektívne aj ortogonálne zobrazenie.
+- **Výkon & Eliminácia render zaťaženia na popredí:**
+  - Odstránené 200ms `setInterval` pretekanie v `CameraMonitor`, čím sa zamedzilo zbytočnému vyťažovaniu CPU/GPU pri nečinnosti v aktívnom tabe.
+
 ## [2.3.0] - 2026-08-20
 ### Nové
 - **Prepínanie kamery (Perspektíva ↔ Ortografia):** Nové tlačidlo v hornej lište umožňuje okamžité prepnutie medzi perspektívnym 3D pohľadom a ortografickou projekciou pre presné technické axonometrie a rezy.

@@ -166,11 +166,19 @@ export interface SurveyData {
 }
 
 // ─── ViewerOptions ────────────────────────────────────────────────────────────
-export type PointCloudShape = 'square' | 'sphere' | 'diamond' | 'hex'
+export type PointCloudShape = 'square' | 'sphere' | 'diamond' | 'hex' | 'surfel'
 
 export interface ViewerOptions {
   // Engine selection
   engine:              'v1' | 'v2'
+  // Advanced rendering toggles (2A, 2C, 2D, 3A, 3C)
+  enableScrapsBatching?: boolean
+  enableSSAO?: boolean
+  enableSplayWalls?: boolean
+  splayVoxelSize?: number
+  splaySmoothK?: number
+  splayCapsuleRadius?: number
+  enableEDL?: boolean
   // Survey
   showSplay:           boolean
   // Stations
@@ -292,6 +300,7 @@ export interface ViewerOptions {
   caveCalibrationOffset: { x: number, y: number, z: number }
   terrainCalibrationMode: boolean
   cameraProjection: 'perspective' | 'orthographic'
+  altitudeMode?: 'absolute' | 'relative'
 }
 
 export interface LiDARWorkerMessage {

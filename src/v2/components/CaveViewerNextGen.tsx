@@ -16,7 +16,9 @@ import {
 } from '@shared/components/CaveSharedElements'
 import { TectonicPlaneVisual } from '@shared/components/TectonicPlaneVisual'
 import { Scraps } from '@shared/components/Scraps'
-import { ProjectionController } from '@shared/components/ProjectionController'
+import { SplayCaveWalls } from '../../v1/components/SplayCaveWalls'
+import { SSAOPass } from '@shared/components/SSAOPass'
+import { ProjectionController, calculateFitParams } from '@shared/components/ProjectionController'
 import type { ParsedCave, ViewerOptions, StationLabel, CaveViewerNextGenProps, Vec3, ViewerCameraSnapshot } from '@shared/types'
 import type { LiDARAnomaly } from '@shared/utils/speleoAnalysis'
 
@@ -39,15 +41,28 @@ const CameraMonitor = ({ controlsRef, onUpdate }: {
   onUpdate?: (data: ViewerCameraSnapshot) => void
 }) => {
   const { camera, size } = useThree()
+  const lastPos = useRef(new THREE.Vector3())
+  const lastQuat = useRef(new THREE.Quaternion())
+  const lastTime = useRef(0)
 
   useEffect(() => {
     if (!onUpdate) return
 
-    const update = () => {
+    const checkUpdate = () => {
+      const now = performance.now()
+      if (now - lastTime.current < 60) return
+      
+      const posChanged = camera.position.distanceToSquared(lastPos.current) > 0.0001
+      const quatChanged = camera.quaternion.angleTo(lastQuat.current) > 0.001
+      if (!posChanged && !quatChanged) return
+
+      lastTime.current = now
+      lastPos.current.copy(camera.position)
+      lastQuat.current.copy(camera.quaternion)
+
       const target = controlsRef.current?.target || new THREE.Vector3(0, 0, 0)
       const dist = camera.position.distanceTo(target)
       const perspective = camera as THREE.PerspectiveCamera
-      camera.updateMatrixWorld(true)
       onUpdate({
         dist,
         fov: perspective.fov || 55,
@@ -62,8 +77,8 @@ const CameraMonitor = ({ controlsRef, onUpdate }: {
       })
     }
 
-    const timer = setInterval(update, 200)
-    update()
+    const timer = setInterval(checkUpdate, 100)
+    checkUpdate()
     return () => clearInterval(timer)
   }, [camera, controlsRef, onUpdate, size])
 
@@ -71,29 +86,41 @@ const CameraMonitor = ({ controlsRef, onUpdate }: {
 }
 
 const AutoFit = ({ cave, trigger, offset }: { cave: ParsedCave, trigger?: number, offset?: Vec3 }) => {
-  const { camera, controls } = useThree() as any
+  const { camera, controls, size, invalidate } = useThree() as any
   useEffect(() => {
     const b = cave.bounds
-    const diag = Math.sqrt(b.size.x ** 2 + b.size.y ** 2 + b.size.z ** 2)
-    const dist = Math.max(diag * 2.0, 50)
-    
     // Account for calibration offset in world space
-    const ox = offset?.x || 0;
-    const oy = offset?.z || 0; // Three.js Y is world Z
-    const oz = -(offset?.y || 0); // Three.js Z is world -Y
+    const ox = offset?.x || 0
+    const oy = offset?.z || 0
+    const oz = -(offset?.y || 0)
     
-    const targetX = b.center.x + ox;
-    const targetY = b.center.z + oy;
-    const targetZ = -b.center.y + oz;
+    const targetX = b.center.x + ox
+    const targetY = b.center.z + oy
+    const targetZ = -b.center.y + oz
+
+    const { fitDist, frustumHalf, aspect } = calculateFitParams(b, size, camera.fov || 55, 'iso')
     
-    camera.position.set(targetX + dist, targetY + dist * 0.8, targetZ + dist)
-    camera.near = 0.1; camera.far = Math.max(diag * 25, 10000)
-    camera.updateProjectionMatrix()
+    if (camera instanceof THREE.OrthographicCamera) {
+      camera.left = -frustumHalf * aspect
+      camera.right = frustumHalf * aspect
+      camera.top = frustumHalf
+      camera.bottom = -frustumHalf
+      camera.zoom = 1
+      camera.position.set(targetX + fitDist * 0.707, targetY + fitDist * 0.577, targetZ + fitDist * 0.707)
+      camera.updateProjectionMatrix()
+    } else {
+      camera.position.set(targetX + fitDist * 0.707, targetY + fitDist * 0.577, targetZ + fitDist * 0.707)
+      camera.near = Math.max(0.1, fitDist * 0.001)
+      camera.far = Math.max(fitDist * 25, 10000)
+      camera.updateProjectionMatrix()
+    }
+
     if (controls && controls.target) {
       controls.target.set(targetX, targetY, targetZ)
       controls.update()
     }
-  }, [cave, trigger, camera, controls, offset])
+    invalidate()
+  }, [cave, trigger, camera, controls, offset, size, invalidate])
   return null
 }
 
@@ -271,8 +298,18 @@ const CaveViewerNextGen = ({
   anomalies, activeAnomalyId, onSurfaceOffsetChange
 }: CaveViewerNextGenProps) => {
   const [isMoving, setIsModelMoving] = useState(false)
+  const [isFullyIdle, setIsFullyIdle] = useState(true)
   const controlsRef = useRef<any>(null);
   const movingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const idleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const isLargeModel = useMemo(() => {
+    const legCount = cave.segments?.length || 0;
+    const stationCount = cave.stations?.length || 0;
+    const pointCount = cave.pointCount || 0;
+    const scrapCount = cave.scraps?.length || 0;
+    return legCount > 800 || stationCount > 800 || pointCount > 100000 || scrapCount > 80;
+  }, [cave]);
   
   const terrainRef = useRef<THREE.Group>(null);
   const transformControlsRef = useRef<any>(null);
@@ -298,10 +335,6 @@ const CaveViewerNextGen = ({
   const handleTerrainTransform = useCallback(() => {
     if (terrainRef.current && onSurfaceOffsetChange) {
       const pos = terrainRef.current.position;
-      // Convert Three.js (x, y, z) back to Speleo (x, y, z)
-      // Three.js X -> world X
-      // Three.js Y (vertikála) -> world Z
-      // Three.js Z -> world -Y => world Y = -Three.js Z
       onSurfaceOffsetChange({
         x: Number(pos.x.toFixed(2)),
         y: Number((-pos.z).toFixed(2)),
@@ -310,18 +343,43 @@ const CaveViewerNextGen = ({
     }
   }, [onSurfaceOffsetChange]);
 
+  const handleCameraMoveStart = () => {
+    setIsModelMoving(true)
+    setIsFullyIdle(false)
+    if (idleTimeoutRef.current) {
+      clearTimeout(idleTimeoutRef.current)
+      idleTimeoutRef.current = null
+    }
+  }
+
+  const handleCameraMoveEnd = () => {
+    setIsModelMoving(false)
+    if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current)
+    idleTimeoutRef.current = setTimeout(() => {
+      setIsFullyIdle(true)
+    }, 1500)
+  }
+
   const handleCameraChange = useCallback(() => {
     if (!isMoving) setIsModelMoving(true)
+    if (isFullyIdle) setIsFullyIdle(false)
+
     if (movingTimeoutRef.current) clearTimeout(movingTimeoutRef.current)
     movingTimeoutRef.current = setTimeout(() => {
       setIsModelMoving(false)
       movingTimeoutRef.current = null
-    }, 800)
-  }, [isMoving])
+    }, 400)
+
+    if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current)
+    idleTimeoutRef.current = setTimeout(() => {
+      setIsFullyIdle(true)
+    }, 1500)
+  }, [isMoving, isFullyIdle])
 
   useEffect(() => {
     return () => {
       if (movingTimeoutRef.current) clearTimeout(movingTimeoutRef.current)
+      if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current)
     }
   }, [])
 
@@ -380,8 +438,10 @@ const CaveViewerNextGen = ({
   return (
     <Canvas
       id="nextgen-cave-canvas"
+      frameloop={o.autoRotate || isMoving || !isFullyIdle ? 'always' : 'demand'}
+      dpr={isLargeModel ? 1.0 : (typeof window !== 'undefined' && window.devicePixelRatio > 1.5 ? 1.5 : 1)}
       gl={{ 
-        antialias: true, 
+        antialias: !isLargeModel, 
         alpha: false, 
         preserveDrawingBuffer: true, 
         powerPreference: 'high-performance',
@@ -401,14 +461,18 @@ const CaveViewerNextGen = ({
         activeAnomalyId={activeAnomalyId}
       />
       
-      <ambientLight intensity={0.16} />
-      <hemisphereLight color="#dbeafe" groundColor="#1e293b" intensity={0.34} />
-      <directionalLight position={[4, 6, 3]} intensity={0.9} color="#ffffff" />
-      <directionalLight position={[-5, 2, -4]} intensity={0.24} color="#bfdbfe" />
-      <directionalLight position={[-4, 5, 6]} intensity={0.46} color="#7dd3fc" />
-      <directionalLight position={[0, -3, 2]} intensity={0.08} color="#fef3c7" />
+      <ambientLight intensity={0.32} />
+      <hemisphereLight color="#ffffff" groundColor="#334155" intensity={0.42} />
+      <directionalLight position={[4, 6, 3]} intensity={1.15} color="#ffffff" castShadow={false} />
+      <directionalLight position={[-5, 2, -4]} intensity={0.40} color="#e2e8f0" />
+      <directionalLight position={[-4, 5, 6]} intensity={0.60} color="#bae6fd" />
+      <directionalLight position={[0, -3, 2]} intensity={0.18} color="#fef3c7" />
 
-      <EDLPass strength={o.edlStrength || 1.0} radius={o.edlRadius || 1.0} />
+      {(o.enableEDL ?? true) && (
+        <EDLPass strength={o.edlStrength || 1.0} radius={o.edlRadius || 1.0} />
+      )}
+
+      {o.enableSSAO && <SSAOPass intensity={1.5} radius={3.0} />}
 
       <group position={[
         o.caveCalibrationOffset?.x || 0, 
@@ -416,9 +480,25 @@ const CaveViewerNextGen = ({
         -(o.caveCalibrationOffset?.y || 0)
       ]}>
         <Stations cave={cave} options={o} />
-        <CaveLegs cave={cave} options={o} showSplay={o.showSplay} showAltitude={o.traverseAltitude} clippingPlanes={compositeClippingPlanes} />
-        <StationLabels cave={cave} options={o} showNames={o.showStationNames} showAltitudes={o.showStationAlt} />
-        <EntranceMarkers cave={cave} options={o} />
+        <CaveLegs cave={cave} options={o} showSplay={o.showSplay} showAltitude={o.traverseAltitude} clippingPlanes={compositeClippingPlanes} isMoving={!isFullyIdle} isLargeModel={isLargeModel} />
+        <group visible={isFullyIdle}>
+          <StationLabels cave={cave} options={o} showNames={o.showStationNames} showAltitudes={o.showStationAlt} />
+        </group>
+        <group visible={isFullyIdle || !isLargeModel}>
+          <EntranceMarkers cave={cave} options={o} />
+        </group>
+
+        {/* ── Splay SDF Cave Walls (2D) ── */}
+        {o.enableSplayWalls && (
+          <SplayCaveWalls 
+            cave={cave} 
+            options={o} 
+            showAltitude={o.scrapsAltitude}
+            clippingPlanes={compositeClippingPlanes}
+            isMoving={!isFullyIdle}
+            onStatusChange={onStatusChange}
+          />
+        )}
 
         {o.showScraps && cave.scraps?.length > 0 && (
           <Scraps 
@@ -433,6 +513,7 @@ const CaveViewerNextGen = ({
             caveTexture={o.caveTexture}
             renderOpacity={o.renderOpacity}
             isMoving={isMoving}
+            isFullyIdle={isFullyIdle}
             clippingPlanes={compositeClippingPlanes}
             onProcessingStart={onStatusChange ? (msg) => onStatusChange({ msg, type: 'progress' }) : undefined}
             onProcessingEnd={onStatusChange ? () => onStatusChange(null) : undefined}
@@ -471,6 +552,9 @@ const CaveViewerNextGen = ({
             viewMode={o.pointCloudViewMode || 'all'}
             heightThreshold={o.pointCloudHeightThreshold ?? 0.4}
             angleThreshold={o.pointCloudAngleThreshold ?? 0.5}
+            enableEDL={o.enableEDL !== false}
+            edlStrength={o.edlStrength || 1.0}
+            enableSSAO={o.enableSSAO || false}
           />
         )}
 
@@ -490,6 +574,9 @@ const CaveViewerNextGen = ({
             viewMode={o.pointCloudViewMode || 'all'}
             heightThreshold={o.pointCloudHeightThreshold ?? 0.4}
             angleThreshold={o.pointCloudAngleThreshold ?? 0.5}
+            enableEDL={o.enableEDL !== false}
+            edlStrength={o.edlStrength || 1.0}
+            enableSSAO={o.enableSSAO || false}
           />
         )}
 
@@ -532,27 +619,42 @@ const CaveViewerNextGen = ({
                 <pointLight color="#0284c7" intensity={isSelected ? 2.0 : 0.5} distance={6} />
               </group>
             )
-          } else if (a.type === 'fracture') {
-            let rotation: [number, number, number] = [0, 0, 0];
-            if (a.normal) {
-              const normalVec = new THREE.Vector3(a.normal.x, a.normal.z, -a.normal.y).normalize();
-              const up = new THREE.Vector3(0, 1, 0);
-              const quaternion = new THREE.Quaternion().setFromUnitVectors(up, normalVec);
-              const euler = new THREE.Euler().setFromQuaternion(quaternion);
-              rotation = [euler.x, euler.y, euler.z];
-            }
+          } else if (a.type === 'dome') {
             return (
-              <group key={a.id} position={[posX, posY, posZ]} rotation={rotation}>
+              <group key={a.id} position={[posX, posY, posZ]}>
                 <mesh>
-                  <cylinderGeometry args={[a.size / 4, a.size / 4, 0.1, 16]} />
+                  <sphereGeometry args={[0.8, 16, 16]} />
                   <meshBasicMaterial 
-                    color={isSelected ? "#d946ef" : "#8b5cf6"} 
+                    color={isSelected ? "#a855f7" : "#8b5cf6"} 
                     transparent 
-                    opacity={isSelected ? 0.5 : 0.25} 
+                    opacity={isSelected ? 0.6 : 0.3} 
                     wireframe={!isSelected}
                   />
                 </mesh>
                 <pointLight color="#8b5cf6" intensity={isSelected ? 2.0 : 0.5} distance={8} />
+              </group>
+            )
+          } else if (a.type === 'fracture') {
+            let rotation: [number, number, number] = [0, 0, 0];
+            if (a.normal) {
+              const normal = new THREE.Vector3(a.normal.x, a.normal.z, -a.normal.y);
+              const up = new THREE.Vector3(0, 1, 0);
+              const quaternion = new THREE.Quaternion().setFromUnitVectors(up, normal);
+              const euler = new THREE.Euler().setFromQuaternion(quaternion);
+              rotation = [euler.x, euler.y, euler.z];
+            }
+            return (
+              <group key={a.id} position={[posX, posY, posZ]}>
+                <mesh rotation={rotation}>
+                  <boxGeometry args={[a.size, 0.05, a.size]} />
+                  <meshBasicMaterial 
+                    color={isSelected ? "#ec4899" : "#d946ef"} 
+                    transparent 
+                    opacity={isSelected ? 0.7 : 0.4} 
+                    wireframe={!isSelected}
+                  />
+                </mesh>
+                <pointLight color="#d946ef" intensity={isSelected ? 2.0 : 0.5} distance={8} />
               </group>
             )
           }
@@ -599,8 +701,10 @@ const CaveViewerNextGen = ({
       <OrbitControls
         ref={controlsRef}
         makeDefault
-        enableDamping={true}
-        dampingFactor={0.05}
+        enableDamping={!isLargeModel}
+        dampingFactor={isLargeModel ? 0.2 : 0.05}
+        onStart={handleCameraMoveStart}
+        onEnd={handleCameraMoveEnd}
         onChange={handleCameraChange}
       />
       <CameraMonitor controlsRef={controlsRef} onUpdate={onCameraUpdate} />

@@ -19,9 +19,12 @@ import {
 } from '@shared/components/CaveSharedElements'
 import { TectonicPlaneVisual } from '@shared/components/TectonicPlaneVisual'
 import { Scraps, ClippingEdges } from '@shared/components/Scraps'
-import { ProjectionController } from '@shared/components/ProjectionController'
+import { SplayCaveWalls } from './SplayCaveWalls'
+import { SSAOPass } from '@shared/components/SSAOPass'
+import { EDLPass } from '../../v2/components/EDLPass'
+import { ProjectionController, calculateFitParams } from '@shared/components/ProjectionController'
 import { elevColor, normZ } from '@shared/utils/colorUtils'
-import type { ParsedCave, StationLabel, CaveSurface, Segment, ViewerCameraSnapshot } from '@shared/types'
+import type { ParsedCave, StationLabel, CaveSurface, Segment, ViewerCameraSnapshot, Vec3 } from '@shared/types'
 import type { SelStation } from '../../App'
 import type { ViewerOptions } from '@shared/types'
 
@@ -157,12 +160,11 @@ const PointCloud = React.memo(({ cave, options, clippingPlanes, onSurfaceClick, 
       ref={pointsRef}
       geometry={geo}
       renderOrder={15}
-      onPointerDown={(e) => {
-        if (!onSurfaceClick) return;
+      onPointerDown={onSurfaceClick ? (e) => {
         e.stopPropagation();
         const p = e.point;
         onSurfaceClick(p.x + cave.centerOffset.x, -p.z + cave.centerOffset.y, p.y + cave.centerOffset.z, e.clientX, e.clientY);
-      }}
+      } : undefined}
     >
       <pointsMaterial
         vertexColors
@@ -190,13 +192,6 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
     const dilation = 0.2; 
 
     // ── Filtrovanie bodov pre rekonštrukciu ──
-    // PROBLÉM PRED OPRAVOU: classifyLiDAR() klasifikovala horné steny jaskyne
-    //   ako Vegetation(4), čo spôsobilo orezanie stropu pri rekonštrukcii.
-    //
-    // PRAVIDLO: Filtrujeme LEN ak PLY súbor obsahuje NATÍVNU klasifikáciu
-    //   (z externého softvéru ako CloudCompare/Leica/FARO).
-    //   Natívna = aspoň jeden bod má triedu > 1.
-    //   Ak nie je natívna, použijeme VŠETKY body (strop aj steny).
     let reconstructionPoints = cave.points;
     const hasNativeClasses = cave.pointClassification && 
       Array.from(cave.pointClassification).some((c: number) => c > 1);
@@ -206,14 +201,12 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
       const filtered: number[] = [];
       for (let i = 0; i < cave.pointCount; i++) {
         const cls = cave.pointClassification[i];
-        // Zachovaj všetko OKREM Ground(2) a Outdoor Vegetation(4)
         if (cls !== 2 && cls !== 4) { 
           filtered.push(cave.points![i*3], cave.points![i*3+1], cave.points![i*3+2]);
         }
       }
       reconstructionPoints = new Float32Array(filtered);
     }
-    // Ak hasNativeClasses=false → reconstructionPoints = cave.points (VŠETKY body) ✓
 
     if (reconstructionPoints.length === 0) return null;
 
@@ -267,12 +260,11 @@ const OrganicShell = React.memo(({ cave, options, clippingPlanes, onSurfaceClick
         <mesh 
           geometry={geo} 
           renderOrder={10}
-          onPointerDown={(e) => {
-            if (!onSurfaceClick) return;
+          onPointerDown={onSurfaceClick ? (e) => {
             e.stopPropagation();
             const p = e.point;
             onSurfaceClick(p.x + cave.centerOffset.x, -p.z + cave.centerOffset.y, p.y + cave.centerOffset.z, e.clientX, e.clientY);
-          }}
+          } : undefined}
         >
           <meshStandardMaterial 
             vertexColors={true}
@@ -359,78 +351,85 @@ const ModernGizmo = ({ visible, modelScale }: { visible: boolean, modelScale: nu
 // ─── Clickable stations (neviditelné gule, raycasting) & Hover Highlight ───
 function ClickableStations({ cave, onStationClick, isMeasuringMode }: {
   cave: ParsedCave
-  onStationClick: (idx: number, screenX: number, screenY: number, ctrlKey: boolean) => void
+  onStationClick: (idx: number, screenX: number, screenY: number, ctrlKey: boolean, point?: Vec3) => void
   isMeasuringMode: boolean
 }) {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
+  const [hoveredPos, setHoveredPos] = useState<[number, number, number] | null>(null)
 
-  const sphereGeo = useMemo(() => new THREE.SphereGeometry(1.2, 8, 6), [])
-  const mat       = useMemo(() => new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }), [])
+  const allTargets = useMemo(() => {
+    const list: { pos: [number, number, number], name: string, idx: number, orig: Vec3 }[] = []
+    cave.stations.forEach((s: any, i: number) => {
+      const lbl = cave.stationLabels?.[i]
+      list.push({
+        pos: [s.x, s.z, -s.y],
+        name: lbl?.name || `S${i}`,
+        idx: i,
+        orig: s
+      })
+    })
+    if (isMeasuringMode && cave.segments) {
+      let spIdx = 10000
+      cave.segments.forEach((seg: any) => {
+        if (seg.type === 'splay' && seg.to) {
+          list.push({
+            pos: [seg.to.x, seg.to.z, -seg.to.y],
+            name: `Splay_${spIdx}`,
+            idx: spIdx++,
+            orig: seg.to
+          })
+        }
+      })
+    }
+    return list
+  }, [cave, isMeasuringMode])
+
+  const sphereGeo = useMemo(() => new THREE.SphereGeometry(1.0, 8, 6), [])
+  const mat = useMemo(() => new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }), [])
 
   const mesh = useMemo(() => {
-    const im = new THREE.InstancedMesh(sphereGeo, mat, cave.stations.length)
+    const im = new THREE.InstancedMesh(sphereGeo, mat, allTargets.length)
     const dummy = new THREE.Object3D()
-    cave.stations.forEach((s: any, i: number) => {
-      dummy.position.set(s.x, s.z, -s.y)
-      
-      const lbl = cave.stationLabels?.[i]
-      const isPolygon = lbl && lbl.name !== ''
-      const radiusScale = isPolygon ? 1.0 : 0.2
+    allTargets.forEach((t, i) => {
+      dummy.position.set(t.pos[0], t.pos[1], t.pos[2])
+      const isSplay = t.idx >= 10000
+      const radiusScale = isSplay ? 0.35 : 0.8
       dummy.scale.set(radiusScale, radiusScale, radiusScale)
-
       dummy.updateMatrix()
       im.setMatrixAt(i, dummy.matrix)
     })
     im.instanceMatrix.needsUpdate = true
     return im
-  }, [cave, sphereGeo, mat])
+  }, [allTargets, sphereGeo, mat])
 
   useEffect(() => {
-    document.body.style.cursor = hoveredIdx !== null ? 'crosshair' : 'auto'
+    document.body.style.cursor = hoveredPos !== null ? 'crosshair' : 'auto'
     return () => { document.body.style.cursor = 'auto' }
-  }, [hoveredIdx])
-
-  const hoveredObj = useMemo(() => {
-    if (hoveredIdx === null) return null
-    const s = cave.stations[hoveredIdx]
-    return s ? [s.x, s.z, -s.y] as [number, number, number] : null
-  }, [hoveredIdx, cave])
+  }, [hoveredPos])
 
   return (
     <group>
       <primitive
         object={mesh}
-        onPointerOver={(e: any) => {
-          if (e.instanceId !== undefined) {
-            const lbl = cave.stationLabels?.[e.instanceId]
-            const isPolygon = lbl && lbl.name !== ''
-            // Ak nie sme v móde merania, ignorujeme všetko okrem polygonových bodov
-            if (!isMeasuringMode && !isPolygon) return
-            
+        onPointerOver={isMeasuringMode ? (e: any) => {
+          if (e.instanceId !== undefined && allTargets[e.instanceId]) {
             e.stopPropagation()
-            setHoveredIdx(e.instanceId)
+            setHoveredPos(allTargets[e.instanceId].pos)
           }
-        }}
-        onPointerOut={() => setHoveredIdx(null)}
+        } : undefined}
+        onPointerOut={isMeasuringMode ? () => setHoveredPos(null) : undefined}
         onClick={(e: any) => {
-          if (e.instanceId !== undefined) {
-            const lbl = cave.stationLabels?.[e.instanceId]
-            const isPolygon = lbl && lbl.name !== ''
+          if (e.instanceId !== undefined && allTargets[e.instanceId]) {
+            const target = allTargets[e.instanceId]
             const ctrl = e.nativeEvent.ctrlKey || e.nativeEvent.metaKey
-            
-            // Ak nie sme v móde merania a nie je CTRL, ignorujeme všetko okrem polygonových bodov
-            if (!isMeasuringMode && !ctrl && !isPolygon) return
-
             e.stopPropagation()
-            onStationClick(e.instanceId, e.nativeEvent.clientX, e.nativeEvent.clientY, ctrl)
+            onStationClick(target.idx, e.nativeEvent.clientX, e.nativeEvent.clientY, ctrl, target.orig)
           }
         }}
       />
-      {/* ── Highlight Sphere ── */}
-      {hoveredObj && (
-        <mesh position={hoveredObj} renderOrder={110}>
+      {isMeasuringMode && hoveredPos && (
+        <mesh position={hoveredPos} renderOrder={110}>
           <sphereGeometry args={[0.08, 12, 12]} />
-          <meshBasicMaterial color="#ef4444" depthTest={false} transparent opacity={0.8} />
+          <meshBasicMaterial color="#38bdf8" depthTest={false} transparent opacity={0.9} />
         </mesh>
       )}
     </group>
@@ -1635,8 +1634,8 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, onTe
   return (
     <group 
       position={[props.options.surfaceOffset?.x || 0, props.options.surfaceOffset?.z || 0, -(props.options.surfaceOffset?.y || 0)]}
-      onClick={(e: any) => {
-        if (props.onSurfaceClick && e.point) {
+      onClick={props.onSurfaceClick ? (e: any) => {
+        if (e.point) {
           e.stopPropagation()
           const { x, y, z } = e.point
           const origX = x + surface.centerOffset.x
@@ -1645,14 +1644,7 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, onTe
           const ctrl = e.nativeEvent.ctrlKey || e.nativeEvent.metaKey
           props.onSurfaceClick(origX, origY, altitude, e.nativeEvent.clientX, e.nativeEvent.clientY, ctrl)
         }
-      }}
-      onPointerMove={(e: any) => {
-        if (props.onSurfaceClick && e.point) {
-          e.stopPropagation()
-          setHoveredSurf([e.point.x, e.point.y, e.point.z])
-        }
-      }}
-      onPointerOut={() => setHoveredSurf(null)}
+      } : undefined}
     >
       {tiles.map((tile, i) => (
         <TerrainTile 
@@ -1710,19 +1702,32 @@ function RaycasterManager() {
   return null
 }
 
-function CameraMonitor({ onUpdate }: { onUpdate: (data: ViewerCameraSnapshot) => void }) {
+function CameraMonitor({ onUpdate }: { onUpdate: (data: any) => void }) {
   const { camera, size } = useThree()
-  
+  const lastPos = useRef(new THREE.Vector3())
+  const lastQuat = useRef(new THREE.Quaternion())
+  const lastTime = useRef(0)
+
   useEffect(() => {
-    const update = () => {
+    if (!onUpdate) return
+    const checkUpdate = () => {
+      const now = performance.now()
+      if (now - lastTime.current < 60) return
+
+      const posChanged = camera.position.distanceToSquared(lastPos.current) > 0.0001
+      const quatChanged = camera.quaternion.angleTo(lastQuat.current) > 0.001
+      if (!posChanged && !quatChanged) return
+
+      lastTime.current = now
+      lastPos.current.copy(camera.position)
+      lastQuat.current.copy(camera.quaternion)
+
       // @ts-ignore
       const ctrl = camera.controls || (window as any)._orbitControls || (camera as any).controls
       const target = ctrl?.target || new THREE.Vector3(0, 0, 0)
       const dist = camera.position.distanceTo(target)
-      // @ts-ignore
-      const fov = camera.fov || 55
+      const fov = (camera as THREE.PerspectiveCamera).fov || 55
       const perspective = camera as THREE.PerspectiveCamera
-      camera.updateMatrixWorld(true)
       onUpdate({
         dist,
         fov,
@@ -1736,33 +1741,45 @@ function CameraMonitor({ onUpdate }: { onUpdate: (data: ViewerCameraSnapshot) =>
         target: target.toArray() as [number, number, number],
       })
     }
-    const timer = setInterval(update, 200)
-    update()
+
+    const timer = setInterval(checkUpdate, 100)
+    checkUpdate()
     return () => clearInterval(timer)
   }, [camera, size, onUpdate])
   
   return null
 }
+
 function AutoFit({ cave, trigger }: { cave: ParsedCave, trigger?: number }) {
-  const { camera, controls } = useThree() as any
+  const { camera, controls, size, invalidate } = useThree() as any
   useEffect(() => {
-    const b    = cave.bounds
-    const diag = Math.sqrt(b.size.x ** 2 + b.size.y ** 2 + b.size.z ** 2)
-    const dist = Math.max(diag * 2.0, 50)
-    
-    // Target the actual center of the model (in Three.js space: x=x, y=z, z=-y)
-    const targetX = b.center.x;
-    const targetY = b.center.z;
-    const targetZ = -b.center.y;
-    
-    camera.position.set(targetX + dist, targetY + dist * 0.8, targetZ + dist)
-    camera.near = 0.1; camera.far = Math.max(diag * 25, 5000)
-    camera.updateProjectionMatrix()
+    const b = cave.bounds
+    const targetX = b.center.x
+    const targetY = b.center.z
+    const targetZ = -b.center.y
+    const { fitDist, frustumHalf, aspect } = calculateFitParams(b, size, camera.fov || 55, 'iso')
+
+    if (camera instanceof THREE.OrthographicCamera) {
+      camera.left = -frustumHalf * aspect
+      camera.right = frustumHalf * aspect
+      camera.top = frustumHalf
+      camera.bottom = -frustumHalf
+      camera.zoom = 1
+      camera.position.set(targetX + fitDist * 0.707, targetY + fitDist * 0.577, targetZ + fitDist * 0.707)
+      camera.updateProjectionMatrix()
+    } else {
+      camera.position.set(targetX + fitDist * 0.707, targetY + fitDist * 0.577, targetZ + fitDist * 0.707)
+      camera.near = Math.max(0.1, fitDist * 0.001)
+      camera.far = Math.max(fitDist * 25, 10000)
+      camera.updateProjectionMatrix()
+    }
+
     if (controls && controls.target) {
       controls.target.set(targetX, targetY, targetZ)
       controls.update()
     }
-  }, [cave, trigger, camera, controls])
+    invalidate()
+  }, [cave, trigger, camera, controls, size, invalidate])
   return null
 }
 
@@ -1799,46 +1816,50 @@ const CaveViewer3D = ({
   contourInterval, minorInterval, isMeasuringMode
 }: Props) => {
   const [isMoving, setIsMoving] = useState(false)
+  const [isFullyIdle, setIsFullyIdle] = useState(true)
+  const idleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [camData, setCamData] = useState<{ dist: number, fov: number, height: number } | null>(null)
-  const movingTimeout = useRef<any>(null)
-  const startStopTimeout = useCallback(() => {
-    if (movingTimeout.current) clearTimeout(movingTimeout.current)
-    movingTimeout.current = setTimeout(() => {
-      setIsMoving(false)
-      movingTimeout.current = null
-    }, 800) // Návrat do stable po 0.8s od uvoľnenia
+
+  const handleCameraMoveStart = () => {
+    setIsMoving(true)
+    setIsFullyIdle(false)
+    if (idleTimeoutRef.current) {
+      clearTimeout(idleTimeoutRef.current)
+      idleTimeoutRef.current = null
+    }
+  }
+
+  const handleCameraMoveEnd = () => {
+    setIsMoving(false)
+    if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current)
+    idleTimeoutRef.current = setTimeout(() => {
+      setIsFullyIdle(true)
+    }, 1500)
+  }
+
+  const handleCameraChange = () => {
+    if (isFullyIdle) {
+      setIsFullyIdle(false)
+    }
+    if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current)
+    idleTimeoutRef.current = setTimeout(() => {
+      setIsFullyIdle(true)
+    }, 1500)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current)
+    }
   }, [])
 
-  const handleCameraChange = useCallback(() => {
-    if (!isMoving) setIsMoving(true)
-    // Ak sa hýbe kamerou, predlžujeme draft stav
-    startStopTimeout()
-  }, [isMoving, startStopTimeout])
-
-  useEffect(() => {
-    onMoveStateChange?.(isMoving)
-  }, [isMoving, onMoveStateChange])
-
-  useEffect(() => {
-    // Globálna a agresívna detekcia
-    const onStart = () => { if (!isMoving) setIsMoving(true) }
-    const onEnd = () => { startStopTimeout() }
-    
-    window.addEventListener('mousedown', onStart, { capture: true })
-    window.addEventListener('mouseup', onEnd, { capture: true })
-    window.addEventListener('wheel', handleCameraChange, { capture: true, passive: true })
-    window.addEventListener('touchstart', onStart, { capture: true })
-    window.addEventListener('touchend', onEnd, { capture: true })
-
-    return () => {
-      if (movingTimeout.current) clearTimeout(movingTimeout.current)
-      window.removeEventListener('mousedown', onStart, { capture: true })
-      window.removeEventListener('mouseup', onEnd, { capture: true })
-      window.removeEventListener('wheel', handleCameraChange, { capture: true })
-      window.removeEventListener('touchstart', onStart, { capture: true })
-      window.removeEventListener('touchend', onEnd, { capture: true })
-    }
-  }, [isMoving, handleCameraChange, startStopTimeout])
+  const isLargeModel = useMemo(() => {
+    const legCount = cave.segments?.length || 0
+    const stationCount = cave.stations?.length || 0
+    const pointCount = cave.pointCount || 0
+    const scrapCount = cave.scraps?.length || 0
+    return legCount > 800 || stationCount > 800 || pointCount > 100000 || scrapCount > 80
+  }, [cave])
 
   const diag     = Math.sqrt(cave.bounds.size.x ** 2 + cave.bounds.size.y ** 2 + cave.bounds.size.z ** 2)
   const gridSize = Math.max(diag * 1.5, 200)
@@ -1895,8 +1916,10 @@ const CaveViewer3D = ({
   return (
     <Canvas
       id="main-cave-canvas"
+      frameloop={o.autoRotate || isMoving || !isFullyIdle ? 'always' : 'demand'}
+      dpr={isLargeModel ? 1.0 : (typeof window !== 'undefined' && window.devicePixelRatio > 1.5 ? 1.5 : 1)}
       gl={{ 
-        antialias: true, 
+        antialias: !isLargeModel, 
         alpha: false, 
         preserveDrawingBuffer: true, 
         powerPreference: 'high-performance',
@@ -1909,19 +1932,16 @@ const CaveViewer3D = ({
         gl.debug.checkShaderErrors = false 
       }}
       onPointerMissed={() => onBackgroundClick?.()}
-      onPointerDown={() => setIsMoving(true)}
-      onPointerMove={(e) => { if (e.buttons > 0) handleCameraChange() }}
-      onWheel={() => handleCameraChange()}
     >
       <SceneBackground texture={bgTexture} color={o.colorBackground} />
       <RaycasterManager />
       <ProjectionController projection={o.cameraProjection ?? 'perspective'} cave={cave} />
-      <ambientLight intensity={0.16} />
-      <hemisphereLight color="#dbeafe" groundColor="#1e293b" intensity={0.34} />
-      <directionalLight position={[4, 6, 3]} intensity={0.92} color="#ffffff" />
-      <directionalLight position={[-5, 2, -4]} intensity={0.26} color="#bfdbfe" />
-      <directionalLight position={[-4, 5, 6]} intensity={0.48} color="#7dd3fc" />
-      <directionalLight position={[0, -3, 2]} intensity={0.09} color="#fef3c7" />
+      <ambientLight intensity={0.32} />
+      <hemisphereLight color="#ffffff" groundColor="#334155" intensity={0.42} />
+      <directionalLight position={[4, 6, 3]} intensity={1.15} color="#ffffff" castShadow={false} />
+      <directionalLight position={[-5, 2, -4]} intensity={0.40} color="#e2e8f0" />
+      <directionalLight position={[-4, 5, 6]} intensity={0.60} color="#bae6fd" />
+      <directionalLight position={[0, -3, 2]} intensity={0.18} color="#fef3c7" />
  
       {/* ── Terrain (Fixed in world space) ── */}
       {(o.showSurfaceMesh || o.showSurfaceMeshWire || o.showSurfaceTexture || o.showSurfaceNetwork || o.showContours) && cave.surfaces?.map((surf: CaveSurface, i: number) => (
@@ -1937,14 +1957,14 @@ const CaveViewer3D = ({
           contourColor10={o.contourColor10}
           contourInterval={contourInterval}
           minorInterval={minorInterval}
-          opacity={o.surfaceOpacity}
+          opacity={isFullyIdle ? o.surfaceOpacity : 1.0}
           surfaceColor={o.surfaceColor}
           colorTerrainWire={o.colorTerrainWire}
           onSurfaceClick={onSurfaceClick}
           onStatusChange={onStatusChange}
           onTextureReady={onTextureReady}
           onTextureDownloadInfo={onTextureDownloadInfo}
-          isMoving={isMoving}
+          isMoving={!isFullyIdle}
           options={o}
           clippingPlanes={compositeClippingPlanes}
         />
@@ -1958,7 +1978,9 @@ const CaveViewer3D = ({
         -(o.caveCalibrationOffset?.y || 0)
       ]}>
         {/* ── Entrances ── */}
-        <EntranceMarkers cave={cave} options={o} />
+        <group visible={isFullyIdle || !isLargeModel}>
+          <EntranceMarkers cave={cave} options={o} />
+        </group>
         
         {/* ── Jaskyniar (Mierka) ── */}
         {o.placedCaver && (
@@ -1982,12 +2004,25 @@ const CaveViewer3D = ({
             caveTexture={o.caveTexture}
             renderOpacity={o.renderOpacity}
             isMoving={isMoving}
+            isFullyIdle={isFullyIdle}
             options={o}
             clippingPlanes={caveClippingPlanes}
             onSurfaceClick={onSurfaceClick}
           />
         )}
         
+        {/* ── Splay SDF Cave Walls (2D) ── */}
+        {o.enableSplayWalls && (
+          <SplayCaveWalls 
+            cave={cave} 
+            options={o} 
+            showAltitude={o.scrapsAltitude}
+            clippingPlanes={caveClippingPlanes}
+            isMoving={!isFullyIdle}
+            onStatusChange={onStatusChange}
+          />
+        )}
+
         {/* ── LiDAR Point Cloud ── */}
         {o.showScraps && cave.pointCount > 0 && (
           <>
@@ -1997,7 +2032,7 @@ const CaveViewer3D = ({
               options={o} 
               clippingPlanes={caveClippingPlanes} 
               onSurfaceClick={onSurfaceClick} 
-              isMoving={isMoving} 
+              isMoving={!isFullyIdle} 
             />
             <OrganicShell 
               key={`organic-${o.organicLevel}-${o.organicVoxelSize}-${o.organicDilation}-${o.smoothScraps}-${o.accurateScraps}`}
@@ -2005,7 +2040,7 @@ const CaveViewer3D = ({
               options={o} 
               clippingPlanes={caveClippingPlanes} 
               onSurfaceClick={onSurfaceClick} 
-              isMoving={isMoving} 
+              isMoving={!isFullyIdle} 
             />
           </>
         )}
@@ -2016,7 +2051,7 @@ const CaveViewer3D = ({
             cave={cave} 
             radius={o.traverseRadius} 
             showAltitude={o.traverseAltitude} 
-            isMoving={isMoving} 
+            isMoving={!isFullyIdle} 
             clippingPlanes={caveClippingPlanes}
           />
         )}
@@ -2028,12 +2063,14 @@ const CaveViewer3D = ({
           showAltitude={o.traverseAltitude} 
           options={o} 
           clippingPlanes={compositeClippingPlanes}
+          isMoving={!isFullyIdle}
+          isLargeModel={isLargeModel}
         />
 
         {/* ── Station dots & labels & clickable targets ── */}
         {o.showStations && <Stations cave={cave} options={o} />}
         <ClickableStations cave={cave} onStationClick={onStationClick} isMeasuringMode={isMeasuringMode} />
-        <group visible={!isMoving}>
+        <group visible={isFullyIdle}>
           {(o.showStationNames || o.showStationAlt) && (
             <StationLabels cave={cave} showNames={o.showStationNames} showAltitudes={o.showStationAlt} options={o} />
           )}
@@ -2062,15 +2099,22 @@ const CaveViewer3D = ({
 
       <OrbitControls
         makeDefault
-        enableDamping={true}
-        dampingFactor={0.05}
-        onStart={() => setIsMoving(true)}
+        enableDamping={!isLargeModel}
+        dampingFactor={isLargeModel ? 0.2 : 0.05}
+        onStart={handleCameraMoveStart}
+        onEnd={handleCameraMoveEnd}
         onChange={handleCameraChange}
-        rotateSpeed={0.6} zoomSpeed={0.8} panSpeed={0.8}
-        minDistance={1} maxDistance={Math.max(diag * 25, 10000)}
+        rotateSpeed={isLargeModel ? 0.9 : 0.6}
+        zoomSpeed={isLargeModel ? 1.0 : 0.8}
+        panSpeed={isLargeModel ? 1.0 : 0.8}
+        minDistance={1}
+        maxDistance={Math.max(diag * 25, 10000)}
         autoRotate={o.autoRotate}
         autoRotateSpeed={o.autoRotateSpeed}
       />
+
+      {o.enableSSAO && <SSAOPass intensity={1.5} radius={3.0} />}
+      {o.enableEDL && <EDLPass strength={o.edlStrength || 1.0} radius={o.edlRadius || 1.0} />}
 
       <CameraMonitor onUpdate={(data) => {
         setCamData(data)

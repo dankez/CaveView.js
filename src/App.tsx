@@ -5,6 +5,7 @@ import {
   CheckCircle2 as CheckCircleIcon,
   Circle as CircleIcon,
   Diamond as DiamondIcon,
+  Disc as DiscIcon,
   Eraser as EraserIcon,
   Hexagon as HexagonIcon,
   MousePointer2 as MousePointerIcon,
@@ -36,6 +37,9 @@ import {
 import type { LiDARAnomaly } from '@shared/utils/speleoAnalysis'
 import { DEFAULT_POINT_CLOUD_SHAPE, POINT_CLOUD_SHAPE_OPTIONS } from '@v2/components/pointCloudShape'
 import { hasRenderablePointColors } from '@shared/utils/pointCloudColors'
+import { CompassRose } from '@shared/components/CompassRose'
+import { FloatingClippingSlider } from '@shared/components/FloatingClippingSlider'
+import { MeasurementPanel } from '@shared/components/MeasurementPanel'
 
 const CaveViewer3D = React.lazy(() => import('@v1/components/CaveViewer3D'))
 const CaveViewerNextGen = React.lazy(() => import('@v2/components/CaveViewerNextGen'))
@@ -47,6 +51,7 @@ const POINT_CLOUD_SHAPE_ICONS: Record<PointCloudShape, typeof SquareIcon> = {
   sphere: CircleIcon,
   diamond: DiamondIcon,
   hex: HexagonIcon,
+  surfel: DiscIcon,
 }
 
 const POINT_CLOUD_SHAPE_LABELS_SK: Record<PointCloudShape, string> = {
@@ -54,6 +59,7 @@ const POINT_CLOUD_SHAPE_LABELS_SK: Record<PointCloudShape, string> = {
   sphere: 'Guľôčka',
   diamond: 'Kosoštvorec',
   hex: 'Šesťuholník',
+  surfel: 'Surfel (Disk)',
 }
 
 const POINT_CLOUD_SHAPE_LABELS_EN: Record<PointCloudShape, string> = {
@@ -61,6 +67,7 @@ const POINT_CLOUD_SHAPE_LABELS_EN: Record<PointCloudShape, string> = {
   sphere: 'Sphere',
   diamond: 'Diamond',
   hex: 'Hex',
+  surfel: 'Surfel (Disk)',
 }
 
 type SpeleoWorkerMessage =
@@ -363,7 +370,7 @@ export interface SelStation {
   centerZ?:     number
 }
 
-function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUpdateGps, t, lang }: { 
+function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUpdateGps, t, lang, baseAltitude, altitudeMode }: { 
   stations: SelStation[]; 
   onClose: () => void;
   onPlaceCaver: (pos: [number, number, number] | null, pose: 'standing' | 'crawling') => void;
@@ -371,6 +378,8 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
   onUpdateGps: (stIdx: number, lat: number, lon: number, alt: number) => void;
   t: (key: string) => string;
   lang: string;
+  baseAltitude?: number;
+  altitudeMode?: 'absolute' | 'relative';
 }) {
   const [posOffset, setPosOffset] = useState({ x: 0, y: 0 })
   const dragRef = useRef<{ startX: number; startY: number; isDragging: boolean }>({ startX: 0, startY: 0, isDragging: false })
@@ -455,9 +464,9 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
     setTimeout(() => setCopied(false), 2500)
   }
 
-  // Pôvodná poloha karty
-  const cx = Math.min(Math.max(st1.screenX, 280), window.innerWidth - 340)
-  const cy = Math.min(Math.max(st1.screenY + 20, 60), window.innerHeight - 480)
+  // Pôvodná poloha karty ukotvená na bočný okraj
+  const defaultLeft = 20
+  const defaultTop = 92
 
   const handleMouseDown = (e: React.MouseEvent) => {
     dragRef.current = {
@@ -503,7 +512,7 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
 
   return (
     <div style={{
-      position: 'fixed', left: cx + posOffset.x, top: cy + posOffset.y, zIndex: 200, minWidth: 300, maxWidth: 360,
+      position: 'fixed', left: defaultLeft + posOffset.x, top: defaultTop + posOffset.y, zIndex: 200, minWidth: 300, maxWidth: 360,
       background: 'linear-gradient(135deg,rgba(8,15,35,.97),rgba(15,25,50,.97))',
       border: stations.length === 3 ? '1px solid rgba(192,132,252,.5)' : '1px solid rgba(79,195,247,.35)',
       borderRadius: 14, padding: '16px 18px',
@@ -564,7 +573,11 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
             )}
             
             {(!editGps || stations.length > 1) ? (
-              <Row label={t('stations.altitude')} value={`${st.altitude.toFixed(2)} m`} sub="n.m." />
+              <Row
+                label={t('stations.altitude')}
+                value={`${st.altitude.toFixed(2)} m`}
+                sub={baseAltitude !== undefined ? `n.m. (${(st.altitude - baseAltitude) >= 0 ? '+' : ''}${(st.altitude - baseAltitude).toFixed(2)} m rel)` : "n.m."}
+              />
             ) : (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
                 <span style={{ fontSize: 11, color: '#94a3b8' }}>{t('stations.altitude')}</span>
@@ -872,14 +885,24 @@ const ScaleBar = ({ cameraData }: { cameraData: { dist: number, fov: number, hei
 }
 
 // ─── Color Scale Legend (Zobrazenie výšok pre farby) ─────────────────────────
-const ColorScaleLegend = ({ caveLegend, surfLegend, lang }: { 
+const ColorScaleLegend = ({ caveLegend, surfLegend, lang, baseAltitude, altitudeMode }: { 
   caveLegend: { minAlt: number, maxAlt: number } | null, 
   surfLegend: { minAlt: number, maxAlt: number } | null,
-  lang: string
+  lang: string,
+  baseAltitude?: number,
+  altitudeMode?: 'absolute' | 'relative'
 }) => {
   if (!caveLegend && !surfLegend) return null
   
   const gradient = 'linear-gradient(to top, #142ea6 0%, #197ad9 18%, #1fc7b8 35%, #2ede61 50%, #ccf01a 65%, #f7990d 80%, #e01a1a 100%)'
+  const isRel = altitudeMode === 'relative'
+  const base = baseAltitude ?? 0
+
+  const formatAlt = (val: number) => {
+    if (!isRel) return `${Math.round(val)} m`
+    const diff = Math.round(val - base)
+    return `${diff > 0 ? '+' : ''}${diff} m`
+  }
 
   return (
     <div style={{
@@ -890,13 +913,15 @@ const ColorScaleLegend = ({ caveLegend, surfLegend, lang }: {
       {caveLegend && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ fontSize: 9, color: '#fff', textShadow: '0 1px 2px #000', marginBottom: 4, fontWeight: 600 }}>
-             {Math.round(caveLegend.maxAlt)} m
+             {formatAlt(caveLegend.maxAlt)}
           </div>
           <div style={{ width: 12, height: 100, background: gradient, borderRadius: 2, border: '1px solid rgba(255,255,255,0.3)' }} />
           <div style={{ fontSize: 9, color: '#fff', textShadow: '0 1px 2px #000', marginTop: 4, fontWeight: 600 }}>
-             {Math.round(caveLegend.minAlt)} m
+             {formatAlt(caveLegend.minAlt)}
           </div>
-          <div style={{ fontSize: 8, color: '#fff', textShadow: '0 1px 2px #000', marginTop: 2, fontWeight: 700, letterSpacing: '0.02em' }}>{lang === 'sk' ? 'Jaskyňa' : 'Cave'}</div>
+          <div style={{ fontSize: 8, color: '#fff', textShadow: '0 1px 2px #000', marginTop: 2, fontWeight: 700, letterSpacing: '0.02em' }}>
+            {lang === 'sk' ? 'Jaskyňa' : 'Cave'}{isRel ? ' (rel)' : ''}
+          </div>
         </div>
       )}
       {surfLegend && (
@@ -959,7 +984,17 @@ export default function App() {
   const [loadingStatus, setLoadingStatus] = useState<string>('')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [selectedStations, setSelectedStations] = useState<SelStation[]>([])
-  const [isMeasuringMode, setIsMeasuringMode] = useState(false)
+  const [measurementMode, setMeasurementMode] = useState<'off' | 'distance' | 'polygon'>('off')
+  const isMeasuringMode = measurementMode !== 'off'
+
+  const cycleMeasurementMode = () => {
+    setMeasurementMode(prev => {
+      if (prev === 'off') return 'distance'
+      if (prev === 'distance') return 'polygon'
+      return 'off'
+    })
+    setSelectedStations([])
+  }
   // Embed / Share
   const [isEmbedMode] = useState(() => new URLSearchParams(window.location.search).get('embed') === 'true')
   const [embedAllowSidebar] = useState(() => new URLSearchParams(window.location.search).get('sidebar') === '1')
@@ -1077,7 +1112,15 @@ export default function App() {
   }, [cameraData])
   const [opts, setOpts] = useState<ViewerOptions>({
     engine:              'v1',
+    enableScrapsBatching: true,
+    enableSSAO:          false,
+    enableSplayWalls:    false,
+    splayVoxelSize:      0.22,
+    splaySmoothK:        0.06,
+    splayCapsuleRadius:  0.10,
+    enableEDL:           true,
     cameraProjection:    'perspective',
+    altitudeMode:        'absolute',
     showSplay:           false,
     showStations:        true,
     showStationNames:    false,
@@ -1159,7 +1202,7 @@ export default function App() {
     surfaceOffset:       { x: 0, y: 0, z: 0 },
     colorSplay:          '#78909c',
     colorTraverse:       '#4fc3f7',
-    colorScraps:         '#94a3b8',
+    colorScraps:         '#cbd5e1',
     colorScrapsWire:     '#6a9fd8',
     colorStations:       '#fbbf24',
     colorStationNames:   '#fbbf24',
@@ -1228,6 +1271,11 @@ export default function App() {
     });
     setTimeout(() => setAppStatus(null), 1800);
   }, [lang]);
+
+  const splayCount = useMemo(() => {
+    if (!cave || !cave.segments) return 0;
+    return cave.segments.filter((s: any) => s.type === 'splay').length;
+  }, [cave]);
 
   const runLiDARAnalysis = useCallback(() => {
     if (!cave?.points || cave.pointCount === 0) return;
@@ -1442,6 +1490,22 @@ export default function App() {
           if (next === 'perspective') setActiveViewPreset(null)
           return { ...p, cameraProjection: next }
         })
+      } else if (e.key === 'c' || e.key === 'C') {
+        setOpts(p => {
+          if (p.engine === 'v2') {
+            const modes: Array<ViewerOptions['pointCloudColorMode']> = ['original', 'elevation', 'natural']
+            const curIdx = modes.indexOf(p.pointCloudColorMode || 'original')
+            const nextMode = modes[(curIdx + 1) % modes.length]
+            return { ...p, pointCloudColorMode: nextMode }
+          } else {
+            return { ...p, scrapsAltitude: !p.scrapsAltitude }
+          }
+        })
+      } else if (e.key === 'h' || e.key === 'H') {
+        setOpts(p => ({
+          ...p,
+          altitudeMode: p.altitudeMode === 'relative' ? 'absolute' : 'relative'
+        }))
       } else if (e.key === '1') {
         setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
         setActiveViewPreset('top')
@@ -1490,6 +1554,34 @@ export default function App() {
       return rect.width > 0 && rect.height > 0 && !String(canvas.className || '').includes('bg-canvas');
     }) || null;
   }, [opts.engine]);
+
+  const handleExportScreenshot = useCallback(() => {
+    const canvas = getActiveViewerCanvas();
+    if (!canvas) return;
+    try {
+      const dataUrl = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      const safeName = 'cave_view';
+      a.download = `${safeName}_${new Date().toISOString().slice(0, 10)}.png`;
+      a.href = dataUrl;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Screenshot export failed:', err);
+    }
+  }, [getActiveViewerCanvas]);
+
+  const toggleSurface = useCallback(() => {
+    setOpts(p => {
+      const isVisible = p.showSurfaceMesh || p.showSurfaceTexture || p.showMapboxTerrain;
+      if (isVisible) {
+        return { ...p, showSurfaceMesh: false, showSurfaceTexture: false, showMapboxTerrain: false };
+      } else {
+        return { ...p, showSurfaceMesh: true, showSurfaceTexture: true, showMapboxTerrain: true };
+      }
+    });
+  }, []);
 
   const getLidarPointerPoint = useCallback((event: React.PointerEvent<HTMLElement>): LidarScreenPoint | null => {
     const canvas = getActiveViewerCanvas();
@@ -1933,19 +2025,22 @@ export default function App() {
     }
     
     setSelectedStations(prev => {
-      if (!isMeasuringMode && !ctrlKey) return [newSt]
-      if (prev.length === 1 && (prev[0].origX !== newSt.origX || prev[0].origY !== newSt.origY || prev[0].altitude !== newSt.altitude)) {
-        return [prev[0], newSt]
+      if (measurementMode === 'off' && !ctrlKey) return [newSt]
+      if (measurementMode === 'distance') {
+        if (prev.length >= 2) return [prev[0], newSt]
+        return [...prev, newSt]
       }
-      if (prev.length === 2 && 
-          (prev[0].origX !== newSt.origX || prev[0].origY !== newSt.origY || prev[0].altitude !== newSt.altitude) &&
-          (prev[1].origX !== newSt.origX || prev[1].origY !== newSt.origY || prev[1].altitude !== newSt.altitude)) {
-        return [prev[0], prev[1], newSt]
+      if (measurementMode === 'polygon') {
+        const isDuplicate = prev.some(p => Math.abs(p.origX - newSt.origX) < 0.001 && Math.abs(p.origY - newSt.origY) < 0.001 && Math.abs(p.altitude - newSt.altitude) < 0.001)
+        if (isDuplicate) return prev
+        return [...prev, newSt]
       }
       return [newSt]
     })
-    setShowStationCard(true)
-  }, [cave, isMeasuringMode]);
+    if (measurementMode === 'off') {
+      setShowStationCard(true)
+    }
+  }, [cave, isMeasuringMode, measurementMode]);
 
   useEffect(() => {
     if (!cave || selectedStations.length !== 2) {
@@ -2013,19 +2108,22 @@ export default function App() {
     setSurfPointCache(prev => ({ ...prev, [sid]: newSt }))
 
     setSelectedStations(prev => {
-      if (!isMeasuringMode && !ctrlKey) return [newSt]
-      if (prev.length === 1 && (prev[0].origX !== newSt.origX || prev[0].origY !== newSt.origY || prev[0].altitude !== newSt.altitude)) {
-        return [prev[0], newSt]
+      if (measurementMode === 'off' && !ctrlKey) return [newSt]
+      if (measurementMode === 'distance') {
+        if (prev.length >= 2) return [prev[0], newSt]
+        return [...prev, newSt]
       }
-      if (prev.length === 2 && 
-          (prev[0].origX !== newSt.origX || prev[0].origY !== newSt.origY || prev[0].altitude !== newSt.altitude) &&
-          (prev[1].origX !== newSt.origX || prev[1].origY !== newSt.origY || prev[1].altitude !== newSt.altitude)) {
-        return [prev[0], prev[1], newSt]
+      if (measurementMode === 'polygon') {
+        const isDuplicate = prev.some(p => Math.abs(p.origX - newSt.origX) < 0.001 && Math.abs(p.origY - newSt.origY) < 0.001 && Math.abs(p.altitude - newSt.altitude) < 0.001)
+        if (isDuplicate) return prev
+        return [...prev, newSt]
       }
       return [newSt]
     })
-    setShowStationCard(true)
-  }, [cave, isMeasuringMode])
+    if (measurementMode === 'off') {
+      setShowStationCard(true)
+    }
+  }, [cave, isMeasuringMode, measurementMode])
 
   useEffect(() => {
     if (selectedStations.length > 0) {
@@ -2643,11 +2741,23 @@ export default function App() {
   useEffect(() => {
     if (appState !== 'viewer') return
     const p = new URLSearchParams(window.location.search)
-    if (!p.has('terrain') && !p.has('theme')) return // no state encoded, skip
+    if (!p.has('terrain') && !p.has('theme') && !p.has('sdf') && !p.has('scraps')) return // no state encoded, skip
 
     const terrain = p.get('terrain')
     setOpts(prev => ({
       ...prev,
+      // Engine & Projection
+      engine:              p.get('eng') === 'v2' ? 'v2' : prev.engine,
+      cameraProjection:    p.get('proj') === 'ortho' ? 'orthographic' : prev.cameraProjection,
+      // Advanced toggles
+      enableScrapsBatching: p.has('batch') ? p.get('batch') !== '0' : prev.enableScrapsBatching,
+      enableSSAO:          p.get('ssao') === '1',
+      enableEDL:           p.has('edl') ? p.get('edl') !== '0' : prev.enableEDL,
+      // Splay SDF Walls (2D) & parameters
+      enableSplayWalls:    p.get('sdf') === '1',
+      splaySmoothK:        p.has('smin') ? parseFloat(p.get('smin')!) : prev.splaySmoothK,
+      splayCapsuleRadius:  p.has('srad') ? parseFloat(p.get('srad')!) : prev.splayCapsuleRadius,
+      splayVoxelSize:      p.has('svox') ? parseFloat(p.get('svox')!) : prev.splayVoxelSize,
       // Theme
       ...(p.get('theme') ? (() => { const th = p.get('theme') as keyof typeof THEMES; return THEMES[th] ?? {} })() : {}),
       // Terrain surface
@@ -2716,6 +2826,20 @@ export default function App() {
     const p = new URLSearchParams()
     p.set('model', modelParam)
     p.set('embed', 'true')
+    // Engine & Projection
+    if (o.engine === 'v2') p.set('eng', 'v2')
+    if (o.cameraProjection === 'orthographic') p.set('proj', 'ortho')
+    // Advanced rendering (2A, 2C, 3C)
+    if (o.enableScrapsBatching === false) p.set('batch', '0')
+    if (o.enableSSAO) p.set('ssao', '1')
+    if (o.enableEDL === false) p.set('edl', '0')
+    // Splay SDF Walls (2D) & Parameters
+    if (o.enableSplayWalls) {
+      p.set('sdf', '1')
+      if (o.splaySmoothK !== undefined && o.splaySmoothK !== 0.06) p.set('smin', String(o.splaySmoothK))
+      if (o.splayCapsuleRadius !== undefined && o.splayCapsuleRadius !== 0.10) p.set('srad', String(o.splayCapsuleRadius))
+      if (o.splayVoxelSize !== undefined && o.splayVoxelSize !== 0.22) p.set('svox', String(o.splayVoxelSize))
+    }
     // Theme
     p.set('theme', currentTheme)
     // Terrain
@@ -3550,130 +3674,296 @@ export default function App() {
                 </button>
               )}
 
-              {/* Camera Projection & View Presets Group */}
-              <div className="hide-mobile-flex" style={{ display: 'flex', alignItems: 'center', gap: '5px', marginRight: '6px' }}>
-                {/* Perspective ↔ Orthographic Toggle */}
-                <div style={{ display: 'flex', gap: '2px', background: '#0f172a', padding: '2px', borderRadius: '6px', border: '1px solid #1e293b' }}>
-                  <button
-                    onClick={() => {
-                      setOpts(p => ({ ...p, cameraProjection: 'perspective' }))
-                      setActiveViewPreset(null)
-                    }}
-                    title={lang === 'sk' ? 'Perspektívna projekcia (3D hĺbka) [Kláves O]' : 'Perspective projection (3D depth) [Key O]'}
-                    style={{
-                      padding: '4px 8px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
-                      background: opts.cameraProjection === 'perspective' ? '#334155' : 'transparent',
-                      color: opts.cameraProjection === 'perspective' ? '#f8fafc' : '#64748b'
-                    }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '14px', display: 'block' }}>view_in_ar</span>
-                    <span>{lang === 'sk' ? 'Perspektíva' : 'Persp'}</span>
-                  </button>
-                  <button
-                    onClick={() => setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))}
-                    title={lang === 'sk' ? 'Ortogonálna projekcia (technické axonometrické zobrazenie bez skreslenia) [Kláves O]' : 'Orthographic projection (technical axonometric view without distortion) [Key O]'}
-                    style={{
-                      padding: '4px 8px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
-                      background: opts.cameraProjection === 'orthographic' ? '#0284c7' : 'transparent',
-                      color: opts.cameraProjection === 'orthographic' ? '#ffffff' : '#64748b',
-                      boxShadow: opts.cameraProjection === 'orthographic' ? '0 1px 4px rgba(2,132,199,0.4)' : 'none'
-                    }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '14px', display: 'block' }}>deployed_code</span>
-                    <span>{lang === 'sk' ? 'Ortogonálne' : 'Ortho'}</span>
-                    <span style={{ fontSize: '7.5px', background: opts.cameraProjection === 'orthographic' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)', padding: '1px 3px', borderRadius: '3px' }}>O</span>
-                  </button>
-                </div>
+              {/* Ordered Top Bar Action Group */}
+              <div className="hide-mobile-flex" style={{ display: 'flex', alignItems: 'center', gap: '4px', marginRight: '6px' }}>
+                {/* 1. Export image z pohľadu */}
+                <button
+                  onClick={handleExportScreenshot}
+                  title={lang === 'sk' ? 'Exportovať obrázok z pohľadu (Screenshot PNG)' : 'Export image from view (PNG)'}
+                  style={{
+                    background: 'rgba(30,41,59,0.8)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: '6px',
+                    color: '#fff',
+                    padding: '4px 7px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '11px',
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>photo_camera</span>
+                </button>
 
-                {/* View Angle Presets: Plan (1), Profile (2), Section (3), 3D (4) */}
-                <div style={{ display: 'flex', gap: '2px', background: '#0f172a', padding: '2px', borderRadius: '6px', border: '1px solid #1e293b' }}>
-                  <button
-                    onClick={() => {
-                      setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
-                      setActiveViewPreset('top')
-                      window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'top' } }))
-                    }}
-                    title={lang === 'sk' ? 'Pôdorys (kolmý pohľad zhora) [Kláves 1]' : 'Plan (Top view) [Key 1]'}
-                    style={{
-                      padding: '4px 6px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px',
-                      background: opts.cameraProjection === 'orthographic' && activeViewPreset === 'top' ? '#0369a1' : 'transparent',
-                      color: opts.cameraProjection === 'orthographic' && activeViewPreset === 'top' ? '#ffffff' : '#94a3b8',
-                      boxShadow: opts.cameraProjection === 'orthographic' && activeViewPreset === 'top' ? '0 0 6px rgba(3,105,161,0.5)' : 'none'
-                    }}>
-                    <span style={{ fontSize: '11px' }}>📐</span>
-                    <span>{lang === 'sk' ? 'Pôdorys' : 'Plan'}</span>
-                    <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.1)', padding: '1px 3px', borderRadius: '3px' }}>1</span>
-                  </button>
+                {/* 2. Ortogonal / Perspective toggle */}
+                <button
+                  onClick={() => {
+                    setOpts(p => {
+                      const next = p.cameraProjection === 'orthographic' ? 'perspective' : 'orthographic'
+                      if (next === 'perspective') setActiveViewPreset(null)
+                      return { ...p, cameraProjection: next }
+                    })
+                  }}
+                  title={
+                    opts.cameraProjection === 'orthographic'
+                      ? (lang === 'sk' ? 'Projekcia: Ortogonálna (Axonometria) • Kliknite pre Perspektívu [Kláves O]' : 'Projection: Orthogonal • Click for Perspective [Key O]')
+                      : (lang === 'sk' ? 'Projekcia: Perspektívna • Kliknite pre Ortogonálnu [Kláves O]' : 'Projection: Perspective • Click for Orthogonal [Key O]')
+                  }
+                  style={{
+                    background: opts.cameraProjection === 'orthographic' ? '#0284c7' : 'rgba(30,41,59,0.8)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: '6px',
+                    color: '#fff',
+                    padding: '4px 7px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '11px',
+                    boxShadow: opts.cameraProjection === 'orthographic' ? '0 0 8px rgba(2,132,199,0.5)' : 'none',
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                    {opts.cameraProjection === 'orthographic' ? 'deployed_code' : 'view_in_ar'}
+                  </span>
+                </button>
 
-                  <button
-                    onClick={() => {
-                      setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
-                      setActiveViewPreset('front')
-                      window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'front' } }))
-                    }}
-                    title={lang === 'sk' ? 'Pozdĺžny profil (pohľad spredu) [Kláves 2]' : 'Profile (Front view) [Key 2]'}
-                    style={{
-                      padding: '4px 6px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px',
-                      background: opts.cameraProjection === 'orthographic' && activeViewPreset === 'front' ? '#0369a1' : 'transparent',
-                      color: opts.cameraProjection === 'orthographic' && activeViewPreset === 'front' ? '#ffffff' : '#94a3b8',
-                      boxShadow: opts.cameraProjection === 'orthographic' && activeViewPreset === 'front' ? '0 0 6px rgba(3,105,161,0.5)' : 'none'
-                    }}>
-                    <span style={{ fontSize: '11px' }}>↔️</span>
-                    <span>{lang === 'sk' ? 'Profil' : 'Profile'}</span>
-                    <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.1)', padding: '1px 3px', borderRadius: '3px' }}>2</span>
-                  </button>
+                {/* 3. Zoom to fit */}
+                <button
+                  onClick={() => {
+                    setFitTrigger(prev => prev + 1)
+                    window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'fit' } }))
+                  }}
+                  title={lang === 'sk' ? 'Prispôsobiť celej obrazovke (Zoom to fit)' : 'Zoom to fit (Full screen)'}
+                  style={{
+                    background: 'rgba(30,41,59,0.8)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: '6px',
+                    color: '#fff',
+                    padding: '4px 7px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '11px',
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>fit_screen</span>
+                </button>
 
-                  <button
-                    onClick={() => {
-                      setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
-                      setActiveViewPreset('side')
-                      window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'side' } }))
-                    }}
-                    title={lang === 'sk' ? 'Priečny profil (pohľad zboku) [Kláves 3]' : 'Section (Side view) [Key 3]'}
-                    style={{
-                      padding: '4px 6px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px',
-                      background: opts.cameraProjection === 'orthographic' && activeViewPreset === 'side' ? '#0369a1' : 'transparent',
-                      color: opts.cameraProjection === 'orthographic' && activeViewPreset === 'side' ? '#ffffff' : '#94a3b8',
-                      boxShadow: opts.cameraProjection === 'orthographic' && activeViewPreset === 'side' ? '0 0 6px rgba(3,105,161,0.5)' : 'none'
-                    }}>
-                    <span style={{ fontSize: '11px' }}>↕️</span>
-                    <span>{lang === 'sk' ? 'Bokorys' : 'Section'}</span>
-                    <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.1)', padding: '1px 3px', borderRadius: '3px' }}>3</span>
-                  </button>
+                {/* 4. Show/hide centerline */}
+                <button
+                  onClick={() => toggleOpt('showTraverse')}
+                  title={lang === 'sk' ? 'Zobraziť/skryť centrálnu líniu (Centerline)' : 'Show/hide centerline'}
+                  style={{
+                    background: opts.showTraverse ? '#0369a1' : 'rgba(30,41,59,0.8)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: '6px',
+                    color: opts.showTraverse ? '#fff' : '#64748b',
+                    padding: '4px 7px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '11px',
+                    boxShadow: opts.showTraverse ? '0 0 6px rgba(3,105,161,0.4)' : 'none',
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>timeline</span>
+                </button>
 
-                  <button
-                    onClick={() => {
-                      setActiveViewPreset('iso')
-                      window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'iso' } }))
-                    }}
-                    title={lang === 'sk' ? '3D Izometrický / Axonometrický pohľad [Kláves 4]' : '3D Isometric view [Key 4]'}
-                    style={{
-                      padding: '4px 6px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px',
-                      background: activeViewPreset === 'iso' ? '#0369a1' : 'transparent',
-                      color: activeViewPreset === 'iso' ? '#ffffff' : '#94a3b8',
-                      boxShadow: activeViewPreset === 'iso' ? '0 0 6px rgba(3,105,161,0.5)' : 'none'
-                    }}>
-                    <span style={{ fontSize: '11px' }}>🧊</span>
-                    <span>3D</span>
-                    <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.1)', padding: '1px 3px', borderRadius: '3px' }}>4</span>
-                  </button>
-                </div>
+                {/* 5. Show/hide walls model */}
+                <button
+                  onClick={() => toggleOpt('showScraps')}
+                  title={lang === 'sk' ? 'Zobraziť/skryť model stien (Walls model)' : 'Show/hide walls model'}
+                  style={{
+                    background: opts.showScraps ? '#0369a1' : 'rgba(30,41,59,0.8)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: '6px',
+                    color: opts.showScraps ? '#fff' : '#64748b',
+                    padding: '4px 7px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '11px',
+                    boxShadow: opts.showScraps ? '0 0 6px rgba(3,105,161,0.4)' : 'none',
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>layers</span>
+                </button>
+
+                {/* 6. Show/hide surface */}
+                <button
+                  onClick={toggleSurface}
+                  title={lang === 'sk' ? 'Zobraziť/skryť povrchový terén (Surface)' : 'Show/hide surface'}
+                  style={{
+                    background: (opts.showSurfaceMesh || opts.showSurfaceTexture || opts.showMapboxTerrain) ? '#0369a1' : 'rgba(30,41,59,0.8)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: '6px',
+                    color: (opts.showSurfaceMesh || opts.showSurfaceTexture || opts.showMapboxTerrain) ? '#fff' : '#64748b',
+                    padding: '4px 7px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '11px',
+                    boxShadow: (opts.showSurfaceMesh || opts.showSurfaceTexture || opts.showMapboxTerrain) ? '0 0 6px rgba(3,105,161,0.4)' : 'none',
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>terrain</span>
+                </button>
+
+                {/* 7. Show/hide bounding box */}
+                <button
+                  onClick={() => toggleOpt('showBoundingBox')}
+                  title={lang === 'sk' ? 'Zobraziť/skryť ohraničujúci kváder (Bounding box)' : 'Show/hide bounding box'}
+                  style={{
+                    background: opts.showBoundingBox ? '#0369a1' : 'rgba(30,41,59,0.8)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: '6px',
+                    color: opts.showBoundingBox ? '#fff' : '#64748b',
+                    padding: '4px 7px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '11px',
+                    boxShadow: opts.showBoundingBox ? '0 0 6px rgba(3,105,161,0.4)' : 'none',
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>crop_free</span>
+                </button>
+
+                {/* ─── Ostatné funkcie (Piktogramy) ─── */}
+                <div style={{ width: '1px', height: '18px', background: 'rgba(255,255,255,0.15)', margin: '0 2px' }} />
+
+                {/* Rez Z (Clipping) */}
+                <button
+                  onClick={() => toggleOpt('showClipping')}
+                  title={lang === 'sk' ? 'Horizontálny rez Z (Plávajúci slider)' : 'Z-Plane Clipping'}
+                  style={{
+                    background: opts.showClipping ? '#818cf8' : 'rgba(30,41,59,0.8)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: '6px',
+                    color: opts.showClipping ? '#fff' : '#94a3b8',
+                    padding: '4px 7px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '11px',
+                    boxShadow: opts.showClipping ? '0 0 6px rgba(129,140,248,0.4)' : 'none',
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>content_cut</span>
+                </button>
+
+                {/* Splays / Meračské lúče */}
+                <button
+                  onClick={() => toggleOpt('showSplay')}
+                  title={lang === 'sk' ? 'Meračské lúče (Splays)' : 'Splay Legs'}
+                  style={{
+                    background: opts.showSplay ? '#0369a1' : 'rgba(30,41,59,0.8)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: '6px',
+                    color: opts.showSplay ? '#fff' : '#94a3b8',
+                    padding: '4px 7px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '11px',
+                    boxShadow: opts.showSplay ? '0 0 6px rgba(3,105,161,0.4)' : 'none',
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>scatter_plot</span>
+                </button>
+
+                {/* 3-stavové tlačidlo merania: Deaktivované -> Vzdialenosť -> Plocha -> Deaktivované */}
+                <button
+                  className={`btn-back hide-mobile-flex${measurementMode !== 'off' ? ' active' : ''}`}
+                  style={{
+                    background: measurementMode === 'distance' 
+                      ? '#6366f1' 
+                      : measurementMode === 'polygon' 
+                      ? '#8b5cf6' 
+                      : 'rgba(30,41,59,0.8)',
+                    color: measurementMode !== 'off' ? '#fff' : '#94a3b8',
+                    border: `1px solid ${measurementMode === 'distance' ? '#818cf8' : measurementMode === 'polygon' ? '#a78bfa' : 'rgba(255,255,255,0.15)'}`,
+                    borderRadius: '6px',
+                    padding: '4px 7px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '11px',
+                    boxShadow: measurementMode !== 'off' ? '0 0 8px rgba(99,102,241,0.5)' : 'none'
+                  }}
+                  onClick={cycleMeasurementMode}
+                  title={
+                    measurementMode === 'off'
+                      ? (lang === 'sk' ? 'Meranie: Vypnuté • Kliknite pre Meranie vzdialeností (2 body)' : 'Measurement: Off • Click for Distance mode (2 points)')
+                      : measurementMode === 'distance'
+                      ? (lang === 'sk' ? 'Meranie vzdialeností (2 body) • Kliknite pre Meranie plôch (3+ bodov)' : 'Distance Mode (2 points) • Click for Area/Polygon mode')
+                      : (lang === 'sk' ? 'Meranie plôch / Polygón (3+ bodov) • Kliknite pre Vypnutie merania' : 'Area/Polygon Mode • Click to turn Off')
+                  }
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                    {measurementMode === 'polygon' ? 'square_foot' : 'straighten'}
+                  </span>
+                </button>
+
+                {/* Farebná schéma (Paleta) */}
+                <button
+                  onClick={() => {
+                    setOpts(p => {
+                      if (p.engine === 'v2') {
+                        const modes: Array<ViewerOptions['pointCloudColorMode']> = ['original', 'elevation', 'natural']
+                        const curIdx = modes.indexOf(p.pointCloudColorMode || 'original')
+                        const nextMode = modes[(curIdx + 1) % modes.length]
+                        return { ...p, pointCloudColorMode: nextMode }
+                      } else {
+                        return { ...p, scrapsAltitude: !p.scrapsAltitude }
+                      }
+                    })
+                  }}
+                  title={
+                    opts.engine === 'v2'
+                      ? (lang === 'sk' ? `Farebná schéma: ${opts.pointCloudColorMode === 'elevation' ? 'Výšková' : opts.pointCloudColorMode === 'natural' ? 'Prírodná' : 'Pôvodná'} [Kláves C]` : `Color mode: ${opts.pointCloudColorMode} [Key C]`)
+                      : (lang === 'sk' ? `Farba stien: ${opts.scrapsAltitude ? 'Výšková' : 'Základná'} [Kláves C]` : `Wall color: ${opts.scrapsAltitude ? 'Altitude' : 'Default'} [Key C]`)
+                  }
+                  style={{
+                    background: (opts.engine === 'v2' ? opts.pointCloudColorMode !== 'original' : opts.scrapsAltitude) ? '#0284c7' : 'rgba(30,41,59,0.8)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: '6px',
+                    color: '#fff',
+                    padding: '4px 7px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '11px',
+                    boxShadow: (opts.engine === 'v2' ? opts.pointCloudColorMode !== 'original' : opts.scrapsAltitude) ? '0 0 8px rgba(2,132,199,0.4)' : 'none',
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>palette</span>
+                </button>
+
+                {/* Výškový systém (ASL ↔ REL) */}
+                <button
+                  onClick={() => setOpts(p => ({ ...p, altitudeMode: p.altitudeMode === 'relative' ? 'absolute' : 'relative' }))}
+                  title={
+                    opts.altitudeMode === 'relative'
+                      ? (lang === 'sk' ? 'Výškový systém: Relatívny (od vchodu 0 m) • Kliknite pre m n.m. [Kláves H]' : 'Altitude mode: Relative (entrance 0 m) • Click for ASL [Key H]')
+                      : (lang === 'sk' ? 'Výškový systém: Nadmorská výška (m n.m.) • Kliknite pre Relatívnu [Kláves H]' : 'Altitude mode: Absolute (ASL) • Click for Relative [Key H]')
+                  }
+                  style={{
+                    background: opts.altitudeMode === 'relative' ? 'rgba(56,189,248,0.25)' : 'rgba(30,41,59,0.8)',
+                    border: `1px solid ${opts.altitudeMode === 'relative' ? '#38bdf8' : 'rgba(255,255,255,0.15)'}`,
+                    borderRadius: '6px',
+                    color: opts.altitudeMode === 'relative' ? '#38bdf8' : '#cbd5e1',
+                    padding: '4px 7px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>height</span>
+                </button>
               </div>
-
-              <button
-                className={`btn-back hide-mobile-flex${isMeasuringMode ? ' active' : ''}`}
-                style={{
-                  background: isMeasuringMode ? '#6366f1' : 'rgba(99,179,237,0.1)',
-                  color: isMeasuringMode ? '#fff' : '#63b3ed',
-                  borderColor: isMeasuringMode ? '#818cf8' : 'rgba(99,179,237,0.3)',
-                  marginRight: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
-                onClick={() => setIsMeasuringMode(!isMeasuringMode)}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '18px', display: 'block' }}>straighten</span>
-                <span>{t('sidebar.measure')}</span>
-              </button>
               
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 {/* NextGen Navigation Controls */}
@@ -3876,8 +4166,29 @@ export default function App() {
                   </div>
                 )}
 
-	                {/* Station detail card overlay */}
-                {selectedStations.length > 0 && showStationCard && (
+                {/* Dedicated Measurement Panel (Distance or Polygon Mode) */}
+                {measurementMode !== 'off' && (
+                  <MeasurementPanel
+                    mode={measurementMode}
+                    stations={selectedStations}
+                    onDeletePoint={(idx) => setSelectedStations(prev => prev.filter((_, i) => i !== idx))}
+                    onClear={() => setSelectedStations([])}
+                    onClose={() => {
+                      setMeasurementMode('off')
+                      setSelectedStations([])
+                    }}
+                    onSetProfile={(sts) => {
+                      setActiveProfilePoints([...sts])
+                      setOpts(p => ({ ...p, showProfileClipping: true, profileClipOffset: 0 }))
+                    }}
+                    lang={lang}
+                    baseAltitude={cave.stationLabels?.[0]?.altitude ?? (cave.stations?.[0] ? (cave.stations[0].z + (cave.centerOffset?.z || 0)) : undefined)}
+                    altitudeMode={opts.altitudeMode}
+                  />
+                )}
+
+                {/* Station detail card overlay (Single Station Inspection) */}
+                {measurementMode === 'off' && selectedStations.length > 0 && showStationCard && (
                     <StationDetailCard
                       stations={selectedStations}
                       onClose={() => setShowStationCard(false)}
@@ -3890,8 +4201,29 @@ export default function App() {
                       onUpdateGps={handleUpdateGps}
                       t={t}
                       lang={lang}
+                      baseAltitude={cave.stationLabels?.[0]?.altitude ?? (cave.stations?.[0] ? (cave.stations[0].z + (cave.centerOffset?.z || 0)) : undefined)}
+                      altitudeMode={opts.altitudeMode}
                     />
                 )}
+
+                {/* ─── Speleo Compass Rose (Severka & Azimuth) ─── */}
+                <div style={{ position: 'absolute', top: isEmbedMode ? '50px' : '18px', left: '18px', zIndex: 30, transition: 'top 0.25s ease, left 0.25s ease' }}>
+                  <CompassRose
+                    cameraData={cameraData}
+                    lang={lang}
+                    size={54}
+                    onResetNorth={() => window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'top' } }))}
+                  />
+                </div>
+
+                {/* ─── Floating Z-Slice Overlay Slider ─── */}
+                <FloatingClippingSlider
+                  cave={cave}
+                  opts={opts}
+                  setOpts={setOpts}
+                  lang={lang}
+                  onClose={() => setOpts(p => ({ ...p, showClipping: false }))}
+                />
               </div>
 
               {/* Sidebar container — hidden in embed mode unless sidebar=1 is in URL */}
@@ -3907,12 +4239,30 @@ export default function App() {
                       <div className="s-label" style={{ marginBottom: '8px' }}>Rýchle nastavenia (Mobil)</div>
                       
                       <button
-                        className={`btn-back${isMeasuringMode ? ' active' : ''}`}
-                        style={{ width: '100%', marginBottom: '10px', background: isMeasuringMode ? '#6366f1' : 'rgba(99,179,237,0.1)', color: isMeasuringMode ? '#fff' : '#63b3ed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px' }}
-                        onClick={() => { setIsMeasuringMode(!isMeasuringMode); setIsMobileMenuOpen(false); }}
+                        className={`btn-back${measurementMode !== 'off' ? ' active' : ''}`}
+                        style={{
+                          width: '100%',
+                          marginBottom: '10px',
+                          background: measurementMode === 'distance' ? '#6366f1' : measurementMode === 'polygon' ? '#8b5cf6' : 'rgba(99,179,237,0.1)',
+                          color: measurementMode !== 'off' ? '#fff' : '#63b3ed',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          padding: '10px'
+                        }}
+                        onClick={() => { cycleMeasurementMode(); setIsMobileMenuOpen(false); }}
                       >
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>straighten</span>
-                        <span>{t('sidebar.measure')}</span>
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                          {measurementMode === 'polygon' ? 'square_foot' : 'straighten'}
+                        </span>
+                        <span>
+                          {measurementMode === 'off' 
+                            ? (lang === 'sk' ? 'Aktivovať meranie' : 'Enable measurement')
+                            : measurementMode === 'distance' 
+                            ? (lang === 'sk' ? 'Meranie vzdialeností' : 'Distance mode')
+                            : (lang === 'sk' ? 'Meranie plôch / Polygón' : 'Area / Polygon mode')}
+                        </span>
                       </button>
 
                       <div style={{ display: 'flex', gap: '4px', background: '#0f172a', padding: '4px', borderRadius: '8px', marginBottom: '10px' }}>
@@ -4453,6 +4803,22 @@ export default function App() {
                             </div>
                           </>
                         )}
+
+                        {/* 3C: Eye-Dome Lighting (EDL) Toggle */}
+                        <div className="toggle-row">
+                          <label className="toggle-label">{lang === 'sk' ? 'Eye-Dome Lighting (EDL 3C)' : 'Eye-Dome Lighting (3C)'}</label>
+                          <div className={`switch${opts.enableEDL !== false ? ' on' : ''}`}
+                            onClick={() => toggleOpt('enableEDL')} role="switch"
+                            aria-checked={opts.enableEDL !== false} tabIndex={0} />
+                        </div>
+
+                        {/* 2C: Ambient Occlusion (SSAO) */}
+                        <div className="toggle-row">
+                          <label className="toggle-label">{lang === 'sk' ? 'Ambient Occlusion (SSAO 2C)' : 'Ambient Occlusion (2C)'}</label>
+                          <div className={`switch${opts.enableSSAO ? ' on' : ''}`}
+                            onClick={() => toggleOpt('enableSSAO')} role="switch"
+                            aria-checked={opts.enableSSAO} tabIndex={0} />
+                        </div>
                       </div>
                     ) : (
                       /* CASE B: NEXTGEN IS OFF (Standard Mesh - v1) */
@@ -4464,166 +4830,257 @@ export default function App() {
                             aria-checked={opts.showScraps} tabIndex={0} />
                         </div>
 
-                        {opts.showScraps && (
-                          <>
-                            <div className="toggle-row">
-                              <label className="toggle-label">{t('cave.organic')}</label>
-                              <div className={`switch${opts.smoothScraps ? ' on' : ''}`}
-                                onClick={() => {
-                                  const newVal = !opts.smoothScraps;
-                                  setOpts(p => ({ ...p, smoothScraps: newVal, accurateScraps: newVal ? false : p.accurateScraps }));
-                                }} role="switch"
-                                aria-checked={opts.smoothScraps} tabIndex={0} />
+                        <div className="toggle-row">
+                          <label className="toggle-label">{t('cave.organic')}</label>
+                          <div className={`switch${opts.smoothScraps ? ' on' : ''}`}
+                            onClick={() => {
+                              const newVal = !opts.smoothScraps;
+                              setOpts(p => ({ ...p, smoothScraps: newVal, accurateScraps: newVal ? false : p.accurateScraps }));
+                            }} role="switch"
+                            aria-checked={opts.smoothScraps} tabIndex={0} />
+                        </div>
+
+                        <div className="toggle-row">
+                          <label className="toggle-label">{t('cave.accurateMesh')}</label>
+                          <div className={`switch${opts.accurateScraps ? ' on' : ''}`}
+                            onClick={() => {
+                              const newVal = !opts.accurateScraps;
+                              setOpts(p => ({ ...p, accurateScraps: newVal, smoothScraps: newVal ? false : p.smoothScraps }));
+                            }} role="switch"
+                            aria-checked={opts.accurateScraps} tabIndex={0} />
+                        </div>
+
+                        <div className="toggle-row">
+                          <label className="toggle-label">{t('cave.render3d')}</label>
+                          <div className={`switch${opts.showRenderCave ? ' on' : ''}`}
+                            onClick={() => toggleOpt('showRenderCave')} role="switch"
+                            aria-checked={opts.showRenderCave} tabIndex={0} />
+                        </div>
+
+                        {/* 2A: Zlúčenie stien (Scrap Batching) */}
+                        <div className="toggle-row">
+                          <label className="toggle-label">{lang === 'sk' ? 'Zlúčenie stien (Batching 2A)' : 'Merge Scraps (2A)'}</label>
+                          <div className={`switch${opts.enableScrapsBatching !== false ? ' on' : ''}`}
+                            onClick={() => toggleOpt('enableScrapsBatching')} role="switch"
+                            aria-checked={opts.enableScrapsBatching !== false} tabIndex={0} />
+                        </div>
+
+                        {/* 2C: Ambient Occlusion (SSAO) */}
+                        <div className="toggle-row">
+                          <label className="toggle-label">{lang === 'sk' ? 'Ambient Occlusion (SSAO 2C)' : 'Ambient Occlusion (2C)'}</label>
+                          <div className={`switch${opts.enableSSAO ? ' on' : ''}`}
+                            onClick={() => toggleOpt('enableSSAO')} role="switch"
+                            aria-checked={opts.enableSSAO} tabIndex={0} />
+                        </div>
+
+                        {/* 2D: Splay SDF steny */}
+                        <div className="toggle-row">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <label className="toggle-label">{lang === 'sk' ? 'Splay SDF steny (2D)' : 'Splay SDF Walls (2D)'}</label>
+                            {appStatus?.type === 'progress' && appStatus.msg.includes('Splay SDF') && (
+                              <span className="material-symbols-outlined text-cyan-400" style={{ fontSize: '13px', animation: 'spin 1.5s linear infinite' }} title={appStatus.msg}>
+                                sync
+                              </span>
+                            )}
+                            {cave && (
+                              <span style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '4px', background: splayCount > 0 ? 'rgba(6,182,212,0.15)' : 'rgba(100,116,139,0.2)', color: splayCount > 0 ? '#22d3ee' : '#94a3b8' }}>
+                                {splayCount > 0 ? `${splayCount} ${lang === 'sk' ? 'lúčov' : 'rays'}` : (lang === 'sk' ? 'bez splays' : 'no splays')}
+                              </span>
+                            )}
+                          </div>
+                          <div className={`switch${opts.enableSplayWalls ? ' on' : ''}`}
+                            onClick={() => {
+                              if (!opts.enableSplayWalls && splayCount === 0) {
+                                setAppStatus({
+                                  msg: lang === 'sk' ? 'Tento model neobsahuje pomocné splay zámery (lúče na steny) pre 2D SDF rekonštrukciu.' : 'This model does not contain radial splay measurements for 2D SDF reconstruction.',
+                                  type: 'info'
+                                });
+                                setTimeout(() => setAppStatus(null), 4000);
+                              }
+                              toggleOpt('enableSplayWalls');
+                            }} role="switch"
+                            aria-checked={opts.enableSplayWalls} tabIndex={0} />
+                        </div>
+
+                        {/* Splay SDF precision & angular radius sliders */}
+                        {opts.enableSplayWalls && (
+                          <div style={{ marginTop: 6, marginBottom: 8, padding: '6px 8px', background: 'rgba(15,23,42,0.45)', borderRadius: '6px', border: '1px solid rgba(51,65,85,0.4)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#94a3b8', marginBottom: '2px' }}>
+                              <span>{lang === 'sk' ? 'Hranatosť / Ostré steny' : 'Angular / Sharpness'}</span>
+                              <span style={{ color: '#38bdf8' }}>{opts.splaySmoothK ?? 0.06}</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="0.02"
+                              max="0.25"
+                              step="0.01"
+                              value={opts.splaySmoothK ?? 0.06}
+                              onChange={e => setOpts(p => ({ ...p, splaySmoothK: Number(e.target.value) }))}
+                              className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                              title={lang === 'sk' ? 'Nižšia hodnota = ostrejšie, hranatejšie steny podľa lúčov' : 'Lower value = sharper, more angular walls'}
+                            />
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#94a3b8', marginTop: '6px', marginBottom: '2px' }}>
+                              <span>{lang === 'sk' ? 'Rádius chodby' : 'Corridor radius'}</span>
+                              <span style={{ color: '#38bdf8' }}>{(opts.splayCapsuleRadius ?? 0.10).toFixed(2)}m</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="0.04"
+                              max="0.30"
+                              step="0.01"
+                              value={opts.splayCapsuleRadius ?? 0.10}
+                              onChange={e => setOpts(p => ({ ...p, splayCapsuleRadius: Number(e.target.value) }))}
+                              className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                              title={lang === 'sk' ? 'Hrúbka prechodového koridoru medzi meračskými bodmi' : 'Passage corridor thickness'}
+                            />
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#94a3b8', marginTop: '6px', marginBottom: '2px' }}>
+                              <span>{lang === 'sk' ? 'Detail mriežky (Voxel)' : 'Voxel grid size'}</span>
+                              <span style={{ color: '#38bdf8' }}>{(opts.splayVoxelSize ?? 0.22).toFixed(2)}m</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="0.10"
+                              max="0.45"
+                              step="0.02"
+                              value={opts.splayVoxelSize ?? 0.22}
+                              onChange={e => setOpts(p => ({ ...p, splayVoxelSize: Number(e.target.value) }))}
+                              className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                              title={lang === 'sk' ? 'Menší voxel = jemnejšie detaily a ostrejšie lomové hrany' : 'Smaller voxel = finer details and sharper fracture edges'}
+                            />
+                          </div>
+                        )}
+
+                        <div style={{ marginTop: 8, padding: '0 4px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '6px' }}>
+                            <span>{lang === 'sk' ? 'Materiál stien' : 'Wall material'}</span>
+                            <span style={{ color: '#4fc3f7' }}>{opts.showRenderCave ? (lang === 'sk' ? '3D aktívny' : '3D active') : (lang === 'sk' ? 'zapne 3D' : 'enables 3D')}</span>
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px' }}>
+                            {[
+                              { id: 'limestone', label: lang === 'sk' ? 'Vápenec' : 'Limestone', swatch: '#d8d2bf' },
+                              { id: 'dolomite', label: 'Dolomit', swatch: '#e8dccb' },
+                              { id: 'grey_limestone', label: lang === 'sk' ? 'Sivý' : 'Grey', swatch: '#dbeafe' },
+                              { id: 'technical', label: lang === 'sk' ? 'Tech' : 'Tech', swatch: '#7dd3fc' },
+                            ].map(preset => (
+                              <button
+                                key={preset.id}
+                                onClick={() => setOpts(p => ({ ...p, caveTexture: preset.id as any, showRenderCave: true }))}
+                                style={{
+                                  minHeight: '34px',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '3px',
+                                  fontSize: '8px',
+                                  lineHeight: 1.05,
+                                  padding: '5px 2px',
+                                  borderRadius: '5px',
+                                  border: opts.caveTexture === preset.id ? '1px solid rgba(125,211,252,0.8)' : '1px solid rgba(148,163,184,0.16)',
+                                  background: opts.caveTexture === preset.id ? 'rgba(14,165,233,0.18)' : 'rgba(30,41,59,0.5)',
+                                  color: opts.caveTexture === preset.id ? '#e0f2fe' : '#cbd5e1',
+                                  cursor: 'pointer',
+                                  boxShadow: opts.caveTexture === preset.id ? '0 0 0 1px rgba(14,165,233,0.18) inset' : 'none',
+                                  transitionProperty: 'background, border-color, color, transform',
+                                  transitionDuration: '120ms',
+                                }}
+                              >
+                                <span style={{ width: 13, height: 13, borderRadius: '50%', background: preset.swatch, boxShadow: '0 0 0 1px rgba(255,255,255,0.18) inset' }} />
+                                <span>{preset.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="toggle-row">
+                          <label className="toggle-label">{t('cave.wire') || 'Drôtený model'}</label>
+                          <div className={`switch${opts.scrapsWireframe ? ' on' : ''}`}
+                            onClick={() => toggleOpt('scrapsWireframe')} role="switch"
+                            aria-checked={opts.scrapsWireframe} tabIndex={0} />
+                        </div>
+
+                        <div className="toggle-row">
+                          <label className="toggle-label">{t('cave.altitude')}</label>
+                          <div className={`switch${opts.scrapsAltitude ? ' on' : ''}`}
+                            onClick={() => toggleOpt('scrapsAltitude')} role="switch"
+                            aria-checked={opts.scrapsAltitude} tabIndex={0} />
+                        </div>
+
+                        {loadedFile?.ext === '.stl' && (
+                          <div style={{ marginTop: 12, padding: '0 4px' }}>
+                            <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, display: 'block', marginBottom: 6 }}>
+                              {lang === 'sk' ? 'SELEKTÍVNE ZOBRAZENIE STL' : 'STL SELECTIVE VIEW'}
+                            </label>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px' }}>
+                              {[
+                                { id: 'all', label: lang === 'sk' ? 'Všetko' : 'All' },
+                                { id: 'floor', label: lang === 'sk' ? 'Podlaha' : 'Floor' },
+                                { id: 'ceiling', label: lang === 'sk' ? 'Strop' : 'Ceiling' },
+                                { id: 'section', label: lang === 'sk' ? 'Rez' : 'Cut' },
+                              ].map(mode => (
+                                <button key={mode.id} onClick={() => setOpts(p => ({ ...p, scrapsViewMode: mode.id as any }))}
+                                  style={{ fontSize: '9px', padding: '5px 2px', borderRadius: '4px', border: 'none', cursor: 'pointer',
+                                    background: opts.scrapsViewMode === mode.id ? '#0ea5e9' : 'rgba(30,41,59,0.5)', color: 'white' }}>
+                                  {mode.label}
+                                </button>
+                              ))}
                             </div>
 
-                            <div className="toggle-row">
-                              <label className="toggle-label">{t('cave.accurateMesh')}</label>
-                              <div className={`switch${opts.accurateScraps ? ' on' : ''}`}
-                                onClick={() => {
-                                  const newVal = !opts.accurateScraps;
-                                  setOpts(p => ({ ...p, accurateScraps: newVal, smoothScraps: newVal ? false : p.smoothScraps }));
-                                }} role="switch"
-                                aria-checked={opts.accurateScraps} tabIndex={0} />
-                            </div>
-
-                            <div className="toggle-row">
-                              <label className="toggle-label">{t('cave.render3d')}</label>
-                              <div className={`switch${opts.showRenderCave ? ' on' : ''}`}
-                                onClick={() => toggleOpt('showRenderCave')} role="switch"
-                                aria-checked={opts.showRenderCave} tabIndex={0} />
-                            </div>
-
-                            <div style={{ marginTop: 8, padding: '0 4px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '6px' }}>
-                                <span>{lang === 'sk' ? 'Materiál stien' : 'Wall material'}</span>
-                                <span style={{ color: '#4fc3f7' }}>{opts.showRenderCave ? (lang === 'sk' ? '3D aktívny' : '3D active') : (lang === 'sk' ? 'zapne 3D' : 'enables 3D')}</span>
-                              </div>
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px' }}>
-                                {[
-                                  { id: 'limestone', label: lang === 'sk' ? 'Vápenec' : 'Limestone', swatch: '#d8d2bf' },
-                                  { id: 'dolomite', label: 'Dolomit', swatch: '#e8dccb' },
-                                  { id: 'grey_limestone', label: lang === 'sk' ? 'Sivý' : 'Grey', swatch: '#dbeafe' },
-                                  { id: 'technical', label: lang === 'sk' ? 'Tech' : 'Tech', swatch: '#7dd3fc' },
-                                ].map(preset => (
-                                  <button
-                                    key={preset.id}
-                                    onClick={() => setOpts(p => ({ ...p, caveTexture: preset.id as any, showRenderCave: true }))}
-                                    style={{
-                                      minHeight: '34px',
-                                      display: 'flex',
-                                      flexDirection: 'column',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      gap: '3px',
-                                      fontSize: '8px',
-                                      lineHeight: 1.05,
-                                      padding: '5px 2px',
-                                      borderRadius: '5px',
-                                      border: opts.caveTexture === preset.id ? '1px solid rgba(125,211,252,0.8)' : '1px solid rgba(148,163,184,0.16)',
-                                      background: opts.caveTexture === preset.id ? 'rgba(14,165,233,0.18)' : 'rgba(30,41,59,0.5)',
-                                      color: opts.caveTexture === preset.id ? '#e0f2fe' : '#cbd5e1',
-                                      cursor: 'pointer',
-                                      boxShadow: opts.caveTexture === preset.id ? '0 0 0 1px rgba(14,165,233,0.18) inset' : 'none',
-                                      transitionProperty: 'background, border-color, color, transform',
-                                      transitionDuration: '120ms',
-                                    }}
-                                  >
-                                    <span style={{ width: 13, height: 13, borderRadius: '50%', background: preset.swatch, boxShadow: '0 0 0 1px rgba(255,255,255,0.18) inset' }} />
-                                    <span>{preset.label}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            <div className="toggle-row">
-                              <label className="toggle-label">{t('cave.wire') || 'Drôtený model'}</label>
-                              <div className={`switch${opts.scrapsWireframe ? ' on' : ''}`}
-                                onClick={() => toggleOpt('scrapsWireframe')} role="switch"
-                                aria-checked={opts.scrapsWireframe} tabIndex={0} />
-                            </div>
-
-                            <div className="toggle-row">
-                              <label className="toggle-label">{t('cave.altitude')}</label>
-                              <div className={`switch${opts.scrapsAltitude ? ' on' : ''}`}
-                                onClick={() => toggleOpt('scrapsAltitude')} role="switch"
-                                aria-checked={opts.scrapsAltitude} tabIndex={0} />
-                            </div>
-
-                            {loadedFile?.ext === '.stl' && (
-                              <div style={{ marginTop: 12, padding: '0 4px' }}>
-                                <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, display: 'block', marginBottom: 6 }}>
-                                  {lang === 'sk' ? 'SELEKTÍVNE ZOBRAZENIE STL' : 'STL SELECTIVE VIEW'}
-                                </label>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px' }}>
-                                  {[
-                                    { id: 'all', label: lang === 'sk' ? 'Všetko' : 'All' },
-                                    { id: 'floor', label: lang === 'sk' ? 'Podlaha' : 'Floor' },
-                                    { id: 'ceiling', label: lang === 'sk' ? 'Strop' : 'Ceiling' },
-                                    { id: 'section', label: lang === 'sk' ? 'Rez' : 'Cut' },
-                                  ].map(mode => (
-                                    <button key={mode.id} onClick={() => setOpts(p => ({ ...p, scrapsViewMode: mode.id as any }))}
-                                      style={{ fontSize: '9px', padding: '5px 2px', borderRadius: '4px', border: 'none', cursor: 'pointer',
-                                        background: opts.scrapsViewMode === mode.id ? '#0ea5e9' : 'rgba(30,41,59,0.5)', color: 'white' }}>
-                                      {mode.label}
-                                    </button>
-                                  ))}
+                            {opts.scrapsViewMode !== 'all' && (
+                              <>
+                                <div style={{ marginTop: 10 }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
+                                    <span>{lang === 'sk' ? 'Hranica rezu' : 'Cut threshold'}</span>
+                                    <span style={{ color: '#4fc3f7' }}>{opts.scrapsHeightThreshold.toFixed(2)}</span>
+                                  </div>
+                                  <input type="range" min={-0.8} max={0.8} step={0.05}
+                                    value={opts.scrapsHeightThreshold}
+                                    onChange={e => setOpts(p => ({ ...p, scrapsHeightThreshold: Number(e.target.value) }))}
+                                    className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
                                 </div>
 
-                                {opts.scrapsViewMode !== 'all' && (
-                                  <>
-                                    <div style={{ marginTop: 10 }}>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
-                                        <span>{lang === 'sk' ? 'Hranica rezu' : 'Cut threshold'}</span>
-                                        <span style={{ color: '#4fc3f7' }}>{opts.scrapsHeightThreshold.toFixed(2)}</span>
-                                      </div>
-                                      <input type="range" min={-0.8} max={0.8} step={0.05}
-                                        value={opts.scrapsHeightThreshold}
-                                        onChange={e => setOpts(p => ({ ...p, scrapsHeightThreshold: Number(e.target.value) }))}
-                                        className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                                {opts.scrapsViewMode !== 'section' && (
+                                  <div style={{ marginTop: 10 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
+                                      <span>{lang === 'sk' ? 'Rovinnosť plochy' : 'Surface flatness'}</span>
+                                      <span style={{ color: '#4fc3f7' }}>{opts.scrapsAngleThreshold.toFixed(2)}</span>
                                     </div>
-
-                                    {opts.scrapsViewMode !== 'section' && (
-                                      <div style={{ marginTop: 10 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
-                                          <span>{lang === 'sk' ? 'Rovinnosť plochy' : 'Surface flatness'}</span>
-                                          <span style={{ color: '#4fc3f7' }}>{opts.scrapsAngleThreshold.toFixed(2)}</span>
-                                        </div>
-                                        <input type="range" min={0} max={0.9} step={0.05}
-                                          value={opts.scrapsAngleThreshold}
-                                          onChange={e => setOpts(p => ({ ...p, scrapsAngleThreshold: Number(e.target.value) }))}
-                                          className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
-                                      </div>
-                                    )}
-
-                                    {opts.scrapsViewMode === 'section' && (
-                                      <div style={{ marginTop: 10 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
-                                          <span>{lang === 'sk' ? 'Hrúbka rezu' : 'Cut thickness'}</span>
-                                          <span style={{ color: '#4fc3f7' }}>{opts.scrapsSectionWidth.toFixed(2)}</span>
-                                        </div>
-                                        <input type="range" min={0.02} max={0.3} step={0.01}
-                                          value={opts.scrapsSectionWidth}
-                                          onChange={e => setOpts(p => ({ ...p, scrapsSectionWidth: Number(e.target.value) }))}
-                                          className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
-                                      </div>
-                                    )}
-                                  </>
+                                    <input type="range" min={0} max={0.9} step={0.05}
+                                      value={opts.scrapsAngleThreshold}
+                                      onChange={e => setOpts(p => ({ ...p, scrapsAngleThreshold: Number(e.target.value) }))}
+                                      className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                                  </div>
                                 )}
-                              </div>
-                            )}
 
-                            <div style={{ marginTop: '8px', padding: '0 4px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
-                                <span>{lang === 'sk' ? 'Plasticita stien' : 'Wall relief'}</span>
-                                <span style={{ color: '#4fc3f7' }}>{opts.scrapsRelief.toFixed(2)}</span>
-                              </div>
-                              <input type="range" min={0} max={1} step={0.05}
-                                value={opts.scrapsRelief}
-                                onChange={e => setOpts(p => ({ ...p, scrapsRelief: Number(e.target.value) }))}
-                                className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
-                            </div>
-                          </>
+                                {opts.scrapsViewMode === 'section' && (
+                                  <div style={{ marginTop: 10 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
+                                      <span>{lang === 'sk' ? 'Hrúbka rezu' : 'Cut thickness'}</span>
+                                      <span style={{ color: '#4fc3f7' }}>{opts.scrapsSectionWidth.toFixed(2)}</span>
+                                    </div>
+                                    <input type="range" min={0.02} max={0.3} step={0.01}
+                                      value={opts.scrapsSectionWidth}
+                                      onChange={e => setOpts(p => ({ ...p, scrapsSectionWidth: Number(e.target.value) }))}
+                                      className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
                         )}
+
+                        <div style={{ marginTop: '8px', padding: '0 4px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
+                            <span>{lang === 'sk' ? 'Plasticita stien' : 'Wall relief'}</span>
+                            <span style={{ color: '#4fc3f7' }}>{opts.scrapsRelief.toFixed(2)}</span>
+                          </div>
+                          <input type="range" min={0} max={1} step={0.05}
+                            value={opts.scrapsRelief}
+                            onChange={e => setOpts(p => ({ ...p, scrapsRelief: Number(e.target.value) }))}
+                            className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                        </div>
                       </>
                     )}
                   </div>
@@ -5245,13 +5702,13 @@ export default function App() {
 
                     <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
                       <button
-                        onClick={() => setIsMeasuringMode(!isMeasuringMode)}
-                        className={`btn-back${isMeasuringMode ? ' active' : ''}`}
+                        onClick={cycleMeasurementMode}
+                        className={`btn-back${measurementMode !== 'off' ? ' active' : ''}`}
                         style={{
                           flex: 1,
-                          background: isMeasuringMode ? '#6366f1' : 'rgba(99,102,241,0.12)',
-                          color: isMeasuringMode ? '#ffffff' : '#a5b4fc',
-                          borderColor: isMeasuringMode ? '#818cf8' : 'rgba(99,102,241,0.3)',
+                          background: measurementMode === 'distance' ? '#6366f1' : measurementMode === 'polygon' ? '#8b5cf6' : 'rgba(99,102,241,0.12)',
+                          color: measurementMode !== 'off' ? '#ffffff' : '#a5b4fc',
+                          borderColor: measurementMode !== 'off' ? '#818cf8' : 'rgba(99,102,241,0.3)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -5261,8 +5718,16 @@ export default function App() {
                           fontWeight: 'bold'
                         }}
                       >
-                        <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>{isMeasuringMode ? 'check_circle' : 'touch_app'}</span>
-                        <span>{isMeasuringMode ? (lang === 'sk' ? 'Meranie aktívne' : 'Measuring active') : (lang === 'sk' ? 'Aktivovať výber 3 bodov' : 'Enable 3-Point Picker')}</span>
+                        <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                          {measurementMode === 'polygon' ? 'square_foot' : 'straighten'}
+                        </span>
+                        <span>
+                          {measurementMode === 'off' 
+                            ? (lang === 'sk' ? 'Aktivovať meranie' : 'Enable measurement')
+                            : measurementMode === 'distance'
+                            ? (lang === 'sk' ? 'Vzdialenosť (2 body)' : 'Distance mode')
+                            : (lang === 'sk' ? 'Plocha / Polygón (3+ bodov)' : 'Area / Polygon mode')}
+                        </span>
                       </button>
 
                       {selectedStations.length > 0 && (
@@ -5667,7 +6132,13 @@ export default function App() {
               )}
               </div>}
             <ScaleBar cameraData={cameraData} />
-            <ColorScaleLegend caveLegend={legendCave} surfLegend={legendSurf} lang={lang} />
+            <ColorScaleLegend 
+              caveLegend={legendCave} 
+              surfLegend={legendSurf} 
+              lang={lang} 
+              baseAltitude={cave?.stationLabels?.[0]?.altitude ?? (cave?.stations?.[0] ? (cave.stations[0].z + (cave.centerOffset?.z || 0)) : undefined)}
+              altitudeMode={opts.altitudeMode}
+            />
             <ProcessingOverlay info={processingInfo} lang={lang} />
           </div>
         </div>

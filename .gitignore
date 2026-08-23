@@ -21,3 +21,10 @@ test_model/map-downloader-for-therion-main/
 
 # Graphify
 graphify-out/cache/
+
+# Local test runs
+.playwright-cli/
+*.png
+test_models.js
+test_single_models.js
+benchmark_zlomiskovo.js

@@ -64,7 +64,10 @@ uniform vec3 highlightColor;
 uniform float minZ;
 uniform float maxZ;
 uniform int uHasUsableVertexColors;
-uniform int pointShape; // 0 square, 1 sphere, 2 rounded diamond, 3 hex
+uniform int pointShape; // 0 square, 1 sphere, 2 rounded diamond, 3 hex, 4 surfel
+uniform int uEnableEDL;
+uniform float uEdlStrength;
+uniform int uEnableSSAO;
 
 // Real-time GPU segmenter uniforms
 uniform int uViewMode; // 0: All, 1: Floor, 2: Ceiling, 3: Contour Floor, 4: Heatmap Floor
@@ -90,9 +93,54 @@ float getPointShapeAlpha(vec2 coord) {
         return 1.0 - smoothstep(0.92, 1.02, diamondDist);
     }
 
-    vec2 hexCoord = abs(coord);
-    float hexDist = max(hexCoord.x * 0.8660254 + hexCoord.y * 0.5, hexCoord.y);
-    return 1.0 - smoothstep(0.88, 0.98, hexDist);
+    if (pointShape == 3) {
+        vec2 hexCoord = abs(coord);
+        float hexDist = max(hexCoord.x * 0.8660254 + hexCoord.y * 0.5, hexCoord.y);
+        return 1.0 - smoothstep(0.88, 0.98, hexDist);
+    }
+
+    if (pointShape == 4) {
+        // Surfel (Continuous disk splatting with smooth border)
+        float circleDist = dot(coord, coord);
+        if (circleDist > 1.0) return 0.0;
+        return 1.0 - smoothstep(0.75, 1.0, circleDist);
+    }
+
+    return 1.0;
+}
+
+float getPointEdgeFactor(vec2 coord) {
+    if (pointShape == 0) {
+        // Square border (crisp dark edge frame)
+        float sq = max(abs(coord.x), abs(coord.y));
+        return smoothstep(0.65, 0.94, sq);
+    }
+    if (pointShape == 1) {
+        // Sphere/Circle border (crisp dark ring)
+        float d = dot(coord, coord);
+        return smoothstep(0.48, 0.92, d);
+    }
+    if (pointShape == 2) {
+        // Diamond border
+        vec2 diamondCoord = vec2(
+            coord.x * 0.82 + coord.y * 0.32,
+            -coord.x * 0.32 + coord.y * 0.82
+        );
+        float d = abs(diamondCoord.x) + abs(diamondCoord.y);
+        return smoothstep(0.62, 0.93, d);
+    }
+    if (pointShape == 3) {
+        // Hexagon border
+        vec2 hexCoord = abs(coord);
+        float d = max(hexCoord.x * 0.8660254 + hexCoord.y * 0.5, hexCoord.y);
+        return smoothstep(0.62, 0.92, d);
+    }
+    if (pointShape == 4) {
+        // Surfel disk edge ring
+        float d = dot(coord, coord);
+        return smoothstep(0.45, 0.88, d);
+    }
+    return 0.0;
 }
 
 vec3 getElevationColor(float z) {
@@ -223,7 +271,14 @@ void main() {
     // 5. Gamma correction
     finalColor = pow(finalColor, vec3(0.8 / clamp(brightness, 0.5, 2.0)));
 
-    // 6. Highlight for Clipping Edges
+    // 6. Point Silhouette / EDL / Outline Rim (instant thin crisp black edge around disks/squares)
+    float edgeFactor = getPointEdgeFactor(spriteCoord);
+    if (uEnableEDL == 1 || uEnableSSAO == 1) {
+        float borderDarken = (uEnableEDL == 1 ? (0.75 * clamp(uEdlStrength, 0.5, 2.0)) : 0.55);
+        finalColor = mix(finalColor, vec3(0.01, 0.01, 0.02), edgeFactor * borderDarken);
+    }
+
+    // 7. Highlight for Clipping Edges
     if (hasClip && minClipDist < 0.15) {
         float highlightStrength = 1.0 - (minClipDist / 0.15);
         finalColor = mix(finalColor, highlightColor, highlightStrength * 0.9);
@@ -247,6 +302,9 @@ type PointCloudRenderProps = {
   viewMode?: 'all' | 'floor' | 'ceiling' | 'contour' | 'heatmap';
   heightThreshold?: number;
   angleThreshold?: number;
+  enableEDL?: boolean;
+  edlStrength?: number;
+  enableSSAO?: boolean;
 };
 
 interface ChunkData {
@@ -278,6 +336,9 @@ export const PointCloudLOD: React.FC<PointCloudRenderProps & { url: string }> = 
   viewMode = 'all', // NEW
   heightThreshold = 0.4, // NEW
   angleThreshold = 0.5, // NEW
+  enableEDL = false,
+  edlStrength = 1.0,
+  enableSSAO = false,
 }) => {
   const [chunks, setChunks] = useState<Map<string, { points: THREE.Points; bounds: THREE.Box3 }>>(new Map());
   const { camera } = useThree();
@@ -328,7 +389,10 @@ export const PointCloudLOD: React.FC<PointCloudRenderProps & { url: string }> = 
             uHasUsableVertexColors: { value: hasUsefulPointColors(data.colors, data.vertexCount || 0) ? 1 : 0 },
             uViewMode: { value: viewModeInt },
             uHeightThreshold: { value: heightThreshold },
-            uAngleThreshold: { value: angleThreshold }
+            uAngleThreshold: { value: angleThreshold },
+            uEnableEDL: { value: enableEDL ? 1 : 0 },
+            uEdlStrength: { value: edlStrength },
+            uEnableSSAO: { value: enableSSAO ? 1 : 0 },
           },
           vertexShader,
           fragmentShader,
@@ -400,11 +464,14 @@ export const PointCloudLOD: React.FC<PointCloudRenderProps & { url: string }> = 
         if (material.uniforms.uViewMode) material.uniforms.uViewMode.value = viewModeInt; // NEW
         if (material.uniforms.uHeightThreshold) material.uniforms.uHeightThreshold.value = heightThreshold; // NEW
         if (material.uniforms.uAngleThreshold) material.uniforms.uAngleThreshold.value = angleThreshold; // NEW
+        if (material.uniforms.uEnableEDL) material.uniforms.uEnableEDL.value = enableEDL ? 1 : 0;
+        if (material.uniforms.uEdlStrength) material.uniforms.uEdlStrength.value = edlStrength;
+        if (material.uniforms.uEnableSSAO) material.uniforms.uEnableSSAO.value = enableSSAO ? 1 : 0;
       }
       material.clippingPlanes = clippingPlanes;
       material.needsUpdate = true;
     });
-  }, [pointSize, brightness, plasticity, shapeInt, colorMode, customColor, highlightColor, threeColor, threeHighlightColor, minZ, maxZ, clippingPlanes, chunks, viewMode, heightThreshold, angleThreshold]); // NEW dependencies
+  }, [pointSize, brightness, plasticity, shapeInt, colorMode, customColor, highlightColor, threeColor, threeHighlightColor, minZ, maxZ, clippingPlanes, chunks, viewMode, heightThreshold, angleThreshold, enableEDL, edlStrength, enableSSAO]); // NEW dependencies
 
   useFrame(() => {
     const frustum = frustumRef.current;
@@ -492,6 +559,9 @@ export const PointCloudDirect: React.FC<PointCloudRenderProps & { cave: ParsedCa
   viewMode = 'all',
   heightThreshold = 0.4,
   angleThreshold = 0.5,
+  enableEDL = false,
+  edlStrength = 1.0,
+  enableSSAO = false,
 }) => {
   const modeInt = colorMode === 'elevation' ? 1 : colorMode === 'natural' ? 2 : 0;
   const viewModeInt = viewMode === 'floor' ? 1 : viewMode === 'ceiling' ? 2 : viewMode === 'contour' ? 3 : viewMode === 'heatmap' ? 4 : 0;
@@ -567,6 +637,9 @@ export const PointCloudDirect: React.FC<PointCloudRenderProps & { cave: ParsedCa
       uViewMode: { value: viewModeInt },
       uHeightThreshold: { value: heightThreshold },
       uAngleThreshold: { value: angleThreshold },
+      uEnableEDL: { value: enableEDL ? 1 : 0 },
+      uEdlStrength: { value: edlStrength },
+      uEnableSSAO: { value: enableSSAO ? 1 : 0 },
     },
     vertexShader,
     fragmentShader,
@@ -605,6 +678,9 @@ export const PointCloudDirect: React.FC<PointCloudRenderProps & { cave: ParsedCa
     material.uniforms.uViewMode.value = viewModeInt;
     material.uniforms.uHeightThreshold.value = heightThreshold;
     material.uniforms.uAngleThreshold.value = angleThreshold;
+    material.uniforms.uEnableEDL.value = enableEDL ? 1 : 0;
+    material.uniforms.uEdlStrength.value = edlStrength;
+    material.uniforms.uEnableSSAO.value = enableSSAO ? 1 : 0;
     material.clippingPlanes = clippingPlanes;
     material.needsUpdate = true;
   }, [
@@ -623,6 +699,9 @@ export const PointCloudDirect: React.FC<PointCloudRenderProps & { cave: ParsedCa
     heightThreshold,
     angleThreshold,
     clippingPlanes,
+    enableEDL,
+    edlStrength,
+    enableSSAO,
   ]);
 
   if (!geometry) return null;
