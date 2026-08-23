@@ -1,4 +1,4 @@
-# 📖 LochViewer - Kompletná používateľská príručka (v2.4.15)
+# 📖 LochViewer - Kompletná používateľská príručka (v2.4.16)
 
 *Webová 3D platforma pre vizualizáciu, speleologické meranie a analýzu jaskynných systémov a LiDAR dát.*  
 *Oficiálny portál: [loch.sss.sk](https://loch.sss.sk)*
@@ -15,13 +15,16 @@
 7. [Práca s LiDAR mračnami bodov (Engine v2 NextGen)](#7-práca-s-lidar-mračnami-bodov-engine-v2-nextgen)
 8. [Povrchový terén, oficiálny GKÚ ZBGIS WMS a 3D kalibrácia](#8-povrchový-terén-oficiálny-gkú-zbgis-wms-a-3d-kalibrácia)
 9. [Zdieľanie modelov a vkladanie cez Iframe (Embed)](#9-zdieľanie-modelov-a-vkladanie-cez-iframe-embed)
-10. [Prehľad klávesových skratiek a gest](#10-prehľad-klávesových-skratiek-a-gest)
+10. [Interaktívny sprievodca v aplikácii (Help Modal)](#10-interaktívny-sprievodca-v-aplikácii-help-modal)
+11. [Prehľad klávesových skratiek a gest](#11-prehľad-klávesových-skratiek-a-gest)
 
 ---
 
 ## 1. Podporované formáty a načítanie dát
 
 LochViewer spracováva dáta priamo vo vašom internetovom prehliadači prostredníctvom WebGL a paralelných Web Workerov. Vaše dáta sa neposielajú na žiadny cudzí server – spracovanie je 100% lokálne a bezpečné.
+
+![Úvodná obrazovka LochViewer](images/01_welcome_screen.png)
 
 ### Podporované formáty súborov:
 * **`.lox` (Therion / Loch)**: Základný štandard speleologických 3D modelov. Obsahuje polygónový ťah (centerline), stanice, laserové lúče (splays), ručne kreslené polygóny stien (scraps), povrchový terén (DTM) a mapové textúry.
@@ -41,6 +44,8 @@ LochViewer spracováva dáta priamo vo vašom internetovom prehliadači prostred
 ## 2. Používateľské rozhranie (Horná lišta a nástroje)
 
 Po načítaní modelu sa v hornej časti zobrazuje moderná piktogramová lišta umožňujúca okamžité ovládanie všetkých funkcií:
+
+![Hlavné 3D rozhranie a horná lišta](images/02_main_viewer_3d.png)
 
 | Ikona | Názov nástroja | Popis funkcie |
 | :--- | :--- | :--- |
@@ -64,6 +69,8 @@ Po načítaní modelu sa v hornej časti zobrazuje moderná piktogramová lišta
 
 ## 3. Navigácia v priestore a technické pohľady
 
+![Ortogonálny pôdorys a kompas](images/03_orthographic_plan_view.png)
+
 ### Základné ovládanie myšou:
 * **Ľavé tlačidlo myši + potiahnutie**: Otáčanie modelu okolo stredu záujmu (Orbit).
 * **Pravé tlačidlo myši (alebo Shift + Ľavé tlačidlo)**: Posun pohľadu (Pan).
@@ -86,6 +93,8 @@ Pre potreby presného mapovania a tvorby meračských máp obsahuje aplikácia k
 
 Tradičné jaskynné polygóny často obsahujú stovky až tisíce laserových zameraní (splays), ktoré bežné programy zobrazujú len ako „ježka“ z čiar. LochViewer obsahuje revolučný rekonštrukčný algoritmus **Splay Signed Distance Fields (SDF)**, ktorý beží na pozadí vo Web Workeri a vytvára hladkú, organickú a uzavretú 3D sieť jaskynných chodieb.
 
+![Splay SDF 3D model stien](images/04_splay_sdf_walls.png)
+
 ### Ako pracovať so Splay SDF stenami:
 1. V bočnom paneli (záložka **Jaskyňa** $\to$ sekcia **Steny jaskyne**) aktivujte prepínač **Splay SDF Walls (3D)**.
 2. V stavovom riadku sa zobrazí indikátor výpočtu. Akonáhle worker dopočíta sieť, model sa okamžite vykreslí v scéne.
@@ -101,6 +110,8 @@ Tradičné jaskynné polygóny často obsahujú stovky až tisíce laserových z
 ## 5. Nástroje merania vzdialeností, plôch a štruktúrnej geológie (Tektonika)
 
 Kliknutím na ikonu pravítka v hornej lište alebo v bočnom paneli aktivujete vyhradený merací režim s plávajúcim dokovateľným panelom (`MeasurementPanel`).
+
+![Merací panel v akcii](images/05_measurement_panel.png)
 
 ### 1. Meranie vzdialenosti (2 body):
 * Kliknite na počiatočný bod $P_1$ a koncový bod $P_2$ (stanice alebo splay body).
@@ -132,7 +143,10 @@ Kliknutím na ikonu pravítka v hornej lište alebo v bočnom paneli aktivujete 
 ## 6. Priestorové rezy a profilové analýzy (Z-Clipping)
 
 Pre detailné skúmanie poschodových jaskýň a horizontálnych úrovní slúži nástroj **Horizontálny rez (Z-Clip)**:
-1. Kliknite na ikonu nožníc ✂️ v hornej lište.
+
+![Horizontálny rez Z-Clipping](images/07_z_clipping_slider.png)
+
+1. Kliknite na ikonu nožníc ✂️ v hornej lište (alebo stlačte kláves `Z`).
 2. V pravom hornom rohu sa vysunie **Plávajúci posuvník rezu**.
 3. Pohybom jazdca plynulo zrezávate nadložie modelu.
 4. Nad posuvníkom sa v reálnom čase zobrazuje presná **nadmorská výška rezu** v metroch (v absolútnom aj relatívnom móde).
@@ -143,6 +157,8 @@ Pre detailné skúmanie poschodových jaskýň a horizontálnych úrovní slúž
 ## 7. Práca s LiDAR mračnami bodov (Engine v2 NextGen)
 
 Pre masívne laserové skeny a point cloud súbory (`.ply`) je integrovaný špecializovaný motor **Engine v2 NextGen**:
+
+![LiDAR Point Cloud a EDL tieňovanie](images/08_lidar_pointcloud_edl.png)
 
 * **Octree LOD (Level of Detail)**: Umožňuje plynulé zobrazovanie modelov s desiatkami miliónov bodov pri 60 FPS vďaka hierarchickému dynamickému načítavaniu iba viditeľných častí.
 * **Eye-Dome Lighting (EDL)**: Pokročilý post-processing shader, ktorý vykresľuje plastické tieňovanie a zvýrazňuje jemné reliéfne detaily stien (kvaple, pukliny, záseky) bez nutnosti náročného generovania sietí.
@@ -172,6 +188,8 @@ Jaskyňa neexistuje vo vákuu – pochopenie jej vzťahu k povrchovému reliéfu
 
 Každé nastavenie scény (farby, natočenie kamery, zapnuté vrstvy, výška rezu, Splay SDF parametre) sa v reálnom čase kóduje do URL adresy.
 
+![Dialóg zdieľania modelu](images/10_share_dialog.png)
+
 ### Vloženie modelu do webstránky (Iframe Embed):
 Kliknite na tlačidlo **🔗 Zdieľať** v hornej lište a skopírujte pripravený HTML kód:
 ```html
@@ -188,7 +206,15 @@ Kliknite na tlačidlo **🔗 Zdieľať** v hornej lište a skopírujte pripraven
 
 ---
 
-## 10. Prehľad klávesových skratiek a gest
+## 10. Interaktívny sprievodca v aplikácii (Help Modal)
+
+Kedykoľvek počas práce s modelom môžete kliknúť na ikonu **❓ Návod** v hornej lište alebo na úvodnej obrazovke:
+
+![Interaktívny pomocník v aplikácii](images/11_help_modal.png)
+
+---
+
+## 11. Prehľad klávesových skratiek a gest
 
 | Kláves / Gesto | Akcia |
 | :--- | :--- |

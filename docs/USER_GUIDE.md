@@ -1,4 +1,4 @@
-# 📖 LochViewer - Complete User Guide (v2.4.15)
+# 📖 LochViewer - Complete User Guide (v2.4.16)
 
 *Web-based 3D platform for speleological visualization, survey measurement, and spatial analysis of cave systems & LiDAR point clouds.*  
 *Official Portal: [loch.sss.sk](https://loch.sss.sk)*
@@ -15,13 +15,16 @@
 7. [LiDAR Point Cloud Processing (Engine v2 NextGen)](#7-lidar-point-cloud-processing-engine-v2-nextgen)
 8. [Surface Terrain, Official GKÚ ZBGIS WMS & 3D Calibration](#8-surface-terrain-official-gkú-zbgis-wms--3d-calibration)
 9. [Sharing Models & Iframe Embedding](#9-sharing-models--iframe-embedding)
-10. [Keyboard Shortcuts & Navigation Gestures](#10-keyboard-shortcuts--navigation-gestures)
+10. [In-App Interactive Guide (Help Modal)](#10-in-app-interactive-guide-help-modal)
+11. [Keyboard Shortcuts & Navigation Gestures](#11-keyboard-shortcuts--navigation-gestures)
 
 ---
 
 ## 1. Supported Formats & Data Loading
 
 LochViewer executes 100% inside your web browser using WebGL and parallel Web Workers. Your data is processed locally without being uploaded to third-party servers, guaranteeing maximum privacy and performance.
+
+![LochViewer Welcome Screen](images/01_welcome_screen.png)
 
 ### Supported File Formats:
 * **`.lox` (Therion / Loch)**: Core cave survey standard containing 3D centerline traverses, stations, laser splays, hand-drawn scrap walls, DTM terrain surfaces, and georeferenced texture maps.
@@ -41,6 +44,8 @@ LochViewer executes 100% inside your web browser using WebGL and parallel Web Wo
 ## 2. User Interface (Top Bar & Tool Controls)
 
 Once a model is loaded, the top bar provides instant access to essential tools:
+
+![Main 3D Viewport & Clean Topbar](images/02_main_viewer_3d.png)
 
 | Icon | Tool Name | Description |
 | :--- | :--- | :--- |
@@ -64,6 +69,8 @@ Once a model is loaded, the top bar provides instant access to essential tools:
 
 ## 3. Spatial Navigation & Technical View Presets
 
+![Orthographic Plan View & Compass](images/03_orthographic_plan_view.png)
+
 ### Mouse Controls:
 * **Left Click + Drag**: Orbit / rotate around the center of interest.
 * **Right Click + Drag (or Shift + Left Click)**: Pan the camera.
@@ -85,6 +92,8 @@ Anchored in the top-left corner of the viewport, the compass rose continuously i
 
 Surveys created with modern laser distometers (DistoX, CaveTRom, BRIC) contain hundreds or thousands of radial splay shots. LochViewer features an automated **Signed Distance Field (SDF) & Marching Cubes** engine running on background Web Workers that reconstructs watertight 3D cave passage walls.
 
+![Splay SDF 3D Cave Walls](images/04_splay_sdf_walls.png)
+
 ### How to Use Splay SDF Walls:
 1. Open the sidebar (**Cave** tab $\to$ **Cave Walls** section) and enable **Splay SDF Walls (3D)**.
 2. The progress indicator will display reconstruction status.
@@ -100,6 +109,8 @@ Surveys created with modern laser distometers (DistoX, CaveTRom, BRIC) contain h
 ## 5. Survey Measurement, Polygon Area & Structural Geology (Tectonics)
 
 Activate the ruler icon in the top bar to open the dockable **Measurement Panel**:
+
+![Measurement Panel in Action](images/05_measurement_panel.png)
 
 ### 1. Distance Measurement (2 Points):
 * Click station or splay endpoint $P_1$ and $P_2$.
@@ -122,7 +133,9 @@ Activate the ruler icon in the top bar to open the dockable **Measurement Panel*
 
 ## 6. Spatial Slicing & Profile Analysis (Z-Clipping)
 
-* Click the scissors icon ✂️ in the top bar to open the **Floating Z-Slice Slider**.
+![Floating Z-Clipping Slider](images/07_z_clipping_slider.png)
+
+* Click the scissors icon ✂️ in the top bar (or press key `Z`) to open the **Floating Z-Slice Slider**.
 * Drag the handle to dynamically slice through upper levels of multi-story cave systems.
 * Displays the active cutting elevation in meters above sea level or relative to the entrance.
 * Intersection edges between slicing planes and cave geometry are highlighted with bright outlines.
@@ -132,6 +145,8 @@ Activate the ruler icon in the top bar to open the dockable **Measurement Panel*
 ## 7. LiDAR Point Cloud Processing (Engine v2 NextGen)
 
 For massive LiDAR scans (`.ply` format), LochViewer automatically activates **Engine v2 NextGen**:
+
+![LiDAR Point Cloud & EDL Shading](images/08_lidar_pointcloud_edl.png)
 
 * **Octree LOD**: Streams only visible nodes dynamically, sustaining 60 FPS on multi-million point models.
 * **Eye-Dome Lighting (EDL)**: Screen-space depth silhouette shader highlighting speleothems, fissures, and passage topography without heavy mesh overhead.
@@ -154,6 +169,8 @@ For massive LiDAR scans (`.ply` format), LochViewer automatically activates **En
 
 All view settings, camera angles, active layers, clipping heights, and SDF parameters are continuously encoded in the URL.
 
+![Share & Iframe Embed Modal](images/10_share_dialog.png)
+
 ### Iframe Embedding Code:
 ```html
 <iframe 
@@ -169,7 +186,15 @@ All view settings, camera angles, active layers, clipping heights, and SDF param
 
 ---
 
-## 10. Keyboard Shortcuts & Navigation Gestures
+## 10. In-App Interactive Guide (Help Modal)
+
+Clicking the **❓ Help** icon in the top bar or on the welcome screen opens the interactive user guide at any time:
+
+![In-App Interactive Help Modal](images/11_help_modal.png)
+
+---
+
+## 11. Keyboard Shortcuts & Navigation Gestures
 
 | Key / Gesture | Action |
 | :--- | :--- |
