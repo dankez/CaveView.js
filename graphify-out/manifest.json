@@ -56,8 +56,8 @@
     "hash": "e54fc599f48e365e708597ed9cdc2ae2"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/App.tsx": {
-    "mtime": 1787478894.5539215,
-    "hash": "2609692d0e197124b87d94893f69949c"
+    "mtime": 1787479481.4823985,
+    "hash": "ccc09567decb06a968303e08a8326c7c"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/main.tsx": {
     "mtime": 1776409952.8888268,
@@ -258,6 +258,10 @@
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/Scraps.tsx": {
     "mtime": 1787432371.3494353,
     "hash": "4fd9a309622446156155ac3bd38e8cce"
+  },
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/HelpModal.tsx": {
+    "mtime": 1787479438.608728,
+    "hash": "f68111fdcbaa6dc4e5e6c5d6b3553c7b"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/MeasurementPanel.tsx": {
     "mtime": 1787312308.1681323,
@@ -1048,8 +1052,8 @@
     "hash": "5c058909c5609ca1666e41cdb0570609"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/README.md": {
-    "mtime": 1787313858.8729126,
-    "hash": "dd74f4ba65fdb7179bb7fe99cdd37d7d"
+    "mtime": 1787479062.4966016,
+    "hash": "195fd8c60a98b5db8c0a86777b374ed2"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/ALGORITHMS.md": {
     "mtime": 1787233713.863575,
@@ -1060,8 +1064,8 @@
     "hash": "c1870c04c463048a48a5e9923c4381b5"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/CHANGELOG.md": {
-    "mtime": 1787478898.2568922,
-    "hash": "2e374308ab679eafe28057651d520f13"
+    "mtime": 1787479503.6349978,
+    "hash": "b65d507d6b52e73312e5e67b96f9a6d5"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/agents.md": {
     "mtime": 1777201521.1427379,
@@ -1076,12 +1080,12 @@
     "hash": "2056d63bee80616393d0513ed7719703"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/AGENTS.md": {
-    "mtime": 1777585327.0354273,
-    "hash": "8ee39dcfe68a23b3797b02648930d699"
+    "mtime": 1787479492.2602024,
+    "hash": "496a062d561b20c038b46afc55e607f8"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/GEMINI.md": {
-    "mtime": 1787247853.3303974,
-    "hash": "375c7b90cb1c62c214cbce96fab4f689"
+    "mtime": 1787479487.5132885,
+    "hash": "38528d49208f763900ed3f3e87cbc33f"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/handleStationClick_fix.txt": {
     "mtime": 1787233713.8855748,

@@ -40,6 +40,7 @@ import { hasRenderablePointColors } from '@shared/utils/pointCloudColors'
 import { CompassRose } from '@shared/components/CompassRose'
 import { FloatingClippingSlider } from '@shared/components/FloatingClippingSlider'
 import { MeasurementPanel } from '@shared/components/MeasurementPanel'
+import { HelpModal } from '@shared/components/HelpModal'
 
 const CaveViewer3D = React.lazy(() => import('@v1/components/CaveViewer3D'))
 const CaveViewerNextGen = React.lazy(() => import('@v2/components/CaveViewerNextGen'))
@@ -1019,6 +1020,7 @@ export default function App() {
   const [lastLoadedBuffer, setLastLoadedBuffer] = useState<ArrayBuffer | null>(null)
   const [gdriveStatus, setGdriveStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle')
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
+  const [helpDialogOpen, setHelpDialogOpen] = useState(false)
   const [activeViewPreset, setActiveViewPreset] = useState<'top' | 'front' | 'side' | 'iso' | null>(null)
 
   useEffect(() => {
@@ -3508,6 +3510,31 @@ export default function App() {
                     </button>
                   </div>
                 </div>
+
+                {/* User Guide / Help button on welcome screen */}
+                <div style={{ marginTop: '16px', textAlign: 'center' }}>
+                  <button
+                    onClick={() => setHelpDialogOpen(true)}
+                    style={{
+                      background: 'rgba(59, 130, 246, 0.1)',
+                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                      borderRadius: '8px',
+                      color: '#60a5fa',
+                      padding: '8px 16px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      transition: 'all 0.2s'
+                    }}
+                    type="button"
+                  >
+                    <span>📖</span>
+                    <span>{lang === 'sk' ? 'Otvoriť používateľskú príručku (Návod)' : 'Open User Guide & Documentation'}</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -4053,6 +4080,16 @@ export default function App() {
                     <span>{lang === 'sk' ? 'Zdieľať' : 'Share'}</span>
                   </button>
                 )}
+
+                {/* Help button */}
+                <button
+                  onClick={() => setHelpDialogOpen(true)}
+                  style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '6px', color: '#60a5fa', padding: '6px 10px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600 }}
+                  title={lang === 'sk' ? 'Pomocník a používateľská príručka' : 'User guide & help'}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px', display: 'block' }}>help</span>
+                  <span className="hide-mobile-inline">{lang === 'sk' ? 'Návod' : 'Help'}</span>
+                </button>
 
                 <button 
                   onClick={handleReset}
@@ -6328,6 +6365,13 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* ── HELP / USER GUIDE MODAL ── */}
+      <HelpModal
+        isOpen={helpDialogOpen}
+        onClose={() => setHelpDialogOpen(false)}
+        initialLang={lang}
+      />
 
       {/* ── EMBED MODE TOP BAR (minimal branding) ── */}
       {isEmbedMode && appState === 'viewer' && (() => {

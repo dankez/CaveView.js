@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.4.16] - 2026-08-23
+### Kompletná dvojúrovňová dokumentácia & In-App Pomocník
+- **Interaktívny sprievodca priamo v hornej lište (`HelpModal.tsx`):**
+  - Tlačidlo **Návod / Help (`?`)** v hornej lište a na úvodnej obrazovke otvára interaktívny prehľad nástrojov, formátov, navigácie, splay 3D stien, merania, tektoniky, Z-rezov, LiDARu a zdieľania s bilingválnym prepínačom (🇸🇰 SK / 🇬🇧 EN).
+- **Používateľská príručka (Tier 1):**
+  - Vytvorená kompletná používateľská príručka pripravená na publikovanie na `loch.sss.sk` a GitHub: [`docs/USER_GUIDE_SK.md`](docs/USER_GUIDE_SK.md) a [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md).
+- **Vývojárska & Matematická špecifikácia (Tier 2):**
+  - Vytvorená hĺbková technická dokumentácia so vzorcami, geodetickými transformáciami (S-JTSK / UTM / WGS84), Splay SDF Marching Cubes algoritmom, bisektorovými rovinami, tektonickým 3-bodovým dip/strike aparátom a EDL shadermi: [`docs/DEVELOPER_GUIDE_SK.md`](docs/DEVELOPER_GUIDE_SK.md) a [`docs/DEVELOPER_GUIDE.md`](docs/DEVELOPER_GUIDE.md).
+- **Automatická synchronizácia dokumentácie:**
+  - Vytvorený skill `speleo-docs-sync` a projektové pravidlá v `GEMINI.md` a `AGENTS.md` pre povinnú synchronizáciu oboch úrovní dokumentácie pri budúcich zmenách.
+
 ## [2.4.15] - 2026-08-23
 ### Optimalizácia UI & HUD
 - **Optimalizácia pozície smerovej ružice (Compass Rose):**
