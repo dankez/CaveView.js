@@ -208,9 +208,14 @@ Vo verziách 2.4.22 až 2.4.25 bol integrovaný a kalibrovaný dizajnový systé
   * Primárny akcent: `--cv-primary: #00d2ff` (Electric Cyan) / `--cv-primary: #0284c7` (Fieldwork Blue).
   * Sekundárny akcent: `--cv-secondary: #10b981` (Subterranean Emerald) / `#059669`.
   * Písmo: `--cv-font-sans: 'Inter'` pre UI, `--cv-font-mono: 'JetBrains Mono'` s `font-variant-numeric: tabular-nums` pre súradnice a telemetriu.
-* **Three.js sRGB Color Space a gradient pozadia (v2.4.24):**
+* **Three.js sRGB Color Space a gradienty pozadia (v2.4.24 - v2.4.25):**
+  * Téma `precision` využíva technický modrý vertikálny gradient: zhora tmavšia nočná modrá (`#103258`) prechádzajúca do svetlejšej technickej modrej (`#1d5b9b`).
   * Téma `light` využíva vertikálny pieskový gradient zhora nadol: svetlá slonovinová piesková (`#f7f3eb`) prechádzajúca do tmavšej vápencovej pieskovej (`#d5c4ad`).
   * Pri generovaní dynamickej textúry pozadia cez HTML Canvas (`bgTexture = new THREE.CanvasTexture(canvas)`) v `CaveViewer3D` a `CaveViewerNextGen` je explicitne nastavený farebný priestor `tex.colorSpace = THREE.SRGBColorSpace`. Tým sa predchádza nechcenému gamma zosvetleniu Three.js a farby presne zodpovedajú hexadecimálnej špecifikácii.
+* **Oprava prepínania a layoutu bočného panelu (v2.4.25):**
+  * Kontajner `.canvas-wrap` má explicitne definovaný `min-width: 0`, čo umožňuje CSS flexboxu korektne zmenšiť šírku 3D plátna pri opätovnom vysunutí bočného panelu (`.sidebar-container`), namiesto jeho vytlačenia mimo viditeľnú plochu obrazovky.
+  * Pridané plávajúce tlačidlo `.sidebar-reopen-tab` pre okamžité znovuotvorenie panela priamo z pravého horného rohu 3D scény.
+  * Mobilná lišta nastavení je obmedzená cez `@media (max-width: 768px)` a `.mobile-drawer-header`, čím je zamedzené jej nechcené zobrazovanie na desktopových rozlíšeniach.
 * **Exkluzivita LiDAR ovládačov pre PLY formát (v2.4.24):**
   * Prepínač motora `LiDAR NEXTGEN` (Engine v2) a súvisiace editačné panely sa podmienečne vykresľujú iba pri prítomnosti skutočných mračien bodov (`isPointcloud && isPlyFormat`).
   * `caveParser.ts` v `buildResult` zachováva meračským polygónovým súborom (`.lox`, `.3d`, `.plt`) reálny počet `pointCount = 0`, čím eliminuje nesprávne zapnutie LiDAR rozhrania.

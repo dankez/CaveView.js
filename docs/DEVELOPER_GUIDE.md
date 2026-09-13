@@ -196,9 +196,14 @@ Introduced in v2.4.22 and refined through v2.4.25, the **Precision Speleology & 
   * Primary Accent: `--cv-primary: #00d2ff` (Electric Cyan) / `--cv-primary: #0284c7` (Fieldwork Blue).
   * Secondary Accent: `--cv-secondary: #10b981` (Subterranean Emerald) / `#059669`.
   * Typography: `--cv-font-sans: 'Inter'` for UI controls, `--cv-font-mono: 'JetBrains Mono'` with `font-variant-numeric: tabular-nums` for all telemetry, coordinates, and metrics to prevent camera jitter.
-* **Three.js sRGB Color Space & Background Texture (v2.4.24):**
+* **Three.js sRGB Color Space & Background Gradients (v2.4.24 - v2.4.25):**
+  * The `precision` theme uses a technical vertical blue gradient: deep night blue (`#103258`) at the top transitioning to a luminous technical blue (`#1d5b9b`) at the bottom.
   * The `light` theme implements a natural vertical sand gradient: light ivory sand at the top (`#f7f3eb`) to warm darker limestone sand at the bottom (`#d5c4ad`).
   * When constructing the dynamic background canvas texture (`bgTexture = new THREE.CanvasTexture(canvas)`) across both `CaveViewer3D` and `CaveViewerNextGen`, `tex.colorSpace = THREE.SRGBColorSpace` is explicitly declared. This prevents Three.js gamma transformation desaturation, guaranteeing exact 8-bit hex fidelity on screen.
+* **Sidebar Toggle & Flexbox Layout Optimization (v2.4.25):**
+  * The `.canvas-wrap` container explicitly defines `min-width: 0`, enabling the CSS Flexbox layout to cleanly shrink the 3D canvas when `.sidebar-container` is re-opened, eliminating off-screen sidebar clipping.
+  * Added floating `.sidebar-reopen-tab` button for instantaneous one-click panel restoration directly from the 3D scene.
+  * Mobile drawer headers are scoped strictly to `@media (max-width: 768px)` via `.mobile-drawer-header`, preventing layout leakage into desktop views.
 * **LiDAR Controls Exclusivity for PLY Formats (v2.4.24):**
   * Engine v2 (`LiDAR NEXTGEN`) and LiDAR editing overlays are selectively rendered only when real point cloud data is detected (`isPointcloud && isPlyFormat`).
   * The survey parser (`caveParser.ts` in `buildResult`) leaves `pointCount = 0` for standard line/polygon datasets (`.lox`, `.3d`, `.plt`), preventing false-positive LiDAR engine activation.

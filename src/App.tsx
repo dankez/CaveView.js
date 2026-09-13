@@ -1074,7 +1074,7 @@ export default function App() {
 
   const t = useCallback((key: string) => getTranslation(lang, key), [lang])
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => typeof window !== 'undefined' ? window.innerWidth > 768 : true)
   const [isModelMoving, setIsModelMoving] = useState(false)
   const [sidebarTab, setSidebarTab] = useState<'cave' | 'terrain' | 'analysis'>('cave')
 
@@ -1178,8 +1178,8 @@ export default function App() {
     colorGrid:           '#222222',
     colorBoundingBox:    '#990000',
     showBoundingBox:     false,
-    colorBackground:     '#020617',
-    colorBackground2:    '#1e40af',
+    colorBackground:     '#103258', // Modrý technický gradient (hore)
+    colorBackground2:    '#1d5b9b', // Svetlejšia modrá (dole)
     // Cave scraps
     showScraps:          true,
     scrapsOpacity:       1.0,
@@ -1862,8 +1862,8 @@ export default function App() {
       surfaceColor:      '#e2e8f0',
     },
     precision: {
-      colorBackground:   '#0b0f17', // Base Canvas (Deep Abyss)
-      colorBackground2:  '#111827', // Neutral structural background
+      colorBackground:   '#103258', // Modrý technický gradient (hore)
+      colorBackground2:  '#1d5b9b', // Svetlejšia modrá (dole)
       colorTraverse:     '#ffffff',
       colorSplay:        '#00d2ff', // Electric Cyan
       colorStations:     '#fbbf24',
@@ -2934,7 +2934,7 @@ export default function App() {
     if (o.showBoundingBox) p.set('bbox', '1')
     if (o.colorGrid !== '#224422') p.set('cgrid', o.colorGrid.replace('#', ''))
     // Colors
-    if (o.colorBackground !== '#020617') p.set('bg', o.colorBackground.replace('#', ''))
+    if (o.colorBackground !== '#103258') p.set('bg', o.colorBackground.replace('#', ''))
     // Clipping / Rezy
     if (o.showClipping) p.set('clip', '1')
     if (o.showClipping) p.set('cliph', String(o.clippingHeight))
@@ -3259,7 +3259,7 @@ export default function App() {
         .btn-back:hover{background:var(--cv-surface-high);border-color:var(--cv-primary);color:#fff}
 
         .viewer-body{flex:1;display:flex;overflow:hidden;position:relative}
-        .canvas-wrap{flex:1;position:relative}
+        .canvas-wrap{flex:1;position:relative;min-width:0}
 
         /* Sidebar */
         .sidebar-container { display: flex; flex-shrink: 0; z-index: 100; height: 100%; max-height: 100%; overflow: hidden; }
@@ -3550,7 +3550,7 @@ export default function App() {
         .embed-fullscreen-btn { background: rgba(99,179,237,0.12); border: 1px solid rgba(99,179,237,0.25); border-radius: 6px; color: #63b3ed; font-size: 14px; padding: 4px 8px; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
         .embed-fullscreen-btn:hover { background: rgba(99,179,237,0.25); }
 
-        @media (max-width: 1023px) {
+        @media (max-width: 768px) {
           .sidebar-container { display: none; }
           .sidebar-container.open { 
             display: flex; position: fixed; inset: 0; z-index: 9999; width: 100vw; height: 100vh;
@@ -3571,8 +3571,10 @@ export default function App() {
           .hide-mobile-flex { display: none !important; }
           .btn-fit { display: none !important; }
           .show-mobile-flex { display: flex !important; }
+          .mobile-drawer-header { display: block !important; }
         }
         .show-mobile-flex { display: none; }
+        .mobile-drawer-header { display: none; }
       `}</style>
 
       <canvas ref={canvasRef} className="bg-canvas" style={{ background: opts.colorBackground2 ? `linear-gradient(to bottom, ${opts.colorBackground}, ${opts.colorBackground2})` : opts.colorBackground }} />
@@ -4198,8 +4200,15 @@ export default function App() {
                 {/* Toggle Sidebar Inspector Button */}
                 <button
                   onClick={() => {
-                    setIsSidebarOpen(prev => !prev)
-                    setIsMobileMenuOpen(prev => !prev)
+                    setIsSidebarOpen(prev => {
+                      const next = !prev
+                      if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+                        setIsMobileMenuOpen(next)
+                      } else {
+                        setIsMobileMenuOpen(false)
+                      }
+                      return next
+                    })
                   }}
                   className="btn-back"
                   style={{
@@ -4210,7 +4219,7 @@ export default function App() {
                     fontSize: '11px',
                     fontWeight: 600
                   }}
-                  title={lang === 'sk' ? 'Zobraziť/skryť bočný panel' : 'Toggle Inspector Sidebar'}
+                  title={isSidebarOpen ? (lang === 'sk' ? 'Zbaliť bočný panel' : 'Collapse inspector') : (lang === 'sk' ? 'Zobraziť bočný panel' : 'Show inspector')}
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>view_sidebar</span>
                   <span className="hide-mobile-inline">{lang === 'sk' ? 'Panel' : 'Panel'}</span>
@@ -4397,6 +4406,45 @@ export default function App() {
                 />
               </div>
 
+              {/* Floating reopen button on right edge when sidebar is closed */}
+              {(!isEmbedMode || embedAllowSidebar) && !isSidebarOpen && (
+                <button
+                  onClick={() => {
+                    setIsSidebarOpen(true)
+                    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+                      setIsMobileMenuOpen(true)
+                    } else {
+                      setIsMobileMenuOpen(false)
+                    }
+                  }}
+                  className="sidebar-reopen-tab"
+                  title={lang === 'sk' ? 'Zobraziť bočný panel' : 'Open Inspector Panel'}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '16px',
+                    zIndex: 40,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'var(--cv-surface-card)',
+                    border: '1px solid var(--cv-border-strong)',
+                    borderRadius: '8px',
+                    color: 'var(--cv-text)',
+                    padding: '6px 10px',
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+                    backdropFilter: 'blur(8px)',
+                    transition: 'all 0.18s ease'
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px', color: 'var(--cv-primary)' }}>dock_to_left</span>
+                  <span className="hide-mobile-inline">{lang === 'sk' ? 'Panel' : 'Panel'}</span>
+                </button>
+              )}
+
               {/* Sidebar container — hidden in embed mode unless sidebar=1 is in URL */}
               {(!isEmbedMode || embedAllowSidebar) && isSidebarOpen && (
                 <div className={`sidebar-container ${isMobileMenuOpen ? 'open' : ''}`}>
@@ -4404,7 +4452,7 @@ export default function App() {
                     {/* ─── FIXED PINNED HEADER (Does NOT move with scroll) ─── */}
                     <div className="sidebar-pinned-header">
                       {isMobileMenuOpen && (
-                        <div style={{ marginBottom: '0.4rem' }}>
+                        <div className="mobile-drawer-header" style={{ marginBottom: '0.4rem' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--cv-border)' }}>
                             <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--cv-text)' }}>{t('sidebar.control')}</span>
                             <button className="btn-back" style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '3px 8px' }} onClick={() => { setIsMobileMenuOpen(false); setIsSidebarOpen(false); }}>✖ {t('ui.close')}</button>
@@ -4451,7 +4499,10 @@ export default function App() {
                           <button
                             className="sidebar-close-btn"
                             title={lang === 'sk' ? 'Zbaliť bočný panel' : 'Collapse inspector'}
-                            onClick={() => setIsSidebarOpen(false)}
+                            onClick={() => {
+                              setIsSidebarOpen(false)
+                              setIsMobileMenuOpen(false)
+                            }}
                           >
                             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>close</span>
                           </button>

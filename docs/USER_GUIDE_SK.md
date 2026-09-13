@@ -67,9 +67,10 @@ Po načítaní modelu sa v hornej časti zobrazuje moderná piktogramová lišta
 
 ### Farebné motívy a vizuálny štýl (Themes):
 V bočnom paneli (záložka **Jaskyňa**) alebo cez URL parameter `?theme=` je možné zvoliť jeden z troch kalibrovaných motívov:
-* **Precision CAD (`precision`)**: Predvolený profesionálny tmavý motív s hlbokým grafitovým pozadím (`#0b0f17`), vysoko kontrastnými tyrkysovými (`#00d2ff`) a smaragdovými (`#10b981`) akcentmi podľa špecifikácie Google Stitch CAD. Ideálny pre prácu v šere a prezentáciu na OLED obrazovkách.
+* **Precision CAD (`precision`)**: Predvolený profesionálny technický motív s kalibrovaným vertikálnym modrým gradientom (zhora tmavá nočná modrá `#103258` prechádzajúca do svetlejšej technickej modrej `#1d5b9b`), vysoko kontrastnými tyrkysovými (`#00d2ff`) a smaragdovými (`#10b981`) akcentmi podľa špecifikácie Google Stitch CAD. Poskytuje dokonalú priestorovú hĺbku a vysokú čitateľnosť pre speleologické polygóny.
 * **Svetlý pieskový motív (`light`)**: Prírodný vysokokontrastný terénny režim s jemným vertikálnym pieskovým gradientom – svetlá slonovinová piesková hore (`#f7f3eb`) prechádzajúca do teplejšej tmavej pieskovej / vápencovej dole (`#d5c4ad`). Prvky CAD rozhrania v tomto režime plynulo ladia s teplou pieskovou paletou, čo znižuje únavu očí pri dennom svetle a zabezpečuje excelentnú čitateľnosť meračských polygónov a textov staníc.
 * **Classic Speleo (`classic`)**: Tradičný nočný modrý motív s indigovým gradientom pozadia.
+* **Skrytie a znovuotvorenie bočného panela:** Bočný panel je možné kedykoľvek minimalizovať pre plnoobrazovkové zobrazenie 3D jaskyne. Pre opätovné otvorenie slúži tlačidlo v hornej lište alebo plávajúce tlačidlo `◀ Nastavenia` na pravom okraji obrazovky.
 
 ---
 

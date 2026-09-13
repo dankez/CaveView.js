@@ -68,9 +68,10 @@ Once a model is loaded, the top bar provides instant access to essential tools:
 
 ### Visual Themes & Design Styling:
 In the sidebar (**Cave** tab) or via the URL parameter `?theme=`, three calibrated themes can be toggled:
-* **Precision CAD (`precision`)**: Default instrument dark mode with Deep Abyss slate background (`#0b0f17`) and high-contrast electric cyan (`#00d2ff`) / emerald (`#10b981`) accents synthesized from Google Stitch CAD specifications. Ideal for low-light fieldwork and OLED screens.
+* **Precision CAD (`precision`)**: Default technical dark mode featuring a calibrated vertical blue gradient (deep night blue `#103258` at the top transitioning to a luminous technical blue `#1d5b9b` at the bottom) with high-contrast electric cyan (`#00d2ff`) / emerald (`#10b981`) accents synthesized from Google Stitch CAD specifications. Provides superior spatial depth and exceptional contrast for survey centerlines.
 * **Light Sand (`light`)**: Natural high-contrast outdoor mode featuring an eye-friendly vertical sandy gradient – light ivory sand at the top (`#f7f3eb`) transitioning smoothly into darker warm limestone sand at the bottom (`#d5c4ad`). Sidebar cards, metrics, and sliders harmonize with this warm sand tone, providing superb legibility and zero glare during daytime fieldwork.
 * **Classic Speleo (`classic`)**: Traditional nocturnal deep blue theme with indigo background gradient.
+* **Sidebar Hiding & Reopening:** The sidebar can be collapsed anytime for full-screen 3D exploration. It can be reopened using the top bar control or the floating `◀ Settings` tab docked on the right screen edge.
 
 ---
 

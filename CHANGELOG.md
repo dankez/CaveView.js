@@ -1,7 +1,10 @@
 # Changelog
 
 ## [2.4.25] - 2026-09-13
-### Exkluzivita LiDAR NextGen prepínača a jemný pieskový motív (Light Sand)
+### Exkluzivita LiDAR NextGen, oprava prepínania bočného panelu a modrý gradient (Precision)
+- **Oprava opätovného otvárania bočného panelu (Fix layoutu):** Vyriešený problém, pri ktorom sa po skrytí bočného panelu tlačidlom "Panel" panel pri druhom kliknutí nezobrazil. Príčinou bol flexboxový mechanizmus, kde `canvas-wrap` bez `min-width: 0` odmietal ustúpiť flexibilnému zmenšeniu po inicializácii plnej šírky WebGL plátna, čím vytlačil panel mimo pravý okraj obrazovky. Pridané `min-width: 0` do `.canvas-wrap` a plne synchronizovaný stav otvorenia na desktopových, tabletových aj mobilných zariadeniach.
+- **Rýchle znovuotvorenie panela (`sidebar-reopen-tab`):** Po zbalení bočného panelu sa v pravom hornom rohu viewportu zobrazuje decentná plávajúca záložka `[dock_to_left] Panel`, umožňujúca okamžité znovuotvorenie bočného panelu kliknutím priamo v mieste, kde sa panel pôvodne nachádzal.
+- **Modrý technický gradient pre tému `precision`:** Pozadie predvolenej CAD témy `precision` bolo zosvetlené a pretransformované na elegantný modrý vertikálny gradient (zhora tmavšia nočná modrá `#103258`, zdola svetlejšia technická modrá `#1d5b9b`), čím sa nahradilo pôvodné takmer čierne pozadie a dosiahol sa špičkový kontrast meračských vektorov a staníc.
 - **Izolácia prepínača LiDAR NEXTGEN:** Prepínač motora `LiDAR NEXTGEN` (Engine v2) a panel nástrojov `LiDAR editácia` sa teraz zobrazujú výhradne pre skutočné LiDAR dáta vo formáte PLY. Pre bežné meračské a polygónové modely (`.lox`, `.3d`, `.plt`, `.stl`) je tento prepínač vo všetkých zobrazeniach skrytý.
 - **Oprava parseru survey staníc (`caveParser.ts`):** `buildResult` už nekonvertuje meračské stanice na fiktívny počet LiDAR bodov (`pointCount`). Meračské súbory majú korektne `pointCount = 0`, čím sa zabránilo falošnej detekcii LiDARu.
 - **Adaptívna hlavička datasetu v bočnom paneli:** Pri načítaní súboru PLY sa namiesto prázdnych počtov meračských segmentov/staníc zobrazuje formát PLY a reálny počet bodov mračna (`Body / Points`). Pre bežné polygónové formáty ostáva zobrazenie segmentov, staníc a stien.
