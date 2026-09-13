@@ -211,7 +211,11 @@ Vo verziách 2.4.22 až 2.4.25 bol integrovaný a kalibrovaný dizajnový systé
 * **Three.js sRGB Color Space a gradienty pozadia (v2.4.24 - v2.4.25):**
   * Téma `precision` využíva technický modrý vertikálny gradient: zhora tmavšia nočná modrá (`#103258`) prechádzajúca do svetlejšej technickej modrej (`#1d5b9b`).
   * Téma `light` využíva vertikálny pieskový gradient zhora nadol: svetlá slonovinová piesková (`#f7f3eb`) prechádzajúca do tmavšej vápencovej pieskovej (`#d5c4ad`).
-  * Pri generovaní dynamickej textúry pozadia cez HTML Canvas (`bgTexture = new THREE.CanvasTexture(canvas)`) v `CaveViewer3D` a `CaveViewerNextGen` je explicitne nastavený farebný priestor `tex.colorSpace = THREE.SRGBColorSpace`. Tým sa predchádza nechcenému gamma zosvetleniu Three.js a farby presne zodpovedajú hexadecimálnej špecifikácii.
+* **Oprava mapového zdroja Freemap a detekcia placeholderov (v2.4.26):**
+  * Zastaraný endpoint `tiles.freemap.sk/o/{z}/{x}/{y}.jpg` (vracajúci 1843-bajtový PNG s textom "no map data") bol nahradený za oficiálny produkčný `https://ortofoto.tiles.freemap.sk/{z}/{x}/{y}.jpg`.
+  * Konfigurácie v `public/map-proxy.php` a `vite.config.ts` boli aktualizované na `ortofoto.tiles.freemap.sk`.
+  * `XyzTileDownloader.ts` obsahuje explicitnú validáciu dlaždíc proti 1843-bajtovým placeholderom: pri ich detekcii odmietne dlaždicu ako chybnú a automaticky prepne na proxy fallback.
+  * Inkrementovaná verzia cache kľúčov v `tileCache.ts` na `KEY_VERSION = 'v2'`, čo zabezpečilo okamžitú invalidáciu chybných "no map data" dlaždíc u všetkých používateľov.
 * **Oprava prepínania a layoutu bočného panelu (v2.4.25):**
   * Kontajner `.canvas-wrap` má explicitne definovaný `min-width: 0`, čo umožňuje CSS flexboxu korektne zmenšiť šírku 3D plátna pri opätovnom vysunutí bočného panelu (`.sidebar-container`), namiesto jeho vytlačenia mimo viditeľnú plochu obrazovky.
   * Pridané plávajúce tlačidlo `.sidebar-reopen-tab` pre okamžité znovuotvorenie panela priamo z pravého horného rohu 3D scény.

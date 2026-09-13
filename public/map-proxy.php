@@ -7,7 +7,7 @@ $sources = [
         'pathRequired' => true,
     ],
     'freemap-orto' => [
-        'base' => 'https://ofmozaika.tiles.freemap.sk',
+        'base' => 'https://ortofoto.tiles.freemap.sk',
         'pathRequired' => true,
     ],
     'freemap-shading' => [

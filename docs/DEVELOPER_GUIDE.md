@@ -199,7 +199,11 @@ Introduced in v2.4.22 and refined through v2.4.25, the **Precision Speleology & 
 * **Three.js sRGB Color Space & Background Gradients (v2.4.24 - v2.4.25):**
   * The `precision` theme uses a technical vertical blue gradient: deep night blue (`#103258`) at the top transitioning to a luminous technical blue (`#1d5b9b`) at the bottom.
   * The `light` theme implements a natural vertical sand gradient: light ivory sand at the top (`#f7f3eb`) to warm darker limestone sand at the bottom (`#d5c4ad`).
-  * When constructing the dynamic background canvas texture (`bgTexture = new THREE.CanvasTexture(canvas)`) across both `CaveViewer3D` and `CaveViewerNextGen`, `tex.colorSpace = THREE.SRGBColorSpace` is explicitly declared. This prevents Three.js gamma transformation desaturation, guaranteeing exact 8-bit hex fidelity on screen.
+* **Freemap Orthophoto Endpoint & Placeholder Rejection (v2.4.26):**
+  * Replaced obsolete `tiles.freemap.sk/o/{z}/{x}/{y}.jpg` endpoint (which returns a 1843-byte PNG "no map data" placeholder) with the official production service `https://ortofoto.tiles.freemap.sk/{z}/{x}/{y}.jpg`.
+  * Updated proxy routing in `public/map-proxy.php` and `vite.config.ts` to forward to `ortofoto.tiles.freemap.sk`.
+  * `XyzTileDownloader.ts` actively rejects 1843-byte placeholder tiles, immediately triggering proxy fallback instead of stitching placeholder text over the 3D surface.
+  * Incremented tile cache key version in `tileCache.ts` to `KEY_VERSION = 'v2'`, automatically invalidating any previously cached placeholder images in client browsers.
 * **Sidebar Toggle & Flexbox Layout Optimization (v2.4.25):**
   * The `.canvas-wrap` container explicitly defines `min-width: 0`, enabling the CSS Flexbox layout to cleanly shrink the 3D canvas when `.sidebar-container` is re-opened, eliminating off-screen sidebar clipping.
   * Added floating `.sidebar-reopen-tab` button for instantaneous one-click panel restoration directly from the 3D scene.

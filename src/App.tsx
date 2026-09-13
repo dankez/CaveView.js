@@ -2810,6 +2810,7 @@ export default function App() {
       showSurfaceMesh:     terrain === 'shaded',
       showSurfaceNetwork:  terrain === 'network',
       showSurfaceTexture:  terrain === 'texture',
+      surfaceTextureSource: (p.get('tsrc') as any) || prev.surfaceTextureSource,
       showSurfaceMeshWire: p.get('wire') === '1',
       surfaceOpacity:      p.has('surfop') ? parseFloat(p.get('surfop')!) : prev.surfaceOpacity,
       surfaceColor:        p.get('surfcol') ? '#' + p.get('surfcol') : prev.surfaceColor,
@@ -2890,6 +2891,7 @@ export default function App() {
     // Terrain
     const terrain = o.showSurfaceTexture ? 'texture' : o.showSurfaceNetwork ? 'network' : 'shaded'
     p.set('terrain', terrain)
+    if (o.surfaceTextureSource && o.surfaceTextureSource !== 'custom') p.set('tsrc', o.surfaceTextureSource)
     if (o.showSurfaceMeshWire) p.set('wire', '1')
     if (o.surfaceOpacity !== 0.8) p.set('surfop', String(o.surfaceOpacity))
     const defSurfCol = '#e2e8f0'

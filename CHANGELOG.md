@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.4.26] - 2026-09-13
+### Oprava mapového zdroja Freemap (ortofotomapa) a detekcia placeholder dlaždíc
+- **Aktualizácia endpointu Freemap ortofoto:** Nahradený zastaraný serverový endpoint `tiles.freemap.sk/o/{z}/{x}/{y}.jpg` (ktorý pre väčšinu moderných súradníc vracal iba 1843-bajtový PNG obrázok s textom *"no map data"*) za oficiálny aktívny server `https://ortofoto.tiles.freemap.sk/{z}/{x}/{y}.jpg`.
+- **Aktualizácia PHP a Vite proxy:** Proxy koncovky v `public/map-proxy.php` a `vite.config.ts` boli presmerované priamo na `https://ortofoto.tiles.freemap.sk`.
+- **Detekcia a odmietnutie placeholderov v `XyzTileDownloader.ts`:** Pridané bezpečnostné pravidlo, ktoré okamžite deteguje a odmieta prázdne/placeholder dlaždice (veľkosť 1843 bajtov / text "no map data"), takže downloader v prípade narazenia na chybnú dlaždicu neznehodnotí 3D povrch textom, ale okamžite prepne na funkčného náhradného kandidáta cez proxy.
+- **Automatická invalidácia starej cache (`tileCache.ts`):** Verzia kľúčov IndexedDB posunutá na `v2` (`KEY_VERSION = 'v2'`), čím sa klientom automaticky vyčistili staré nesprávne nacachované dlaždice s textom "no map data" bez potreby manuálneho resetu prehliadača.
+- **Podpora URL parametra `tsrc`:** Stav zvoleného mapového podkladu (`wms-orto`, `wms-orto-freemap`, `wms-shadow`, `wms-geology`) sa teraz korektne ukladá do URL ako `tsrc` a generuje v share odkazoch.
+
 ## [2.4.25] - 2026-09-13
 ### Exkluzivita LiDAR NextGen, oprava prepínania bočného panelu a modrý gradient (Precision)
 - **Oprava opätovného otvárania bočného panelu (Fix layoutu):** Vyriešený problém, pri ktorom sa po skrytí bočného panelu tlačidlom "Panel" panel pri druhom kliknutí nezobrazil. Príčinou bol flexboxový mechanizmus, kde `canvas-wrap` bez `min-width: 0` odmietal ustúpiť flexibilnému zmenšeniu po inicializácii plnej šírky WebGL plátna, čím vytlačil panel mimo pravý okraj obrazovky. Pridané `min-width: 0` do `.canvas-wrap` a plne synchronizovaný stav otvorenia na desktopových, tabletových aj mobilných zariadeniach.

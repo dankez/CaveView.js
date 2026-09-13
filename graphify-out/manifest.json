@@ -28,8 +28,8 @@
     "hash": "1a4fb1c9680cdea7a78ffe64450eacda"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/vite.config.ts": {
-    "mtime": 1787233721.343519,
-    "hash": "9d03cdbe6aefa80077c776fadbb4a3a5"
+    "mtime": 1789323766.4119365,
+    "hash": "d25098266f8e10986ec3a960e947e651"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/inspect_lox.ts": {
     "mtime": 1777201521.1537378,
@@ -56,8 +56,8 @@
     "hash": "e54fc599f48e365e708597ed9cdc2ae2"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/App.tsx": {
-    "mtime": 1789322568.4524493,
-    "hash": "0ccf6b89899c8d946d40a2ed3ed89019"
+    "mtime": 1789324002.5394702,
+    "hash": "364b9aa678ff652fbe07b836ca41f989"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/main.tsx": {
     "mtime": 1776409952.8888268,
@@ -156,16 +156,16 @@
     "hash": "74f2830cfd5408d284e485ec86f3da8a"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/tileCache.ts": {
-    "mtime": 1787233721.340519,
-    "hash": "6f00fa46ef83cd46aeaa7bec72ad19e5"
+    "mtime": 1789323773.3238642,
+    "hash": "6645a399c20578ef302c5e1568361c28"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/pointCloudColors.ts": {
     "mtime": 1787233721.340519,
     "hash": "7b38ad80719c8fcdd3a27d53ceafc0b9"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/XyzTileDownloader.ts": {
-    "mtime": 1787233721.339519,
-    "hash": "dc5f024d8a9202198671dd265cc74d15"
+    "mtime": 1789323786.6257253,
+    "hash": "c02718543142053dff433ceabef1c439"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/surfaceBounds.ts": {
     "mtime": 1787233721.340519,
@@ -212,8 +212,8 @@
     "hash": "bfb914257a8f7c19e7eec9bf84b1a8c2"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/__tests__/XyzTileDownloader.test.ts": {
-    "mtime": 1787233721.339519,
-    "hash": "ba367b4623ebbfa949e519f7b1f431d1"
+    "mtime": 1789323793.1816568,
+    "hash": "dbfdb891c66c61899317f58d3883e36b"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/__tests__/surfaceBounds.test.ts": {
     "mtime": 1787233721.339519,
@@ -328,8 +328,8 @@
     "hash": "7e4070d113a1a85487f436542d7a93c6"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/v1/components/CaveViewer3D.tsx": {
-    "mtime": 1789308243.6525192,
-    "hash": "0c42903cd9c462274898e6ffe743ae26"
+    "mtime": 1789323756.8120368,
+    "hash": "28d0cdcacc3c30f73f700109cc6ce3b0"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/v1/workers/splayWall.worker.ts": {
     "mtime": 1787434072.7781858,
@@ -1044,8 +1044,8 @@
     "hash": "818c183b9684a57e02d69fc84ba5cce8"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/public/map-proxy.php": {
-    "mtime": 1787233721.336519,
-    "hash": "01b3947cad70a00457c8995bfbfc69bc"
+    "mtime": 1789323762.4889774,
+    "hash": "0ab2babbf0030a331a60e3d5f0bf34f1"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/index.html": {
     "mtime": 1789297538.111981,
@@ -1064,8 +1064,8 @@
     "hash": "c1870c04c463048a48a5e9923c4381b5"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/CHANGELOG.md": {
-    "mtime": 1789322727.7127857,
-    "hash": "85e9fde325cf580c090027ed86f1113d"
+    "mtime": 1789325523.7137022,
+    "hash": "83d8988d9f0bf445fdcf44432b24f158"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/agents.md": {
     "mtime": 1777201521.1427379,

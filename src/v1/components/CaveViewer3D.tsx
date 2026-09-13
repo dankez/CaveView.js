@@ -1016,7 +1016,7 @@ const REMOTE_TEXTURE_SOURCES: Record<string, RemoteTextureSource> = {
       '{z}/{x}/{y}.jpg',
       {},
       '/xyz-proxy/freemap-orto/{z}/{x}/{y}.jpg',
-      'https://tiles.freemap.sk/o/{z}/{x}/{y}.jpg'
+      'https://ortofoto.tiles.freemap.sk/{z}/{x}/{y}.jpg'
     ),
   },
   'wms-geology': {

@@ -240,4 +240,30 @@ describe('XyzTileDownloader', () => {
     expect(getPreferredTextureFormat('image/jpeg')).toBe('image/webp');
     expect(getPreferredTextureFormat('image/png')).toBe('image/png');
   });
+
+  it('rejects 1843-byte placeholder tiles and tries fallback candidate', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      if (url.startsWith('/legacy/')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          blob: async () => new Blob([new Uint8Array(1843)], { type: 'image/png' }),
+        });
+      }
+      return Promise.resolve(imageResponse());
+    });
+
+    const result = await downloadTiledXyz(
+      ['/legacy/{z}/{x}/{y}.jpg', '/valid/{z}/{x}/{y}.jpg'],
+      '-500100,-1200100,-500000,-1200000',
+      'image/jpeg',
+      undefined,
+      15
+    );
+
+    expect(result.successfulTiles).toBe(result.totalTiles);
+    expect(fetchMock.mock.calls.some(([url]) => String(url).startsWith('/legacy/'))).toBe(true);
+    expect(fetchMock.mock.calls.some(([url]) => String(url).startsWith('/valid/'))).toBe(true);
+  });
 });

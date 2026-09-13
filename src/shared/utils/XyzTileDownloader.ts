@@ -498,7 +498,7 @@ export async function downloadTiledXyz(
         if (useCache && cache) {
             try {
                 const cachedBlob = await cache.get(cacheKey);
-                if (cachedBlob) {
+                if (cachedBlob && cachedBlob.size !== 1843) {
                     const img = await createImageBitmap(cachedBlob);
                     const dx = (tx - xMin) * TILE_SIZE;
                     const dy = (ty - yMin) * TILE_SIZE;
@@ -524,6 +524,9 @@ export async function downloadTiledXyz(
                 const resp = await fetch(url);
                 if (!resp.ok) throw new Error(`Tile fetch failed: ${resp.status} ${resp.statusText}${mapProxyFailureHint(url)}`);
                 const blob = await resp.blob();
+                if (blob.size === 1843) {
+                    throw new Error('Tile is an empty placeholder image ("no map data")');
+                }
                 const img = await createImageBitmap(blob);
                 
                 const dx = (tx - xMin) * TILE_SIZE;
