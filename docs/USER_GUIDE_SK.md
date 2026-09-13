@@ -1,13 +1,14 @@
-# 📖 LochViewer - Kompletná používateľská príručka (v2.4.16)
+# 📖 LochViewer - Kompletná používateľská príručka (v2.4.25)
 
 *Webová 3D platforma pre vizualizáciu, speleologické meranie a analýzu jaskynných systémov a LiDAR dát.*  
+*Dizajnový systém: Stitch CAD Precision Glassmorphism & Fieldwork High-Contrast (vrátane jemného pieskového gradientu vo svetlom režime).*  
 *Oficiálny portál: [loch.sss.sk](https://loch.sss.sk)*
 
 ---
 
 ## 📑 Obsah
 1. [Podporované formáty a načítanie dát](#1-podporované-formáty-a-načítanie-dát)
-2. [Používateľské rozhranie (Horná lišta a nástroje)](#2-používateľské-rozhranie-horná-lišta-a-nástroje)
+2. [Používateľské rozhranie (Horná lišta, nástroje a farebné motívy)](#2-používateľské-rozhranie-horná-lišta-nástroje-a-farebné-motívy)
 3. [Navigácia v priestore a technické pohľady](#3-navigácia-v-priestore-a-technické-pohľady)
 4. [Modelovanie 3D stien z laserových lúčov (Splay SDF)](#4-modelovanie-3d-stien-z-laserových-lúčov-splay-sdf)
 5. [Nástroje merania vzdialeností, plôch a štruktúrnej geológie (Tektonika)](#5-nástroje-merania-vzdialeností-plôch-a-štruktúrnej-geológie-tektonika)
@@ -17,7 +18,6 @@
 9. [Zdieľanie modelov a vkladanie cez Iframe (Embed)](#9-zdieľanie-modelov-a-vkladanie-cez-iframe-embed)
 10. [Interaktívny sprievodca v aplikácii (Help Modal)](#10-interaktívny-sprievodca-v-aplikácii-help-modal)
 11. [Prehľad klávesových skratiek a gest](#11-prehľad-klávesových-skratiek-a-gest)
-
 ---
 
 ## 1. Podporované formáty a načítanie dát
@@ -65,6 +65,12 @@ Po načítaní modelu sa v hornej časti zobrazuje moderná piktogramová lišta
 | 🔗 | **Zdieľať (Share)** | Vygeneruje trvalý odkaz a HTML kód `<iframe>` pre vloženie modelu na webstránku. |
 | ✖ | **Zavrieť model** | Uvoľní pamäť a vráti vás na úvodnú obrazovku. |
 
+### Farebné motívy a vizuálny štýl (Themes):
+V bočnom paneli (záložka **Jaskyňa**) alebo cez URL parameter `?theme=` je možné zvoliť jeden z troch kalibrovaných motívov:
+* **Precision CAD (`precision`)**: Predvolený profesionálny tmavý motív s hlbokým grafitovým pozadím (`#0b0f17`), vysoko kontrastnými tyrkysovými (`#00d2ff`) a smaragdovými (`#10b981`) akcentmi podľa špecifikácie Google Stitch CAD. Ideálny pre prácu v šere a prezentáciu na OLED obrazovkách.
+* **Svetlý pieskový motív (`light`)**: Prírodný vysokokontrastný terénny režim s jemným vertikálnym pieskovým gradientom – svetlá slonovinová piesková hore (`#f7f3eb`) prechádzajúca do teplejšej tmavej pieskovej / vápencovej dole (`#d5c4ad`). Prvky CAD rozhrania v tomto režime plynulo ladia s teplou pieskovou paletou, čo znižuje únavu očí pri dennom svetle a zabezpečuje excelentnú čitateľnosť meračských polygónov a textov staníc.
+* **Classic Speleo (`classic`)**: Tradičný nočný modrý motív s indigovým gradientom pozadia.
+
 ---
 
 ## 3. Navigácia v priestore a technické pohľady
@@ -96,14 +102,10 @@ Tradičné jaskynné polygóny často obsahujú stovky až tisíce laserových z
 ![Splay SDF 3D model stien](images/04_splay_sdf_walls.png)
 
 ### Ako pracovať so Splay SDF stenami:
-1. V bočnom paneli (záložka **Jaskyňa** $\to$ sekcia **Steny jaskyne**) aktivujte prepínač **Splay SDF Walls (3D)**.
-2. V stavovom riadku sa zobrazí indikátor výpočtu. Akonáhle worker dopočíta sieť, model sa okamžite vykreslí v scéne.
-3. **Session Cache**: Vygenerovaný model sa uloží do dočasnej pamäte prehliadača. Pri ďalšom zapnutí/vypnutí je zobrazenie okamžité bez čakania.
-
-### Nastaviteľné parametre:
-* **Vyhladenie (Smoothness / smin)**: Určuje mieru organického zliatia stien medzi jednotlivými lúčmi (nižšia hodnota = presnejšie a ostrejšie hrany, vyššia hodnota = hladší povrch).
-* **Polomer kapsule (Capsule Radius / srad)**: Určuje hrúbku virtuálneho obalu okolo lúčov.
-* **Farbenie podľa výšky (Color by height)**: Zafarbí SDF steny podľa hypsometrickej speleologickej škály.
+1. V bočnom paneli (záložka **Jaskyňa** $\to$ samostatná karta **Splay SDF Rekonštrukcia stien**) aktivujte prepínač **Splay SDF steny (2D/3D)**. Karta zobrazuje presný počet zameraných laserových lúčov (napr. `149 rays`) a je dostupná pre všetky zamerané modely.
+2. **Hranatosť / Ostré steny (Angular / Sharpness)**: Vyhradený CAD posuvník s rozsahom od ostrých faziet (`0.02` - presné technické hrany chodby) po hladké zaoblenie (`0.25` - organické erózne steny).
+3. V stavovom riadku sa zobrazí indikátor výpočtu. Akonáhle worker vytvorí sieť, model sa okamžite vykreslí v scéne.
+4. **Session Cache**: Vygenerovaný model sa uloží do dočasnej pamäte prehliadača. Pri ďalšom zapnutí/vypnutí je zobrazenie okamžité bez čakania.
 
 ---
 
@@ -160,6 +162,7 @@ Pre masívne laserové skeny a point cloud súbory (`.ply`) je integrovaný špe
 
 ![LiDAR Point Cloud a EDL tieňovanie](images/08_lidar_pointcloud_edl.png)
 
+* **Exkluzivita pre formát PLY**: Prepínač motora **LIDAR NEXTGEN**, panel **LiDAR editácia** a nástroje analýzy mračna sa zobrazujú výhradne pri načítaní LiDAR dát (`.ply`). Bežné meračské línie a polygónové formáty (`.lox`, `.3d`, `.plt`, `.stl`) majú tieto ovládacie prvky skryté pre maximálnu prehľadnosť a čistotu rozhrania.
 * **Octree LOD (Level of Detail)**: Umožňuje plynulé zobrazovanie modelov s desiatkami miliónov bodov pri 60 FPS vďaka hierarchickému dynamickému načítavaniu iba viditeľných častí.
 * **Eye-Dome Lighting (EDL)**: Pokročilý post-processing shader, ktorý vykresľuje plastické tieňovanie a zvýrazňuje jemné reliéfne detaily stien (kvaple, pukliny, záseky) bez nutnosti náročného generovania sietí.
 * **Interaktívne úpravy bodov (LiDAR Editor)**:

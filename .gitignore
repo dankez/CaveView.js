@@ -1,6 +1,7 @@
 node_modules/
 build/
 dist/
+*.zip
 playwright-report/
 test-results/
 .tempmediaStorage/

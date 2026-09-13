@@ -17,7 +17,6 @@ import {
 import { TectonicPlaneVisual } from '@shared/components/TectonicPlaneVisual'
 import { Scraps } from '@shared/components/Scraps'
 import { SplayCaveWalls } from '../../v1/components/SplayCaveWalls'
-import { SSAOPass } from '@shared/components/SSAOPass'
 import { ProjectionController, calculateFitParams } from '@shared/components/ProjectionController'
 import type { ParsedCave, ViewerOptions, StationLabel, CaveViewerNextGenProps, Vec3, ViewerCameraSnapshot } from '@shared/types'
 import type { LiDARAnomaly } from '@shared/utils/speleoAnalysis'
@@ -407,7 +406,9 @@ const CaveViewerNextGen = ({
     grad.addColorStop(1, o.colorBackground2)
     ctx.fillStyle = grad
     ctx.fillRect(0, 0, 2, 512)
-    return new THREE.CanvasTexture(canvas)
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.colorSpace = THREE.SRGBColorSpace
+    return tex
   }, [o.colorBackground, o.colorBackground2])
 
   const compositeClippingPlanes = useMemo(() => {
@@ -471,8 +472,6 @@ const CaveViewerNextGen = ({
       {(o.enableEDL ?? true) && (
         <EDLPass strength={o.edlStrength || 1.0} radius={o.edlRadius || 1.0} />
       )}
-
-      {o.enableSSAO && <SSAOPass intensity={1.5} radius={3.0} />}
 
       <group position={[
         o.caveCalibrationOffset?.x || 0, 
@@ -554,7 +553,6 @@ const CaveViewerNextGen = ({
             angleThreshold={o.pointCloudAngleThreshold ?? 0.5}
             enableEDL={o.enableEDL !== false}
             edlStrength={o.edlStrength || 1.0}
-            enableSSAO={o.enableSSAO || false}
           />
         )}
 
@@ -576,7 +574,6 @@ const CaveViewerNextGen = ({
             angleThreshold={o.pointCloudAngleThreshold ?? 0.5}
             enableEDL={o.enableEDL !== false}
             edlStrength={o.edlStrength || 1.0}
-            enableSSAO={o.enableSSAO || false}
           />
         )}
 

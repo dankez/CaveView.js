@@ -102,6 +102,7 @@ export const fr = {
     accurateMesh: "Maillage triangulaire",
     wire: "Modèle filaire",
     altitude: "Couleur par altitude",
+    opacity: "Opacité des parois",
     floorMapUpload: 'Charger carte SVG/TH2/PDF',
     floorMapOpacity: 'Opacité de la carte',
     manualCalibrate: 'Calibration',

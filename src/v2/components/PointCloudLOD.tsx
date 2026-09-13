@@ -67,7 +67,6 @@ uniform int uHasUsableVertexColors;
 uniform int pointShape; // 0 square, 1 sphere, 2 rounded diamond, 3 hex, 4 surfel
 uniform int uEnableEDL;
 uniform float uEdlStrength;
-uniform int uEnableSSAO;
 
 // Real-time GPU segmenter uniforms
 uniform int uViewMode; // 0: All, 1: Floor, 2: Ceiling, 3: Contour Floor, 4: Heatmap Floor
@@ -271,10 +270,10 @@ void main() {
     // 5. Gamma correction
     finalColor = pow(finalColor, vec3(0.8 / clamp(brightness, 0.5, 2.0)));
 
-    // 6. Point Silhouette / EDL / Outline Rim (instant thin crisp black edge around disks/squares)
+    // 6. Point Silhouette / EDL Outline Rim (instant thin crisp black edge around disks/squares)
     float edgeFactor = getPointEdgeFactor(spriteCoord);
-    if (uEnableEDL == 1 || uEnableSSAO == 1) {
-        float borderDarken = (uEnableEDL == 1 ? (0.75 * clamp(uEdlStrength, 0.5, 2.0)) : 0.55);
+    if (uEnableEDL == 1) {
+        float borderDarken = 0.75 * clamp(uEdlStrength, 0.5, 2.0);
         finalColor = mix(finalColor, vec3(0.01, 0.01, 0.02), edgeFactor * borderDarken);
     }
 
@@ -304,7 +303,6 @@ type PointCloudRenderProps = {
   angleThreshold?: number;
   enableEDL?: boolean;
   edlStrength?: number;
-  enableSSAO?: boolean;
 };
 
 interface ChunkData {
@@ -338,7 +336,6 @@ export const PointCloudLOD: React.FC<PointCloudRenderProps & { url: string }> = 
   angleThreshold = 0.5, // NEW
   enableEDL = false,
   edlStrength = 1.0,
-  enableSSAO = false,
 }) => {
   const [chunks, setChunks] = useState<Map<string, { points: THREE.Points; bounds: THREE.Box3 }>>(new Map());
   const { camera } = useThree();
@@ -392,7 +389,6 @@ export const PointCloudLOD: React.FC<PointCloudRenderProps & { url: string }> = 
             uAngleThreshold: { value: angleThreshold },
             uEnableEDL: { value: enableEDL ? 1 : 0 },
             uEdlStrength: { value: edlStrength },
-            uEnableSSAO: { value: enableSSAO ? 1 : 0 },
           },
           vertexShader,
           fragmentShader,
@@ -466,12 +462,11 @@ export const PointCloudLOD: React.FC<PointCloudRenderProps & { url: string }> = 
         if (material.uniforms.uAngleThreshold) material.uniforms.uAngleThreshold.value = angleThreshold; // NEW
         if (material.uniforms.uEnableEDL) material.uniforms.uEnableEDL.value = enableEDL ? 1 : 0;
         if (material.uniforms.uEdlStrength) material.uniforms.uEdlStrength.value = edlStrength;
-        if (material.uniforms.uEnableSSAO) material.uniforms.uEnableSSAO.value = enableSSAO ? 1 : 0;
       }
       material.clippingPlanes = clippingPlanes;
       material.needsUpdate = true;
     });
-  }, [pointSize, brightness, plasticity, shapeInt, colorMode, customColor, highlightColor, threeColor, threeHighlightColor, minZ, maxZ, clippingPlanes, chunks, viewMode, heightThreshold, angleThreshold, enableEDL, edlStrength, enableSSAO]); // NEW dependencies
+  }, [pointSize, brightness, plasticity, shapeInt, colorMode, customColor, highlightColor, threeColor, threeHighlightColor, minZ, maxZ, clippingPlanes, chunks, viewMode, heightThreshold, angleThreshold, enableEDL, edlStrength]); // NEW dependencies
 
   useFrame(() => {
     const frustum = frustumRef.current;
@@ -561,7 +556,6 @@ export const PointCloudDirect: React.FC<PointCloudRenderProps & { cave: ParsedCa
   angleThreshold = 0.5,
   enableEDL = false,
   edlStrength = 1.0,
-  enableSSAO = false,
 }) => {
   const modeInt = colorMode === 'elevation' ? 1 : colorMode === 'natural' ? 2 : 0;
   const viewModeInt = viewMode === 'floor' ? 1 : viewMode === 'ceiling' ? 2 : viewMode === 'contour' ? 3 : viewMode === 'heatmap' ? 4 : 0;
@@ -639,7 +633,6 @@ export const PointCloudDirect: React.FC<PointCloudRenderProps & { cave: ParsedCa
       uAngleThreshold: { value: angleThreshold },
       uEnableEDL: { value: enableEDL ? 1 : 0 },
       uEdlStrength: { value: edlStrength },
-      uEnableSSAO: { value: enableSSAO ? 1 : 0 },
     },
     vertexShader,
     fragmentShader,
@@ -680,7 +673,6 @@ export const PointCloudDirect: React.FC<PointCloudRenderProps & { cave: ParsedCa
     material.uniforms.uAngleThreshold.value = angleThreshold;
     material.uniforms.uEnableEDL.value = enableEDL ? 1 : 0;
     material.uniforms.uEdlStrength.value = edlStrength;
-    material.uniforms.uEnableSSAO.value = enableSSAO ? 1 : 0;
     material.clippingPlanes = clippingPlanes;
     material.needsUpdate = true;
   }, [
@@ -701,7 +693,6 @@ export const PointCloudDirect: React.FC<PointCloudRenderProps & { cave: ParsedCa
     clippingPlanes,
     enableEDL,
     edlStrength,
-    enableSSAO,
   ]);
 
   if (!geometry) return null;

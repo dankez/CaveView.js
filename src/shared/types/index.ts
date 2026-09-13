@@ -171,9 +171,8 @@ export type PointCloudShape = 'square' | 'sphere' | 'diamond' | 'hex' | 'surfel'
 export interface ViewerOptions {
   // Engine selection
   engine:              'v1' | 'v2'
-  // Advanced rendering toggles (2A, 2C, 2D, 3A, 3C)
+  // Advanced rendering toggles
   enableScrapsBatching?: boolean
-  enableSSAO?: boolean
   enableSplayWalls?: boolean
   splayVoxelSize?: number
   splaySmoothK?: number

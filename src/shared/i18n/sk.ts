@@ -102,6 +102,7 @@ export const sk = {
     accurateMesh: "Trojuholník. mesh",
     wire: "Drôtený model",
     altitude: "Farebné podľa výšky",
+    opacity: "Priehľadnosť stien",
     floorMapUpload: 'Nahrať SVG/TH2/PDF mapu',
     floorMapOpacity: 'Priehľadnosť mapy',
     manualCalibrate: 'Kalibrácia',

@@ -1,5 +1,57 @@
 # Changelog
 
+## [2.4.25] - 2026-09-13
+### Exkluzivita LiDAR NextGen prepínača a jemný pieskový motív (Light Sand)
+- **Izolácia prepínača LiDAR NEXTGEN:** Prepínač motora `LiDAR NEXTGEN` (Engine v2) a panel nástrojov `LiDAR editácia` sa teraz zobrazujú výhradne pre skutočné LiDAR dáta vo formáte PLY. Pre bežné meračské a polygónové modely (`.lox`, `.3d`, `.plt`, `.stl`) je tento prepínač vo všetkých zobrazeniach skrytý.
+- **Oprava parseru survey staníc (`caveParser.ts`):** `buildResult` už nekonvertuje meračské stanice na fiktívny počet LiDAR bodov (`pointCount`). Meračské súbory majú korektne `pointCount = 0`, čím sa zabránilo falošnej detekcii LiDARu.
+- **Adaptívna hlavička datasetu v bočnom paneli:** Pri načítaní súboru PLY sa namiesto prázdnych počtov meračských segmentov/staníc zobrazuje formát PLY a reálny počet bodov mračna (`Body / Points`). Pre bežné polygónové formáty ostáva zobrazenie segmentov, staníc a stien.
+- **Ochrana renderovacích stromov & URL stavu:** `CaveViewerNextGen` a prekryvná vrstva editácie LiDARu sa nikdy neinštancujú pre bežné meračské súbory; aj pri načítaní URL s parametrom `?eng=v2` sa pre non-PLY modely bezpečne vynúti Engine v1.
+- **Jemný pieskový gradient pre svetlú tému (`light`):** Pozadie 3D viewportu v svetlej téme prešlo kalibráciou na prirodzený pieskový vertikálny gradient – jemná svetlá piesková / slonovinová hore (`#f7f3eb`) prechádzajúca do teplejšej tmavej pieskovej / vápencovej dole (`#d5c4ad`). Celé CAD rozhranie v `.theme-light` (subkarty, posuvníky, metriky) bolo farebne zosúladené s teplým pieskovým tónom.
+- **Three.js sRGB Color Space oprava textúry pozadia:** Pre dynamické canvas textúry gradientu pozadia (`bgTexture`) v oboch motoroch (`CaveViewer3D` a `CaveViewerNextGen`) bol explicitne nastavený `tex.colorSpace = THREE.SRGBColorSpace`. Tým sa odstránila nechcená gamma desaturácia Three.js, ktorá prevádzala teplé pieskové farby na ploché sivé odtiene.
+
+## [2.4.23] - 2026-09-13
+### Fix bočného panelu, zjednotenie CAD motívu a viditeľnosť Splay SDF
+- **Fix rolovania a ukotvenie hlavičky (`sidebar-pinned-header`):** Karta datasetu a navigačné záložky (`Jaskyňa`, `Terén`, `Analýza`) sú trvalo ukotvené na vrchu bočného panelu a neodchádzajú pri rolovaní ovládačov.
+- **Viditeľnosť parametra Hranatosť / Ostré steny:** Karta *Splay SDF Rekonštrukcia stien* bola vyčlenená ako samostatná plnohodnotná karta nezávislá od počtu scraps/mračien bodov. Parameter hranatosti je teraz vždy zreteľne dostupný a čitateľný.
+- **Odstránenie nesúrodých tmavých blokov:** Všetky staré inline štýly s tmavými podkladmi (`#0f172a`, `bg-slate-800`, `rgba(30,41,59,...)`, `rgba(15,23,42,...)`) boli plne prevedené na jednotné CAD tokeny (`.cad-card`, `.cad-subcard`, `.sidebar-stat-card`, `.cad-slider`, `.cad-tool-btn`, `.btn-mini`). Tým je dosiahnutý bezchybný kontrast a konzistencia v tmavej aj svetlej téme bez trhaných čiernych obdĺžnikov.
+
+## [2.4.22] - 2026-09-13
+### Integrácia Stitch CAD dizajnového systému (Sekcia 1)
+- **CAD dizajnový systém & tokeny (z Google Stitch `DESIGN.md`):** Zavedené CSS premenné pre instrument-tier farby: hlboká základňa (`--cv-bg: #0b0f17`), kontajnery (`#0f131c` až `#262a33`), elektrizujúca tyrkysová pre primárne prvky (`#00d2ff`) a smaragdová pre verifikáciu (`#10b981`).
+- **Typografia:** Do hlavičky pridané Google fonty **Inter**, **JetBrains Mono** a **Material Symbols Outlined**. Zapnuté tabuľkové číslice (`tabular-nums`) pre všetky vedecké a geodetické dáta (odstránené trhanie textu pri pohybe kamery).
+- **Moderné UI ovládacie prvky:** Redizajnované CAD prepínače (`.switch`), štíhle slidery (`input[type=range]`), hlavičky sekcií (`.s-label`) a informačné riadky (`.info-row`).
+- **Kalibrované témy:** Predvolená téma `precision` aktualizovaná na Stitch CAD Deep Abyss, téma `light` kalibrovaná na vysokokontrastný Fieldwork režim.
+- **Dynamická podpora tém:** Kontajner `.viewer-shell` dynamicky aplikuje triedu aktívnej témy (`theme-precision`, `theme-light`, `theme-classic`).
+
+### Odstránenie Ambient Occlusion (SSAO) a vyčistenie interných označení
+- **Funkcia Ambient Occlusion (SSAO) úplne odstránená:** Napriek viacerým vylepšeniam efekt nemal reálne využitie a naďalej pôsobil príliš tmavo. Odstránený prepínač v paneli Steny jaskyne (v oboch režimoch motora), voľba `enableSSAO`, URL parameter `ssao`, komponent `SSAOPass.tsx` a súvisiaci shader kód pre LiDAR mračno bodov.
+- **Vyčistené interné pracovné označenia z UI textov:** Odstránené zátvorky s internými kódmi ako `(2A)`, `(2C)`, `(3C)` z popiskov "Zlúčenie stien", "Eye-Dome Lighting" a pod. — boli to len pracovné identifikátory bez významu pre používateľa.
+- Aktualizovaná vývojárska dokumentácia (SK/EN) — odstránená zmienka o SSAO z názvu sekcie post-processing shaderov.
+
+## [2.4.20] - 2026-08-27
+### Skutočná príčina "stmavnutia" pozadia/modelu po zastavení kamery (opravené natrvalo)
+- **Skutočný root cause nájdený:** Nešlo o SSAO ani EDL — steny jaskyne mali predvolenú priehľadnosť `scrapsOpacity = 0.75`. Pri zastavení kamery (idle) sa priehľadnosť zapla, čím sa cez model presvitalo tmavé pozadie oblohy a model aj celá scéna pôsobili tmavšie a menej výrazné. Počas pohybu kamery bola priehľadnosť dočasne vynútená na 100 % (kvôli výkonu), takže farba sa po zastavení "preklopila".
+- **Zmena predvolenej hodnoty:** `scrapsOpacity` je teraz štandardne **100 % (nepriehľadné)**, takže sa model už nikdy sám od seba nestmaví/nepriesvitní. Kto priehľadnosť chce, môže si ju znížiť cez slider "Priehľadnosť stien" v paneli Steny jaskyne — táto možnosť ostáva plne funkčná.
+- Overené automatizovaným testom (Playwright): farba modelu a pozadia je teraz identická počas pohybu aj po 10+ sekundách nečinnosti, s SSAO zapnutým aj vypnutým.
+
+## [2.4.19] - 2026-08-27
+### Oprava príliš tmavého Ambient Occlusion (SSAO)
+- **Pozadie (obloha) sa už nestmavuje:** SSAO efekt nesprávne stmavoval aj oblohu/pozadie scény, nielen model. Detekcia pozadia bola založená na hrubej (nelineárnej) hĺbke, ktorá pri veľkých vzdialenostiach kamery (terénne scény, `far` až do 10 000 m) stráca presnosť tesne pred hraničnou hodnotou. Detekcia teraz porovnáva už linearizovanú hĺbku voči `cameraFar`, čím spoľahlivo rozpozná pozadie nezávisle od mierky scény.
+- **Odstránené plošné stmavovanie terénu/modelu:** Porovnávanie okolitých hĺbok pri výpočte zatienenia používalo pevný rozsah v metroch (0.01 – 5 m), čo pri veľkých vzdialenostiach spôsobovalo, že aj bežné pozvoľné svahy terénu boli mylne vyhodnotené ako "zapadliny" a stmavené. Prepočet je teraz relatívny (pomer k vzdialenosti od kamery), takže funguje správne pri malých (jaskynné steny) aj veľkých (terén) mierkach.
+- **Jemnejší predvolený efekt ("zosvetlenie"):** Znížená predvolená intenzita (1.5 → 0.8) a polomer (3.0 → 2.0), zvýšené minimálne stmavenie (dolná hranica z 0.15 na 0.55) — efekt je teraz oveľa jemnejší a menej agresívny, zatiaľ čo stále zvýrazňuje reálne zapadliny a hrany.
+
+## [2.4.18] - 2026-08-27
+### Priehľadnosť stien a nezávislý organický model
+- **Nový ovládací prvok "Priehľadnosť stien":** Pridaný slider (10 – 100 %) v paneli Steny jaskyne, ktorý ovláda `scrapsOpacity`. Doteraz nebolo možné túto hodnotu v UI meniť, čo spôsobovalo, že sa model po zastavení pohybu kamery (1–2 s) "preklopil" na tmavší, priesvitný vzhľad (kým sa kamera hýbe, steny sa kreslia nepriehľadne kvôli výkonu; po zastavení sa použije skutočná nastavená priehľadnosť).
+- **Organický / Vyhladený model funguje nezávisle od "Zobraziť steny":** Rovnaké správanie ako pri Splay SDF stenách — organický LiDAR model (`smoothScraps` / `accurateScraps`) sa teraz vykresľuje bez ohľadu na stav prepínača "Zobraziť steny". Predvolený model (bežné steny) ostáva zapnutý ako default.
+- **Preklad SK/EN/FR/DE:** Doplnený chýbajúci kľúč `cave.opacity` do všetkých 4 jazykových súborov.
+- **Opravený nesúlad v URL kódovaní:** Predvolená hodnota `scrapsOpacity` v `encodeState` bola nesprávne 0.85 namiesto skutočných 0.75.
+
+## [2.4.17] - 2026-08-27
+### Oprava príliš tmavého zobrazenia modelov (regresia z v2.4.15)
+- **Svetlejšia technická sivá ako default:** Farebné šablóny (`classic`, `precision`, `light`) používali zastaranú tmavú farbu stien jaskyne (`#94a3b8`), zatiaľ čo predvolený stav aplikácie bol už predtým zosvetlený na `#cbd5e1`. Keďže sa šablóna `precision` aplikuje automaticky pri každom načítaní modelu (cez URL stav), zobrazenie bolo napriek tomu tmavé. Zosvetlené na rovnakú hodnotu `#cbd5e1`, akú má ako default aj **Splay SDF Walls (2D)**.
+- **EDL (Eye-Dome Lighting) vypnuté ako default:** Efekt zavedený vo v2.4.15 s predvolenou hodnotou zapnuté výrazne stmavoval celú scénu (terén aj steny jaskyne). Predvolená hodnota zmenená na vypnuté — používateľ si ho môže kedykoľvek zapnúť v paneli Pokročilé nastavenia.
+
 ## [2.4.16] - 2026-08-23
 ### Kompletná dvojúrovňová dokumentácia & In-App Pomocník
 - **Interaktívny sprievodca priamo v hornej lište (`HelpModal.tsx`):**

@@ -1,4 +1,4 @@
-# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.4.15)
+# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.4.23)
 
 *Kompletná technická špecifikácia, matematický aparát, architektúra a flow diagramy pre vývojárov.*
 
@@ -10,9 +10,10 @@
 3. [Algoritmy rekonštrukcie stien a Signed Distance Fields (Splay SDF)](#3-algoritmy-rekonštrukcie-stien-a-signed-distance-fields-splay-sdf)
 4. [Výpočet štruktúrnej geológie a tektoniky (Dip & Strike)](#4-výpočet-štruktúrnej-geológie-a-tektoniky-dip--strike)
 5. [Kamerové projekcie a algoritmus Zoom-to-Fit](#5-kamerové-projekcie-a-algoritmus-zoom-to-fit)
-6. [Post-processing shadery (Eye-Dome Lighting & SSAO)](#6-post-processing-shadery-eye-dome-lighting--ssao)
+6. [Post-processing shadery (Eye-Dome Lighting)](#6-post-processing-shadery-eye-dome-lighting)
 7. [Paralelné Web Workery a prenos dát (ArrayBuffers)](#7-paralelné-web-workery-a-prenos-dát-arraybuffers)
 8. [URL schéma a stavová hydratácia](#8-url-schéma-a-stavová-hydratácia)
+9. [Stitch CAD dizajnový systém a CSS tokeny](#9-stitch-cad-dizajnový-systém-a-css-tokeny)
 
 ---
 
@@ -56,6 +57,13 @@ Aplikácia je postavená na báze **React 18**, **Three.js** a **React-Three-Fib
 * **Engine v1 (`src/v1/`)**: Zameraný na speleologické vektorové dáta, polygonálne ťahy, ručne kreslené steny (scraps) a parametrické SDF siete.
 * **Engine v2 (`src/v2/`)**: Špecializovaný na mračná bodov (LiDAR), kde je kľúčový Octree streaming (`pointcloud.worker.ts`) a GPU post-processing (Eye-Dome Lighting).
 * **Shared Layer (`src/shared/`)**: Zdieľané dátové typy (`@shared/types`), matematické knižnice (`tectonics.ts`, `surfaceReconstruction.ts`), lokalizácie (`i18n`) a komponenty používateľského rozhrania (`MeasurementPanel`, `CompassRose`, `FloatingClippingSlider`).
+
+### 1.2 Prepínanie motorov a izolácia LiDAR dát (`isPlyLidarData`)
+Aby nedochádzalo k miešaniu logiky Engine v1 a v2, aplikácia používa striktnú klasifikáciu:
+- `isPlyLidarData(ext, cave)`: Vyhodnocuje sa ako `true` výhradne pre súbory `.ply` alebo explicitné mračná bodov (`isLiDAR: true` bez polygónových segmentov).
+- **Parser Survey dát (`caveParser.ts`)**: Pre bežné súbory (`.lox`, `.3d`, `.plt`) nastavuje `pointCount: 0`. Stanice sa neinterpretujú ako body mračna.
+- **UI Guarding**: Prepínač motora `LiDAR NEXTGEN`, panel `LiDAR editácia`, karta `LiDAR detektor komínov` a prekryvná vrstva štetca sa renderujú iba ak `isPlyLidar === true`.
+- **Failsafe**: Pri načítaní non-PLY súborov sa motor vždy automaticky resetuje na `v1` (aj v prípade prítomnosti URL parametra `?eng=v2`).
 
 ---
 
@@ -138,7 +146,7 @@ $$\text{zoom}_{\text{ortho}} = \frac{\min(W, H)}{2 \cdot R \cdot 1.15}$$
 
 ---
 
-## 6. Post-processing shadery (Eye-Dome Lighting & SSAO)
+## 6. Post-processing shadery (Eye-Dome Lighting)
 
 ### 6.1 Eye-Dome Lighting (EDL) Shader
 EDL je screen-space tieňovací algoritmus pre bodové mračná. Vypočítava hĺbkový gradient $F(u, v)$ z 4 susedných pixelov v tvare kríža vo vzdialenosti $d$:
@@ -189,4 +197,32 @@ Stav aplikácie je plne serializovaný v reťazci URL parametrov:
 | `clip` | `number` | Vertikálna rovina Z-rezu. |
 
 ---
+
+## 9. Stitch CAD dizajnový systém a CSS tokeny
+
+Vo verziách 2.4.22 až 2.4.25 bol integrovaný a kalibrovaný dizajnový systém **Precision Speleology & 3D Geospatial Engine** odvodený zo špecifikácie Google Stitch (`DESIGN.md`):
+
+* **CSS premenné (`:root` a `.theme-light`):**
+  * Základňa: `--cv-bg: #0b0f17` (Deep Abyss) / `--cv-bg: #f7f3eb` (Fieldwork Sand).
+  * Kontajnery a karty: `--cv-surface-card: #1c2028`, `--cv-surface-high: #262a33`, `--cv-surface-low: #141820` (v `.theme-light`: nízka elevácia `#f2ece2`, vyššia `#e8ded0`).
+  * Primárny akcent: `--cv-primary: #00d2ff` (Electric Cyan) / `--cv-primary: #0284c7` (Fieldwork Blue).
+  * Sekundárny akcent: `--cv-secondary: #10b981` (Subterranean Emerald) / `#059669`.
+  * Písmo: `--cv-font-sans: 'Inter'` pre UI, `--cv-font-mono: 'JetBrains Mono'` s `font-variant-numeric: tabular-nums` pre súradnice a telemetriu.
+* **Three.js sRGB Color Space a gradient pozadia (v2.4.24):**
+  * Téma `light` využíva vertikálny pieskový gradient zhora nadol: svetlá slonovinová piesková (`#f7f3eb`) prechádzajúca do tmavšej vápencovej pieskovej (`#d5c4ad`).
+  * Pri generovaní dynamickej textúry pozadia cez HTML Canvas (`bgTexture = new THREE.CanvasTexture(canvas)`) v `CaveViewer3D` a `CaveViewerNextGen` je explicitne nastavený farebný priestor `tex.colorSpace = THREE.SRGBColorSpace`. Tým sa predchádza nechcenému gamma zosvetleniu Three.js a farby presne zodpovedajú hexadecimálnej špecifikácii.
+* **Exkluzivita LiDAR ovládačov pre PLY formát (v2.4.24):**
+  * Prepínač motora `LiDAR NEXTGEN` (Engine v2) a súvisiace editačné panely sa podmienečne vykresľujú iba pri prítomnosti skutočných mračien bodov (`isPointcloud && isPlyFormat`).
+  * `caveParser.ts` v `buildResult` zachováva meračským polygónovým súborom (`.lox`, `.3d`, `.plt`) reálny počet `pointCount = 0`, čím eliminuje nesprávne zapnutie LiDAR rozhrania.
+* **Architektúra bočného panelu a hierarchia kariet:**
+  * **`.sidebar-pinned-header`**: Trvalo ukotvený blok (`position: sticky; top: 0; z-index: 50; flex-shrink: 0`) obsahujúci súhrnné dáta datasetu (`.sidebar-stat-card`) a navigačné prepínače záložiek (`.sidebar-tab-bar`), čím je zaručené, že navigačný kontext neodroluje pri posune ovládačov.
+  * **`.cad-card`**: Primárne modulárne kontajnery pre logické celky (orez, meračská sieť, Splay SDF, povrchy, tektonika).
+  * **`.cad-subcard`**: Sekundárne vložené informačné boxy adaptujúce sa cez CSS premenné (`background: var(--cv-surface-low)`), nahrádzajúce staré hardcoded tmavé bloky (`#0f172a`, `bg-slate-800`).
+  * **`.cad-slider`, `.cad-tool-btn`, `.btn-mini`, `.cad-select`**: Štandardizované interaktívne prvky s vysokokontrastnou odozvou pre oba motívy.
+* **Prepínače a komponenty:**
+  * Kompaktné CAD prepínače `.switch` s akcentom `box-shadow: 0 0 8px rgba(0,210,255,0.35)`.
+  * Dynamická väzba šablón na kontajner `.viewer-shell.theme-{currentTheme}`.
+
+---
 *LochViewer Developer Team — Dokumentácia je automaticky udržiavaná a synchronizovaná pri každej zmene kódu.*
+

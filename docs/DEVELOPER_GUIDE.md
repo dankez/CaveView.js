@@ -1,4 +1,4 @@
-# 🛠️ LochViewer - Developer & Mathematical Specification (v2.4.15)
+# 🛠️ LochViewer - Developer & Mathematical Specification (v2.4.23)
 
 *Comprehensive technical architecture, mathematical formulations, shader models, and Web Worker data flows for developers and contributors.*
 
@@ -10,9 +10,10 @@
 3. [Volumetric Reconstruction & Signed Distance Fields (Splay SDF)](#3-volumetric-reconstruction--signed-distance-fields-splay-sdf)
 4. [Structural Geology & Tectonics Formulation (Dip & Strike)](#4-structural-geology--tectonics-formulation-dip--strike)
 5. [Camera Projections & Auto Zoom-to-Fit Algorithm](#5-camera-projections--auto-zoom-to-fit-algorithm)
-6. [Post-Processing Shaders (Eye-Dome Lighting & SSAO)](#6-post-processing-shaders-eye-dome-lighting--ssao)
+6. [Post-Processing Shaders (Eye-Dome Lighting)](#6-post-processing-shaders-eye-dome-lighting)
 7. [Parallel Web Workers & Zero-Copy Transferable Objects](#7-parallel-web-workers--zero-copy-transferable-objects)
 8. [URL Serialization Schema & State Hydration](#8-url-serialization-schema--state-hydration)
+9. [Stitch CAD Design System & CSS Tokens](#9-stitch-cad-design-system--css-tokens)
 
 ---
 
@@ -51,6 +52,13 @@ LochViewer is built upon **React 18**, **Three.js**, and **React-Three-Fiber**, 
                           │  (Measurement, Clips, HUD)  │
                           └─────────────────────────────┘
 ```
+
+### 1.2 Engine Dispatching & LiDAR Dataset Isolation (`isPlyLidarData`)
+To prevent crosstalk between Engine v1 and v2, a strict classification utility is enforced:
+- `isPlyLidarData(ext, cave)`: Returns `true` exclusively for `.ply` datasets or explicit point clouds (`isLiDAR: true` with 0 survey segments).
+- **Survey Parsing (`caveParser.ts`)**: For standard survey files (`.lox`, `.3d`, `.plt`), `pointCount` is strictly 0. Survey stations are never misinterpreted as point cloud points.
+- **UI Guarding**: The `LiDAR NEXTGEN` toggle switch, `LiDAR editing` panel, `LiDAR anomaly detector`, and stroke overlay are gated behind `isPlyLidar === true`.
+- **Failsafe**: When non-PLY survey files are loaded, the engine state is immediately forced to `v1` even if `?eng=v2` was passed in the URL.
 
 ---
 
@@ -130,7 +138,7 @@ $$\text{zoom}_{\text{ortho}} = \frac{\min(W, H)}{2 \cdot R \cdot 1.15}$$
 
 ---
 
-## 6. Post-Processing Shaders (Eye-Dome Lighting & SSAO)
+## 6. Post-Processing Shaders (Eye-Dome Lighting)
 
 ### 6.1 Eye-Dome Lighting (EDL) Formulation
 EDL computes depth disparity $F(u, v)$ over 4 cross neighbors at offset distance $d$:
@@ -177,4 +185,32 @@ self.postMessage({
 | `clip` | `number` | Z-clipping cutting plane elevation. |
 
 ---
+
+## 9. Stitch CAD Design System & CSS Tokens
+
+Introduced in v2.4.22 and refined through v2.4.25, the **Precision Speleology & 3D Geospatial Engine** design system is synthesized from Google Stitch specification (`DESIGN.md`):
+
+* **CSS Custom Properties (`:root` and `.theme-light`):**
+  * Canvas: `--cv-bg: #0b0f17` (Deep Abyss dark) / `--cv-bg: #f7f3eb` (Fieldwork Sand light).
+  * Containers & Cards: `--cv-surface-card: #1c2028`, `--cv-surface-high: #262a33`, `--cv-surface-low: #141820` (in `.theme-light`: lower elevation `#f2ece2`, higher `#e8ded0`).
+  * Primary Accent: `--cv-primary: #00d2ff` (Electric Cyan) / `--cv-primary: #0284c7` (Fieldwork Blue).
+  * Secondary Accent: `--cv-secondary: #10b981` (Subterranean Emerald) / `#059669`.
+  * Typography: `--cv-font-sans: 'Inter'` for UI controls, `--cv-font-mono: 'JetBrains Mono'` with `font-variant-numeric: tabular-nums` for all telemetry, coordinates, and metrics to prevent camera jitter.
+* **Three.js sRGB Color Space & Background Texture (v2.4.24):**
+  * The `light` theme implements a natural vertical sand gradient: light ivory sand at the top (`#f7f3eb`) to warm darker limestone sand at the bottom (`#d5c4ad`).
+  * When constructing the dynamic background canvas texture (`bgTexture = new THREE.CanvasTexture(canvas)`) across both `CaveViewer3D` and `CaveViewerNextGen`, `tex.colorSpace = THREE.SRGBColorSpace` is explicitly declared. This prevents Three.js gamma transformation desaturation, guaranteeing exact 8-bit hex fidelity on screen.
+* **LiDAR Controls Exclusivity for PLY Formats (v2.4.24):**
+  * Engine v2 (`LiDAR NEXTGEN`) and LiDAR editing overlays are selectively rendered only when real point cloud data is detected (`isPointcloud && isPlyFormat`).
+  * The survey parser (`caveParser.ts` in `buildResult`) leaves `pointCount = 0` for standard line/polygon datasets (`.lox`, `.3d`, `.plt`), preventing false-positive LiDAR engine activation.
+* **Sidebar Layout & Card Token Hierarchy:**
+  * **`.sidebar-pinned-header`**: Stationary container (`position: sticky; top: 0; z-index: 50; flex-shrink: 0`) preserving dataset metrics (`.sidebar-stat-card`) and tab navigation (`.sidebar-tab-bar`) at the top, immune to sidebar scrolling.
+  * **`.cad-card`**: High-contrast modular cards for tool sections (clipping, survey, splay walls, terrain, tectonics).
+  * **`.cad-subcard`**: Adaptive sub-panels utilizing `var(--cv-surface-low)` in place of hardcoded dark backgrounds (`#0f172a`, `bg-slate-800`).
+  * **`.cad-slider`, `.cad-tool-btn`, `.btn-mini`, `.cad-select`**: Unified interactive primitives supporting light and dark themes.
+* **Component Styling:**
+  * Ultra-compact CAD switches (`.switch`) with electric outer glows (`box-shadow: 0 0 8px rgba(0,210,255,0.35)`).
+  * Scope-isolated theme switching dynamically bound via `.viewer-shell.theme-{currentTheme}`.
+
+---
 *LochViewer Developer Team — Documentation is automatically maintained with every codebase change.*
+

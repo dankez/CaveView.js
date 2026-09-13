@@ -102,6 +102,7 @@ export const en = {
     accurateMesh: "Triangle mesh",
     wire: "Wireframe model",
     altitude: "Color by height",
+    opacity: "Wall opacity",
     floorMapUpload: 'Upload SVG/TH2/PDF map',
     floorMapOpacity: 'Map opacity',
     manualCalibrate: 'Calibration',

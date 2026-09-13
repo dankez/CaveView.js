@@ -1,13 +1,14 @@
-# 📖 LochViewer - Complete User Guide (v2.4.16)
+# 📖 LochViewer - Complete User Guide (v2.4.25)
 
 *Web-based 3D platform for speleological visualization, survey measurement, and spatial analysis of cave systems & LiDAR point clouds.*  
+*Design System: Stitch CAD Precision Glassmorphism & Fieldwork High-Contrast (including gentle sand vertical gradient in light mode).*  
 *Official Portal: [loch.sss.sk](https://loch.sss.sk)*
 
 ---
 
 ## 📑 Table of Contents
 1. [Supported Formats & Data Loading](#1-supported-formats--data-loading)
-2. [User Interface (Top Bar & Tool Controls)](#2-user-interface-top-bar--tool-controls)
+2. [User Interface (Top Bar, Tool Controls & Visual Themes)](#2-user-interface-top-bar-tool-controls--visual-themes)
 3. [Spatial Navigation & Technical View Presets](#3-spatial-navigation--technical-view-presets)
 4. [3D Cave Wall Reconstruction from Laser Splays (Splay SDF)](#4-3d-cave-wall-reconstruction-from-laser-splays-splay-sdf)
 5. [Survey Measurement, Polygon Area & Structural Geology (Tectonics)](#5-survey-measurement-polygon-area--structural-geology-tectonics)
@@ -65,6 +66,12 @@ Once a model is loaded, the top bar provides instant access to essential tools:
 | 🔗 | **Share** | Generates persistent shareable URLs and embeddable `<iframe>` HTML snippets. |
 | ✖ | **Close Model** | Releases GPU/CPU memory and returns to the initial welcome screen. |
 
+### Visual Themes & Design Styling:
+In the sidebar (**Cave** tab) or via the URL parameter `?theme=`, three calibrated themes can be toggled:
+* **Precision CAD (`precision`)**: Default instrument dark mode with Deep Abyss slate background (`#0b0f17`) and high-contrast electric cyan (`#00d2ff`) / emerald (`#10b981`) accents synthesized from Google Stitch CAD specifications. Ideal for low-light fieldwork and OLED screens.
+* **Light Sand (`light`)**: Natural high-contrast outdoor mode featuring an eye-friendly vertical sandy gradient – light ivory sand at the top (`#f7f3eb`) transitioning smoothly into darker warm limestone sand at the bottom (`#d5c4ad`). Sidebar cards, metrics, and sliders harmonize with this warm sand tone, providing superb legibility and zero glare during daytime fieldwork.
+* **Classic Speleo (`classic`)**: Traditional nocturnal deep blue theme with indigo background gradient.
+
 ---
 
 ## 3. Spatial Navigation & Technical View Presets
@@ -95,14 +102,10 @@ Surveys created with modern laser distometers (DistoX, CaveTRom, BRIC) contain h
 ![Splay SDF 3D Cave Walls](images/04_splay_sdf_walls.png)
 
 ### How to Use Splay SDF Walls:
-1. Open the sidebar (**Cave** tab $\to$ **Cave Walls** section) and enable **Splay SDF Walls (3D)**.
-2. The progress indicator will display reconstruction status.
-3. **Session Cache**: Once calculated, the mesh remains stored in memory for instant toggling.
-
-### Parameters:
-* **Smoothness (`smin`)**: Polynomial blending parameter controlling passage wall tightness versus organic curvature.
-* **Capsule Radius (`srad`)**: Virtual cylinder radius enclosing splay rays.
-* **Color by height**: Renders hypsometric elevation gradients over the reconstructed SDF surface.
+1. Open the sidebar (**Cave** tab $\to$ dedicated **Splay SDF Cave Walls** card) and enable **Splay SDF Walls (2D/3D)**. The card displays the live count of radial survey splays (e.g., `149 rays`) and is available for all survey models.
+2. **Angular / Sharpness**: Dedicated CAD slider ranging from sharp facets (`0.02` - precise technical passage boundaries) to smooth rounded contours (`0.25` - organic erosion walls).
+3. The progress indicator will display reconstruction status in real time.
+4. **Session Cache**: Once calculated, the mesh remains stored in memory for instant toggling.
 
 ---
 
@@ -148,6 +151,7 @@ For massive LiDAR scans (`.ply` format), LochViewer automatically activates **En
 
 ![LiDAR Point Cloud & EDL Shading](images/08_lidar_pointcloud_edl.png)
 
+* **Exclusive to PLY Datasets**: The **LIDAR NEXTGEN** engine switch, **LiDAR editing** panel, and point-cloud anomaly detectors are displayed strictly when viewing `.ply` point cloud models. Standard speleological survey formats (`.lox`, `.3d`, `.plt`, `.stl`) keep these controls hidden to prevent visual clutter and workflow confusion.
 * **Octree LOD**: Streams only visible nodes dynamically, sustaining 60 FPS on multi-million point models.
 * **Eye-Dome Lighting (EDL)**: Screen-space depth silhouette shader highlighting speleothems, fissures, and passage topography without heavy mesh overhead.
 * **LiDAR Brush Editor**:

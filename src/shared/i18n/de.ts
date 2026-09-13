@@ -102,6 +102,7 @@ export const de = {
     accurateMesh: "Dreiecksnetz",
     wire: "Drahtgittermodell",
     altitude: "Farbe nach Höhe",
+    opacity: "Wand-Deckkraft",
     floorMapUpload: 'SVG/TH2/PDF Karte laden',
     floorMapOpacity: 'Karten-Deckkraft',
     manualCalibrate: 'Kalibrierung',

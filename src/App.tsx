@@ -24,7 +24,7 @@ import { calculateVolumeAndProfile } from '@shared/utils/speleoAnalysis'
 import { calculateTectonics } from '@shared/utils/tectonics'
 import { getSjtskBoundsFromDtm } from '@shared/utils/surfaceBounds'
 import { createSurfaceTextureCalibrationFromSjtskBbox, parseSjtskBboxCalibrationText } from '@shared/utils/surfaceTextureCalibration'
-import { getDefaultPointCloudSize, getPreferredEngineForFile } from '@shared/utils/modelDefaults'
+import { getDefaultPointCloudSize, getPreferredEngineForFile, isPlyLidarData } from '@shared/utils/modelDefaults'
 import { renderLidarPlanMapToDataUrl, type LidarPlanMapData } from '@shared/utils/lidarPlanMap'
 import {
   cloneLidarEditSnapshot,
@@ -93,6 +93,41 @@ const WELCOME_CHANGELOG = [
   {
     version: APP_VERSION,
     badge: 'Aktuálne',
+    group: 'Odstránenie SSAO a vyčistenie UI',
+    items: [
+      'Funkcia Ambient Occlusion (SSAO) úplne odstránená — nemala reálne využitie a stále pôsobila príliš tmavo',
+      'Odstránené interné pracovné označenia z popiskov (napr. "(2A)", "(2C)", "(3C)")',
+    ],
+  },
+  {
+    version: '2.4.20',
+    group: 'Natrvalo opravené stmavovanie modelu po zastavení kamery',
+    items: [
+      'Skutočná príčina: priehľadnosť stien (75 % default) sa po zastavení kamery zapla a presvitalo cez ňu tmavé pozadie',
+      'Nová predvolená hodnota: priehľadnosť stien 100 % (nepriehľadné) — model sa už sám od seba nestmaví',
+      'Slider "Priehľadnosť stien" ostáva k dispozícii pre tých, čo priehľadnosť chcú',
+    ],
+  },
+  {
+    version: '2.4.19',
+    group: 'Ambient Occlusion (SSAO) — svetlejšie a presnejšie',
+    items: [
+      'Pozadie/obloha sa už pri zapnutom SSAO nestmavuje (opravená detekcia hĺbky pozadia)',
+      'Odstránené plošné stmavovanie terénu a modelu — zatienenie je teraz relatívne k vzdialenosti, funguje správne pri malých aj veľkých mierkach',
+      'Jemnejší predvolený efekt (nižšia intenzita a polomer, vyššie minimálne jas)',
+    ],
+  },
+  {
+    version: '2.4.18',
+    group: 'Priehľadnosť stien a nezávislý organický model',
+    items: [
+      'Nový ovládací prvok "Priehľadnosť stien" (slider 10 – 100 %)',
+      'Organický / Vyhladený model funguje nezávisle od "Zobraziť steny"',
+      'Doplnený preklad SK/EN/FR/DE pre novú položku',
+    ],
+  },
+  {
+    version: '2.4.17',
     group: 'Kamera, Tektonika, UI & WMS mapy',
     items: [
       'Prepínanie kamery Perspektíva ↔ Ortografická projekcia v hornej lište pre axonometriu',
@@ -980,6 +1015,7 @@ export default function App() {
   const [showStationCard, setShowStationCard] = useState(false)
   const [activeProfilePoints, setActiveProfilePoints] = useState<SelStation[] | null>(null)
   const [cave, setCave] = useState<ParsedCave | null>(null)
+  const isPlyLidar = useMemo(() => isPlyLidarData(loadedFile?.ext, cave), [loadedFile?.ext, cave])
   const [isDragging, setIsDragging] = useState(false)
   const [progress, setProgress] = useState(0)
   const [loadingStatus, setLoadingStatus] = useState<string>('')
@@ -1038,8 +1074,17 @@ export default function App() {
 
   const t = useCallback((key: string) => getTranslation(lang, key), [lang])
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isModelMoving, setIsModelMoving] = useState(false)
   const [sidebarTab, setSidebarTab] = useState<'cave' | 'terrain' | 'analysis'>('cave')
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {})
+    } else {
+      document.exitFullscreen().catch(() => {})
+    }
+  }, [])
   const [cameraData, setCameraData] = useState<ViewerCameraSnapshot | null>(null)
   const [processingInfo, setProcessingInfo] = useState<string | null>(null)
   const [appStatus, setAppStatus] = useState<{ msg: string; type: 'info' | 'error' | 'success' | 'progress'; progress?: number } | null>(null)
@@ -1115,12 +1160,11 @@ export default function App() {
   const [opts, setOpts] = useState<ViewerOptions>({
     engine:              'v1',
     enableScrapsBatching: true,
-    enableSSAO:          false,
     enableSplayWalls:    false,
     splayVoxelSize:      0.22,
     splaySmoothK:        0.06,
     splayCapsuleRadius:  0.10,
-    enableEDL:           true,
+    enableEDL:           false,
     cameraProjection:    'perspective',
     altitudeMode:        'absolute',
     showSplay:           false,
@@ -1138,7 +1182,7 @@ export default function App() {
     colorBackground2:    '#1e40af',
     // Cave scraps
     showScraps:          true,
-    scrapsOpacity:       0.75,
+    scrapsOpacity:       1.0,
     scrapsSolid:         true,
     scrapsWireframe:     false,
     scrapsAltitude:      false,
@@ -1494,7 +1538,7 @@ export default function App() {
         })
       } else if (e.key === 'c' || e.key === 'C') {
         setOpts(p => {
-          if (p.engine === 'v2') {
+          if (p.engine === 'v2' && isPlyLidar) {
             const modes: Array<ViewerOptions['pointCloudColorMode']> = ['original', 'elevation', 'natural']
             const curIdx = modes.indexOf(p.pointCloudColorMode || 'original')
             const nextMode = modes[(curIdx + 1) % modes.length]
@@ -1798,7 +1842,7 @@ export default function App() {
     applyLidarEditStroke(stroke, lidarEditMode);
   }, [applyLidarEditStroke, lidarEditMode]);
 
-  // ─── DEFINÍCIA ŠABLÓN ────────────────────────────────────────────────────────
+  // ─── DEFINÍCIA ŠABLÓN (STITCH CAD & FIELDWORK) ───────────────────────────────
   const THEMES = {
     classic: {
       colorBackground:   '#050505',
@@ -1811,44 +1855,44 @@ export default function App() {
       showEntrances: true,
       showEntranceLabels: true,
       colorGrid:         '#224422',
-      colorScraps:       '#94a3b8',
+      colorScraps:       '#cbd5e1',
       colorScrapsWire:   '#6a9fd8',
       colorTerrainWire:  '#6ab04c',
       colorBoundingBox:  '#990000',
       surfaceColor:      '#e2e8f0',
     },
     precision: {
-      colorBackground:   '#020617', // Deep blue/black top
-      colorBackground2:  '#1e40af', // Vibrant blue bottom
+      colorBackground:   '#0b0f17', // Base Canvas (Deep Abyss)
+      colorBackground2:  '#111827', // Neutral structural background
       colorTraverse:     '#ffffff',
-      colorSplay:        '#a5f3fc',
+      colorSplay:        '#00d2ff', // Electric Cyan
       colorStations:     '#fbbf24',
-      colorStationNames: '#fbbf24',
-      colorStationAlt:   '#a5f3fc',
+      colorStationNames: '#f8fafc',
+      colorStationAlt:   '#38bdf8',
       showEntrances: true,
       showEntranceLabels: true,
-      colorGrid:         '#161e2b',
-      colorScraps:       '#94a3b8',
-      colorScrapsWire:   '#a5f3fc',
-      colorTerrainWire:  '#1e293b',
-      colorBoundingBox:  '#990000',
+      colorGrid:         '#1e293b',
+      colorScraps:       '#cbd5e1',
+      colorScrapsWire:   '#00d2ff',
+      colorTerrainWire:  '#10b981', // Subterranean Emerald
+      colorBoundingBox:  '#ef4444',
       surfaceColor:      '#dee2f2',
     },
     light: {
-      colorBackground:   '#f8fafc',
-      colorBackground2:  undefined,
-      colorTraverse:     '#2a5585',
-      colorSplay:        '#64748b',
-      colorStations:     '#fbbf24',
-      colorStationNames: '#1e293b',
-      colorStationAlt:   '#0891b2',
+      colorBackground:   '#f7f3eb', // Jemná svetlá piesková (hore)
+      colorBackground2:  '#d5c4ad', // Tmavšia piesková (dole)
+      colorTraverse:     '#0f2b48', // Centerline Survey Vectors (Dark Navy)
+      colorSplay:        '#0284c7', // Volumetric rays
+      colorStations:     '#ea580c',
+      colorStationNames: '#1c1917',
+      colorStationAlt:   '#0284c7',
       showEntrances: true,
       showEntranceLabels: true,
-      colorGrid:         '#cbd5e1',
-      colorScraps:       '#94a3b8',
-      colorScrapsWire:   '#475569',
-      colorTerrainWire:  '#166534',
-      colorBoundingBox:  '#990000',
+      colorGrid:         '#c2b3a0', // Teplá piesková mriežka
+      colorScraps:       '#a89988',
+      colorScrapsWire:   '#0284c7',
+      colorTerrainWire:  '#059669',
+      colorBoundingBox:  '#dc2626',
       surfaceColor:      '#ffffff',
     }
   }
@@ -2320,7 +2364,7 @@ export default function App() {
     }
 
     revokeCaveObjectUrls(lidarOriginalCaveRef.current)
-    const isPLY = parsed.pointCount > 0
+    const isPLY = isPlyLidarData(loadedFile?.ext, parsed)
     lidarUndoCaveRef.current = null
     lidarKeepMaskRef.current = null
     setLidarKeepSelectionCount(0)
@@ -2343,6 +2387,7 @@ export default function App() {
       clearSurfaceTextureUrl(prev.surfaceTextureUrl)
       return { 
         ...prev, 
+        engine: isPLY ? prev.engine : 'v1',
         clippingHeight: parsed.bounds.max.z + (parsed.centerOffset?.z || 0),
         // Pre PLY zapneme steny a vypneme stanice/merania
         showScraps: isPLY ? true : prev.showScraps,
@@ -2749,11 +2794,10 @@ export default function App() {
     setOpts(prev => ({
       ...prev,
       // Engine & Projection
-      engine:              p.get('eng') === 'v2' ? 'v2' : prev.engine,
+      engine:              (p.get('eng') === 'v2' && loadedFile?.ext?.toLowerCase() === '.ply') ? 'v2' : (loadedFile?.ext?.toLowerCase() === '.ply' ? prev.engine : 'v1'),
       cameraProjection:    p.get('proj') === 'ortho' ? 'orthographic' : prev.cameraProjection,
       // Advanced toggles
       enableScrapsBatching: p.has('batch') ? p.get('batch') !== '0' : prev.enableScrapsBatching,
-      enableSSAO:          p.get('ssao') === '1',
       enableEDL:           p.has('edl') ? p.get('edl') !== '0' : prev.enableEDL,
       // Splay SDF Walls (2D) & parameters
       enableSplayWalls:    p.get('sdf') === '1',
@@ -2817,11 +2861,11 @@ export default function App() {
       profileClipFlip:     p.get('pflip') === '1',
       profileClipOffset:   p.has('poff') ? parseFloat(p.get('poff')!) : prev.profileClipOffset,
       excludeModelFromClipping: p.get('excl') === '1',
-      // Auto-rotate
+      // Auto-rotation
       autoRotate:          p.get('rot') === '1',
       autoRotateSpeed:     p.has('rotspd') ? parseFloat(p.get('rotspd')!) : prev.autoRotateSpeed,
     }))
-  }, [appState])
+  }, [appState, loadedFile?.ext])
 
   // ── State → URL encoder ──────────────────────────────────────────────────────
   const encodeState = (o: ViewerOptions, modelParam: string): URLSearchParams => {
@@ -2829,11 +2873,10 @@ export default function App() {
     p.set('model', modelParam)
     p.set('embed', 'true')
     // Engine & Projection
-    if (o.engine === 'v2') p.set('eng', 'v2')
+    if (o.engine === 'v2' && isPlyLidar) p.set('eng', 'v2')
     if (o.cameraProjection === 'orthographic') p.set('proj', 'ortho')
-    // Advanced rendering (2A, 2C, 3C)
+    // Advanced rendering
     if (o.enableScrapsBatching === false) p.set('batch', '0')
-    if (o.enableSSAO) p.set('ssao', '1')
     if (o.enableEDL === false) p.set('edl', '0')
     // Splay SDF Walls (2D) & Parameters
     if (o.enableSplayWalls) {
@@ -2861,7 +2904,7 @@ export default function App() {
     if (o.scrapsAltitude) p.set('salt', '1')
     if (o.showRenderCave) p.set('cave3d', '1')
     if (o.caveTexture !== 'limestone') p.set('ctex', o.caveTexture)
-    if (o.scrapsOpacity !== 0.85) p.set('scrop', String(o.scrapsOpacity))
+    if (o.scrapsOpacity !== 1.0) p.set('scrop', String(o.scrapsOpacity))
     if (o.scrapsRelief !== 0.35) p.set('srelief', String(o.scrapsRelief))
     if (o.scrapsViewMode !== 'all') p.set('sview', o.scrapsViewMode)
     if (o.scrapsHeightThreshold !== 0.1) p.set('sth', String(o.scrapsHeightThreshold))
@@ -3098,9 +3141,50 @@ export default function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
+        :root {
+          --cv-bg: #0b0f17;
+          --cv-surface: #0f131c;
+          --cv-surface-low: #181c24;
+          --cv-surface-card: #1c2028;
+          --cv-surface-high: #262a33;
+          --cv-surface-highest: #31353e;
+          --cv-text: #dfe2ee;
+          --cv-text-muted: #94a3b8;
+          --cv-primary: #00d2ff;
+          --cv-primary-dim: #a5e7ff;
+          --cv-secondary: #10b981;
+          --cv-border: rgba(255, 255, 255, 0.08);
+          --cv-border-strong: #334155;
+          --cv-font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+          --cv-font-mono: 'JetBrains Mono', monospace;
+        }
+
+        .theme-light {
+          --cv-bg: #f7f3eb;
+          --cv-surface: #ffffff;
+          --cv-surface-low: #f2ece2;
+          --cv-surface-card: #ffffff;
+          --cv-surface-high: #e8ded0;
+          --cv-surface-highest: #d9cdbd;
+          --cv-text: #1c1917;
+          --cv-text-muted: #78716c;
+          --cv-primary: #0284c7;
+          --cv-primary-dim: #0369a1;
+          --cv-secondary: #059669;
+          --cv-border: rgba(60, 45, 30, 0.12);
+          --cv-border-strong: #d5c4ad;
+        }
+
         *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Inter',system-ui,sans-serif;background:#050810;color:#e2e8f0;overflow:hidden}
+        body{font-family:var(--cv-font-sans);background:var(--cv-bg);color:var(--cv-text);overflow:hidden}
         .bg-canvas{position:fixed;inset:0;pointer-events:none;z-index:0}
+
+        .cad-card{background:var(--cv-surface-card);border:1px solid var(--cv-border);border-radius:8px;padding:.75rem;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+        .theme-light .cad-card{background:#fff;box-shadow:0 2px 8px rgba(15,23,42,.06)}
+        .cad-metric-box{background:var(--cv-surface-low);border:1px solid var(--cv-border);border-radius:6px;padding:.35rem .5rem;text-align:center}
+        .theme-light .cad-metric-box{background:#f8fafc}
+        .cad-metric-label{display:block;font-size:9px;font-family:var(--cv-font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--cv-text-muted)}
+        .cad-metric-val{font-size:12px;font-weight:700;font-family:var(--cv-font-mono);font-variant-numeric:tabular-nums;color:var(--cv-primary)}
 
         /* WELCOME */
         .app{position:relative;z-index:1;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
@@ -3155,11 +3239,12 @@ export default function App() {
         .prog-pct{font-size:.82rem;color:#718096}
 
         /* VIEWER */
-        .viewer-shell{width:100vw;height:100vh;display:flex;flex-direction:column;overflow:hidden}
-        .topbar{height:50px;background:rgba(5,8,16,.95);border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:1rem;padding:0 1.1rem;flex-shrink:0;backdrop-filter:blur(8px)}
-        .tb-logo{font-size:1rem;font-weight:700;color:#63b3ed;white-space:nowrap}
-        .tb-file{font-size:.77rem;color:#718096;background:rgba(255,255,255,.05);padding:.22rem .65rem;border-radius:6px;border:1px solid rgba(255,255,255,.08);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-        .tb-badge{font-size:.7rem;font-weight:700;padding:.2rem .5rem;border-radius:4px;background:rgba(99,179,237,.15);color:#63b3ed;border:1px solid rgba(99,179,237,.3)}
+        .viewer-shell{width:100vw;height:100vh;display:flex;flex-direction:column;overflow:hidden;background:var(--cv-bg);color:var(--cv-text)}
+        .topbar{height:48px;background:rgba(15,19,28,0.92);border-bottom:1px solid var(--cv-border);display:flex;align-items:center;gap:0.85rem;padding:0 1.1rem;flex-shrink:0;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+        .theme-light .topbar{background:rgba(255,255,255,0.94);border-bottom:1px solid var(--cv-border)}
+        .tb-logo{font-size:1rem;font-weight:800;color:var(--cv-primary);white-space:nowrap;letter-spacing:-0.02em}
+        .tb-file{font-size:.77rem;color:var(--cv-text);background:var(--cv-surface-low);padding:.25rem .65rem;border-radius:6px;border:1px solid var(--cv-border);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--cv-font-mono)}
+        .tb-badge{font-size:.7rem;font-weight:700;font-family:var(--cv-font-mono);padding:.2rem .5rem;border-radius:4px;background:rgba(0,210,255,0.12);color:var(--cv-primary);border:1px solid rgba(0,210,255,0.25)}
         .tb-space{flex:1; display: flex; align-items: center; justify-content: center;}
         .status-bar { display: flex; align-items: center; gap: 10px; background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 2px 10px; max-width: 500px; min-width: 200px; height: 30px; margin: 0 10px; transition: all 0.3s ease; overflow: hidden; }
         .status-msg { font-size: 11px; font-weight: 600; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; display: flex; align-items: center; gap: 6px; }
@@ -3169,16 +3254,68 @@ export default function App() {
         .status-error { color: #fca5a5 !important; border-color: rgba(239, 68, 68, 0.3) !important; background: rgba(239, 68, 68, 0.1) !important; }
         .status-success { color: #6ee7b7 !important; border-color: rgba(16, 185, 129, 0.3) !important; background: rgba(16, 185, 129, 0.1) !important; }
         .status-progress { color: #93c5fd !important; }
-        .tb-stat{font-size:.75rem;color:#4a5568}
-        .btn-back{display:flex;align-items:center;gap:.4rem;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#a0aec0;border-radius:8px;padding:.38rem .85rem;font-size:.78rem;font-weight:500;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap}
-        .btn-back:hover{background:rgba(255,255,255,.1);color:#e2e8f0}
+        .tb-stat{font-size:.75rem;color:var(--cv-text-muted);font-family:var(--cv-font-mono);font-variant-numeric:tabular-nums}
+        .btn-back{display:flex;align-items:center;gap:.4rem;background:var(--cv-surface-low);border:1px solid var(--cv-border);color:var(--cv-text);border-radius:6px;padding:.38rem .75rem;font-size:.78rem;font-weight:500;cursor:pointer;font-family:inherit;transition:all .18s;white-space:nowrap}
+        .btn-back:hover{background:var(--cv-surface-high);border-color:var(--cv-primary);color:#fff}
 
         .viewer-body{flex:1;display:flex;overflow:hidden;position:relative}
         .canvas-wrap{flex:1;position:relative}
 
         /* Sidebar */
-        .sidebar-container { display: flex; flex-shrink: 0; z-index: 100; }
-        .sidebar{width:230px;background:rgba(8,12,24,.97);border-left:1px solid rgba(255,255,255,.05);padding:.9rem;display:flex;flex-direction:column;gap:1rem;overflow-y:auto;flex-shrink:0;height:100%;max-height:100%}
+        .sidebar-container { display: flex; flex-shrink: 0; z-index: 100; height: 100%; max-height: 100%; overflow: hidden; }
+        .sidebar{width:320px;background:var(--cv-surface);border-left:1px solid var(--cv-border);display:flex;flex-direction:column;height:100%;max-height:100%;flex-shrink:0;overflow:hidden;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+        .theme-light .sidebar{background:var(--cv-surface);border-left:1px solid var(--cv-border);color:var(--cv-text)}
+        .sidebar-pinned-header{flex-shrink:0;position:sticky;top:0;background:var(--cv-surface);border-bottom:1px solid var(--cv-border);padding:0.85rem 1rem 0.65rem;display:flex;flex-direction:column;gap:0.65rem;z-index:50}
+        .sidebar-dataset-banner{display:flex;flex-direction:column;gap:0.45rem}
+        .sidebar-dataset-top{display:flex;align-items:center;justify-content:space-between}
+        .sidebar-dataset-title{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--cv-text-muted)}
+        .sidebar-close-btn{background:transparent;border:1px solid transparent;color:var(--cv-text-muted);cursor:pointer;border-radius:4px;padding:2px 4px;display:flex;align-items:center;justify-content:center;transition:all .15s ease}
+        .sidebar-close-btn:hover{background:var(--cv-surface-high);color:var(--cv-text);border-color:var(--cv-border)}
+        .sidebar-dataset-grid{display:grid;gap:6px}
+        .sidebar-stat-card{background:var(--cv-surface-card);border:1px solid var(--cv-border);border-radius:6px;padding:5px 4px;text-align:center}
+        .sidebar-stat-label{display:block;font-size:8.5px;text-transform:uppercase;letter-spacing:0.04em;color:var(--cv-text-muted);font-family:var(--cv-font-mono)}
+        .sidebar-stat-val{display:block;font-size:11.5px;font-weight:700;color:var(--cv-text);font-family:var(--cv-font-mono);font-variant-numeric:tabular-nums;margin-top:1px}
+        .sidebar-stat-val.accent{color:var(--cv-primary)}
+        .sidebar-tab-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--cv-surface-low);border:1px solid var(--cv-border);padding:3px;border-radius:8px}
+        .sidebar-tab-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 4px;border-radius:6px;border:none;background:transparent;color:var(--cv-text-muted);font-size:10px;font-weight:600;cursor:pointer;transition:all .15s ease}
+        .sidebar-tab-btn:hover{color:var(--cv-text);background:rgba(255,255,255,0.04)}
+        .theme-light .sidebar-tab-btn:hover{background:rgba(0,0,0,0.04)}
+        .sidebar-tab-btn.active{background:var(--cv-surface-card);color:var(--cv-primary);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,0.2);border:1px solid var(--cv-border)}
+        .theme-light .sidebar-tab-btn.active{box-shadow:0 1px 4px rgba(15,23,42,0.08)}
+        .sidebar-scrollable-body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:0.85rem 1rem 2.5rem;display:flex;flex-direction:column;gap:0.75rem}
+        .sidebar-scrollable-body::-webkit-scrollbar{width:5px}
+        .sidebar-scrollable-body::-webkit-scrollbar-track{background:transparent}
+        .sidebar-scrollable-body::-webkit-scrollbar-thumb{background:var(--cv-border);border-radius:10px}
+        .sidebar-scrollable-body::-webkit-scrollbar-thumb:hover{background:var(--cv-primary)}
+
+        /* Unified CAD Card Styles */
+        .cad-card{background:var(--cv-surface-card);border:1px solid var(--cv-border);border-radius:8px;padding:11px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.12);transition:border-color .18s ease,box-shadow .18s ease}
+        .theme-light .cad-card{background:#ffffff;border-color:rgba(60,45,30,0.12);box-shadow:0 1px 3px rgba(60,45,30,0.06),0 4px 12px rgba(60,45,30,0.04)}
+        .cad-card:hover{border-color:rgba(0,210,255,0.22)}
+        .theme-light .cad-card:hover{border-color:rgba(2,132,199,0.35)}
+        .cad-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+        .cad-card-title{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--cv-text)}
+        .cad-card-title .material-symbols-outlined{font-size:16px;color:var(--cv-primary)}
+        .cad-subcard{background:var(--cv-surface-low);border:1px solid var(--cv-border);border-radius:6px;padding:8px 10px;margin-top:8px}
+        .theme-light .cad-subcard{background:#f5efe6;border-color:#dfd5c6}
+        .theme-light .sidebar-stat-card{background:#f5efe6;border-color:#dfd5c6}
+        .cad-control-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:600;color:var(--cv-text);margin-bottom:5px}
+        .cad-control-label{font-size:11px;color:var(--cv-text);font-weight:600;display:flex;align-items:center;gap:6px}
+        .cad-control-value{font-family:var(--cv-font-mono);font-size:11px;font-weight:700;color:var(--cv-primary);font-variant-numeric:tabular-nums}
+        .cad-slider{width:100%;height:4px;background:var(--cv-surface-high);border-radius:4px;appearance:none;-webkit-appearance:none;cursor:pointer;accent-color:var(--cv-primary)}
+        .theme-light .cad-slider{background:#d5c4ad}
+        .cad-slider::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--cv-primary);cursor:pointer;box-shadow:0 0 6px var(--cv-primary-glow)}
+        .cad-tool-btn{background:var(--cv-surface-low);border:1px solid var(--cv-border);color:var(--cv-text-muted);padding:5px 8px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;transition:all .15s ease}
+        .cad-tool-btn:hover{background:var(--cv-surface-high);color:var(--cv-text);border-color:rgba(0,210,255,0.3)}
+        .cad-tool-btn.active{background:rgba(0,210,255,0.16);border-color:var(--cv-primary);color:var(--cv-primary);font-weight:700}
+        .theme-light .cad-tool-btn.active{background:rgba(2,132,199,0.12);border-color:var(--cv-primary);color:var(--cv-primary)}
+        .cad-select{background:var(--cv-surface-high);color:var(--cv-text);border:1px solid var(--cv-border);border-radius:4px;font-size:10px;padding:3px 6px;outline:none;font-family:inherit}
+        .theme-light .cad-select{background:#fff;border-color:var(--cv-border);color:var(--cv-text)}
+        .btn-mini{background:var(--cv-surface-low);border:1px solid var(--cv-border);color:var(--cv-text);border-radius:4px;padding:3px 7px;font-size:10px;font-weight:600;cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;justify-content:center;gap:3px}
+        .btn-mini:hover{background:var(--cv-surface-high);color:var(--cv-primary);border-color:var(--cv-primary)}
+        .btn-mini.active{background:rgba(0,210,255,0.16);border-color:var(--cv-primary);color:var(--cv-primary);font-weight:700}
+        .theme-light .btn-mini.active{background:rgba(2,132,199,0.12);border-color:var(--cv-primary);color:var(--cv-primary)}
+
         .mobile-sidebar-close{display:none;align-items:center;justify-content:center;gap:.45rem;position:fixed;right:calc(1rem + env(safe-area-inset-right));bottom:calc(1rem + env(safe-area-inset-bottom));z-index:10001;min-height:48px;max-width:calc(100vw - 2rem);padding:0 1rem;border:1px solid rgba(248,113,113,.5);border-radius:8px;background:rgba(220,38,38,.94);color:#fff;font-size:.95rem;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 14px 36px rgba(0,0,0,.48);backdrop-filter:blur(8px);transition:background .2s,transform .2s,box-shadow .2s}
         .mobile-sidebar-close:hover{background:#dc2626;box-shadow:0 16px 42px rgba(0,0,0,.58)}
         .mobile-sidebar-close:active{transform:translateY(1px)}
@@ -3216,26 +3353,28 @@ export default function App() {
         .lidar-edit-floating span{font-variant-numeric:tabular-nums;color:#5eead4}
         .sidebar::-webkit-scrollbar{width:5px}
         .sidebar::-webkit-scrollbar-track{background:rgba(0,0,0,0.1)}
-        .sidebar::-webkit-scrollbar-thumb{background:rgba(99,179,237,0.3);border-radius:10px}
-        .sidebar::-webkit-scrollbar-thumb:hover{background:rgba(99,179,237,0.5)}
-        .s-label{font-size:.72rem;font-weight:900;color:#f8fafc;text-transform:uppercase;letter-spacing:.15em;margin-bottom:.8rem;margin-top:1.5rem;border-left:4px solid #3b82f6;padding-left:10px;display:flex;align-items:center;background:rgba(59,130,246,0.05);padding-top:4px;padding-bottom:4px;border-radius:0 4px 4px 0}
-        .s-label:first-of-type { margin-top: 0.5rem; }
-        .info-row{display:flex;justify-content:space-between;font-size:.75rem;padding:.28rem 0;border-bottom:1px solid rgba(255,255,255,.04);color:#718096}
-        .info-val{color:#63b3ed;font-weight:600}
+        .sidebar::-webkit-scrollbar-thumb{background:rgba(0,210,255,0.25);border-radius:10px}
+        .sidebar::-webkit-scrollbar-thumb:hover{background:rgba(0,210,255,0.45)}
+        .s-label{font-size:.6875rem;font-weight:700;font-family:var(--cv-font-mono);color:var(--cv-text);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.6rem;margin-top:1.1rem;border-left:3px solid var(--cv-primary);padding-left:8px;display:flex;align-items:center;background:rgba(0,210,255,0.04);padding-top:3px;padding-bottom:3px;border-radius:0 4px 4px 0}
+        .theme-light .s-label{color:#0f172a;background:rgba(2,132,199,0.06);border-left-color:var(--cv-primary)}
+        .s-label:first-of-type { margin-top: 0.3rem; }
+        .info-row{display:flex;justify-content:space-between;font-size:.75rem;padding:.32rem 0;border-bottom:1px solid var(--cv-border);color:var(--cv-text-muted);font-family:var(--cv-font-sans)}
+        .info-val{color:var(--cv-primary);font-weight:600;font-family:var(--cv-font-mono);font-variant-numeric:tabular-nums}
 
-        .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid rgba(255,255,255,.04)}
-        .toggle-label{display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:#a0aec0;cursor:pointer}
+        .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid var(--cv-border)}
+        .toggle-label{display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:var(--cv-text);cursor:pointer}
         .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-        .switch{width:32px;height:17px;background:rgba(255,255,255,.1);border-radius:100px;position:relative;cursor:pointer;transition:background .2s;border:1px solid rgba(255,255,255,.1);flex-shrink:0}
-        .switch.on{background:rgba(66,153,225,.6);border-color:rgba(66,153,225,.5)}
-        .switch::after{content:'';position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
-        .switch.on::after{transform:translateX(15px)}
+        .switch{width:32px;height:16px;background:var(--cv-surface-high);border-radius:9999px;position:relative;cursor:pointer;transition:all .2s cubic-bezier(0.16,1,0.3,1);border:1px solid var(--cv-border);flex-shrink:0}
+        .switch.on{background:var(--cv-primary);border-color:var(--cv-primary);box-shadow:0 0 8px rgba(0,210,255,0.35)}
+        .switch::after{content:'';position:absolute;top:2px;left:2px;width:10px;height:10px;border-radius:50%;background:#fff;transition:transform .2s cubic-bezier(0.16,1,0.3,1);box-shadow:0 1px 3px rgba(0,0,0,.4)}
+        .switch.on::after{transform:translateX(16px)}
 
-        .slider-row{padding:.45rem 0;border-bottom:1px solid rgba(255,255,255,.04)}
-        .slider-top{display:flex;justify-content:space-between;font-size:.76rem;color:#a0aec0;margin-bottom:.3rem}
-        .slider-val{color:#63b3ed;font-weight:600}
-        input[type=range]{width:100%;height:3px;-webkit-appearance:none;background:rgba(255,255,255,.1);border-radius:100px;outline:none;cursor:pointer}
-        input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#4299e1;cursor:pointer;box-shadow:0 0 6px rgba(66,153,225,.5)}
+        .slider-row{padding:.45rem 0;border-bottom:1px solid var(--cv-border)}
+        .slider-top{display:flex;justify-content:space-between;font-size:.76rem;color:var(--cv-text-muted);margin-bottom:.3rem}
+        .slider-val{color:var(--cv-primary);font-weight:600;font-family:var(--cv-font-mono);font-variant-numeric:tabular-nums}
+        input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:var(--cv-surface-high);border-radius:9999px;outline:none;cursor:pointer}
+        input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--cv-primary);cursor:pointer;box-shadow:0 0 8px rgba(0,210,255,0.45);transition:transform .1s}
+        input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15)}
 
         .welcome-samples{width:100%;display:flex;flex-direction:column;gap:1.5rem;max-width:720px}
         .demo-title{font-size:.62rem;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem;text-align:center}
@@ -3436,7 +3575,7 @@ export default function App() {
         .show-mobile-flex { display: none; }
       `}</style>
 
-      <canvas ref={canvasRef} className="bg-canvas" style={{ background: opts.colorBackground }} />
+      <canvas ref={canvasRef} className="bg-canvas" style={{ background: opts.colorBackground2 ? `linear-gradient(to bottom, ${opts.colorBackground}, ${opts.colorBackground2})` : opts.colorBackground }} />
 
       <div className="app">
 
@@ -3582,37 +3721,66 @@ export default function App() {
 
         {/* ── VIEWER ── */}
         {appState === 'viewer' && cave && (
-          <div className="viewer-shell">
+          <div className={`viewer-shell theme-${currentTheme}`}>
             {/* Top bar — hidden in embed mode */}
             {!isEmbedMode && (
             <div className="topbar">
-              {/* Menu Button pre Mobily (prvá položka) */}
-              <button className="btn-menu btn-back" style={{ display: 'none', marginRight: 8, background: 'rgba(255,255,255,0.15)', borderWidth: 0, padding: '0.4rem 0.7rem' }} onClick={() => setIsMobileMenuOpen(true)}>
+              {/* Menu Button pre Mobily */}
+              <button 
+                className="btn-menu btn-back" 
+                style={{ display: 'none', marginRight: 6, background: 'var(--cv-surface-low)', padding: '0.4rem 0.6rem' }} 
+                onClick={() => { setIsMobileMenuOpen(true); setIsSidebarOpen(true); }}
+              >
                 <span>☰</span>
               </button>
 
-              <span className="tb-logo">LV 3D</span>
-              <span className="tb-file" title={loadedFile?.name}>{loadedFile?.name}</span>
-              <MemoizedStatusBadge isMoving={isModelMoving} />
-              <span className="tb-badge hide-mobile">{loadedFile?.ext?.replace('.', '')?.toUpperCase()}</span>
-              
+              {/* Brand Logo LOCH 3D with radar icon */}
+              <div 
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', flexShrink: 0 }} 
+                onClick={() => setFitTrigger(prev => prev + 1)}
+                title={lang === 'sk' ? 'LochViewer 3D' : 'LochViewer 3D'}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '20px', color: 'var(--cv-primary)' }}>radar</span>
+                <span className="tb-logo" style={{ fontSize: '13px', fontWeight: 800, letterSpacing: '-0.02em' }}>LOCH 3D</span>
+              </div>
+
+              {/* Active Dataset Pill */}
+              <div className="hide-mobile-flex" style={{
+                alignItems: 'center',
+                gap: '6px',
+                background: 'var(--cv-surface-low)',
+                padding: '3px 8px',
+                borderRadius: '6px',
+                border: '1px solid var(--cv-border)',
+                flexShrink: 0
+              }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 6px rgba(16,185,129,0.7)' }} />
+                <span style={{ fontSize: '11px', fontFamily: 'var(--cv-font-mono)', fontWeight: 600, color: 'var(--cv-text)', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={loadedFile?.name}>
+                  {loadedFile?.name}
+                </span>
+                <span style={{ fontSize: '9px', fontFamily: 'var(--cv-font-mono)', fontWeight: 700, padding: '1px 5px', borderRadius: '4px', background: 'rgba(0,210,255,0.12)', color: 'var(--cv-primary)' }}>
+                  {loadedFile?.ext?.replace('.', '')?.toUpperCase()}
+                </span>
+                <MemoizedStatusBadge isMoving={isModelMoving} />
+              </div>
+
               {downloadableTexture && (
                 <button
                   onClick={downloadGeneratedTexture}
                   style={{
-                    marginLeft: '8px',
-                    padding: '4px 12px',
+                    padding: '3px 8px',
                     background: '#2563eb',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '4px',
-                    fontSize: '11px',
+                    borderRadius: '6px',
+                    fontSize: '10px',
                     fontWeight: 'bold',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '4px',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                    flexShrink: 0
                   }}
                   title={lang === 'sk' ? "Stiahnuť textúru a kalibračný súbor" : "Download texture with calibration"}
                 >
@@ -3621,17 +3789,91 @@ export default function App() {
                 </button>
               )}
 
-              <div className="hide-mobile-flex" style={{ display: 'flex', gap: '4px', background: '#0f172a', padding: '2px', borderRadius: '6px', border: '1px solid #1e293b' }}>
-                {(['classic', 'precision', 'light'] as const).map(th => (
-                  <button key={th} onClick={() => applyTheme(th as any)}
-                    style={{ flex: 1, padding: '4px 8px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer',
-                      background: currentTheme === th ? '#334155' : 'transparent',
-                      color: currentTheme === th ? '#f8fafc' : '#64748b' }}>
-                    {t(`themes.${th}`)}
-                  </button>
-                ))}
+              {/* Hairline divider */}
+              <div className="hide-mobile" style={{ width: '1px', height: '18px', background: 'var(--cv-border)', margin: '0 2px', flexShrink: 0 }} />
+
+              {/* Camera Projection Presets Group (3D Iso / Pôdorys / Profil) */}
+              <div className="hide-mobile-flex" style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '2px',
+                background: 'var(--cv-surface-low)',
+                padding: '2px',
+                borderRadius: '6px',
+                border: '1px solid var(--cv-border)',
+                flexShrink: 0
+              }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveViewPreset('iso')
+                    window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'iso' } }))
+                  }}
+                  style={{
+                    padding: '3px 8px',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    borderRadius: '4px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: activeViewPreset === 'iso' ? 'var(--cv-surface-high)' : 'transparent',
+                    color: activeViewPreset === 'iso' ? 'var(--cv-primary)' : 'var(--cv-text-muted)',
+                    boxShadow: activeViewPreset === 'iso' ? '0 1px 4px rgba(0,0,0,0.3)' : 'none',
+                    transition: 'all 0.15s'
+                  }}
+                  title={lang === 'sk' ? '3D Izometrický pohľad' : '3D Isometric view'}
+                >
+                  3D Iso
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+                    setActiveViewPreset('top')
+                    window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'top' } }))
+                  }}
+                  style={{
+                    padding: '3px 8px',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    borderRadius: '4px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: activeViewPreset === 'top' ? 'var(--cv-surface-high)' : 'transparent',
+                    color: activeViewPreset === 'top' ? 'var(--cv-primary)' : 'var(--cv-text-muted)',
+                    boxShadow: activeViewPreset === 'top' ? '0 1px 4px rgba(0,0,0,0.3)' : 'none',
+                    transition: 'all 0.15s'
+                  }}
+                  title={lang === 'sk' ? 'Pôdorys (Zhora, Ortogonálne)' : 'Plan view (Top-down, Orthographic)'}
+                >
+                  {lang === 'sk' ? 'Pôdorys' : 'Plan'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+                    setActiveViewPreset('front')
+                    window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'front' } }))
+                  }}
+                  style={{
+                    padding: '3px 8px',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    borderRadius: '4px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: activeViewPreset === 'front' ? 'var(--cv-surface-high)' : 'transparent',
+                    color: activeViewPreset === 'front' ? 'var(--cv-primary)' : 'var(--cv-text-muted)',
+                    boxShadow: activeViewPreset === 'front' ? '0 1px 4px rgba(0,0,0,0.3)' : 'none',
+                    transition: 'all 0.15s'
+                  }}
+                  title={lang === 'sk' ? 'Profil / Nárys (Spredu, Ortogonálne)' : 'Profile / Elevation (Front, Orthographic)'}
+                >
+                  {lang === 'sk' ? 'Profil (Rez)' : 'Profile'}
+                </button>
               </div>
 
+              {/* Status / Message Center */}
               <div className="tb-space">
                 {appStatus && (
                   <div className={`status-bar status-${appStatus.type} hide-mobile`}>
@@ -3657,7 +3899,7 @@ export default function App() {
               </div>
 
               {isRecording && (
-                <div className="recording-status hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(239, 68, 68, 0.15)', padding: '4px 12px', borderRadius: '20px', border: '1px solid rgba(239, 68, 68, 0.3)', marginRight: '10px' }}>
+                <div className="recording-status hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(239, 68, 68, 0.15)', padding: '4px 12px', borderRadius: '20px', border: '1px solid rgba(239, 68, 68, 0.3)', marginRight: '8px' }}>
                   <div className="record-dot" />
                   <span style={{ fontSize: '11px', fontWeight: 600, color: '#fca5a5' }}>
                     {lang === 'sk' ? 'NAHRÁVA SA...' : 'RECORDING...'}
@@ -3674,52 +3916,16 @@ export default function App() {
                 </div>
               )}
 
-              {downloadableTexture && (
-                <button
-                  className="btn-back hide-mobile-flex"
-                  style={{
-                    background: 'rgba(16,185,129,0.1)',
-                    color: '#10b981',
-                    borderColor: 'rgba(16,185,129,0.3)',
-                    marginRight: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                  onClick={() => {
-                    const link = document.createElement('a');
-                    link.href = downloadableTexture.dataUrl;
-                    link.download = `surface_map_${opts.surfaceTextureSource}.${imageExtensionFromDataUrl(downloadableTexture.dataUrl)}`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  }}
-                  title={lang === 'sk' ? 'Stiahnuť textúru povrchu' : 'Download surface texture'}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '18px', display: 'block' }}>download</span>
-                  <span>{lang === 'sk' ? 'Uložiť mapu' : 'Save Map'}</span>
-                </button>
-              )}
-
-              {/* Ordered Top Bar Action Group */}
-              <div className="hide-mobile-flex" style={{ display: 'flex', alignItems: 'center', gap: '4px', marginRight: '6px' }}>
-                {/* 1. Export image z pohľadu */}
+              {/* Action Tools Cluster */}
+              <div className="hide-mobile-flex" style={{ display: 'flex', alignItems: 'center', gap: '3px', marginRight: '4px' }}>
+                {/* 1. Export screenshot */}
                 <button
                   onClick={handleExportScreenshot}
                   title={lang === 'sk' ? 'Exportovať obrázok z pohľadu (Screenshot PNG)' : 'Export image from view (PNG)'}
-                  style={{
-                    background: 'rgba(30,41,59,0.8)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    borderRadius: '6px',
-                    color: '#fff',
-                    padding: '4px 7px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '11px',
-                  }}
+                  className="btn-back"
+                  style={{ padding: '3px 6px' }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>photo_camera</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>photo_camera</span>
                 </button>
 
                 {/* 2. Ortogonal / Perspective toggle */}
@@ -3736,187 +3942,119 @@ export default function App() {
                       ? (lang === 'sk' ? 'Projekcia: Ortogonálna (Axonometria) • Kliknite pre Perspektívu [Kláves O]' : 'Projection: Orthogonal • Click for Perspective [Key O]')
                       : (lang === 'sk' ? 'Projekcia: Perspektívna • Kliknite pre Ortogonálnu [Kláves O]' : 'Projection: Perspective • Click for Orthogonal [Key O]')
                   }
+                  className="btn-back"
                   style={{
-                    background: opts.cameraProjection === 'orthographic' ? '#0284c7' : 'rgba(30,41,59,0.8)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    borderRadius: '6px',
-                    color: '#fff',
-                    padding: '4px 7px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '11px',
-                    boxShadow: opts.cameraProjection === 'orthographic' ? '0 0 8px rgba(2,132,199,0.5)' : 'none',
+                    background: opts.cameraProjection === 'orthographic' ? 'rgba(0,210,255,0.15)' : 'var(--cv-surface-low)',
+                    borderColor: opts.cameraProjection === 'orthographic' ? 'var(--cv-primary)' : 'var(--cv-border)',
+                    color: opts.cameraProjection === 'orthographic' ? 'var(--cv-primary)' : 'var(--cv-text)',
+                    padding: '3px 6px'
                   }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
                     {opts.cameraProjection === 'orthographic' ? 'deployed_code' : 'view_in_ar'}
                   </span>
                 </button>
 
-                {/* 3. Zoom to fit */}
+                {/* 3. Zoom to fit / Recenter */}
                 <button
                   onClick={() => {
                     setFitTrigger(prev => prev + 1)
                     window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'fit' } }))
                   }}
                   title={lang === 'sk' ? 'Prispôsobiť celej obrazovke (Zoom to fit)' : 'Zoom to fit (Full screen)'}
-                  style={{
-                    background: 'rgba(30,41,59,0.8)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    borderRadius: '6px',
-                    color: '#fff',
-                    padding: '4px 7px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '11px',
-                  }}
+                  className="btn-back"
+                  style={{ padding: '3px 6px' }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>fit_screen</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>fit_screen</span>
                 </button>
 
-                {/* 4. Show/hide centerline */}
+                {/* 4. Centerline */}
                 <button
                   onClick={() => toggleOpt('showTraverse')}
                   title={lang === 'sk' ? 'Zobraziť/skryť centrálnu líniu (Centerline)' : 'Show/hide centerline'}
+                  className="btn-back"
                   style={{
-                    background: opts.showTraverse ? '#0369a1' : 'rgba(30,41,59,0.8)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    borderRadius: '6px',
-                    color: opts.showTraverse ? '#fff' : '#64748b',
-                    padding: '4px 7px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '11px',
-                    boxShadow: opts.showTraverse ? '0 0 6px rgba(3,105,161,0.4)' : 'none',
+                    background: opts.showTraverse ? 'rgba(0,210,255,0.15)' : 'var(--cv-surface-low)',
+                    borderColor: opts.showTraverse ? 'var(--cv-primary)' : 'var(--cv-border)',
+                    color: opts.showTraverse ? 'var(--cv-primary)' : 'var(--cv-text-muted)',
+                    padding: '3px 6px'
                   }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>timeline</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>timeline</span>
                 </button>
 
-                {/* 5. Show/hide walls model */}
+                {/* 5. Walls model */}
                 <button
                   onClick={() => toggleOpt('showScraps')}
                   title={lang === 'sk' ? 'Zobraziť/skryť model stien (Walls model)' : 'Show/hide walls model'}
+                  className="btn-back"
                   style={{
-                    background: opts.showScraps ? '#0369a1' : 'rgba(30,41,59,0.8)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    borderRadius: '6px',
-                    color: opts.showScraps ? '#fff' : '#64748b',
-                    padding: '4px 7px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '11px',
-                    boxShadow: opts.showScraps ? '0 0 6px rgba(3,105,161,0.4)' : 'none',
+                    background: opts.showScraps ? 'rgba(0,210,255,0.15)' : 'var(--cv-surface-low)',
+                    borderColor: opts.showScraps ? 'var(--cv-primary)' : 'var(--cv-border)',
+                    color: opts.showScraps ? 'var(--cv-primary)' : 'var(--cv-text-muted)',
+                    padding: '3px 6px'
                   }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>layers</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>layers</span>
                 </button>
 
-                {/* 6. Show/hide surface */}
+                {/* 6. Surface */}
                 <button
                   onClick={toggleSurface}
                   title={lang === 'sk' ? 'Zobraziť/skryť povrchový terén (Surface)' : 'Show/hide surface'}
+                  className="btn-back"
                   style={{
-                    background: (opts.showSurfaceMesh || opts.showSurfaceTexture || opts.showMapboxTerrain) ? '#0369a1' : 'rgba(30,41,59,0.8)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    borderRadius: '6px',
-                    color: (opts.showSurfaceMesh || opts.showSurfaceTexture || opts.showMapboxTerrain) ? '#fff' : '#64748b',
-                    padding: '4px 7px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '11px',
-                    boxShadow: (opts.showSurfaceMesh || opts.showSurfaceTexture || opts.showMapboxTerrain) ? '0 0 6px rgba(3,105,161,0.4)' : 'none',
+                    background: (opts.showSurfaceMesh || opts.showSurfaceTexture || opts.showMapboxTerrain) ? 'rgba(0,210,255,0.15)' : 'var(--cv-surface-low)',
+                    borderColor: (opts.showSurfaceMesh || opts.showSurfaceTexture || opts.showMapboxTerrain) ? 'var(--cv-primary)' : 'var(--cv-border)',
+                    color: (opts.showSurfaceMesh || opts.showSurfaceTexture || opts.showMapboxTerrain) ? 'var(--cv-primary)' : 'var(--cv-text-muted)',
+                    padding: '3px 6px'
                   }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>terrain</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>terrain</span>
                 </button>
 
-                {/* 7. Show/hide bounding box */}
+                {/* 7. Bounding Box */}
                 <button
                   onClick={() => toggleOpt('showBoundingBox')}
                   title={lang === 'sk' ? 'Zobraziť/skryť ohraničujúci kváder (Bounding box)' : 'Show/hide bounding box'}
+                  className="btn-back"
                   style={{
-                    background: opts.showBoundingBox ? '#0369a1' : 'rgba(30,41,59,0.8)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    borderRadius: '6px',
-                    color: opts.showBoundingBox ? '#fff' : '#64748b',
-                    padding: '4px 7px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '11px',
-                    boxShadow: opts.showBoundingBox ? '0 0 6px rgba(3,105,161,0.4)' : 'none',
+                    background: opts.showBoundingBox ? 'rgba(0,210,255,0.15)' : 'var(--cv-surface-low)',
+                    borderColor: opts.showBoundingBox ? 'var(--cv-primary)' : 'var(--cv-border)',
+                    color: opts.showBoundingBox ? 'var(--cv-primary)' : 'var(--cv-text-muted)',
+                    padding: '3px 6px'
                   }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>crop_free</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>crop_free</span>
                 </button>
 
-                {/* ─── Ostatné funkcie (Piktogramy) ─── */}
-                <div style={{ width: '1px', height: '18px', background: 'rgba(255,255,255,0.15)', margin: '0 2px' }} />
-
-                {/* Rez Z (Clipping) */}
+                {/* Z-Clip toggle */}
                 <button
                   onClick={() => toggleOpt('showClipping')}
                   title={lang === 'sk' ? 'Horizontálny rez Z (Plávajúci slider)' : 'Z-Plane Clipping'}
+                  className="btn-back"
                   style={{
-                    background: opts.showClipping ? '#818cf8' : 'rgba(30,41,59,0.8)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    borderRadius: '6px',
-                    color: opts.showClipping ? '#fff' : '#94a3b8',
-                    padding: '4px 7px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '11px',
-                    boxShadow: opts.showClipping ? '0 0 6px rgba(129,140,248,0.4)' : 'none',
+                    background: opts.showClipping ? 'rgba(99,102,241,0.2)' : 'var(--cv-surface-low)',
+                    borderColor: opts.showClipping ? '#818cf8' : 'var(--cv-border)',
+                    color: opts.showClipping ? '#a5b4fc' : 'var(--cv-text-muted)',
+                    padding: '3px 6px'
                   }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>content_cut</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>content_cut</span>
                 </button>
 
-                {/* Splays / Meračské lúče */}
+                {/* 3-State Measurement */}
                 <button
-                  onClick={() => toggleOpt('showSplay')}
-                  title={lang === 'sk' ? 'Meračské lúče (Splays)' : 'Splay Legs'}
-                  style={{
-                    background: opts.showSplay ? '#0369a1' : 'rgba(30,41,59,0.8)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    borderRadius: '6px',
-                    color: opts.showSplay ? '#fff' : '#94a3b8',
-                    padding: '4px 7px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '11px',
-                    boxShadow: opts.showSplay ? '0 0 6px rgba(3,105,161,0.4)' : 'none',
-                  }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>scatter_plot</span>
-                </button>
-
-                {/* 3-stavové tlačidlo merania: Deaktivované -> Vzdialenosť -> Plocha -> Deaktivované */}
-                <button
-                  className={`btn-back hide-mobile-flex${measurementMode !== 'off' ? ' active' : ''}`}
+                  className={`btn-back${measurementMode !== 'off' ? ' active' : ''}`}
                   style={{
                     background: measurementMode === 'distance' 
-                      ? '#6366f1' 
+                      ? 'rgba(99,102,241,0.25)' 
                       : measurementMode === 'polygon' 
-                      ? '#8b5cf6' 
-                      : 'rgba(30,41,59,0.8)',
-                    color: measurementMode !== 'off' ? '#fff' : '#94a3b8',
-                    border: `1px solid ${measurementMode === 'distance' ? '#818cf8' : measurementMode === 'polygon' ? '#a78bfa' : 'rgba(255,255,255,0.15)'}`,
-                    borderRadius: '6px',
-                    padding: '4px 7px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '11px',
-                    boxShadow: measurementMode !== 'off' ? '0 0 8px rgba(99,102,241,0.5)' : 'none'
+                      ? 'rgba(139,92,246,0.25)' 
+                      : 'var(--cv-surface-low)',
+                    color: measurementMode !== 'off' ? '#fff' : 'var(--cv-text-muted)',
+                    borderColor: measurementMode === 'distance' ? '#818cf8' : measurementMode === 'polygon' ? '#a78bfa' : 'var(--cv-border)',
+                    padding: '3px 6px'
                   }}
                   onClick={cycleMeasurementMode}
                   title={
@@ -3927,16 +4065,16 @@ export default function App() {
                       : (lang === 'sk' ? 'Meranie plôch / Polygón (3+ bodov) • Kliknite pre Vypnutie merania' : 'Area/Polygon Mode • Click to turn Off')
                   }
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
                     {measurementMode === 'polygon' ? 'square_foot' : 'straighten'}
                   </span>
                 </button>
 
-                {/* Farebná schéma (Paleta) */}
+                {/* Color Mode palette */}
                 <button
                   onClick={() => {
                     setOpts(p => {
-                      if (p.engine === 'v2') {
+                      if (p.engine === 'v2' && isPlyLidar) {
                         const modes: Array<ViewerOptions['pointCloudColorMode']> = ['original', 'elevation', 'natural']
                         const curIdx = modes.indexOf(p.pointCloudColorMode || 'original')
                         const nextMode = modes[(curIdx + 1) % modes.length]
@@ -3947,27 +4085,22 @@ export default function App() {
                     })
                   }}
                   title={
-                    opts.engine === 'v2'
+                    opts.engine === 'v2' && isPlyLidar
                       ? (lang === 'sk' ? `Farebná schéma: ${opts.pointCloudColorMode === 'elevation' ? 'Výšková' : opts.pointCloudColorMode === 'natural' ? 'Prírodná' : 'Pôvodná'} [Kláves C]` : `Color mode: ${opts.pointCloudColorMode} [Key C]`)
                       : (lang === 'sk' ? `Farba stien: ${opts.scrapsAltitude ? 'Výšková' : 'Základná'} [Kláves C]` : `Wall color: ${opts.scrapsAltitude ? 'Altitude' : 'Default'} [Key C]`)
                   }
+                  className="btn-back"
                   style={{
-                    background: (opts.engine === 'v2' ? opts.pointCloudColorMode !== 'original' : opts.scrapsAltitude) ? '#0284c7' : 'rgba(30,41,59,0.8)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    borderRadius: '6px',
-                    color: '#fff',
-                    padding: '4px 7px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '11px',
-                    boxShadow: (opts.engine === 'v2' ? opts.pointCloudColorMode !== 'original' : opts.scrapsAltitude) ? '0 0 8px rgba(2,132,199,0.4)' : 'none',
+                    background: (opts.engine === 'v2' && isPlyLidar ? opts.pointCloudColorMode !== 'original' : opts.scrapsAltitude) ? 'rgba(0,210,255,0.15)' : 'var(--cv-surface-low)',
+                    borderColor: (opts.engine === 'v2' && isPlyLidar ? opts.pointCloudColorMode !== 'original' : opts.scrapsAltitude) ? 'var(--cv-primary)' : 'var(--cv-border)',
+                    color: (opts.engine === 'v2' && isPlyLidar ? opts.pointCloudColorMode !== 'original' : opts.scrapsAltitude) ? 'var(--cv-primary)' : 'var(--cv-text-muted)',
+                    padding: '3px 6px'
                   }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>palette</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>palette</span>
                 </button>
 
-                {/* Výškový systém (ASL ↔ REL) */}
+                {/* Altitude Mode (ASL / REL) */}
                 <button
                   onClick={() => setOpts(p => ({ ...p, altitudeMode: p.altitudeMode === 'relative' ? 'absolute' : 'relative' }))}
                   title={
@@ -3975,128 +4108,129 @@ export default function App() {
                       ? (lang === 'sk' ? 'Výškový systém: Relatívny (od vchodu 0 m) • Kliknite pre m n.m. [Kláves H]' : 'Altitude mode: Relative (entrance 0 m) • Click for ASL [Key H]')
                       : (lang === 'sk' ? 'Výškový systém: Nadmorská výška (m n.m.) • Kliknite pre Relatívnu [Kláves H]' : 'Altitude mode: Absolute (ASL) • Click for Relative [Key H]')
                   }
+                  className="btn-back"
                   style={{
-                    background: opts.altitudeMode === 'relative' ? 'rgba(56,189,248,0.25)' : 'rgba(30,41,59,0.8)',
-                    border: `1px solid ${opts.altitudeMode === 'relative' ? '#38bdf8' : 'rgba(255,255,255,0.15)'}`,
-                    borderRadius: '6px',
-                    color: opts.altitudeMode === 'relative' ? '#38bdf8' : '#cbd5e1',
-                    padding: '4px 7px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '11px',
-                    fontWeight: 700,
+                    background: opts.altitudeMode === 'relative' ? 'rgba(56,189,248,0.2)' : 'var(--cv-surface-low)',
+                    borderColor: opts.altitudeMode === 'relative' ? '#38bdf8' : 'var(--cv-border)',
+                    color: opts.altitudeMode === 'relative' ? '#38bdf8' : 'var(--cv-text-muted)',
+                    padding: '3px 6px',
+                    fontWeight: 700
                   }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>height</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>height</span>
                 </button>
               </div>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {/* NextGen Navigation Controls */}
-                {opts.engine === 'v2' && (
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    <button 
-                      onClick={() => window.dispatchEvent(new CustomEvent('cave-navigation-undo'))}
-                      style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: '#fff', padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                      title="Undo Movement (Ctrl+Z)"
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>undo</span>
-                    </button>
-                    <button 
-                      onClick={() => setFitTrigger(prev => prev + 1)}
-                      style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: '#fff', padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                      title="Fit to Screen"
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>fit_screen</span>
-                    </button>
-                  </div>
-                )}
 
-                <div className="hide-mobile-flex" style={{ display: 'flex', gap: '4px', background: 'rgba(30,41,59,0.5)', padding: '2px', borderRadius: '6px' }}>
+              {/* Right Controls */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                {/* Fullscreen toggle button */}
+                <button
+                  onClick={toggleFullscreen}
+                  className="btn-back hide-mobile-flex"
+                  style={{ padding: '3px 6px' }}
+                  title={lang === 'sk' ? 'Prepnúť celú obrazovku' : 'Toggle Fullscreen'}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>fullscreen</span>
+                </button>
+
+                {/* Theme Selector (Classic / Precision / Light) */}
+                <div className="hide-mobile-flex" style={{ display: 'flex', gap: '2px', background: 'var(--cv-surface-low)', padding: '2px', borderRadius: '6px', border: '1px solid var(--cv-border)' }}>
+                  {(['classic', 'precision', 'light'] as const).map(th => (
+                    <button key={th} onClick={() => applyTheme(th as any)}
+                      style={{ flex: 1, padding: '3px 6px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer',
+                        background: currentTheme === th ? 'var(--cv-surface-high)' : 'transparent',
+                        color: currentTheme === th ? 'var(--cv-primary)' : 'var(--cv-text-muted)' }}>
+                      {t(`themes.${th}`)}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Language Switcher */}
+                <div className="hide-mobile-flex" style={{ display: 'flex', gap: '2px', background: 'var(--cv-surface-low)', padding: '2px', borderRadius: '6px', border: '1px solid var(--cv-border)' }}>
                   {(['sk', 'en', 'fr', 'de'] as Language[]).map(l => (
                     <button key={l} onClick={() => setLang(l)}
-                      style={{ padding: '4px 6px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer',
-                        background: lang === l ? '#6366f1' : 'transparent',
-                        color: lang === l ? 'white' : '#94a3b8' }}>
+                      style={{ padding: '3px 5px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer',
+                        background: lang === l ? 'var(--cv-primary)' : 'transparent',
+                        color: lang === l ? '#003543' : 'var(--cv-text-muted)' }}>
                       {l.toUpperCase()}
                     </button>
                   ))}
                 </div>
 
-                <div className="show-mobile-flex" style={{ alignItems: 'center', gap: '4px' }}>
-                  <button
-                    onClick={() => {
-                      setOpts(p => {
-                        const next = p.cameraProjection === 'orthographic' ? 'perspective' : 'orthographic'
-                        if (next === 'perspective') setActiveViewPreset(null)
-                        return { ...p, cameraProjection: next }
-                      })
-                    }}
-                    style={{
-                      background: opts.cameraProjection === 'orthographic' ? '#0284c7' : 'rgba(30,41,59,0.8)',
-                      border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: '#fff', padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center'
-                    }}
-                    title={opts.cameraProjection === 'orthographic' ? 'Ortogonálne' : 'Perspektíva'}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                      {opts.cameraProjection === 'orthographic' ? 'deployed_code' : 'view_in_ar'}
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
-                      setActiveViewPreset('top')
-                      window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'top' } }))
-                    }}
-                    style={{
-                      background: opts.cameraProjection === 'orthographic' && activeViewPreset === 'top' ? '#0369a1' : 'rgba(30,41,59,0.8)',
-                      border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: '#fff', padding: '6px 8px', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center'
-                    }}
-                    title="Pôdorys / Plan View"
-                  >
-                    <span>📐</span>
-                  </button>
-                </div>
-
-                <button 
-                  className="show-mobile-flex"
-                  onClick={() => setFitTrigger(prev => prev + 1)}
-                  style={{ background: '#3b82f6', border: '1px solid #2563eb', borderRadius: '6px', color: '#fff', padding: '6px', cursor: 'pointer', alignItems: 'center', justifyContent: 'center' }}
-                  title="Fit to screen"
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '18px', display: 'block' }}>fit_screen</span>
-                </button>
-
-                {/* Share button - only when model is loaded from a public URL */}
+                {/* Share Dialog */}
                 {!isEmbedMode && (
                   <button
                     onClick={openShareDialog}
-                    className="hide-mobile-flex"
-                    style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '6px', color: '#818cf8', padding: '6px 12px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    className="hide-mobile-flex btn-back"
+                    style={{
+                      background: 'rgba(99,102,241,0.12)',
+                      borderColor: 'rgba(99,102,241,0.3)',
+                      color: '#a5b4fc',
+                      padding: '3px 7px',
+                      fontSize: '11px',
+                      fontWeight: 600
+                    }}
                     title={lang === 'sk' ? 'Zdieľať ako iframe' : 'Share as iframe'}
                   >
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px', display: 'block' }}>share</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>share</span>
                     <span>{lang === 'sk' ? 'Zdieľať' : 'Share'}</span>
                   </button>
                 )}
 
-                {/* Help button */}
+                {/* Help Button */}
                 <button
                   onClick={() => setHelpDialogOpen(true)}
-                  style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '6px', color: '#60a5fa', padding: '6px 10px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600 }}
+                  className="btn-back"
+                  style={{
+                    background: 'rgba(0,210,255,0.1)',
+                    borderColor: 'rgba(0,210,255,0.25)',
+                    color: 'var(--cv-primary)',
+                    padding: '3px 7px',
+                    fontSize: '11px',
+                    fontWeight: 600
+                  }}
                   title={lang === 'sk' ? 'Pomocník a používateľská príručka' : 'User guide & help'}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px', display: 'block' }}>help</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>help</span>
                   <span className="hide-mobile-inline">{lang === 'sk' ? 'Návod' : 'Help'}</span>
                 </button>
 
+                {/* Toggle Sidebar Inspector Button */}
+                <button
+                  onClick={() => {
+                    setIsSidebarOpen(prev => !prev)
+                    setIsMobileMenuOpen(prev => !prev)
+                  }}
+                  className="btn-back"
+                  style={{
+                    background: isSidebarOpen ? 'rgba(0,210,255,0.15)' : 'var(--cv-surface-low)',
+                    borderColor: isSidebarOpen ? 'var(--cv-primary)' : 'var(--cv-border)',
+                    color: isSidebarOpen ? 'var(--cv-primary)' : 'var(--cv-text-muted)',
+                    padding: '3px 7px',
+                    fontSize: '11px',
+                    fontWeight: 600
+                  }}
+                  title={lang === 'sk' ? 'Zobraziť/skryť bočný panel' : 'Toggle Inspector Sidebar'}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>view_sidebar</span>
+                  <span className="hide-mobile-inline">{lang === 'sk' ? 'Panel' : 'Panel'}</span>
+                </button>
+
+                {/* Close Model Button */}
                 <button 
                   onClick={handleReset}
-                  style={{ background: '#ef4444', border: '1px solid #dc2626', borderRadius: '6px', color: '#fff', padding: '6px 12px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }}
+                  className="btn-back"
+                  style={{
+                    background: '#dc2626',
+                    borderColor: '#ef4444',
+                    color: '#fff',
+                    padding: '3px 8px',
+                    fontSize: '11px',
+                    fontWeight: 700
+                  }}
+                  title={t('ui.close')}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px', display: 'block' }}>close</span>
-                  <span>{t('ui.close')}</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
                 </button>
               </div>
             </div>
@@ -4110,7 +4244,7 @@ export default function App() {
                   </div>
                 }>
                   <ErrorBoundary>
-                    {opts.engine === 'v1' ? (
+                    {opts.engine === 'v1' || !isPlyLidar ? (
                       <CaveViewer3D
                         cave={cave}
                         options={opts}
@@ -4165,7 +4299,7 @@ export default function App() {
 	                  </ErrorBoundary>
 	                </Suspense>
 
-                {lidarEditMode !== 'off' && cave.pointCount > 0 && (
+                {lidarEditMode !== 'off' && isPlyLidar && cave.pointCount > 0 && (
                   <div
                     className={`lidar-edit-overlay mode-${lidarEditMode}${lidarEditBusy ? ' busy' : ''}`}
                     onPointerDown={beginLidarEditStroke}
@@ -4264,340 +4398,435 @@ export default function App() {
               </div>
 
               {/* Sidebar container — hidden in embed mode unless sidebar=1 is in URL */}
-              {(!isEmbedMode || embedAllowSidebar) && <div className={`sidebar-container ${isMobileMenuOpen ? 'open' : ''}`}>
-                <aside className="sidebar">
-                  {isMobileMenuOpen && (
-                    <div style={{ marginBottom: '1rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                        <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#e2e8f0' }}>{t('sidebar.control')}</span>
-                        <button className="btn-back" style={{ background: '#ef4444', color: '#fff', border: 'none' }} onClick={() => setIsMobileMenuOpen(false)}>✖ {t('ui.close')}</button>
-                      </div>
-                      
-                      <div className="s-label" style={{ marginBottom: '8px' }}>Rýchle nastavenia (Mobil)</div>
-                      
-                      <button
-                        className={`btn-back${measurementMode !== 'off' ? ' active' : ''}`}
-                        style={{
-                          width: '100%',
-                          marginBottom: '10px',
-                          background: measurementMode === 'distance' ? '#6366f1' : measurementMode === 'polygon' ? '#8b5cf6' : 'rgba(99,179,237,0.1)',
-                          color: measurementMode !== 'off' ? '#fff' : '#63b3ed',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '8px',
-                          padding: '10px'
-                        }}
-                        onClick={() => { cycleMeasurementMode(); setIsMobileMenuOpen(false); }}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                          {measurementMode === 'polygon' ? 'square_foot' : 'straighten'}
-                        </span>
-                        <span>
-                          {measurementMode === 'off' 
-                            ? (lang === 'sk' ? 'Aktivovať meranie' : 'Enable measurement')
-                            : measurementMode === 'distance' 
-                            ? (lang === 'sk' ? 'Meranie vzdialeností' : 'Distance mode')
-                            : (lang === 'sk' ? 'Meranie plôch / Polygón' : 'Area / Polygon mode')}
-                        </span>
-                      </button>
-
-                      <div style={{ display: 'flex', gap: '4px', background: '#0f172a', padding: '4px', borderRadius: '8px', marginBottom: '10px' }}>
-                        {(['classic', 'precision', 'light'] as const).map(th => (
-                          <button key={th} onClick={() => applyTheme(th as any)}
-                            style={{ flex: 1, padding: '8px', fontSize: '11px', fontWeight: 'bold', borderRadius: '6px', border: 'none', cursor: 'pointer', background: currentTheme === th ? '#334155' : 'transparent', color: currentTheme === th ? '#f8fafc' : '#64748b' }}>
-                            {t(`themes.${th}`)}
-                          </button>
-                        ))}
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '4px', background: 'rgba(30,41,59,0.5)', padding: '4px', borderRadius: '8px', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
-                        {(['sk', 'en', 'fr', 'de'] as Language[]).map(l => (
-                          <button key={l} onClick={() => setLang(l)}
-                            style={{ flex: 1, padding: '8px', fontSize: '11px', fontWeight: 'bold', borderRadius: '6px', border: 'none', cursor: 'pointer', background: lang === l ? '#6366f1' : 'transparent', color: lang === l ? 'white' : '#94a3b8' }}>
-                            {l.toUpperCase()}
-                          </button>
-                        ))}
-                      </div>
-
-                      <div style={{ background: 'rgba(30,41,59,0.5)', padding: '10px', borderRadius: '8px', marginBottom: '1rem' }}>
-                        <div className="toggle-row" style={{ marginBottom: '8px' }}>
-                          <span style={{ fontSize: '11px', fontWeight: 600, color: '#e2e8f0' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '16px', verticalAlign: 'middle', marginRight: '6px' }}>label</span>
-                            {lang === 'sk' ? 'Výšky vrstevníc' : 'Contour labels'}
-                          </span>
-                          <div className={`switch${opts.showContourLabels ? ' on' : ''}`}
-                            onClick={() => toggleOpt('showContourLabels')} role="switch"
-                            aria-checked={opts.showContourLabels} tabIndex={0} />
-                        </div>
-                        <div className="toggle-row" style={{ marginBottom: '8px' }}>
-                          <span style={{ fontSize: '11px', fontWeight: 600, color: '#e2e8f0' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '16px', verticalAlign: 'middle', marginRight: '6px' }}>tag</span>
-                            {t('stations.names')}
-                          </span>
-                          <div className={`switch${opts.showStationNames ? ' on' : ''}`}
-                            onClick={() => toggleOpt('showStationNames')} role="switch"
-                            aria-checked={opts.showStationNames} tabIndex={0} />
-                        </div>
-                        <div className="toggle-row">
-                          <span style={{ fontSize: '11px', fontWeight: 600, color: '#e2e8f0' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '16px', verticalAlign: 'middle', marginRight: '6px' }}>height</span>
-                            {t('stations.altitude')}
-                          </span>
-                          <div className={`switch${opts.showStationAlt ? ' on' : ''}`}
-                            onClick={() => toggleOpt('showStationAlt')} role="switch"
-                            aria-checked={opts.showStationAlt} tabIndex={0} />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                <div>
-                  <div className="s-label">{t('file.title')}</div>
-                  <div className="info-row"><span>{t('file.format')}</span><span className="info-val">{loadedFile?.ext.replace('.', '').toUpperCase()}</span></div>
-                  <div className="info-row"><span>{t('file.segments')}</span><span className="info-val">{cave.segmentCount.toLocaleString()}</span></div>
-                  <div className="info-row"><span>{t('file.stations')}</span><span className="info-val">{cave.stationCount.toLocaleString()}</span></div>
-                  {cave.scrapCount > 0 && (
-                    <div className="info-row"><span>{t('file.scraps')}</span><span className="info-val">{cave.scrapCount.toLocaleString()}</span></div>
-                  )}
-                </div>
-
-                {/* ─── SIDEBAR TAB BAR ─────────────────────────────────────────────────────── */}
-                <div style={{
-                  display: 'flex', gap: '2px', background: 'rgba(15,23,42,0.9)', padding: '4px',
-                  borderRadius: '10px', border: '1px solid rgba(51,65,85,0.6)', margin: '12px 0 16px',
-                  position: 'sticky', top: 0, zIndex: 10, backdropFilter: 'blur(8px)'
-                }}>
-                  {([
-                    { id: 'cave',     icon: 'domain',      label: lang === 'sk' ? 'Jaskyňa' : 'Cave' },
-                    { id: 'terrain',  icon: 'terrain',     label: lang === 'sk' ? 'Terén' : 'Terrain' },
-                    { id: 'analysis', icon: 'architecture', label: lang === 'sk' ? 'Analýza' : 'Analysis' },
-                  ] as const).map(tab => (
-                    <button key={tab.id} onClick={() => setSidebarTab(tab.id)}
-                      style={{
-                        flex: 1, padding: '7px 4px', fontSize: '10px', fontWeight: 700, borderRadius: '7px',
-                        border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
-                        background: sidebarTab === tab.id ? '#1e3a5f' : 'transparent',
-                        color: sidebarTab === tab.id ? '#60a5fa' : '#64748b',
-                        boxShadow: sidebarTab === tab.id ? '0 1px 6px rgba(59,130,246,0.25)' : 'none',
-                        transition: 'all 0.15s ease'
-                      }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{tab.icon}</span>
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* ═══════════════════════════════════════════════════════════════════════════ */}
-                {/* TAB 1: JASKYŇA & 3D ZOBRAZENIE                                           */}
-                {/* ═══════════════════════════════════════════════════════════════════════════ */}
-                {sidebarTab === 'cave' && <div>
-
-                {/* ── ANALÝZA PRIESTOROVÝCH REZOV ── */}
-                <div style={{ marginBottom: '20px' }}>
-                    <div className="s-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '18px', display: 'block' }}>content_cut</span>
-                      <span>{t('clipping.title')}</span>
-                    </div>
-                    
-                    <div style={{ padding: '12px', background: 'rgba(30,41,59,0.5)', borderRadius: '8px', border: '1px solid rgba(51,65,85,0.5)' }}>
-                      <div className="toggle-row" style={{ marginBottom: '12px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#e2e8f0' }}>{t('clipping.horiz')}</span>
-                        <div className={`switch${opts.showClipping ? ' on' : ''}`}
-                          onClick={() => toggleOpt('showClipping')} role="switch"
-                          aria-checked={opts.showClipping} tabIndex={0}
-                        />
-                      </div>
-
-                      {opts.showClipping && (
-                        <div style={{ marginBottom: '16px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', marginBottom: '6px' }}>
-                            <span>{t('clipping.height')}</span>
-                            <span style={{ color: '#818cf8', fontWeight: 'bold' }}>{opts.clippingHeight.toFixed(1)} m</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <button onClick={() => setOpts(p => ({ ...p, clippingHeight: p.clippingHeight - 1 }))}
-                              style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #334155', background: '#1e293b', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>-</button>
-                            <input type="range" className="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-                              min={(cave.bounds.min.z + (cave.centerOffset?.z || 0)) - 10} max={(cave.bounds.max.z + (cave.centerOffset?.z || 0)) + 10}
-                              step={0.1} value={opts.clippingHeight} onChange={(e) => setOpts(p => ({ ...p, clippingHeight: parseFloat(e.target.value) }))} />
-                            <button onClick={() => setOpts(p => ({ ...p, clippingHeight: p.clippingHeight + 1 }))}
-                              style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #334155', background: '#1e293b', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>+</button>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="toggle-row">
-                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#e2e8f0' }}>{t('clipping.vert')}</span>
-                        <div className={`switch${opts.showProfileClipping ? ' on' : ''}`}
-                          onClick={() => toggleOpt('showProfileClipping')} role="switch"
-                          aria-checked={opts.showProfileClipping} tabIndex={0}
-                        />
-                      </div>
-                      
-                      {opts.showProfileClipping && activeProfilePoints && (
-                        <div style={{ marginTop: '8px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', marginBottom: '6px' }}>
-                            <span>{t('clipping.offset')}</span>
-                            <span style={{ color: '#818cf8', fontWeight: 'bold' }}>{opts.profileClipOffset.toFixed(1)} m</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                            <button onClick={() => setOpts(p => ({ ...p, profileClipOffset: p.profileClipOffset - 0.5 }))}
-                              style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #334155', background: '#1e293b', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>-</button>
-                            <input type="range" className="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-                              min={-50} max={50} step={0.1} value={opts.profileClipOffset}
-                              onChange={(e) => setOpts(p => ({ ...p, profileClipOffset: parseFloat(e.target.value) }))} />
-                            <button onClick={() => setOpts(p => ({ ...p, profileClipOffset: p.profileClipOffset + 0.5 }))}
-                              style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #334155', background: '#1e293b', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>+</button>
-                          </div>
-
-                          <button 
-                            onClick={() => toggleOpt('profileClipFlip')}
-                            style={{ width: '100%', padding: '6px', background: '#1e293b', color: '#94a3b8', fontSize: '10px', border: '1px solid #334155', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                          >
-                            <span className="material-symbols-outlined" style={{ fontSize: '14px', display: 'block' }}>swap_horiz</span>
-                            <span>{t('clipping.flip')}</span>
-                          </button>
-                        </div>
-                      )}
-
-                      {(opts.showClipping || opts.showProfileClipping) && (
-                        <>
-                          <div style={{ marginTop: '8px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                            <div className="toggle-row" style={{ marginBottom: '8px' }}>
-                              <label className="toggle-label" style={{ fontSize: '10px', color: '#94a3b8' }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>border_outer</span>
-                                {lang === 'sk' ? 'Hrana rezu jaskyne' : 'Cave clipping edge'}
-                              </label>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input type="color" value={opts.colorClippingEdges} 
-                                  onChange={(e) => setOpts(p => ({ ...p, colorClippingEdges: e.target.value }))}
-                                  style={{ width: '20px', height: '20px', padding: 0, border: 'none', background: 'none', cursor: 'pointer' }} />
-                                <div className={`switch${opts.showClippingEdges ? ' on' : ''}`}
-                                  onClick={() => toggleOpt('showClippingEdges')} role="switch"
-                                  aria-checked={opts.showClippingEdges} tabIndex={0} />
-                              </div>
-                            </div>
-
-                            <div className="toggle-row" style={{ marginBottom: '12px' }}>
-                              <label className="toggle-label" style={{ fontSize: '10px', color: '#94a3b8' }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>landscape</span>
-                                {lang === 'sk' ? 'Hrana rezu povrchu' : 'Surface clipping edge'}
-                              </label>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input type="color" value={opts.colorSurfaceClippingEdges} 
-                                  onChange={(e) => setOpts(p => ({ ...p, colorSurfaceClippingEdges: e.target.value }))}
-                                  style={{ width: '20px', height: '20px', padding: 0, border: 'none', background: 'none', cursor: 'pointer' }} />
-                                <div className={`switch${opts.showSurfaceClippingEdges ? ' on' : ''}`}
-                                  onClick={() => toggleOpt('showSurfaceClippingEdges')} role="switch"
-                                  aria-checked={opts.showSurfaceClippingEdges} tabIndex={0} />
-                              </div>
-                            </div>
+              {(!isEmbedMode || embedAllowSidebar) && isSidebarOpen && (
+                <div className={`sidebar-container ${isMobileMenuOpen ? 'open' : ''}`}>
+                  <aside className="sidebar">
+                    {/* ─── FIXED PINNED HEADER (Does NOT move with scroll) ─── */}
+                    <div className="sidebar-pinned-header">
+                      {isMobileMenuOpen && (
+                        <div style={{ marginBottom: '0.4rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--cv-border)' }}>
+                            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--cv-text)' }}>{t('sidebar.control')}</span>
+                            <button className="btn-back" style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '3px 8px' }} onClick={() => { setIsMobileMenuOpen(false); setIsSidebarOpen(false); }}>✖ {t('ui.close')}</button>
                           </div>
                           
-                          <div className="toggle-row" style={{ marginTop: '4px' }}>
-                            <label className="toggle-label" style={{ fontSize: '10px', color: '#94a3b8' }}>
-                              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>visibility_off</span>
-                              {lang === 'sk' ? 'Vynechať jaskyňu z rezu' : 'Exclude cave from clip'}
-                            </label>
-                            <div className={`switch${opts.excludeModelFromClipping ? ' on' : ''}`}
-                              onClick={() => toggleOpt('excludeModelFromClipping')} role="switch"
-                              aria-checked={opts.excludeModelFromClipping} tabIndex={0} />
+                          <div className="s-label" style={{ marginBottom: '6px' }}>Rýchle nastavenia (Mobil)</div>
+                          
+                          <button
+                            className={`btn-back${measurementMode !== 'off' ? ' active' : ''}`}
+                            style={{
+                              width: '100%',
+                              marginBottom: '8px',
+                              background: measurementMode === 'distance' ? '#6366f1' : measurementMode === 'polygon' ? '#8b5cf6' : 'var(--cv-surface-low)',
+                              color: measurementMode !== 'off' ? '#fff' : 'var(--cv-primary)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px',
+                              padding: '8px'
+                            }}
+                            onClick={() => { cycleMeasurementMode(); setIsMobileMenuOpen(false); }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                              {measurementMode === 'polygon' ? 'square_foot' : 'straighten'}
+                            </span>
+                            <span>
+                              {measurementMode === 'off' 
+                                ? (lang === 'sk' ? 'Aktivovať meranie' : 'Enable measurement')
+                                : measurementMode === 'distance' 
+                                ? (lang === 'sk' ? 'Meranie vzdialeností' : 'Distance mode')
+                                : (lang === 'sk' ? 'Meranie plôch / Polygón' : 'Area / Polygon mode')}
+                            </span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Dataset Header Summary Banner (Stitch CAD style) */}
+                      <div className="sidebar-dataset-banner">
+                        <div className="sidebar-dataset-top">
+                          <div className="sidebar-dataset-title">
+                            <span className="material-symbols-outlined" style={{ fontSize: '15px', color: 'var(--cv-primary)' }}>analytics</span>
+                            <span>{t('file.title')}</span>
                           </div>
-                        </>
+                          <button
+                            className="sidebar-close-btn"
+                            title={lang === 'sk' ? 'Zbaliť bočný panel' : 'Collapse inspector'}
+                            onClick={() => setIsSidebarOpen(false)}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>close</span>
+                          </button>
+                        </div>
+                        {isPlyLidar ? (
+                          <div className="sidebar-dataset-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+                            <div className="sidebar-stat-card">
+                              <span className="sidebar-stat-label">{t('file.format')}</span>
+                              <span className="sidebar-stat-val">{loadedFile?.ext.replace('.', '').toUpperCase()}</span>
+                            </div>
+                            <div className="sidebar-stat-card">
+                              <span className="sidebar-stat-label">{lang === 'sk' ? 'Body' : 'Points'}</span>
+                              <span className="sidebar-stat-val accent">{cave.pointCount.toLocaleString()}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="sidebar-dataset-grid" style={{ gridTemplateColumns: cave.scrapCount > 0 ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)' }}>
+                            <div className="sidebar-stat-card">
+                              <span className="sidebar-stat-label">{t('file.format')}</span>
+                              <span className="sidebar-stat-val">{loadedFile?.ext.replace('.', '').toUpperCase()}</span>
+                            </div>
+                            <div className="sidebar-stat-card">
+                              <span className="sidebar-stat-label">{t('file.segments')}</span>
+                              <span className="sidebar-stat-val accent">{cave.segmentCount.toLocaleString()}</span>
+                            </div>
+                            <div className="sidebar-stat-card">
+                              <span className="sidebar-stat-label">{t('file.stations')}</span>
+                              <span className="sidebar-stat-val">{cave.stationCount.toLocaleString()}</span>
+                            </div>
+                            {cave.scrapCount > 0 && (
+                              <div className="sidebar-stat-card">
+                                <span className="sidebar-stat-label">{t('file.scraps')}</span>
+                                <span className="sidebar-stat-val">{cave.scrapCount.toLocaleString()}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Fixed Segmented Tabs Bar (Jaskyňa / Terén / Analýza) */}
+                      <div className="sidebar-tab-bar">
+                        {([
+                          { id: 'cave',     icon: 'domain',       label: lang === 'sk' ? 'Jaskyňa' : 'Cave' },
+                          { id: 'terrain',  icon: 'landscape',    label: lang === 'sk' ? 'Terén' : 'Terrain' },
+                          { id: 'analysis', icon: 'insights',     label: lang === 'sk' ? 'Analýza' : 'Analysis' },
+                        ] as const).map(tab => (
+                          <button
+                            key={tab.id}
+                            onClick={() => setSidebarTab(tab.id)}
+                            className={`sidebar-tab-btn ${sidebarTab === tab.id ? 'active' : ''}`}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{tab.icon}</span>
+                            <span>{tab.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* ─── SCROLLABLE CONTENT BODY (Only this scrolls!) ─── */}
+                    <div className="sidebar-scrollable-body">
+                      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+                      {/* TAB 1: JASKYŇA & 3D ZOBRAZENIE                                           */}
+                      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+                      {sidebarTab === 'cave' && <div>
+
+                {/* ── 1. ANALÝZA PRIESTOROVÝCH REZOV ── */}
+                <div className="cad-card">
+                  <div className="cad-card-header">
+                    <div className="cad-card-title">
+                      <span className="material-symbols-outlined">content_cut</span>
+                      <span>{t('clipping.title')}</span>
+                    </div>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: (opts.showClipping || opts.showProfileClipping) ? 'var(--cv-primary)' : 'var(--cv-border)' }} />
+                  </div>
+                  
+                  <div className="toggle-row" style={{ marginBottom: '8px' }}>
+                    <span className="cad-control-label">{t('clipping.horiz')}</span>
+                    <div className={`switch${opts.showClipping ? ' on' : ''}`}
+                      onClick={() => toggleOpt('showClipping')} role="switch"
+                      aria-checked={opts.showClipping} tabIndex={0}
+                    />
+                  </div>
+
+                  {opts.showClipping && (
+                    <div className="cad-subcard" style={{ marginBottom: '10px' }}>
+                      <div className="cad-control-row">
+                        <span>{t('clipping.height')}</span>
+                        <span className="cad-control-value">{opts.clippingHeight.toFixed(1)} m</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button onClick={() => setOpts(p => ({ ...p, clippingHeight: p.clippingHeight - 1 }))}
+                          className="cad-tool-btn" style={{ width: '26px', height: '26px', padding: 0 }}>-</button>
+                        <input type="range" className="cad-slider flex-1"
+                          min={(cave.bounds.min.z + (cave.centerOffset?.z || 0)) - 10} max={(cave.bounds.max.z + (cave.centerOffset?.z || 0)) + 10}
+                          step={0.1} value={opts.clippingHeight} onChange={(e) => setOpts(p => ({ ...p, clippingHeight: parseFloat(e.target.value) }))} />
+                        <button onClick={() => setOpts(p => ({ ...p, clippingHeight: p.clippingHeight + 1 }))}
+                          className="cad-tool-btn" style={{ width: '26px', height: '26px', padding: 0 }}>+</button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="toggle-row" style={{ marginBottom: opts.showProfileClipping ? '8px' : '0' }}>
+                    <span className="cad-control-label">{t('clipping.vert')}</span>
+                    <div className={`switch${opts.showProfileClipping ? ' on' : ''}`}
+                      onClick={() => toggleOpt('showProfileClipping')} role="switch"
+                      aria-checked={opts.showProfileClipping} tabIndex={0}
+                    />
+                  </div>
+                  
+                  {opts.showProfileClipping && activeProfilePoints && (
+                    <div className="cad-subcard" style={{ marginTop: '8px', marginBottom: '8px' }}>
+                      <div className="cad-control-row">
+                        <span>{t('clipping.offset')}</span>
+                        <span className="cad-control-value">{opts.profileClipOffset.toFixed(1)} m</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                        <button onClick={() => setOpts(p => ({ ...p, profileClipOffset: p.profileClipOffset - 0.5 }))}
+                          className="cad-tool-btn" style={{ width: '26px', height: '26px', padding: 0 }}>-</button>
+                        <input type="range" className="cad-slider flex-1"
+                          min={-50} max={50} step={0.1} value={opts.profileClipOffset}
+                          onChange={(e) => setOpts(p => ({ ...p, profileClipOffset: parseFloat(e.target.value) }))} />
+                        <button onClick={() => setOpts(p => ({ ...p, profileClipOffset: p.profileClipOffset + 0.5 }))}
+                          className="cad-tool-btn" style={{ width: '26px', height: '26px', padding: 0 }}>+</button>
+                      </div>
+
+                      <button 
+                        onClick={() => toggleOpt('profileClipFlip')}
+                        className="cad-tool-btn"
+                        style={{ width: '100%' }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>swap_horiz</span>
+                        <span>{t('clipping.flip')}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {(opts.showClipping || opts.showProfileClipping) && (
+                    <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--cv-border)' }}>
+                      <div className="toggle-row" style={{ marginBottom: '6px' }}>
+                        <label className="toggle-label" style={{ fontSize: '10px' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>border_outer</span>
+                          {lang === 'sk' ? 'Hrana rezu jaskyne' : 'Cave clipping edge'}
+                        </label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <input type="color" value={opts.colorClippingEdges} 
+                            onChange={(e) => setOpts(p => ({ ...p, colorClippingEdges: e.target.value }))}
+                            style={{ width: '20px', height: '20px', padding: 0, border: 'none', background: 'none', cursor: 'pointer' }} />
+                          <div className={`switch${opts.showClippingEdges ? ' on' : ''}`}
+                            onClick={() => toggleOpt('showClippingEdges')} role="switch"
+                            aria-checked={opts.showClippingEdges} tabIndex={0} />
+                        </div>
+                      </div>
+
+                      <div className="toggle-row" style={{ marginBottom: '6px' }}>
+                        <label className="toggle-label" style={{ fontSize: '10px' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>landscape</span>
+                          {lang === 'sk' ? 'Hrana rezu povrchu' : 'Surface clipping edge'}
+                        </label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <input type="color" value={opts.colorSurfaceClippingEdges} 
+                            onChange={(e) => setOpts(p => ({ ...p, colorSurfaceClippingEdges: e.target.value }))}
+                            style={{ width: '20px', height: '20px', padding: 0, border: 'none', background: 'none', cursor: 'pointer' }} />
+                          <div className={`switch${opts.showSurfaceClippingEdges ? ' on' : ''}`}
+                            onClick={() => toggleOpt('showSurfaceClippingEdges')} role="switch"
+                            aria-checked={opts.showSurfaceClippingEdges} tabIndex={0} />
+                        </div>
+                      </div>
+                      
+                      <div className="toggle-row">
+                        <label className="toggle-label" style={{ fontSize: '10px' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>visibility_off</span>
+                          {lang === 'sk' ? 'Vynechať jaskyňu z rezu' : 'Exclude cave from clip'}
+                        </label>
+                        <div className={`switch${opts.excludeModelFromClipping ? ' on' : ''}`}
+                          onClick={() => toggleOpt('excludeModelFromClipping')} role="switch"
+                          aria-checked={opts.excludeModelFromClipping} tabIndex={0} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── 2. VRSTVY (Meračská sieť & Os) ── */}
+                <div className="cad-card">
+                  <div className="cad-card-header">
+                    <div className="cad-card-title">
+                      <span className="material-symbols-outlined">polyline</span>
+                      <span>{t('survey.title')}</span>
+                    </div>
+                  </div>
+
+                  <div className="toggle-row">
+                    <label className="toggle-label">
+                      <div className="dot" style={{ background: opts.colorSplay }} />
+                      {t('survey.splay')}
+                      <ColorPicker t={t} value={opts.colorSplay} onChange={(c) => setOpts(p => ({ ...p, colorSplay: c }))} />
+                    </label>
+                    <div className={`switch${opts.showSplay ? ' on' : ''}`}
+                      onClick={() => toggleOpt('showSplay')} role="switch"
+                      aria-checked={opts.showSplay} tabIndex={0} />
+                  </div>
+                  <div className="toggle-row">
+                    <label className="toggle-label">
+                      <div className="dot" style={{ background: opts.colorGrid }} />
+                      {t('survey.grid')}
+                      <ColorPicker t={t} value={opts.colorGrid} onChange={(c) => setOpts(p => ({ ...p, colorGrid: c }))} />
+                    </label>
+                    <div className={`switch${opts.showGrid ? ' on' : ''}`}
+                      onClick={() => toggleOpt('showGrid')} role="switch"
+                      aria-checked={opts.showGrid} tabIndex={0} />
+                  </div>
+                  <div className="toggle-row">
+                    <label className="toggle-label">{t('survey.gizmo')}</label>
+                    <div className={`switch${opts.showGizmo ? ' on' : ''}`}
+                      onClick={() => toggleOpt('showGizmo')} role="switch"
+                      aria-checked={opts.showGizmo} tabIndex={0} />
+                  </div>
+                  <div className="toggle-row">
+                    <label className="toggle-label">{t('survey.bbox')}</label>
+                    <div className={`switch${opts.showBoundingBox ? ' on' : ''}`}
+                      onClick={() => toggleOpt('showBoundingBox')} role="switch"
+                      aria-checked={opts.showBoundingBox} tabIndex={0} />
+                  </div>
+                  <div className="toggle-row">
+                    <label className="toggle-label">{t('survey.altitude')}</label>
+                    <div className={`switch${opts.traverseAltitude ? ' on' : ''}`}
+                      onClick={() => toggleOpt('traverseAltitude')} role="switch"
+                      aria-checked={opts.traverseAltitude} tabIndex={0} />
+                  </div>
+                  <div className="toggle-row">
+                    <label className="toggle-label">
+                      <div className="dot" style={{ background: opts.colorTraverse }} />
+                      {t('survey.tubes')}
+                      <ColorPicker t={t} value={opts.colorTraverse} onChange={(c) => setOpts(p => ({ ...p, colorTraverse: c }))} />
+                    </label>
+                    <div className={`switch${opts.showTraverse ? ' on' : ''}`}
+                      onClick={() => toggleOpt('showTraverse')} role="switch"
+                      aria-checked={opts.showTraverse} tabIndex={0} />
+                  </div>
+
+                  {opts.showTraverse && (
+                    <div className="cad-subcard">
+                      <div className="cad-control-row">
+                        <span>{t('survey.tubes')} - {t('terrain.wire').toLowerCase()}</span>
+                        <span className="cad-control-value">{(opts.traverseRadius * 100).toFixed(0)} cm</span>
+                      </div>
+                      <input type="range" min={0.01} max={1.5} step={0.01}
+                        value={opts.traverseRadius}
+                        onChange={e => setOpts(p => ({ ...p, traverseRadius: Number(e.target.value) }))}
+                        className="cad-slider w-full" />
+                    </div>
+                  )}
+                </div>
+
+                {/* ── 3. SPLAY SDF REKONŠTRUKCIA STIEN & HRANATOSŤ ── */}
+                {cave && (
+                  <div className="cad-card">
+                    <div className="cad-card-header">
+                      <div className="cad-card-title">
+                        <span className="material-symbols-outlined">polyline</span>
+                        <span>{lang === 'sk' ? 'Splay SDF steny (2D/3D)' : 'Splay SDF Walls (2D/3D)'}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {appStatus?.type === 'progress' && appStatus.msg.includes('Splay SDF') && (
+                          <span className="material-symbols-outlined text-cyan-400" style={{ fontSize: '13px', animation: 'spin 1.5s linear infinite' }} title={appStatus.msg}>
+                            sync
+                          </span>
+                        )}
+                        <span style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '4px', background: splayCount > 0 ? 'rgba(0,210,255,0.15)' : 'var(--cv-surface-high)', color: splayCount > 0 ? 'var(--cv-primary)' : 'var(--cv-text-muted)', fontFamily: 'var(--cv-font-mono)' }}>
+                          {splayCount > 0 ? `${splayCount} ${lang === 'sk' ? 'lúčov' : 'rays'}` : (lang === 'sk' ? 'bez splays' : 'no splays')}
+                        </span>
+                        <div className={`switch${opts.enableSplayWalls ? ' on' : ''}`}
+                          onClick={() => {
+                            if (!opts.enableSplayWalls && splayCount === 0) {
+                              setAppStatus({
+                                msg: lang === 'sk' ? 'Tento model neobsahuje pomocné splay zámery (lúče na steny) pre 2D SDF rekonštrukciu.' : 'This model does not contain radial splay measurements for 2D SDF reconstruction.',
+                                type: 'info'
+                              });
+                              setTimeout(() => setAppStatus(null), 4000);
+                            }
+                            toggleOpt('enableSplayWalls');
+                          }} role="switch"
+                          aria-checked={opts.enableSplayWalls} tabIndex={0} />
+                      </div>
+                    </div>
+
+                    {/* Prominently visible Hranatosť / Ostré steny */}
+                    <div className="cad-subcard">
+                      <div className="cad-control-row">
+                        <span className="cad-control-label">
+                          <span className="material-symbols-outlined" style={{ fontSize: '15px', color: 'var(--cv-primary)' }}>square_foot</span>
+                          {lang === 'sk' ? 'Hranatosť / Ostré steny' : 'Angular / Sharpness'}
+                        </span>
+                        <span className="cad-control-value">{opts.splaySmoothK ?? 0.06}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0.02"
+                        max="0.25"
+                        step="0.01"
+                        value={opts.splaySmoothK ?? 0.06}
+                        onChange={e => {
+                          const val = Number(e.target.value);
+                          setOpts(p => ({ ...p, splaySmoothK: val, enableSplayWalls: true }));
+                        }}
+                        className="cad-slider w-full"
+                        title={lang === 'sk' ? 'Nižšia hodnota = ostrejšie, hranatejšie steny podľa lúčov' : 'Lower value = sharper, more angular walls'}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8.5px', color: 'var(--cv-text-muted)', marginTop: '4px' }}>
+                        <span>{lang === 'sk' ? 'Ostré hrany (0.02)' : 'Sharp facets (0.02)'}</span>
+                        <span>{lang === 'sk' ? 'Oblé steny (0.25)' : 'Smooth rounded (0.25)'}</span>
+                      </div>
+
+                      {opts.enableSplayWalls && (
+                        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--cv-border)' }}>
+                          <div className="cad-control-row">
+                            <span>{lang === 'sk' ? 'Rádius chodby' : 'Corridor radius'}</span>
+                            <span className="cad-control-value">{(opts.splayCapsuleRadius ?? 0.10).toFixed(2)}m</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0.04"
+                            max="0.30"
+                            step="0.01"
+                            value={opts.splayCapsuleRadius ?? 0.10}
+                            onChange={e => setOpts(p => ({ ...p, splayCapsuleRadius: Number(e.target.value) }))}
+                            className="cad-slider w-full"
+                            title={lang === 'sk' ? 'Hrúbka prechodového koridoru medzi meračskými bodmi' : 'Passage corridor thickness'}
+                          />
+
+                          <div className="cad-control-row" style={{ marginTop: '8px' }}>
+                            <span>{lang === 'sk' ? 'Detail mriežky (Voxel)' : 'Voxel grid size'}</span>
+                            <span className="cad-control-value">{(opts.splayVoxelSize ?? 0.22).toFixed(2)}m</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0.10"
+                            max="0.45"
+                            step="0.02"
+                            value={opts.splayVoxelSize ?? 0.22}
+                            onChange={e => setOpts(p => ({ ...p, splayVoxelSize: Number(e.target.value) }))}
+                            className="cad-slider w-full"
+                            title={lang === 'sk' ? 'Menší voxel = jemnejšie detaily a ostrejšie lomové hrany' : 'Smaller voxel = finer details and sharper fracture edges'}
+                          />
+                        </div>
                       )}
                     </div>
-                </div>
+                  </div>
+                )}
 
-                {/* ── VRSTVY (survey) ── */}
-                <div>
-                  <div className="s-label">{t('survey.title')}</div>
-                    <div className="toggle-row">
-                      <label className="toggle-label">
-                        <div className="dot" style={{ background: opts.colorSplay }} />
-                        {t('survey.splay')}
-                        <ColorPicker t={t} value={opts.colorSplay} onChange={(c) => setOpts(p => ({ ...p, colorSplay: c }))} />
-                      </label>
-                      <div className={`switch${opts.showSplay ? ' on' : ''}`}
-                        onClick={() => toggleOpt('showSplay')} role="switch"
-                        aria-checked={opts.showSplay} tabIndex={0} />
-                    </div>
-                    <div className="toggle-row">
-                      <label className="toggle-label">
-                        <div className="dot" style={{ background: opts.colorGrid }} />
-                        {t('survey.grid')}
-                        <ColorPicker t={t} value={opts.colorGrid} onChange={(c) => setOpts(p => ({ ...p, colorGrid: c }))} />
-                      </label>
-                      <div className={`switch${opts.showGrid ? ' on' : ''}`}
-                        onClick={() => toggleOpt('showGrid')} role="switch"
-                        aria-checked={opts.showGrid} tabIndex={0} />
-                    </div>
-                    <div className="toggle-row">
-                      <label className="toggle-label">{t('survey.gizmo')}</label>
-                      <div className={`switch${opts.showGizmo ? ' on' : ''}`}
-                        onClick={() => toggleOpt('showGizmo')} role="switch"
-                        aria-checked={opts.showGizmo} tabIndex={0} />
-                    </div>
-                    <div className="toggle-row">
-                      <label className="toggle-label">{t('survey.bbox')}</label>
-                      <div className={`switch${opts.showBoundingBox ? ' on' : ''}`}
-                        onClick={() => toggleOpt('showBoundingBox')} role="switch"
-                        aria-checked={opts.showBoundingBox} tabIndex={0} />
-                    </div>
-                    <div className="toggle-row">
-                      <label className="toggle-label">{t('survey.altitude')}</label>
-                      <div className={`switch${opts.traverseAltitude ? ' on' : ''}`}
-                        onClick={() => toggleOpt('traverseAltitude')} role="switch"
-                        aria-checked={opts.traverseAltitude} tabIndex={0} />
-                    </div>
-                    <div className="toggle-row">
-                      <label className="toggle-label">
-                        <div className="dot" style={{ background: opts.colorTraverse }} />
-                        {t('survey.tubes')}
-                        <ColorPicker t={t} value={opts.colorTraverse} onChange={(c) => setOpts(p => ({ ...p, colorTraverse: c }))} />
-                      </label>
-                      <div className={`switch${opts.showTraverse ? ' on' : ''}`}
-                        onClick={() => toggleOpt('showTraverse')} role="switch"
-                        aria-checked={opts.showTraverse} tabIndex={0} />
-                    </div>
-
-                    {opts.showTraverse && (
-                      <div style={{ marginTop: '8px', padding: '0 4px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
-                          <span>{t('survey.tubes')} - {t('terrain.wire').toLowerCase()}</span>
-                          <span style={{ color: '#4fc3f7' }}>{(opts.traverseRadius * 100).toFixed(0)} cm</span>
-                        </div>
-                        <input type="range" min={0.01} max={1.5} step={0.01}
-                          value={opts.traverseRadius}
-                          onChange={e => setOpts(p => ({ ...p, traverseRadius: Number(e.target.value) }))}
-                          className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                {/* ── 4. STENY JASKYNE (scraps / point cloud) ── */}
+                {(cave.scrapCount > 0 || isPlyLidar) && (
+                  <div className="cad-card">
+                    <div className="cad-card-header">
+                      <div className="cad-card-title">
+                        <div className="dot" style={{ background: opts.colorScraps }} />
+                        <span>{t('cave.title')}</span>
+                        <ColorPicker t={t} value={opts.colorScraps} onChange={(c) => setOpts(p => ({ ...p, colorScraps: c }))} />
                       </div>
-                    )}
-                </div>
-
-                {/* ── STENY JASKYNE (scraps / point cloud) ── */}
-                {(cave.scrapCount > 0 || cave.pointCount > 0) && (
-                  <div>
-                    <div className="s-label">
-                      <div className="dot" style={{ background: opts.colorScraps }} />
-                      {t('cave.title')}
-                      <ColorPicker t={t} value={opts.colorScraps} onChange={(c) => setOpts(p => ({ ...p, colorScraps: c }))} />
                     </div>
 
                     {/* MAIN NEXTGEN SWITCH - only for point-cloud models */}
-	                    {cave.pointCount > 0 && (
-	                      <div className="toggle-row" style={{ background: 'rgba(99,102,241,0.1)', padding: '8px', borderRadius: '8px', marginBottom: '12px', border: '1px solid rgba(99,102,241,0.2)' }}>
-                        <label className="toggle-label" style={{ color: '#a5b4fc', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {isPlyLidar && (
+                      <div className="toggle-row" style={{ background: 'rgba(0,210,255,0.08)', padding: '6px 8px', borderRadius: '6px', marginBottom: '10px', border: '1px solid rgba(0,210,255,0.2)' }}>
+                        <label className="toggle-label" style={{ color: 'var(--cv-primary)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>blur_on</span>
                           {lang === 'sk' ? 'LIDAR NEXTGEN' : 'LiDAR NEXTGEN'}
                         </label>
                         <div className={`switch${opts.engine === 'v2' ? ' on' : ''}`}
                           onClick={() => setOpts(p => ({ ...p, engine: p.engine === 'v2' ? 'v1' : 'v2' }))} role="switch"
                           aria-checked={opts.engine === 'v2'} tabIndex={0} />
-	                      </div>
-	                    )}
+                      </div>
+                    )}
 
-                    {cave.pointCount > 0 && (
-                      <div className={`lidar-edit-panel${lidarEditMode !== 'off' ? ' active' : ''}`}>
+                    {isPlyLidar && (
+                      <div className={`lidar-edit-panel${lidarEditMode !== 'off' ? ' active' : ''}`} style={{ background: 'var(--cv-surface-low)', borderColor: 'var(--cv-border)' }}>
                         <div className="lidar-edit-header">
                           <span className="lidar-edit-title">
                             <EraserIcon aria-hidden="true" />
@@ -4639,6 +4868,7 @@ export default function App() {
                             value={lidarBrushSize}
                             onChange={event => setLidarBrushSize(Number(event.target.value))}
                             disabled={lidarEditBusy}
+                            className="cad-slider flex-1"
                           />
                           <span>{lidarBrushSize}px</span>
                         </div>
@@ -4694,47 +4924,47 @@ export default function App() {
                       </div>
                     )}
 
-	                    {/* CASE A: NEXTGEN IS ON (v2 Engine) */}
-                    {opts.engine === 'v2' && cave.pointCount > 0 ? (
-                      <div style={{ padding: '0 4px' }}>
-                        <div style={{ marginBottom: 12 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>{lang === 'sk' ? 'VEĽKOSŤ BODOV' : 'POINT SIZE'}</label>
-                            <span style={{ fontSize: 10, color: '#818cf8', fontWeight: 700 }}>{opts.pointCloudSize.toFixed(2)}</span>
+                    {/* CASE A: NEXTGEN IS ON (v2 Engine) */}
+                    {opts.engine === 'v2' && isPlyLidar ? (
+                      <div className="cad-subcard">
+                        <div style={{ marginBottom: 10 }}>
+                          <div className="cad-control-row">
+                            <span>{lang === 'sk' ? 'Veľkosť bodov' : 'Point Size'}</span>
+                            <span className="cad-control-value">{opts.pointCloudSize.toFixed(2)}</span>
                           </div>
                           <input type="range" min={0.0} max={2.0} step={0.05}
                             value={opts.pointCloudSize}
                             onChange={e => setOpts(p => ({ ...p, pointCloudSize: Number(e.target.value) }))}
-                            className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+                            className="cad-slider w-full" />
                         </div>
 
-                        <div style={{ marginBottom: 12 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>{lang === 'sk' ? 'JAS MODELU' : 'BRIGHTNESS'}</label>
-                            <span style={{ fontSize: 10, color: '#818cf8', fontWeight: 700 }}>{opts.pointCloudBrightness.toFixed(2)}</span>
+                        <div style={{ marginBottom: 10 }}>
+                          <div className="cad-control-row">
+                            <span>{lang === 'sk' ? 'Jas modelu' : 'Brightness'}</span>
+                            <span className="cad-control-value">{opts.pointCloudBrightness.toFixed(2)}</span>
                           </div>
                           <input type="range" min={0.1} max={3.0} step={0.1}
                             value={opts.pointCloudBrightness}
                             onChange={e => setOpts(p => ({ ...p, pointCloudBrightness: Number(e.target.value) }))}
-                            className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+                            className="cad-slider w-full" />
                         </div>
 
-                        <div style={{ marginBottom: 12 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>{lang === 'sk' ? 'PLASTICITA' : 'PLASTICITY'}</label>
-                            <span style={{ fontSize: 10, color: '#818cf8', fontWeight: 700 }}>{opts.pointCloudPlasticity.toFixed(1)}</span>
+                        <div style={{ marginBottom: 10 }}>
+                          <div className="cad-control-row">
+                            <span>{lang === 'sk' ? 'Plasticita' : 'Plasticity'}</span>
+                            <span className="cad-control-value">{opts.pointCloudPlasticity.toFixed(1)}</span>
                           </div>
                           <input type="range" min={0.5} max={2.5} step={0.1}
                             value={opts.pointCloudPlasticity}
                             onChange={e => setOpts(p => ({ ...p, pointCloudPlasticity: Number(e.target.value) }))}
-                            className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+                            className="cad-slider w-full" />
                         </div>
 
-                        <div style={{ marginBottom: 12 }}>
-                          <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, display: 'block', marginBottom: 6 }}>
-                            {lang === 'sk' ? 'TVAR BODOV' : 'POINT SHAPE'}
+                        <div style={{ marginBottom: 10 }}>
+                          <label className="cad-control-label" style={{ marginBottom: 6 }}>
+                            {lang === 'sk' ? 'Tvar bodov' : 'Point Shape'}
                           </label>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
                             {POINT_CLOUD_SHAPE_OPTIONS.map(option => {
                               const shape = option.id;
                               const ShapeIcon = POINT_CLOUD_SHAPE_ICONS[shape];
@@ -4743,8 +4973,7 @@ export default function App() {
                               return (
                                 <button key={shape} onClick={() => setOpts(p => ({ ...p, pointCloudShape: shape }))}
                                   title={label}
-                                  style={{ flex: '1 1 45%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '5px', minHeight: 30, fontSize: '9px', padding: '5px 3px', borderRadius: '4px', border: 'none', cursor: 'pointer',
-                                    background: active ? '#6366f1' : 'rgba(30,41,59,0.5)', color: 'white' }}>
+                                  className={`cad-tool-btn ${active ? 'active' : ''}`}>
                                   <ShapeIcon size={13} strokeWidth={2.2} aria-hidden="true" />
                                   <span>{label}</span>
                                 </button>
@@ -4753,9 +4982,9 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div style={{ marginBottom: 12 }}>
-                          <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, display: 'block', marginBottom: 6 }}>
-                            {lang === 'sk' ? 'REŽIM FARIEB' : 'COLOR MODE'}
+                        <div style={{ marginBottom: 10 }}>
+                          <label className="cad-control-label" style={{ marginBottom: 6 }}>
+                            {lang === 'sk' ? 'Režim farieb' : 'Color Mode'}
                           </label>
                           <div style={{ display: 'flex', gap: '4px' }}>
                             {[
@@ -4764,8 +4993,7 @@ export default function App() {
                               { id: 'natural',   label: lang === 'sk' ? 'Vlastná' : 'Custom' },
                             ].map(mode => (
                               <button key={mode.id} onClick={() => setOpts(p => ({ ...p, pointCloudColorMode: mode.id as any }))}
-                                style={{ flex: 1, fontSize: '9px', padding: '4px 2px', borderRadius: '4px', border: 'none', cursor: 'pointer',
-                                  background: opts.pointCloudColorMode === mode.id ? '#6366f1' : 'rgba(30,41,59,0.5)', color: 'white' }}>
+                                className={`cad-tool-btn flex-1 ${opts.pointCloudColorMode === mode.id ? 'active' : ''}`}>
                                 {mode.label}
                               </button>
                             ))}
@@ -4773,10 +5001,10 @@ export default function App() {
                         </div>
 
                         {opts.pointCloudColorMode === 'natural' && (
-                          <div style={{ marginBottom: 12 }}>
+                          <div style={{ marginBottom: 10 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <div className="dot" style={{ background: opts.pointCloudCustomColor, width: '12px', height: '12px' }} />
-                              <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>{lang === 'sk' ? 'FARBA JASKYNE' : 'CAVE COLOR'}</label>
+                              <label className="cad-control-label">{lang === 'sk' ? 'Farba jaskyne' : 'Cave Color'}</label>
                               <div style={{ marginLeft: 'auto' }}>
                                 <ColorPicker t={t} value={opts.pointCloudCustomColor} onChange={(c) => setOpts(p => ({ ...p, pointCloudCustomColor: c }))} />
                               </div>
@@ -4785,11 +5013,11 @@ export default function App() {
                         )}
 
                         {/* Selektívne zobrazenie LiDAR Point Cloudu */}
-                        <div style={{ marginBottom: 12 }}>
-                          <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, display: 'block', marginBottom: 6 }}>
-                            {lang === 'sk' ? 'SELEKTÍVNE ZOBRAZENIE' : 'SELECTIVE VIEW'}
+                        <div style={{ marginBottom: 10 }}>
+                          <label className="cad-control-label" style={{ marginBottom: 6 }}>
+                            {lang === 'sk' ? 'Selektívne zobrazenie' : 'Selective View'}
                           </label>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
                             {[
                               { id: 'all',     label: lang === 'sk' ? 'Všetko' : 'All' },
                               { id: 'floor',   label: lang === 'sk' ? 'Podlaha' : 'Floor' },
@@ -4798,8 +5026,7 @@ export default function App() {
                               { id: 'heatmap', label: lang === 'sk' ? 'Heatmapa' : 'Heatmap' },
                             ].map(mode => (
                               <button key={mode.id} onClick={() => setOpts(p => ({ ...p, pointCloudViewMode: mode.id as any }))}
-                                style={{ flex: '1 1 30%', fontSize: '9px', padding: '5px 2px', borderRadius: '4px', border: 'none', cursor: 'pointer',
-                                  background: opts.pointCloudViewMode === mode.id ? '#6366f1' : 'rgba(30,41,59,0.5)', color: 'white' }}>
+                                className={`cad-tool-btn ${opts.pointCloudViewMode === mode.id ? 'active' : ''}`}>
                                 {mode.label}
                               </button>
                             ))}
@@ -4808,53 +5035,37 @@ export default function App() {
 
                         {/* Interaktívne posuvníky prahových hodnôt segmentácie */}
                         {opts.pointCloudViewMode !== 'all' && (
-                          <>
-                            <div style={{ marginBottom: 12 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>
-                                  {lang === 'sk' ? 'HRANIČNÁ VÝŠKA REZU' : 'HEIGHT THRESHOLD'}
-                                </label>
-                                <span style={{ fontSize: 10, color: '#6366f1', marginLeft: 'auto', fontWeight: 700 }}>
-                                  {(opts.pointCloudHeightThreshold ?? 0.1).toFixed(2)}
-                                </span>
+                          <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--cv-border)' }}>
+                            <div style={{ marginBottom: 8 }}>
+                              <div className="cad-control-row">
+                                <span>{lang === 'sk' ? 'Hraničná výška rezu' : 'Height Threshold'}</span>
+                                <span className="cad-control-value">{(opts.pointCloudHeightThreshold ?? 0.1).toFixed(2)}</span>
                               </div>
                               <input type="range" min="-0.8" max="0.8" step="0.05"
                                 value={opts.pointCloudHeightThreshold ?? 0.1}
                                 onChange={e => setOpts(p => ({ ...p, pointCloudHeightThreshold: Number(e.target.value) }))}
-                                className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+                                className="cad-slider w-full" />
                             </div>
 
-                            <div style={{ marginBottom: 12 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700 }}>
-                                  {lang === 'sk' ? 'UHOL SKLONU PLOCHY' : 'ANGLE THRESHOLD'}
-                                </label>
-                                <span style={{ fontSize: 10, color: '#6366f1', marginLeft: 'auto', fontWeight: 700 }}>
-                                  {(opts.pointCloudAngleThreshold ?? 0.3).toFixed(2)}
-                                </span>
+                            <div style={{ marginBottom: 8 }}>
+                              <div className="cad-control-row">
+                                <span>{lang === 'sk' ? 'Uhol sklonu plochy' : 'Angle Threshold'}</span>
+                                <span className="cad-control-value">{(opts.pointCloudAngleThreshold ?? 0.3).toFixed(2)}</span>
                               </div>
                               <input type="range" min="0.0" max="0.9" step="0.05"
                                 value={opts.pointCloudAngleThreshold ?? 0.3}
                                 onChange={e => setOpts(p => ({ ...p, pointCloudAngleThreshold: Number(e.target.value) }))}
-                                className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+                                className="cad-slider w-full" />
                             </div>
-                          </>
+                          </div>
                         )}
 
-                        {/* 3C: Eye-Dome Lighting (EDL) Toggle */}
-                        <div className="toggle-row">
-                          <label className="toggle-label">{lang === 'sk' ? 'Eye-Dome Lighting (EDL 3C)' : 'Eye-Dome Lighting (3C)'}</label>
+                        {/* Eye-Dome Lighting (EDL) Toggle */}
+                        <div className="toggle-row" style={{ borderBottom: 'none', paddingTop: '6px' }}>
+                          <label className="toggle-label">{lang === 'sk' ? 'Eye-Dome Lighting (EDL)' : 'Eye-Dome Lighting'}</label>
                           <div className={`switch${opts.enableEDL !== false ? ' on' : ''}`}
                             onClick={() => toggleOpt('enableEDL')} role="switch"
                             aria-checked={opts.enableEDL !== false} tabIndex={0} />
-                        </div>
-
-                        {/* 2C: Ambient Occlusion (SSAO) */}
-                        <div className="toggle-row">
-                          <label className="toggle-label">{lang === 'sk' ? 'Ambient Occlusion (SSAO 2C)' : 'Ambient Occlusion (2C)'}</label>
-                          <div className={`switch${opts.enableSSAO ? ' on' : ''}`}
-                            onClick={() => toggleOpt('enableSSAO')} role="switch"
-                            aria-checked={opts.enableSSAO} tabIndex={0} />
                         </div>
                       </div>
                     ) : (
@@ -4894,105 +5105,18 @@ export default function App() {
                             aria-checked={opts.showRenderCave} tabIndex={0} />
                         </div>
 
-                        {/* 2A: Zlúčenie stien (Scrap Batching) */}
+                        {/* Zlúčenie stien (Scrap Batching) */}
                         <div className="toggle-row">
-                          <label className="toggle-label">{lang === 'sk' ? 'Zlúčenie stien (Batching 2A)' : 'Merge Scraps (2A)'}</label>
+                          <label className="toggle-label">{lang === 'sk' ? 'Zlúčenie stien (Batching)' : 'Merge Scraps'}</label>
                           <div className={`switch${opts.enableScrapsBatching !== false ? ' on' : ''}`}
                             onClick={() => toggleOpt('enableScrapsBatching')} role="switch"
                             aria-checked={opts.enableScrapsBatching !== false} tabIndex={0} />
                         </div>
 
-                        {/* 2C: Ambient Occlusion (SSAO) */}
-                        <div className="toggle-row">
-                          <label className="toggle-label">{lang === 'sk' ? 'Ambient Occlusion (SSAO 2C)' : 'Ambient Occlusion (2C)'}</label>
-                          <div className={`switch${opts.enableSSAO ? ' on' : ''}`}
-                            onClick={() => toggleOpt('enableSSAO')} role="switch"
-                            aria-checked={opts.enableSSAO} tabIndex={0} />
-                        </div>
-
-                        {/* 2D: Splay SDF steny */}
-                        <div className="toggle-row">
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <label className="toggle-label">{lang === 'sk' ? 'Splay SDF steny (2D)' : 'Splay SDF Walls (2D)'}</label>
-                            {appStatus?.type === 'progress' && appStatus.msg.includes('Splay SDF') && (
-                              <span className="material-symbols-outlined text-cyan-400" style={{ fontSize: '13px', animation: 'spin 1.5s linear infinite' }} title={appStatus.msg}>
-                                sync
-                              </span>
-                            )}
-                            {cave && (
-                              <span style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '4px', background: splayCount > 0 ? 'rgba(6,182,212,0.15)' : 'rgba(100,116,139,0.2)', color: splayCount > 0 ? '#22d3ee' : '#94a3b8' }}>
-                                {splayCount > 0 ? `${splayCount} ${lang === 'sk' ? 'lúčov' : 'rays'}` : (lang === 'sk' ? 'bez splays' : 'no splays')}
-                              </span>
-                            )}
-                          </div>
-                          <div className={`switch${opts.enableSplayWalls ? ' on' : ''}`}
-                            onClick={() => {
-                              if (!opts.enableSplayWalls && splayCount === 0) {
-                                setAppStatus({
-                                  msg: lang === 'sk' ? 'Tento model neobsahuje pomocné splay zámery (lúče na steny) pre 2D SDF rekonštrukciu.' : 'This model does not contain radial splay measurements for 2D SDF reconstruction.',
-                                  type: 'info'
-                                });
-                                setTimeout(() => setAppStatus(null), 4000);
-                              }
-                              toggleOpt('enableSplayWalls');
-                            }} role="switch"
-                            aria-checked={opts.enableSplayWalls} tabIndex={0} />
-                        </div>
-
-                        {/* Splay SDF precision & angular radius sliders */}
-                        {opts.enableSplayWalls && (
-                          <div style={{ marginTop: 6, marginBottom: 8, padding: '6px 8px', background: 'rgba(15,23,42,0.45)', borderRadius: '6px', border: '1px solid rgba(51,65,85,0.4)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#94a3b8', marginBottom: '2px' }}>
-                              <span>{lang === 'sk' ? 'Hranatosť / Ostré steny' : 'Angular / Sharpness'}</span>
-                              <span style={{ color: '#38bdf8' }}>{opts.splaySmoothK ?? 0.06}</span>
-                            </div>
-                            <input
-                              type="range"
-                              min="0.02"
-                              max="0.25"
-                              step="0.01"
-                              value={opts.splaySmoothK ?? 0.06}
-                              onChange={e => setOpts(p => ({ ...p, splaySmoothK: Number(e.target.value) }))}
-                              className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
-                              title={lang === 'sk' ? 'Nižšia hodnota = ostrejšie, hranatejšie steny podľa lúčov' : 'Lower value = sharper, more angular walls'}
-                            />
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#94a3b8', marginTop: '6px', marginBottom: '2px' }}>
-                              <span>{lang === 'sk' ? 'Rádius chodby' : 'Corridor radius'}</span>
-                              <span style={{ color: '#38bdf8' }}>{(opts.splayCapsuleRadius ?? 0.10).toFixed(2)}m</span>
-                            </div>
-                            <input
-                              type="range"
-                              min="0.04"
-                              max="0.30"
-                              step="0.01"
-                              value={opts.splayCapsuleRadius ?? 0.10}
-                              onChange={e => setOpts(p => ({ ...p, splayCapsuleRadius: Number(e.target.value) }))}
-                              className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
-                              title={lang === 'sk' ? 'Hrúbka prechodového koridoru medzi meračskými bodmi' : 'Passage corridor thickness'}
-                            />
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#94a3b8', marginTop: '6px', marginBottom: '2px' }}>
-                              <span>{lang === 'sk' ? 'Detail mriežky (Voxel)' : 'Voxel grid size'}</span>
-                              <span style={{ color: '#38bdf8' }}>{(opts.splayVoxelSize ?? 0.22).toFixed(2)}m</span>
-                            </div>
-                            <input
-                              type="range"
-                              min="0.10"
-                              max="0.45"
-                              step="0.02"
-                              value={opts.splayVoxelSize ?? 0.22}
-                              onChange={e => setOpts(p => ({ ...p, splayVoxelSize: Number(e.target.value) }))}
-                              className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
-                              title={lang === 'sk' ? 'Menší voxel = jemnejšie detaily a ostrejšie lomové hrany' : 'Smaller voxel = finer details and sharper fracture edges'}
-                            />
-                          </div>
-                        )}
-
-                        <div style={{ marginTop: 8, padding: '0 4px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '6px' }}>
+                        <div className="cad-subcard" style={{ marginTop: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: 'var(--cv-text-muted)', marginBottom: '6px' }}>
                             <span>{lang === 'sk' ? 'Materiál stien' : 'Wall material'}</span>
-                            <span style={{ color: '#4fc3f7' }}>{opts.showRenderCave ? (lang === 'sk' ? '3D aktívny' : '3D active') : (lang === 'sk' ? 'zapne 3D' : 'enables 3D')}</span>
+                            <span style={{ color: 'var(--cv-primary)' }}>{opts.showRenderCave ? (lang === 'sk' ? '3D aktívny' : '3D active') : (lang === 'sk' ? 'zapne 3D' : 'enables 3D')}</span>
                           </div>
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px' }}>
                             {[
@@ -5004,24 +5128,13 @@ export default function App() {
                               <button
                                 key={preset.id}
                                 onClick={() => setOpts(p => ({ ...p, caveTexture: preset.id as any, showRenderCave: true }))}
+                                className={`cad-tool-btn ${opts.caveTexture === preset.id ? 'active' : ''}`}
                                 style={{
                                   minHeight: '34px',
-                                  display: 'flex',
                                   flexDirection: 'column',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
                                   gap: '3px',
                                   fontSize: '8px',
-                                  lineHeight: 1.05,
                                   padding: '5px 2px',
-                                  borderRadius: '5px',
-                                  border: opts.caveTexture === preset.id ? '1px solid rgba(125,211,252,0.8)' : '1px solid rgba(148,163,184,0.16)',
-                                  background: opts.caveTexture === preset.id ? 'rgba(14,165,233,0.18)' : 'rgba(30,41,59,0.5)',
-                                  color: opts.caveTexture === preset.id ? '#e0f2fe' : '#cbd5e1',
-                                  cursor: 'pointer',
-                                  boxShadow: opts.caveTexture === preset.id ? '0 0 0 1px rgba(14,165,233,0.18) inset' : 'none',
-                                  transitionProperty: 'background, border-color, color, transform',
-                                  transitionDuration: '120ms',
                                 }}
                               >
                                 <span style={{ width: 13, height: 13, borderRadius: '50%', background: preset.swatch, boxShadow: '0 0 0 1px rgba(255,255,255,0.18) inset' }} />
@@ -5045,10 +5158,24 @@ export default function App() {
                             aria-checked={opts.scrapsAltitude} tabIndex={0} />
                         </div>
 
+                        <div className="cad-subcard" style={{ marginTop: '8px' }}>
+                          <div className="cad-control-row">
+                            <span>{t('cave.opacity')}</span>
+                            <span className="cad-control-value">{Math.round(opts.scrapsOpacity * 100)}%</span>
+                          </div>
+                          <input
+                            type="range" min="0.1" max="1" step="0.05"
+                            value={opts.scrapsOpacity}
+                            onChange={(e) => setOpts(p => ({ ...p, scrapsOpacity: parseFloat(e.target.value) }))}
+                            className="cad-slider w-full"
+                            title={lang === 'sk' ? 'Priehľadnosť stien jaskyne (0.1 – 1.0)' : 'Cave wall opacity (0.1 – 1.0)'}
+                          />
+                        </div>
+
                         {loadedFile?.ext === '.stl' && (
-                          <div style={{ marginTop: 12, padding: '0 4px' }}>
-                            <label style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, display: 'block', marginBottom: 6 }}>
-                              {lang === 'sk' ? 'SELEKTÍVNE ZOBRAZENIE STL' : 'STL SELECTIVE VIEW'}
+                          <div className="cad-subcard" style={{ marginTop: '8px' }}>
+                            <label className="cad-control-label" style={{ marginBottom: 6 }}>
+                              {lang === 'sk' ? 'Selektívne zobrazenie STL' : 'STL Selective View'}
                             </label>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '4px' }}>
                               {[
@@ -5058,65 +5185,64 @@ export default function App() {
                                 { id: 'section', label: lang === 'sk' ? 'Rez' : 'Cut' },
                               ].map(mode => (
                                 <button key={mode.id} onClick={() => setOpts(p => ({ ...p, scrapsViewMode: mode.id as any }))}
-                                  style={{ fontSize: '9px', padding: '5px 2px', borderRadius: '4px', border: 'none', cursor: 'pointer',
-                                    background: opts.scrapsViewMode === mode.id ? '#0ea5e9' : 'rgba(30,41,59,0.5)', color: 'white' }}>
+                                  className={`cad-tool-btn ${opts.scrapsViewMode === mode.id ? 'active' : ''}`}>
                                   {mode.label}
                                 </button>
                               ))}
                             </div>
 
                             {opts.scrapsViewMode !== 'all' && (
-                              <>
-                                <div style={{ marginTop: 10 }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
+                              <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--cv-border)' }}>
+                                <div style={{ marginBottom: 8 }}>
+                                  <div className="cad-control-row">
                                     <span>{lang === 'sk' ? 'Hranica rezu' : 'Cut threshold'}</span>
-                                    <span style={{ color: '#4fc3f7' }}>{opts.scrapsHeightThreshold.toFixed(2)}</span>
+                                    <span className="cad-control-value">{opts.scrapsHeightThreshold.toFixed(2)}</span>
                                   </div>
                                   <input type="range" min={-0.8} max={0.8} step={0.05}
                                     value={opts.scrapsHeightThreshold}
                                     onChange={e => setOpts(p => ({ ...p, scrapsHeightThreshold: Number(e.target.value) }))}
-                                    className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                                    className="cad-slider w-full" />
                                 </div>
 
                                 {opts.scrapsViewMode !== 'section' && (
-                                  <div style={{ marginTop: 10 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
+                                  <div style={{ marginBottom: 8 }}>
+                                    <div className="cad-control-row">
                                       <span>{lang === 'sk' ? 'Rovinnosť plochy' : 'Surface flatness'}</span>
-                                      <span style={{ color: '#4fc3f7' }}>{opts.scrapsAngleThreshold.toFixed(2)}</span>
+                                      <span className="cad-control-value">{opts.scrapsAngleThreshold.toFixed(2)}</span>
                                     </div>
                                     <input type="range" min={0} max={0.9} step={0.05}
                                       value={opts.scrapsAngleThreshold}
                                       onChange={e => setOpts(p => ({ ...p, scrapsAngleThreshold: Number(e.target.value) }))}
-                                      className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                                      className="cad-slider w-full" />
                                   </div>
                                 )}
 
                                 {opts.scrapsViewMode === 'section' && (
-                                  <div style={{ marginTop: 10 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
+                                  <div style={{ marginBottom: 8 }}>
+                                    <div className="cad-control-row">
                                       <span>{lang === 'sk' ? 'Hrúbka rezu' : 'Cut thickness'}</span>
-                                      <span style={{ color: '#4fc3f7' }}>{opts.scrapsSectionWidth.toFixed(2)}</span>
+                                      <span className="cad-control-value">{opts.scrapsSectionWidth.toFixed(2)}</span>
                                     </div>
                                     <input type="range" min={0.02} max={0.3} step={0.01}
                                       value={opts.scrapsSectionWidth}
                                       onChange={e => setOpts(p => ({ ...p, scrapsSectionWidth: Number(e.target.value) }))}
-                                      className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                                      className="cad-slider w-full" />
                                   </div>
                                 )}
-                              </>
+                              </div>
                             )}
                           </div>
                         )}
 
-                        <div style={{ marginTop: '8px', padding: '0 4px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
+                        <div className="cad-subcard" style={{ marginTop: '8px' }}>
+                          <div className="cad-control-row">
                             <span>{lang === 'sk' ? 'Plasticita stien' : 'Wall relief'}</span>
-                            <span style={{ color: '#4fc3f7' }}>{opts.scrapsRelief.toFixed(2)}</span>
+                            <span className="cad-control-value">{opts.scrapsRelief.toFixed(2)}</span>
                           </div>
                           <input type="range" min={0} max={1} step={0.05}
                             value={opts.scrapsRelief}
                             onChange={e => setOpts(p => ({ ...p, scrapsRelief: Number(e.target.value) }))}
-                            className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                            className="cad-slider w-full" />
                         </div>
                       </>
                     )}
@@ -5132,205 +5258,123 @@ export default function App() {
                 {sidebarTab === 'terrain' && <div>
 
                 {cave && (
-                  <div>
-                    <div className="s-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      {t('terrain.title')}
-                      {!cave.hasSurface && <span style={{ fontSize: '8px', color: '#64748b', fontWeight: 'normal' }}>({lang === 'sk' ? 'žiadny' : 'none'})</span>}
-                    </div>
-                    
-                    {cave.hasSurface ? (
-                      <>
-                    <div className="toggle-row">
-                      <label className="toggle-label">
-                        <div className="dot" style={{ background: opts.surfaceColor }} />
-                        {t('terrain.shaded')}
-                        <ColorPicker t={t} value={opts.surfaceColor} onChange={(c) => setOpts(p => ({ ...p, surfaceColor: c }))} />
-                      </label>
-                      <div className={`switch${opts.showSurfaceMesh ? ' on' : ''}`}
-                        onClick={() => setOpts(p => ({ 
-                          ...p, 
-                          showSurfaceMesh: !p.showSurfaceMesh, 
-                          showSurfaceNetwork: false, 
-                          showSurfaceTexture: false 
-                        }))} role="switch"
-                        aria-checked={opts.showSurfaceMesh} tabIndex={0} />
-                    </div>
-                    <div className="toggle-row">
-                      <label className="toggle-label">
-                        <div className="dot" style={{ background: opts.colorTerrainWire, border: '1px solid #4a7c3f' }} />
-                        {t('terrain.wire')}
-                        <ColorPicker t={t} value={opts.colorTerrainWire} onChange={(c) => setOpts(p => ({ ...p, colorTerrainWire: c }))} />
-                      </label>
-                      <div className={`switch${opts.showSurfaceMeshWire ? ' on' : ''}`}
-                        onClick={() => toggleOpt('showSurfaceMeshWire')} role="switch"
-                        aria-checked={opts.showSurfaceMeshWire} tabIndex={0} />
-                    </div>
-                    <div className="toggle-row">
-                      <label className="toggle-label">
-                        <div className="dot" style={{ background: 'linear-gradient(180deg,#e53935 0%,#f9a825 33%,#43a047 66%,#1565c0 100%)', border: 'none' }} />
-                        {t('terrain.network')}
-                      </label>
-                      <div className={`switch${opts.showSurfaceNetwork ? ' on' : ''}`}
-                        onClick={() => setOpts(p => ({ 
-                          ...p, 
-                          showSurfaceMesh: false, 
-                          showSurfaceNetwork: !p.showSurfaceNetwork, 
-                          showSurfaceTexture: false 
-                        }))} role="switch"
-                        aria-checked={opts.showSurfaceNetwork} tabIndex={0} />
-                    </div>
-                    <div className="toggle-row">
-                      <label className="toggle-label">
-                        <div className="dot" style={{ background: opts.contourColor, border: '1px solid #4a7c3f' }} />
-                        {t('terrain.contours')} ({contourLevels.major}m)
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <ColorPicker t={t} label={t('terrain.contourBase')} value={opts.contourColor} onChange={(c) => setOpts(p => ({ ...p, contourColor: c }))} />
-                          <ColorPicker t={t} label={t('terrain.contourMajor')} value={opts.contourColor10} onChange={(c) => setOpts(p => ({ ...p, contourColor10: c }))} />
+                  <>
+                    {/* ── 1. TERÉN A MAPOVÉ PODKLADY ── */}
+                    <div className="cad-card">
+                      <div className="cad-card-header">
+                        <div className="cad-card-title">
+                          <span className="material-symbols-outlined">landscape</span>
+                          <span>{t('terrain.title')}</span>
                         </div>
-                      </label>
-                      <div className={`switch${opts.showContours ? ' on' : ''}`}
-                        onClick={() => toggleOpt('showContours')} role="switch"
-                        aria-checked={opts.showContours} tabIndex={0} />
-                    </div>
-                    {opts.showContours && (
-                      <div className="toggle-row" style={{ paddingLeft: '20px', borderTop: 'none', marginTop: '-8px', opacity: 0.8 }}>
-                        <label className="toggle-label" style={{ fontSize: '10px', color: '#94a3b8' }}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>label</span>
-                          {lang === 'sk' ? 'Zobraziť výšky' : 'Show altitudes'}
-                        </label>
-                        <div className={`switch${opts.showContourLabels ? ' on' : ''}`}
-                          onClick={() => toggleOpt('showContourLabels')} role="switch"
-                          aria-checked={opts.showContourLabels} tabIndex={0} />
-                      </div>
-                    )}
-                    <div className="toggle-row">
-                      <label className="toggle-label">
-                        <div className="dot" style={{ background: '#8fbc8f', border: '1px solid #4a7c3f' }} />
-                        {t('terrain.texture')}
-                      </label>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <button 
-                          onClick={() => {
-                            const inp = document.createElement('input');
-                            inp.type = 'file';
-                            inp.accept = 'image/jpeg,image/png';
-                            inp.onchange = (e: any) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const url = trackObjectUrl(URL.createObjectURL(file));
-                                setOpts(p => {
-                                  clearSurfaceTextureUrl(p.surfaceTextureUrl)
-                                  return { 
-                                    ...p, 
-                                    surfaceTextureUrl: url, 
-                                    showSurfaceTexture: true,
-                                    showSurfaceMesh: false,
-                                    showSurfaceNetwork: false
-                                  }
-                                });
-                              }
-                            };
-                            inp.click();
-                          }}
-                          style={{
-                            background: 'rgba(79,195,247,0.15)',
-                            border: '1px solid rgba(79,195,247,0.3)',
-                            borderRadius: '4px',
-                            color: '#4fc3f7',
-                            fontSize: '9px',
-                            padding: '2px 6px',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          {lang === 'sk' ? 'Nahrať' : 'Upload'}
-                        </button>
-                        {opts.surfaceTextureUrl && (
-                          <button 
-                            onClick={() => setOpts(p => {
-                              clearSurfaceTextureUrl(p.surfaceTextureUrl)
-                              return { ...p, surfaceTextureUrl: null }
-                            })}
-                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '10px', padding: '0 4px' }}
-                          >✕</button>
+                        {!cave.hasSurface && (
+                          <span style={{ fontSize: '9px', color: 'var(--cv-text-muted)', fontFamily: 'var(--cv-font-mono)' }}>
+                            ({lang === 'sk' ? 'žiadny' : 'none'})
+                          </span>
                         )}
-                        <div className={`switch${opts.showSurfaceTexture ? ' on' : ''}`}
-                          onClick={() => setOpts(p => ({ 
-                            ...p, 
-                            showSurfaceMesh: false, 
-                            showSurfaceNetwork: false, 
-                            showSurfaceTexture: !p.showSurfaceTexture 
-                          }))} role="switch"
-                          aria-checked={opts.showSurfaceTexture} tabIndex={0} />
                       </div>
-                    </div>
 
-                    {opts.showSurfaceTexture && (
-                      <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(15,23,42,0.5)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>map</span>
-                              {lang === 'sk' ? 'ZDROJ TEXTÚRY' : 'TEXTURE SOURCE'}
-                            </div>
-                            <select 
-                              value={opts.surfaceTextureSource} 
-                              onChange={(e) => setOpts(p => ({ ...p, surfaceTextureSource: e.target.value as any }))}
-                              style={{ background: '#1e293b', color: 'white', border: '1px solid #334155', borderRadius: '4px', fontSize: '10px', padding: '2px 4px', outline: 'none', maxWidth: '200px' }}
-                            >
-                              <option value="custom">{lang === 'sk' ? 'Súbor (JPG/PNG/Lox)' : 'Custom File (JPG/PNG/Lox)'}</option>
-                              <option value="wms-orto">WMS: Ortofotomapa (ZBGIS GKÚ)</option>
-                              <option value="wms-orto-freemap">XYZ: Ortofotomapa (Freemap)</option>
-                              <option value="wms-shadow">WMS: DMR5 Tieňovaný reliéf (ZBGIS GKÚ)</option>
-                              <option value="wms-geology">WMS: Geologická mapa (ŠGÚDŠ)</option>
-                              <option value="none">{lang === 'sk' ? 'Vypnutá' : 'None'}</option>
-                            </select>
+                      {cave.hasSurface ? (
+                        <>
+                          <div className="toggle-row">
+                            <label className="toggle-label">
+                              <div className="dot" style={{ background: opts.surfaceColor }} />
+                              {t('terrain.shaded')}
+                              <ColorPicker t={t} value={opts.surfaceColor} onChange={(c) => setOpts(p => ({ ...p, surfaceColor: c }))} />
+                            </label>
+                            <div className={`switch${opts.showSurfaceMesh ? ' on' : ''}`}
+                              onClick={() => setOpts(p => ({ 
+                                ...p, 
+                                showSurfaceMesh: !p.showSurfaceMesh, 
+                                showSurfaceNetwork: false, 
+                                showSurfaceTexture: false 
+                              }))} role="switch"
+                              aria-checked={opts.showSurfaceMesh} tabIndex={0} />
                           </div>
 
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                            <span style={{ fontSize: '10px', color: '#94a3b8' }}>{lang === 'sk' ? 'Priehľadnosť' : 'Opacity'}</span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, marginLeft: '12px' }}>
-                              <input 
-                                type="range" min="0" max="1" step="0.05"
-                                value={opts.surfaceTextureOpacity}
-                                onChange={(e) => setOpts(p => ({ ...p, surfaceTextureOpacity: parseFloat(e.target.value) }))}
-                                style={{ flex: 1, height: '4px' }}
-                              />
-                              <span style={{ fontSize: '10px', color: '#e2e8f0', minWidth: '25px', textAlign: 'right' }}>{Math.round(opts.surfaceTextureOpacity * 100)}%</span>
-                            </div>
+                          <div className="toggle-row">
+                            <label className="toggle-label">
+                              <div className="dot" style={{ background: opts.colorTerrainWire, border: '1px solid #4a7c3f' }} />
+                              {t('terrain.wire')}
+                              <ColorPicker t={t} value={opts.colorTerrainWire} onChange={(c) => setOpts(p => ({ ...p, colorTerrainWire: c }))} />
+                            </label>
+                            <div className={`switch${opts.showSurfaceMeshWire ? ' on' : ''}`}
+                              onClick={() => toggleOpt('showSurfaceMeshWire')} role="switch"
+                              aria-checked={opts.showSurfaceMeshWire} tabIndex={0} />
                           </div>
 
-                          {isRemoteTextureSource(opts.surfaceTextureSource) && (
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                              <span style={{ fontSize: '10px', color: '#94a3b8' }}>{lang === 'sk' ? 'Rozlíšenie / zoom' : 'Resolution / zoom'}</span>
-                              <select 
-                                value={opts.surfaceWmsResolution} 
-                                onChange={(e) => setOpts(p => ({ ...p, surfaceWmsResolution: parseInt(e.target.value) }))}
-                                style={{ background: '#1e293b', color: 'white', border: '1px solid #334155', borderRadius: '4px', fontSize: '10px', padding: '1px 4px', outline: 'none' }}
-                              >
-                                <option value="512">{lang === 'sk' ? 'Auto nízka' : 'Auto low'}</option>
-                                <option value="1024">{lang === 'sk' ? 'Auto stredná' : 'Auto medium'}</option>
-                                <option value="2048">{lang === 'sk' ? 'Auto vysoká' : 'Auto high'}</option>
-                                <option value="4096">{lang === 'sk' ? 'Auto maximum' : 'Auto maximum'}</option>
-                              </select>
+                          <div className="toggle-row">
+                            <label className="toggle-label">
+                              <div className="dot" style={{ background: 'linear-gradient(180deg,#e53935 0%,#f9a825 33%,#43a047 66%,#1565c0 100%)', border: 'none' }} />
+                              {t('terrain.network')}
+                            </label>
+                            <div className={`switch${opts.showSurfaceNetwork ? ' on' : ''}`}
+                              onClick={() => setOpts(p => ({ 
+                                ...p, 
+                                showSurfaceMesh: false, 
+                                showSurfaceNetwork: !p.showSurfaceNetwork, 
+                                showSurfaceTexture: false 
+                              }))} role="switch"
+                              aria-checked={opts.showSurfaceNetwork} tabIndex={0} />
+                          </div>
+
+                          <div className="toggle-row">
+                            <label className="toggle-label">
+                              <div className="dot" style={{ background: opts.contourColor, border: '1px solid #4a7c3f' }} />
+                              {t('terrain.contours')} ({contourLevels.major}m)
+                              <div style={{ display: 'flex', gap: '4px' }}>
+                                <ColorPicker t={t} label={t('terrain.contourBase')} value={opts.contourColor} onChange={(c) => setOpts(p => ({ ...p, contourColor: c }))} />
+                                <ColorPicker t={t} label={t('terrain.contourMajor')} value={opts.contourColor10} onChange={(c) => setOpts(p => ({ ...p, contourColor10: c }))} />
+                              </div>
+                            </label>
+                            <div className={`switch${opts.showContours ? ' on' : ''}`}
+                              onClick={() => toggleOpt('showContours')} role="switch"
+                              aria-checked={opts.showContours} tabIndex={0} />
+                          </div>
+
+                          {opts.showContours && (
+                            <div className="toggle-row" style={{ paddingLeft: '16px', borderTop: 'none', opacity: 0.85 }}>
+                              <label className="toggle-label" style={{ fontSize: '10px', color: 'var(--cv-text-muted)' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>label</span>
+                                {lang === 'sk' ? 'Zobraziť výšky' : 'Show altitudes'}
+                              </label>
+                              <div className={`switch${opts.showContourLabels ? ' on' : ''}`}
+                                onClick={() => toggleOpt('showContourLabels')} role="switch"
+                                aria-checked={opts.showContourLabels} tabIndex={0} />
                             </div>
                           )}
 
-                          {isRemoteTextureSource(opts.surfaceTextureSource) && (
-                            <TextureDownloadInspectorPanel
-                              info={textureDownloadInfo}
-                              lang={lang}
-                              onClearCache={handleClearTileCache}
-                            />
-                          )}
-
-                          {opts.surfaceTextureSource === 'custom' && (
-                            <div style={{ display: 'flex', gap: '4px' }}>
+                          <div className="toggle-row" style={{ borderBottom: opts.showSurfaceTexture ? 'none' : '1px solid var(--cv-border)' }}>
+                            <label className="toggle-label">
+                              <div className="dot" style={{ background: '#8fbc8f', border: '1px solid #4a7c3f' }} />
+                              {t('terrain.texture')}
+                            </label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <button 
-                                onClick={() => textureFileInputRef.current?.click()}
-                                style={{ flex: 1, padding: '4px', fontSize: '10px', background: 'rgba(59,130,246,0.2)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '4px', color: '#93c5fd', cursor: 'pointer' }}
+                                onClick={() => {
+                                  const inp = document.createElement('input');
+                                  inp.type = 'file';
+                                  inp.accept = 'image/jpeg,image/png';
+                                  inp.onchange = (e: any) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const url = trackObjectUrl(URL.createObjectURL(file));
+                                      setOpts(p => {
+                                        clearSurfaceTextureUrl(p.surfaceTextureUrl)
+                                        return { 
+                                          ...p, 
+                                          surfaceTextureUrl: url, 
+                                          showSurfaceTexture: true,
+                                          showSurfaceMesh: false,
+                                          showSurfaceNetwork: false
+                                        }
+                                      });
+                                    }
+                                  };
+                                  inp.click();
+                                }}
+                                className="btn-mini"
                               >
-                                <span className="material-symbols-outlined" style={{ fontSize: '12px', verticalAlign: 'middle', marginRight: '4px' }}>upload</span>
-                                {lang === 'sk' ? 'Nahrať JPG/PNG' : 'Upload JPG/PNG'}
+                                {lang === 'sk' ? 'Nahrať' : 'Upload'}
                               </button>
                               {opts.surfaceTextureUrl && (
                                 <button 
@@ -5338,156 +5382,265 @@ export default function App() {
                                     clearSurfaceTextureUrl(p.surfaceTextureUrl)
                                     return { ...p, surfaceTextureUrl: null }
                                   })}
-                                  className="btn-mini" style={{ color: '#f87171' }}
+                                  style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '10px', padding: '0 4px' }}
                                 >✕</button>
                               )}
+                              <div className={`switch${opts.showSurfaceTexture ? ' on' : ''}`}
+                                onClick={() => setOpts(p => ({ 
+                                  ...p, 
+                                  showSurfaceMesh: false, 
+                                  showSurfaceNetwork: false, 
+                                  showSurfaceTexture: !p.showSurfaceTexture 
+                                }))} role="switch"
+                                aria-checked={opts.showSurfaceTexture} tabIndex={0} />
+                            </div>
+                          </div>
+
+                          {opts.showSurfaceTexture && (
+                            <div className="cad-subcard" style={{ marginTop: '6px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div className="cad-control-label">
+                                    <span className="material-symbols-outlined" style={{ fontSize: '14px', color: 'var(--cv-primary)' }}>map</span>
+                                    <span>{lang === 'sk' ? 'Zdroj textúry' : 'Texture source'}</span>
+                                  </div>
+                                  <select 
+                                    value={opts.surfaceTextureSource} 
+                                    onChange={(e) => setOpts(p => ({ ...p, surfaceTextureSource: e.target.value as any }))}
+                                    className="cad-select"
+                                    style={{ maxWidth: '175px' }}
+                                  >
+                                    <option value="custom">{lang === 'sk' ? 'Súbor (JPG/PNG/Lox)' : 'Custom File (JPG/PNG/Lox)'}</option>
+                                    <option value="wms-orto">WMS: Ortofotomapa (ZBGIS GKÚ)</option>
+                                    <option value="wms-orto-freemap">XYZ: Ortofotomapa (Freemap)</option>
+                                    <option value="wms-shadow">WMS: DMR5 Tieňovaný reliéf (ZBGIS GKÚ)</option>
+                                    <option value="wms-geology">WMS: Geologická mapa (ŠGÚDŠ)</option>
+                                    <option value="none">{lang === 'sk' ? 'Vypnutá' : 'None'}</option>
+                                  </select>
+                                </div>
+
+                                <div className="cad-control-row">
+                                  <span>{lang === 'sk' ? 'Priehľadnosť' : 'Opacity'}</span>
+                                  <span className="cad-control-value">{Math.round(opts.surfaceTextureOpacity * 100)}%</span>
+                                </div>
+                                <input 
+                                  type="range" min="0" max="1" step="0.05"
+                                  value={opts.surfaceTextureOpacity}
+                                  onChange={(e) => setOpts(p => ({ ...p, surfaceTextureOpacity: parseFloat(e.target.value) }))}
+                                  className="cad-slider w-full"
+                                />
+
+                                {isRemoteTextureSource(opts.surfaceTextureSource) && (
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <span style={{ fontSize: '10px', color: 'var(--cv-text-muted)' }}>{lang === 'sk' ? 'Rozlíšenie / zoom' : 'Resolution / zoom'}</span>
+                                    <select 
+                                      value={opts.surfaceWmsResolution} 
+                                      onChange={(e) => setOpts(p => ({ ...p, surfaceWmsResolution: parseInt(e.target.value) }))}
+                                      className="cad-select"
+                                    >
+                                      <option value="512">{lang === 'sk' ? 'Auto nízka' : 'Auto low'}</option>
+                                      <option value="1024">{lang === 'sk' ? 'Auto stredná' : 'Auto medium'}</option>
+                                      <option value="2048">{lang === 'sk' ? 'Auto vysoká' : 'Auto high'}</option>
+                                      <option value="4096">{lang === 'sk' ? 'Auto maximum' : 'Auto maximum'}</option>
+                                    </select>
+                                  </div>
+                                )}
+
+                                {isRemoteTextureSource(opts.surfaceTextureSource) && (
+                                  <TextureDownloadInspectorPanel
+                                    info={textureDownloadInfo}
+                                    lang={lang}
+                                    onClearCache={handleClearTileCache}
+                                  />
+                                )}
+
+                                {opts.surfaceTextureSource === 'custom' && (
+                                  <div style={{ display: 'flex', gap: '4px' }}>
+                                    <button 
+                                      onClick={() => textureFileInputRef.current?.click()}
+                                      className="btn-mini"
+                                      style={{ flex: 1 }}
+                                    >
+                                      <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>upload</span>
+                                      <span>{lang === 'sk' ? 'Nahrať JPG/PNG' : 'Upload JPG/PNG'}</span>
+                                    </button>
+                                    {opts.surfaceTextureUrl && (
+                                      <button 
+                                        onClick={() => setOpts(p => {
+                                          clearSurfaceTextureUrl(p.surfaceTextureUrl)
+                                          return { ...p, surfaceTextureUrl: null }
+                                        })}
+                                        className="btn-mini" style={{ color: '#f87171' }}
+                                      >✕</button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div style={{ paddingTop: '8px', borderTop: '1px solid var(--cv-border)' }}>
+                                <div className="cad-control-label" style={{ marginBottom: '6px' }}>
+                                  <span className="material-symbols-outlined" style={{ fontSize: '14px', color: 'var(--cv-primary)' }}>tune</span>
+                                  <span>{lang === 'sk' ? 'Kalibrácia textúry' : 'Texture calibration'}</span>
+                                </div>
+                                
+                                <div style={{ display: 'flex', gap: '4px', marginBottom: '8px', alignItems: 'center' }}>
+                                  <button onClick={() => shiftTexture(-0.5, 0)} className="btn-mini" title="Vľavo">←</button>
+                                  <div style={{ flex: 1, textAlign: 'center', fontSize: '10.5px', color: 'var(--cv-primary)', fontFamily: 'var(--cv-font-mono)', fontWeight: 700 }}>
+                                    {opts.surfaceTextureOffset.x > 0 ? '+' : ''}{opts.surfaceTextureOffset.x.toFixed(1)} / {opts.surfaceTextureOffset.y > 0 ? '+' : ''}{opts.surfaceTextureOffset.y.toFixed(1)}m
+                                  </div>
+                                  <button onClick={() => shiftTexture(0.5, 0)} className="btn-mini" title="Vpravo">→</button>
+                                  <button onClick={() => shiftTexture(0, 0.5)} className="btn-mini" title="Hore">↑</button>
+                                  <button onClick={() => shiftTexture(0, -0.5)} className="btn-mini" title="Dole">↓</button>
+                                </div>
+
+                                <button 
+                                  onClick={() => setOpts(p => ({ ...p, surfaceTextureOffset: { x: 0, y: 0 } }))}
+                                  className="btn-mini"
+                                  style={{ width: '100%', marginBottom: '8px' }}
+                                >
+                                  {lang === 'sk' ? 'Reset posunu textúry' : 'Reset texture offset'}
+                                </button>
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontSize: '10px', color: 'var(--cv-text-muted)' }}>{lang === 'sk' ? 'Súbor .txt (Therion/S-JTSK)' : 'Therion/S-JTSK .txt calib'}</span>
+                                  <button onClick={() => calibFileInputRef.current?.click()} className="btn-mini" style={{ color: '#fbbf24', borderColor: 'rgba(251,191,36,0.3)' }}>
+                                    {lang === 'sk' ? 'Nahrať' : 'Load'}
+                                  </button>
+                                </div>
+                                {opts.surfaceTextureCalibration && (
+                                  <div style={{ fontSize: '9px', color: '#10b981', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>check_circle</span>
+                                    {lang === 'sk' ? 'Kalibrácia aktívna' : 'Calibration active'}
+                                    <button onClick={() => setOpts(p => ({ ...p, surfaceTextureCalibration: null }))} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#f87171', padding: 0, cursor: 'pointer' }}>✕</button>
+                                  </div>
+                                )}
+                                <input type="file" ref={calibFileInputRef} onChange={handleCalibFile} accept=".txt" style={{ display: 'none' }} />
+                                <input type="file" ref={textureFileInputRef} onChange={handleTextureFile} accept="image/*" style={{ display: 'none' }} />
+                              </div>
                             </div>
                           )}
+                        </>
+                      ) : (
+                        <div className="cad-subcard" style={{ textAlign: 'center', padding: '12px 8px' }}>
+                          <span style={{ fontSize: '10px', color: 'var(--cv-text-muted)' }}>
+                            {lang === 'sk' ? 'Model nemá povrch.' : 'No surface for this model.'}
+                          </span>
                         </div>
+                      )}
+                    </div>
 
-                        <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '8px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>tune</span>
-                          {lang === 'sk' ? 'KALIBRÁCIA TEXTÚRY' : 'TEXTURE CALIBRATION'}
-                        </div>
-                        
-                        <div style={{ display: 'flex', gap: '4px', marginBottom: '10px', alignItems: 'center' }}>
-                          <button onClick={() => shiftTexture(-0.5, 0)} className="btn-mini" title="Vľavo">←</button>
-                          <div style={{ flex: 1, textAlign: 'center', fontSize: '10px', color: '#e2e8f0', fontFamily: 'monospace' }}>
-                            {opts.surfaceTextureOffset.x > 0 ? '+' : ''}{opts.surfaceTextureOffset.x.toFixed(1)} / {opts.surfaceTextureOffset.y > 0 ? '+' : ''}{opts.surfaceTextureOffset.y.toFixed(1)}m
+                    {/* ── 2. KALIBRÁCIA MODELU (X, Y, Z) ── */}
+                    {cave.hasSurface && (
+                      <div className="cad-card">
+                        <div className="cad-card-header">
+                          <div className="cad-card-title">
+                            <span className="material-symbols-outlined">location_on</span>
+                            <span>{lang === 'sk' ? 'Kalibrácia modelu (X, Y, Z)' : 'Cave calibration (X, Y, Z)'}</span>
                           </div>
-                          <button onClick={() => shiftTexture(0.5, 0)} className="btn-mini" title="Vpravo">→</button>
-                          <button onClick={() => shiftTexture(0, 0.5)} className="btn-mini" title="Hore">↑</button>
-                          <button onClick={() => shiftTexture(0, -0.5)} className="btn-mini" title="Dole">↓</button>
                         </div>
 
-                        <button 
-                          onClick={() => setOpts(p => ({ ...p, surfaceTextureOffset: { x: 0, y: 0 } }))}
-                          style={{ width: '100%', marginBottom: '10px', background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: '#94a3b8', fontSize: '9px', padding: '2px 0', cursor: 'pointer' }}
-                        >
-                          {lang === 'sk' ? 'Reset posunu textúry' : 'Reset texture offset'}
-                        </button>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '10px', color: '#94a3b8' }}>{lang === 'sk' ? 'Súbor .txt (Therion/S-JTSK)' : 'Therion/S-JTSK .txt calib'}</span>
-                          <button onClick={() => calibFileInputRef.current?.click()} className="btn-mini" style={{ color: '#fbbf24', borderColor: 'rgba(251,191,36,0.3)', padding: '2px 8px' }}>
-                            {lang === 'sk' ? 'Nahrať' : 'Load'}
+                        <div className="cad-subcard">
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'center' }}>
+                              <span style={{ fontSize: '9px', color: 'var(--cv-text-muted)', fontFamily: 'var(--cv-font-mono)' }}>X</span>
+                              <div style={{ display: 'flex', gap: '2px', justifyContent: 'center' }}>
+                                <button onClick={() => shiftCave(-0.5, 0, 0)} className="btn-mini" style={{ flex: 1 }} title="-0.5m">-</button>
+                                <button onClick={() => shiftCave(0.5, 0, 0)} className="btn-mini" style={{ flex: 1 }} title="+0.5m">+</button>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'center' }}>
+                              <span style={{ fontSize: '9px', color: 'var(--cv-text-muted)', fontFamily: 'var(--cv-font-mono)' }}>Y</span>
+                              <div style={{ display: 'flex', gap: '2px', justifyContent: 'center' }}>
+                                <button onClick={() => shiftCave(0, -0.5, 0)} className="btn-mini" style={{ flex: 1 }} title="-0.5m">-</button>
+                                <button onClick={() => shiftCave(0, 0.5, 0)} className="btn-mini" style={{ flex: 1 }} title="+0.5m">+</button>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'center' }}>
+                              <span style={{ fontSize: '9px', color: 'var(--cv-text-muted)', fontFamily: 'var(--cv-font-mono)' }}>Z (alt)</span>
+                              <div style={{ display: 'flex', gap: '2px', justifyContent: 'center' }}>
+                                <button onClick={() => shiftCave(0, 0, -0.5)} className="btn-mini" style={{ flex: 1 }} title="-0.5m">-</button>
+                                <button onClick={() => shiftCave(0, 0, 0.5)} className="btn-mini" style={{ flex: 1 }} title="+0.5m">+</button>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div style={{ marginTop: '8px', textAlign: 'center', fontSize: '10.5px', color: 'var(--cv-primary)', fontFamily: 'var(--cv-font-mono)', fontWeight: 700 }}>
+                            [{opts.caveCalibrationOffset.x > 0 ? '+' : ''}{opts.caveCalibrationOffset.x.toFixed(1)}, 
+                             {opts.caveCalibrationOffset.y > 0 ? '+' : ''}{opts.caveCalibrationOffset.y.toFixed(1)}, 
+                             {opts.caveCalibrationOffset.z > 0 ? '+' : ''}{opts.caveCalibrationOffset.z.toFixed(1)}] m
+                          </div>
+                          
+                          <button 
+                            onClick={() => setOpts(p => ({ ...p, caveCalibrationOffset: { x: 0, y: 0, z: 0 } }))}
+                            className="btn-mini"
+                            style={{ width: '100%', marginTop: '8px' }}
+                          >
+                            {lang === 'sk' ? 'Resetovať polohu' : 'Reset position'}
                           </button>
                         </div>
-                        {opts.surfaceTextureCalibration && (
-                          <div style={{ fontSize: '9px', color: '#10b981', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>check_circle</span>
-                            {lang === 'sk' ? 'Kalibrácia aktívna' : 'Calibration active'}
-                            <button onClick={() => setOpts(p => ({ ...p, surfaceTextureCalibration: null }))} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#f87171', padding: 0 }}>✕</button>
-                          </div>
-                        )}
-                        <input type="file" ref={calibFileInputRef} onChange={handleCalibFile} accept=".txt" style={{ display: 'none' }} />
-                        <input type="file" ref={textureFileInputRef} onChange={handleTextureFile} accept="image/*" style={{ display: 'none' }} />
                       </div>
                     )}
-                    
-                    {/* Kalibrácia modelu voči povrchu */}
-                    <div style={{ marginTop: '16px', padding: '10px', background: 'rgba(30,41,59,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                      <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '8px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>location_on</span>
-                        {lang === 'sk' ? 'KALIBRÁCIA MODELU (X, Y, Z)' : 'CAVE CALIBRATION (X, Y, Z)'}
-                      </div>
-                      
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <div style={{ fontSize: '9px', color: '#64748b', textAlign: 'center' }}>X</div>
-                          <div style={{ display: 'flex', gap: '2px' }}>
-                            <button onClick={() => shiftCave(-0.5, 0, 0)} className="btn-mini" title="-0.5m">-</button>
-                            <button onClick={() => shiftCave(0.5, 0, 0)} className="btn-mini" title="+0.5m">+</button>
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <div style={{ fontSize: '9px', color: '#64748b', textAlign: 'center' }}>Y</div>
-                          <div style={{ display: 'flex', gap: '2px' }}>
-                            <button onClick={() => shiftCave(0, -0.5, 0)} className="btn-mini" title="-0.5m">-</button>
-                            <button onClick={() => shiftCave(0, 0.5, 0)} className="btn-mini" title="+0.5m">+</button>
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <div style={{ fontSize: '9px', color: '#64748b', textAlign: 'center' }}>Z (alt)</div>
-                          <div style={{ display: 'flex', gap: '2px' }}>
-                            <button onClick={() => shiftCave(0, 0, -0.5)} className="btn-mini" title="-0.5m">-</button>
-                            <button onClick={() => shiftCave(0, 0, 0.5)} className="btn-mini" title="+0.5m">+</button>
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ marginTop: '6px', textAlign: 'center', fontSize: '10px', color: '#e2e8f0', fontFamily: 'monospace' }}>
-                         [{opts.caveCalibrationOffset.x > 0 ? '+' : ''}{opts.caveCalibrationOffset.x.toFixed(1)}, 
-                          {opts.caveCalibrationOffset.y > 0 ? '+' : ''}{opts.caveCalibrationOffset.y.toFixed(1)}, 
-                          {opts.caveCalibrationOffset.z > 0 ? '+' : ''}{opts.caveCalibrationOffset.z.toFixed(1)}] m
-                      </div>
-                      <button 
-                        onClick={() => setOpts(p => ({ ...p, caveCalibrationOffset: { x: 0, y: 0, z: 0 } }))}
-                        style={{ width: '100%', marginTop: '6px', background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: '#94a3b8', fontSize: '9px', padding: '2px 0', cursor: 'pointer' }}
-                      >
-                        {lang === 'sk' ? 'Resetovať polohu' : 'Reset position'}
-                      </button>
-                    </div>
 
-                    {/* Kalibrácia Povrchu (DMR) voči svetu/modelu */}
-                    <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(30,41,59,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                      <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '8px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>terrain</span>
-                        {lang === 'sk' ? 'KALIBRÁCIA POVRCHU (X, Y, Z)' : 'SURFACE CALIBRATION (X, Y, Z)'}
-                      </div>
-                      
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <div style={{ fontSize: '9px', color: '#64748b', textAlign: 'center' }}>X</div>
-                          <div style={{ display: 'flex', gap: '2px' }}>
-                            <button onClick={() => setOpts(p => ({ ...p, surfaceOffset: { ...p.surfaceOffset, x: p.surfaceOffset.x - 0.5 } }))} className="btn-mini">-</button>
-                            <button onClick={() => setOpts(p => ({ ...p, surfaceOffset: { ...p.surfaceOffset, x: p.surfaceOffset.x + 0.5 } }))} className="btn-mini">+</button>
+                    {/* ── 3. KALIBRÁCIA POVRCHU (DMR) (X, Y, Z) ── */}
+                    {cave.hasSurface && (
+                      <div className="cad-card">
+                        <div className="cad-card-header">
+                          <div className="cad-card-title">
+                            <span className="material-symbols-outlined">terrain</span>
+                            <span>{lang === 'sk' ? 'Kalibrácia povrchu (X, Y, Z)' : 'Surface calibration (X, Y, Z)'}</span>
                           </div>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <div style={{ fontSize: '9px', color: '#64748b', textAlign: 'center' }}>Y</div>
-                          <div style={{ display: 'flex', gap: '2px' }}>
-                            <button onClick={() => setOpts(p => ({ ...p, surfaceOffset: { ...p.surfaceOffset, y: p.surfaceOffset.y - 0.5 } }))} className="btn-mini">-</button>
-                            <button onClick={() => setOpts(p => ({ ...p, surfaceOffset: { ...p.surfaceOffset, y: p.surfaceOffset.y + 0.5 } }))} className="btn-mini">+</button>
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <div style={{ fontSize: '9px', color: '#64748b', textAlign: 'center' }}>Z (alt)</div>
-                          <div style={{ display: 'flex', gap: '2px' }}>
-                            <button onClick={() => setOpts(p => ({ ...p, surfaceOffset: { ...p.surfaceOffset, z: p.surfaceOffset.z - 0.5 } }))} className="btn-mini">-</button>
-                            <button onClick={() => setOpts(p => ({ ...p, surfaceOffset: { ...p.surfaceOffset, z: p.surfaceOffset.z + 0.5 } }))} className="btn-mini">+</button>
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ fontSize: '9px', color: '#64748b', marginTop: '6px', textAlign: 'center', fontFamily: 'monospace' }}>
-                        {opts.surfaceOffset.x.toFixed(1)}, {opts.surfaceOffset.y.toFixed(1)}, {opts.surfaceOffset.z.toFixed(1)}m
-                      </div>
-                      <button 
-                        onClick={() => setOpts(p => ({ ...p, surfaceOffset: { x: 0, y: 0, z: 0 } }))}
-                        style={{ width: '100%', marginTop: '6px', background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: '#94a3b8', fontSize: '9px', padding: '2px 0', cursor: 'pointer' }}
-                      >
-                        {lang === 'sk' ? 'Reset kalibrácie povrchu' : 'Reset surface calibration'}
-                      </button>
-                    </div>
 
-                      </>
-                    ) : (
-                      <div style={{ padding: '12px', background: 'rgba(30,41,59,0.2)', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)', textAlign: 'center', marginBottom: '12px' }}>
-                        <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '8px' }}>
-                          {lang === 'sk' ? 'Model nemá povrch.' : 'No surface for this model.'}
+                        <div className="cad-subcard">
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'center' }}>
+                              <span style={{ fontSize: '9px', color: 'var(--cv-text-muted)', fontFamily: 'var(--cv-font-mono)' }}>X</span>
+                              <div style={{ display: 'flex', gap: '2px', justifyContent: 'center' }}>
+                                <button onClick={() => setOpts(p => ({ ...p, surfaceOffset: { ...p.surfaceOffset, x: p.surfaceOffset.x - 0.5 } }))} className="btn-mini" style={{ flex: 1 }}>-</button>
+                                <button onClick={() => setOpts(p => ({ ...p, surfaceOffset: { ...p.surfaceOffset, x: p.surfaceOffset.x + 0.5 } }))} className="btn-mini" style={{ flex: 1 }}>+</button>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'center' }}>
+                              <span style={{ fontSize: '9px', color: 'var(--cv-text-muted)', fontFamily: 'var(--cv-font-mono)' }}>Y</span>
+                              <div style={{ display: 'flex', gap: '2px', justifyContent: 'center' }}>
+                                <button onClick={() => setOpts(p => ({ ...p, surfaceOffset: { ...p.surfaceOffset, y: p.surfaceOffset.y - 0.5 } }))} className="btn-mini" style={{ flex: 1 }}>-</button>
+                                <button onClick={() => setOpts(p => ({ ...p, surfaceOffset: { ...p.surfaceOffset, y: p.surfaceOffset.y + 0.5 } }))} className="btn-mini" style={{ flex: 1 }}>+</button>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'center' }}>
+                              <span style={{ fontSize: '9px', color: 'var(--cv-text-muted)', fontFamily: 'var(--cv-font-mono)' }}>Z (alt)</span>
+                              <div style={{ display: 'flex', gap: '2px', justifyContent: 'center' }}>
+                                <button onClick={() => setOpts(p => ({ ...p, surfaceOffset: { ...p.surfaceOffset, z: p.surfaceOffset.z - 0.5 } }))} className="btn-mini" style={{ flex: 1 }}>-</button>
+                                <button onClick={() => setOpts(p => ({ ...p, surfaceOffset: { ...p.surfaceOffset, z: p.surfaceOffset.z + 0.5 } }))} className="btn-mini" style={{ flex: 1 }}>+</button>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ marginTop: '8px', textAlign: 'center', fontSize: '10.5px', color: 'var(--cv-primary)', fontFamily: 'var(--cv-font-mono)', fontWeight: 700 }}>
+                            {opts.surfaceOffset.x.toFixed(1)}, {opts.surfaceOffset.y.toFixed(1)}, {opts.surfaceOffset.z.toFixed(1)} m
+                          </div>
+
+                          <button 
+                            onClick={() => setOpts(p => ({ ...p, surfaceOffset: { x: 0, y: 0, z: 0 } }))}
+                            className="btn-mini"
+                            style={{ width: '100%', marginTop: '8px' }}
+                          >
+                            {lang === 'sk' ? 'Reset kalibrácie povrchu' : 'Reset surface calibration'}
+                          </button>
                         </div>
                       </div>
                     )}
 
-                    {/* Vždy zobrazená možnosť pridania TIFF povrchu */}
-                    <div style={{ padding: '10px', background: 'rgba(99,102,241,0.05)', borderRadius: '8px', border: '1px solid rgba(99,102,241,0.15)' }}>
-                      <div className="toggle-row" style={{ border: 'none', padding: 0 }}>
-                        <label className="toggle-label">
-                          <span className="material-symbols-outlined" style={{ fontSize: '18px', verticalAlign: 'middle', marginRight: '6px' }}>upload_file</span>
-                          {lang === 'sk' ? 'Pridať TIFF povrch' : 'Add TIFF surface'}
-                        </label>
+                    {/* ── 4. PRIDAŤ TIFF POVRCH ── */}
+                    <div className="cad-card">
+                      <div className="cad-card-header">
+                        <div className="cad-card-title">
+                          <span className="material-symbols-outlined">upload_file</span>
+                          <span>{lang === 'sk' ? 'Pridať TIFF povrch' : 'Add TIFF surface'}</span>
+                        </div>
                         <button 
                           onClick={() => tiffFileInputRef.current?.click()}
-                          style={{ padding: '4px 8px', fontSize: '10px', background: '#1e293b', border: '1px solid #334155', borderRadius: '4px', color: '#94a3b8', cursor: 'pointer' }}
+                          className="btn-mini"
                         >
                           {lang === 'sk' ? 'Vybrať .tif' : 'Select .tif'}
                         </button>
@@ -5500,13 +5653,14 @@ export default function App() {
                         />
                       </div>
                       
-                      <div style={{ padding: '8px', background: 'rgba(30,41,59,0.3)', borderRadius: '6px', marginTop: '8px', fontSize: '9px', color: '#64748b' }}>
+                      <div className="cad-subcard" style={{ fontSize: '9px', color: 'var(--cv-text-muted)', lineHeight: '1.4' }}>
                         {lang === 'sk' 
                           ? 'Tip: Ak máš aj .tfw (World file), načítaj ho pre presné umiestnenie.'
                           : 'Tip: If you have a .tfw file, load it for precise positioning.'}
                         <button 
                           onClick={() => tfwFileInputRef.current?.click()}
-                          style={{ display: 'block', marginTop: '4px', background: 'none', border: 'none', color: '#818cf8', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                          className="btn-mini"
+                          style={{ display: 'block', marginTop: '6px', color: 'var(--cv-primary)' }}
                         >
                           {lang === 'sk' ? 'Načítať .tfw' : 'Load .tfw'}
                         </button>
@@ -5521,641 +5675,605 @@ export default function App() {
                         />
                       </div>
                     </div>
-                  </div>
+                  </>
                 )}
 
                 </div>}{/* end terrain tab */}
 
-                {/* Stations, Colors & Cinematic — cave tab (bottom) */}
-                {sidebarTab === 'cave' && <div>
-
-                <div>
-                  <div className="s-label">{t('stations.title')}</div>
-                  <div className="toggle-row">
-                    <label className="toggle-label">
-                      <div className="dot" style={{ background: opts.colorStations, border: '1px solid rgba(255,255,255,.2)' }} />
-                      {t('stations.show')}
-                      <ColorPicker t={t} value={opts.colorStations} onChange={(c) => setOpts(p => ({ ...p, colorStations: c }))} />
-                    </label>
-                    <div className={`switch${opts.showStations ? ' on' : ''}`}
-                      onClick={() => toggleOpt('showStations')} role="switch"
-                      aria-checked={opts.showStations} tabIndex={0} />
-                  </div>
-                  <div className="toggle-row">
-                    <label className="toggle-label">
-                      <div className="dot" style={{ background: opts.colorStationNames }} />
-                      {t('stations.names')}
-                      <ColorPicker t={t} value={opts.colorStationNames} onChange={(c) => setOpts(p => ({ ...p, colorStationNames: c }))} />
-                    </label>
-                    <div className={`switch${opts.showStationNames ? ' on' : ''}`}
-                      onClick={() => toggleOpt('showStationNames')} role="switch"
-                      aria-checked={opts.showStationNames} tabIndex={0} />
-                  </div>
-                  <div className="toggle-row">
-                    <label className="toggle-label">
-                      <div className="dot" style={{ background: opts.colorStationAlt }} />
-                      {t('stations.altitude')}
-                      <ColorPicker t={t} value={opts.colorStationAlt} onChange={(c) => setOpts(p => ({ ...p, colorStationAlt: c }))} />
-                    </label>
-                    <div className={`switch${opts.showStationAlt ? ' on' : ''}`}
-                      onClick={() => toggleOpt('showStationAlt')} role="switch"
-                      aria-checked={opts.showStationAlt} tabIndex={0} />
-                  </div>
-                  <div className="toggle-row">
-                    <label className="toggle-label">
-                      <div className="dot" style={{ background: '#fb8c00', border: '1px solid white' }} />
-                      {t('stations.entrances')}
-                    </label>
-                    <div className={`switch${opts.showEntrances ? ' on' : ''}`}
-                      onClick={() => toggleOpt('showEntrances')} role="switch"
-                      aria-checked={opts.showEntrances} tabIndex={0} />
-                  </div>
-                  <div className="toggle-row">
-                    <label className="toggle-label">{t('stations.entranceLabels')}</label>
-                    <div className={`switch${opts.showEntranceLabels ? ' on' : ''}`}
-                      onClick={() => toggleOpt('showEntranceLabels')} role="switch"
-                      aria-checked={opts.showEntranceLabels} tabIndex={0} />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="s-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>accessibility_new</span>
-                    {lang === 'sk' ? 'Mierka (Jaskyniar)' : 'Scale (Caver)'}
-                  </div>
-                  {opts.placedCaver ? (
-                    <div style={{ padding: '8px', background: 'rgba(30,41,59,0.3)', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '10px', color: '#94a3b8' }}>
-                          {opts.placedCaver.pose === 'standing' ? (lang === 'sk' ? 'Stojaci' : 'Standing') : (lang === 'sk' ? 'Ležiaci' : 'Crawling')}
-                        </span>
-                        <button 
-                          onClick={() => setOpts(p => ({ ...p, placedCaver: null }))}
-                          style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
-                        >
-                          {lang === 'sk' ? 'ODSTRÁNIŤ' : 'REMOVE'}
-                        </button>
+                {/* Stations, Colors & Caver Scale — cave tab (bottom) */}
+                {sidebarTab === 'cave' && (
+                  <>
+                    {/* Meracie body (Stanice) */}
+                    <div className="cad-card">
+                      <div className="cad-card-header">
+                        <div className="cad-card-title">
+                          <span className="material-symbols-outlined">radio_button_checked</span>
+                          {t('stations.title')}
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                         <button onClick={() => setOpts(p => ({ ...p, placedCaver: { ...p.placedCaver!, pose: 'standing' } }))} className={`btn-mini ${opts.placedCaver.pose === 'standing' ? 'active' : ''}`} style={{ flex: 1 }}>{lang === 'sk' ? 'Stojaci' : 'Stand'}</button>
-                         <button onClick={() => setOpts(p => ({ ...p, placedCaver: { ...p.placedCaver!, pose: 'crawling' } }))} className={`btn-mini ${opts.placedCaver.pose === 'crawling' ? 'active' : ''}`} style={{ flex: 1 }}>{lang === 'sk' ? 'Ležiaci' : 'Crawl'}</button>
+                      <div className="toggle-row">
+                        <label className="toggle-label">
+                          <div className="dot" style={{ background: opts.colorStations, border: '1px solid rgba(255,255,255,.2)' }} />
+                          {t('stations.show')}
+                          <ColorPicker t={t} value={opts.colorStations} onChange={(c) => setOpts(p => ({ ...p, colorStations: c }))} />
+                        </label>
+                        <div className={`switch${opts.showStations ? ' on' : ''}`}
+                          onClick={() => toggleOpt('showStations')} role="switch"
+                          aria-checked={opts.showStations} tabIndex={0} />
+                      </div>
+                      <div className="toggle-row">
+                        <label className="toggle-label">
+                          <div className="dot" style={{ background: opts.colorStationNames }} />
+                          {t('stations.names')}
+                          <ColorPicker t={t} value={opts.colorStationNames} onChange={(c) => setOpts(p => ({ ...p, colorStationNames: c }))} />
+                        </label>
+                        <div className={`switch${opts.showStationNames ? ' on' : ''}`}
+                          onClick={() => toggleOpt('showStationNames')} role="switch"
+                          aria-checked={opts.showStationNames} tabIndex={0} />
+                      </div>
+                      <div className="toggle-row">
+                        <label className="toggle-label">
+                          <div className="dot" style={{ background: opts.colorStationAlt }} />
+                          {t('stations.altitude')}
+                          <ColorPicker t={t} value={opts.colorStationAlt} onChange={(c) => setOpts(p => ({ ...p, colorStationAlt: c }))} />
+                        </label>
+                        <div className={`switch${opts.showStationAlt ? ' on' : ''}`}
+                          onClick={() => toggleOpt('showStationAlt')} role="switch"
+                          aria-checked={opts.showStationAlt} tabIndex={0} />
+                      </div>
+                      <div className="toggle-row">
+                        <label className="toggle-label">
+                          <div className="dot" style={{ background: '#fb8c00', border: '1px solid white' }} />
+                          {t('stations.entrances')}
+                        </label>
+                        <div className={`switch${opts.showEntrances ? ' on' : ''}`}
+                          onClick={() => toggleOpt('showEntrances')} role="switch"
+                          aria-checked={opts.showEntrances} tabIndex={0} />
+                      </div>
+                      <div className="toggle-row" style={{ borderBottom: 'none' }}>
+                        <label className="toggle-label">{t('stations.entranceLabels')}</label>
+                        <div className={`switch${opts.showEntranceLabels ? ' on' : ''}`}
+                          onClick={() => toggleOpt('showEntranceLabels')} role="switch"
+                          aria-checked={opts.showEntranceLabels} tabIndex={0} />
                       </div>
                     </div>
-                  ) : (
-                    <div className="help-text" style={{ fontSize: '9px', opacity: 0.7, padding: '4px 0' }}>
-                      {lang === 'sk' ? 'Klikni na ľubovoľný bod jaskyne pre pridanie postavy.' : 'Click on any cave point to add a caver.'}
-                    </div>
-                  )}
-                </div>
 
-                {/* ─── SPELEO & GEOLÓGIA ────────────────────────────────────────────────── */}
-                </div>}{/* end cave tab (stations+colors) */}
+                    {/* Mierka (Jaskyniar) */}
+                    <div className="cad-card">
+                      <div className="cad-card-header">
+                        <div className="cad-card-title">
+                          <span className="material-symbols-outlined">accessibility_new</span>
+                          {lang === 'sk' ? 'Mierka (Jaskyniar)' : 'Scale (Caver)'}
+                        </div>
+                      </div>
+                      {opts.placedCaver ? (
+                        <div className="cad-subcard" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '10px', color: 'var(--cv-text-muted)', fontWeight: 600 }}>
+                              {opts.placedCaver.pose === 'standing' ? (lang === 'sk' ? 'Stojaci (1.8m)' : 'Standing (1.8m)') : (lang === 'sk' ? 'Ležiaci (0.4m)' : 'Crawling (0.4m)')}
+                            </span>
+                            <button 
+                              onClick={() => setOpts(p => ({ ...p, placedCaver: null }))}
+                              style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}
+                            >
+                              {lang === 'sk' ? 'ODSTRÁNIŤ' : 'REMOVE'}
+                            </button>
+                          </div>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                             <button onClick={() => setOpts(p => ({ ...p, placedCaver: { ...p.placedCaver!, pose: 'standing' } }))} className={`cad-tool-btn ${opts.placedCaver.pose === 'standing' ? 'active' : ''}`} style={{ flex: 1 }}>{lang === 'sk' ? 'Stojaci' : 'Stand'}</button>
+                             <button onClick={() => setOpts(p => ({ ...p, placedCaver: { ...p.placedCaver!, pose: 'crawling' } }))} className={`cad-tool-btn ${opts.placedCaver.pose === 'crawling' ? 'active' : ''}`} style={{ flex: 1 }}>{lang === 'sk' ? 'Ležiaci' : 'Crawl'}</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="cad-subcard" style={{ fontSize: '9.5px', color: 'var(--cv-text-muted)', lineHeight: '1.4' }}>
+                          {lang === 'sk' ? 'Klikni na ľubovoľný bod jaskyne pre pridanie postavy.' : 'Click on any cave point to add a caver.'}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
 
                 {/* ═══════════════════════════════════════════════════════════════════════════ */}
                 {/* TAB 3: ANALÝZA & MERANIE                                                   */}
                 {/* ═══════════════════════════════════════════════════════════════════════════ */}
-                {sidebarTab === 'analysis' && <div>
+                {sidebarTab === 'analysis' && (
+                  <>
+                    {/* 0. Projekcia a Uhly pohľadu */}
+                    <div className="cad-card">
+                      <div className="cad-card-header">
+                        <div className="cad-card-title">
+                          <span className="material-symbols-outlined">videocam</span>
+                          {t('projection.title')}
+                        </div>
+                      </div>
 
-                <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
-                  <div className="s-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(147, 51, 234, 0.1)', borderLeft: '4px solid #a855f7' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#c084fc' }}>insights</span>
-                    {lang === 'sk' ? 'SPELEO & GEOLÓGIA' : 'SPELEO & GEOLOGY'}
-                  </div>
-
-                  {/* 0. Projekcia a Uhly pohľadu */}
-                  <div style={{ background: 'rgba(30,41,59,0.3)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
-                    <div style={{ fontSize: '10px', color: '#e2e8f0', marginBottom: '6px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#38bdf8' }}>videocam</span>
-                      {t('projection.title')}
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '8px' }}>
-                      <button
-                        onClick={() => setOpts(p => ({ ...p, cameraProjection: 'perspective' }))}
-                        className={`btn-mini ${opts.cameraProjection === 'perspective' ? 'active' : ''}`}
-                        style={{
-                          background: opts.cameraProjection === 'perspective' ? '#0284c7' : 'rgba(30,41,59,0.6)',
-                          color: opts.cameraProjection === 'perspective' ? '#fff' : '#94a3b8',
-                          padding: '6px 4px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)'
-                        }}
-                      >
-                        {t('projection.perspective')}
-                      </button>
-                      <button
-                        onClick={() => setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))}
-                        className={`btn-mini ${opts.cameraProjection === 'orthographic' ? 'active' : ''}`}
-                        style={{
-                          background: opts.cameraProjection === 'orthographic' ? '#0284c7' : 'rgba(30,41,59,0.6)',
-                          color: opts.cameraProjection === 'orthographic' ? '#fff' : '#94a3b8',
-                          padding: '6px 4px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)'
-                        }}
-                      >
-                        {t('projection.orthographic')}
-                      </button>
-                    </div>
-
-                    <p style={{ fontSize: '8px', color: '#64748b', margin: '0 0 8px 0', lineHeight: '1.3' }}>
-                      {opts.cameraProjection === 'orthographic' ? t('projection.orthographicDesc') : t('projection.perspectiveDesc')}
-                    </p>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
-                      <button
-                        onClick={() => {
-                          setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
-                          setActiveViewPreset('top')
-                          window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'top' } }))
-                        }}
-                        style={{
-                          background: opts.cameraProjection === 'orthographic' && activeViewPreset === 'top' ? '#0369a1' : 'rgba(15,23,42,0.8)',
-                          border: '1px solid rgba(56,189,248,0.3)', color: '#bae6fd',
-                          padding: '5px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                          boxShadow: opts.cameraProjection === 'orthographic' && activeViewPreset === 'top' ? '0 0 6px rgba(3,105,161,0.5)' : 'none'
-                        }}
-                      >
-                        <span>📐</span> {t('projection.planView')} <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.15)', padding: '1px 3px', borderRadius: '3px' }}>1</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
-                          setActiveViewPreset('front')
-                          window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'front' } }))
-                        }}
-                        style={{
-                          background: opts.cameraProjection === 'orthographic' && activeViewPreset === 'front' ? '#0369a1' : 'rgba(15,23,42,0.8)',
-                          border: '1px solid rgba(56,189,248,0.3)', color: '#bae6fd',
-                          padding: '5px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                          boxShadow: opts.cameraProjection === 'orthographic' && activeViewPreset === 'front' ? '0 0 6px rgba(3,105,161,0.5)' : 'none'
-                        }}
-                      >
-                        <span>↔️</span> {t('projection.profileView')} <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.15)', padding: '1px 3px', borderRadius: '3px' }}>2</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
-                          setActiveViewPreset('side')
-                          window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'side' } }))
-                        }}
-                        style={{
-                          background: opts.cameraProjection === 'orthographic' && activeViewPreset === 'side' ? '#0369a1' : 'rgba(15,23,42,0.8)',
-                          border: '1px solid rgba(56,189,248,0.3)', color: '#bae6fd',
-                          padding: '5px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                          boxShadow: opts.cameraProjection === 'orthographic' && activeViewPreset === 'side' ? '0 0 6px rgba(3,105,161,0.5)' : 'none'
-                        }}
-                      >
-                        <span>↕️</span> {t('projection.sectionView')} <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.15)', padding: '1px 3px', borderRadius: '3px' }}>3</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setActiveViewPreset('iso')
-                          window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'iso' } }))
-                        }}
-                        style={{
-                          background: activeViewPreset === 'iso' ? '#0369a1' : 'rgba(15,23,42,0.8)',
-                          border: '1px solid rgba(56,189,248,0.3)', color: '#bae6fd',
-                          padding: '5px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                          boxShadow: activeViewPreset === 'iso' ? '0 0 6px rgba(3,105,161,0.5)' : 'none'
-                        }}
-                      >
-                        <span>🧊</span> {t('projection.isoView')} <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.15)', padding: '1px 3px', borderRadius: '3px' }}>4</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 1. Tektonika & Geológia (3-bodový sklonomer a spádnica) */}
-                  <div style={{ background: 'rgba(30,41,59,0.3)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
-                    <div style={{ fontSize: '10px', color: '#e2e8f0', marginBottom: '6px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#c084fc' }}>architecture</span>
-                      {lang === 'sk' ? 'Tektonické meranie (3 body: Sklon & Spádnica)' : 'Tectonic Plane (Dip & Dip Direction)'}
-                    </div>
-
-                    <p style={{ fontSize: '9px', color: '#94a3b8', margin: '0 0 8px 0', lineHeight: '1.35' }}>
-                      {lang === 'sk' 
-                        ? 'Vyberte 3 body na stene jaskyne, vrstve alebo v teréne. Systém automaticky vypočíta normálu, sklon po spádnici a azimut.' 
-                        : 'Pick 3 points on cave wall, bedding plane or terrain to calculate dip, dip direction and strike.'}
-                    </p>
-
-                    <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
-                      <button
-                        onClick={cycleMeasurementMode}
-                        className={`btn-back${measurementMode !== 'off' ? ' active' : ''}`}
-                        style={{
-                          flex: 1,
-                          background: measurementMode === 'distance' ? '#6366f1' : measurementMode === 'polygon' ? '#8b5cf6' : 'rgba(99,102,241,0.12)',
-                          color: measurementMode !== 'off' ? '#ffffff' : '#a5b4fc',
-                          borderColor: measurementMode !== 'off' ? '#818cf8' : 'rgba(99,102,241,0.3)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          padding: '6px 8px',
-                          fontSize: '10px',
-                          fontWeight: 'bold'
-                        }}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                          {measurementMode === 'polygon' ? 'square_foot' : 'straighten'}
-                        </span>
-                        <span>
-                          {measurementMode === 'off' 
-                            ? (lang === 'sk' ? 'Aktivovať meranie' : 'Enable measurement')
-                            : measurementMode === 'distance'
-                            ? (lang === 'sk' ? 'Vzdialenosť (2 body)' : 'Distance mode')
-                            : (lang === 'sk' ? 'Plocha / Polygón (3+ bodov)' : 'Area / Polygon mode')}
-                        </span>
-                      </button>
-
-                      {selectedStations.length > 0 && (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '8px' }}>
                         <button
-                          onClick={() => setSelectedStations([])}
-                          className="btn-back"
-                          style={{
-                            background: 'rgba(239,68,68,0.1)',
-                            color: '#f87171',
-                            borderColor: 'rgba(239,68,68,0.25)',
-                            padding: '6px 8px',
-                            fontSize: '10px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}
-                          title={lang === 'sk' ? 'Resetovať vybrané body' : 'Reset points'}
+                          onClick={() => setOpts(p => ({ ...p, cameraProjection: 'perspective' }))}
+                          className={`cad-tool-btn ${opts.cameraProjection === 'perspective' ? 'active' : ''}`}
                         >
-                          <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>restart_alt</span>
+                          {t('projection.perspective')}
                         </button>
+                        <button
+                          onClick={() => setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))}
+                          className={`cad-tool-btn ${opts.cameraProjection === 'orthographic' ? 'active' : ''}`}
+                        >
+                          {t('projection.orthographic')}
+                        </button>
+                      </div>
+
+                      <p style={{ fontSize: '8.5px', color: 'var(--cv-text-muted)', margin: '0 0 8px 0', lineHeight: '1.35' }}>
+                        {opts.cameraProjection === 'orthographic' ? t('projection.orthographicDesc') : t('projection.perspectiveDesc')}
+                      </p>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+                        <button
+                          onClick={() => {
+                            setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+                            setActiveViewPreset('top')
+                            window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'top' } }))
+                          }}
+                          className={`cad-tool-btn ${opts.cameraProjection === 'orthographic' && activeViewPreset === 'top' ? 'active' : ''}`}
+                        >
+                          <span>📐</span> {t('projection.planView')} <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.15)', padding: '1px 3px', borderRadius: '3px' }}>1</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+                            setActiveViewPreset('front')
+                            window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'front' } }))
+                          }}
+                          className={`cad-tool-btn ${opts.cameraProjection === 'orthographic' && activeViewPreset === 'front' ? 'active' : ''}`}
+                        >
+                          <span>↔️</span> {t('projection.profileView')} <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.15)', padding: '1px 3px', borderRadius: '3px' }}>2</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setOpts(p => ({ ...p, cameraProjection: 'orthographic' }))
+                            setActiveViewPreset('side')
+                            window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'side' } }))
+                          }}
+                          className={`cad-tool-btn ${opts.cameraProjection === 'orthographic' && activeViewPreset === 'side' ? 'active' : ''}`}
+                        >
+                          <span>↕️</span> {t('projection.sectionView')} <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.15)', padding: '1px 3px', borderRadius: '3px' }}>3</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setActiveViewPreset('iso')
+                            window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'iso' } }))
+                          }}
+                          className={`cad-tool-btn ${activeViewPreset === 'iso' ? 'active' : ''}`}
+                        >
+                          <span>🧊</span> {t('projection.isoView')} <span style={{ fontSize: '7.5px', opacity: 0.7, background: 'rgba(255,255,255,0.15)', padding: '1px 3px', borderRadius: '3px' }}>4</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 1. Tektonika & Geológia (3-bodový sklonomer a spádnica) */}
+                    <div className="cad-card">
+                      <div className="cad-card-header">
+                        <div className="cad-card-title">
+                          <span className="material-symbols-outlined">architecture</span>
+                          {lang === 'sk' ? 'Tektonické meranie (3 body: Sklon & Spádnica)' : 'Tectonic Plane (Dip & Dip Direction)'}
+                        </div>
+                      </div>
+
+                      <p style={{ fontSize: '9px', color: 'var(--cv-text-muted)', margin: '0 0 8px 0', lineHeight: '1.35' }}>
+                        {lang === 'sk' 
+                          ? 'Vyberte 3 body na stene jaskyne, vrstve alebo v teréne. Systém automaticky vypočíta normálu, sklon po spádnici a azimut.' 
+                          : 'Pick 3 points on cave wall, bedding plane or terrain to calculate dip, dip direction and strike.'}
+                      </p>
+
+                      <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                        <button
+                          onClick={cycleMeasurementMode}
+                          className={`cad-tool-btn ${measurementMode !== 'off' ? 'active' : ''}`}
+                          style={{ flex: 1, padding: '6px 8px' }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                            {measurementMode === 'polygon' ? 'square_foot' : 'straighten'}
+                          </span>
+                          <span>
+                            {measurementMode === 'off' 
+                              ? (lang === 'sk' ? 'Aktivovať meranie' : 'Enable measurement')
+                              : measurementMode === 'distance'
+                              ? (lang === 'sk' ? 'Vzdialenosť (2 body)' : 'Distance mode')
+                              : (lang === 'sk' ? 'Plocha / Polygón (3+ bodov)' : 'Area / Polygon mode')}
+                          </span>
+                        </button>
+
+                        {selectedStations.length > 0 && (
+                          <button
+                            onClick={() => setSelectedStations([])}
+                            className="btn-mini"
+                            style={{ color: '#f87171', padding: '6px 8px' }}
+                            title={lang === 'sk' ? 'Resetovať vybrané body' : 'Reset points'}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>restart_alt</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Stav výberu bodov */}
+                      <div className="cad-subcard" style={{ 
+                        fontSize: '9px', 
+                        padding: '6px 8px', 
+                        borderColor: selectedStations.length === 3 ? 'rgba(16,185,129,0.4)' : selectedStations.length > 0 ? 'rgba(245,158,11,0.4)' : undefined,
+                        background: selectedStations.length === 3 ? 'rgba(16,185,129,0.1)' : selectedStations.length > 0 ? 'rgba(245,158,11,0.1)' : undefined,
+                        color: selectedStations.length === 3 ? '#10b981' : selectedStations.length > 0 ? '#f59e0b' : 'var(--cv-text-muted)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginTop: '4px'
+                      }}>
+                        <span>
+                          {selectedStations.length === 0 && (lang === 'sk' ? 'Kliknite na 1. bod v 3D scéne' : 'Click 1st point in 3D scene')}
+                          {selectedStations.length === 1 && (lang === 'sk' ? 'Vybraný 1. bod. Kliknite na 2. bod' : 'Point 1 selected. Click 2nd point')}
+                          {selectedStations.length === 2 && (lang === 'sk' ? 'Vybrané 2 body. Kliknite na 3. bod' : 'Points 1 & 2 selected. Click 3rd point')}
+                          {selectedStations.length === 3 && (lang === 'sk' ? 'Rovina kompletne zameraná' : 'Plane fully measured')}
+                        </span>
+                        <span style={{ fontWeight: 'bold', fontFamily: 'var(--cv-font-mono)' }}>
+                          {selectedStations.length}/3
+                        </span>
+                      </div>
+
+                      {/* Ak sú vybrané 3 body, zobrazíme živé výsledky priamo v bočnom paneli */}
+                      {selectedStations.length === 3 && (() => {
+                        const tect = calculateTectonics(selectedStations[0].pos, selectedStations[1].pos, selectedStations[2].pos, lang);
+                        if (!tect) return null;
+                        return (
+                          <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                              <div className="sidebar-stat-card">
+                                <span className="sidebar-stat-label">{t('tectonics.dip')}</span>
+                                <span className="sidebar-stat-val accent">
+                                  {tect.dipAngle.toFixed(1)}°
+                                </span>
+                              </div>
+                              <div className="sidebar-stat-card">
+                                <span className="sidebar-stat-label">{t('tectonics.dipDirection')}</span>
+                                <span className="sidebar-stat-val" style={{ color: '#10b981' }}>
+                                  {tect.dipDirection.toFixed(1)}° <span style={{ fontSize: '9px', opacity: 0.8 }}>({tect.cardinalDirection})</span>
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="cad-subcard" style={{ fontSize: '9px', color: 'var(--cv-text-muted)', display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '2px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span>{t('tectonics.strike')}:</span>
+                                <strong style={{ color: 'var(--cv-text)', fontFamily: 'var(--cv-font-mono)' }}>{`${tect.strike[0].toFixed(0)}° - ${tect.strike[1].toFixed(0)}°`}</strong>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span>{t('tectonics.triangleArea')}:</span>
+                                <strong style={{ color: 'var(--cv-text)', fontFamily: 'var(--cv-font-mono)' }}>{tect.area.toFixed(2)} m²</strong>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span>Geol. zápis:</span>
+                                <strong style={{ color: 'var(--cv-primary)', fontFamily: 'var(--cv-font-mono)' }}>{tect.notation}</strong>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => {
+                                const strikeStr = `${tect.strike[0].toFixed(0)}° - ${tect.strike[1].toFixed(0)}°`;
+                                const text = `Tektonika / Geológia:\nSklon po spádnici: ${tect.dipAngle.toFixed(1)}°\nAzimut spádnice: ${tect.dipDirection.toFixed(1)}° (${tect.cardinalDirection})\nSmer vrstvy (Strike): ${strikeStr}\nPlocha: ${tect.area.toFixed(2)} m²\nGeol. zápis: ${tect.notation}`;
+                                navigator.clipboard.writeText(text);
+                              }}
+                              className="btn-mini"
+                              style={{
+                                width: '100%',
+                                marginTop: '4px',
+                                color: 'var(--cv-primary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '6px',
+                                padding: '5px'
+                              }}
+                            >
+                              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>content_copy</span>
+                              <span>{t('tectonics.copyData')}</span>
+                            </button>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* 2. 3D Kalibrácia Terénu (Gizmo) */}
+                    <div className="cad-card">
+                      <div className="cad-card-header">
+                        <div className="cad-card-title">
+                          <span className="material-symbols-outlined">open_with</span>
+                          {lang === 'sk' ? '3D kalibračné gizmo terénu' : '3D Terrain Gizmo'}
+                        </div>
+                        <div className={`switch${opts.terrainCalibrationMode ? ' on' : ''}`}
+                          onClick={() => setOpts(p => ({ ...p, terrainCalibrationMode: !p.terrainCalibrationMode }))}
+                          role="switch"
+                          aria-checked={opts.terrainCalibrationMode}
+                          tabIndex={0}
+                        />
+                      </div>
+                      <p style={{ fontSize: '9px', color: 'var(--cv-text-muted)', margin: '0 0 8px 0', lineHeight: '1.3' }}>
+                        {lang === 'sk' ? 'Aktivuje 3D manipulačné šípky priamo nad terénom v scéne pre real-time doladenie pozície.' : 'Activates 3D transformation arrows directly above the terrain in the scene for real-time alignment.'}
+                      </p>
+                      {opts.surfaceOffset && (
+                        <div className="cad-subcard" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9px', color: 'var(--cv-text-muted)', fontFamily: 'var(--cv-font-mono)' }}>
+                          <span>Offset:</span>
+                          <span style={{ color: 'var(--cv-text)', fontWeight: 600 }}>X: {opts.surfaceOffset.x} | Y: {opts.surfaceOffset.y} | Z: {opts.surfaceOffset.z}m</span>
+                        </div>
                       )}
                     </div>
 
-                    {/* Stav výberu bodov */}
-                    <div style={{ 
-                      fontSize: '9px', 
-                      padding: '5px 8px', 
-                      borderRadius: '4px', 
-                      background: selectedStations.length === 3 ? 'rgba(16,185,129,0.12)' : selectedStations.length > 0 ? 'rgba(245,158,11,0.12)' : 'rgba(15,23,42,0.6)',
-                      border: `1px solid ${selectedStations.length === 3 ? 'rgba(16,185,129,0.3)' : selectedStations.length > 0 ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.05)'}`,
-                      color: selectedStations.length === 3 ? '#6ee7b7' : selectedStations.length > 0 ? '#fcd34d' : '#94a3b8',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      marginBottom: selectedStations.length === 3 ? '8px' : '0'
-                    }}>
-                      <span>
-                        {selectedStations.length === 0 && (lang === 'sk' ? 'Kliknite na 1. bod v 3D scéne' : 'Click 1st point in 3D scene')}
-                        {selectedStations.length === 1 && (lang === 'sk' ? 'Vybraný 1. bod. Kliknite na 2. bod' : 'Point 1 selected. Click 2nd point')}
-                        {selectedStations.length === 2 && (lang === 'sk' ? 'Vybrané 2 body. Kliknite na 3. bod' : 'Points 1 & 2 selected. Click 3rd point')}
-                        {selectedStations.length === 3 && (lang === 'sk' ? 'Rovina kompletne zameraná' : 'Plane fully measured')}
-                      </span>
-                      <span style={{ fontWeight: 'bold', fontFamily: 'monospace' }}>
-                        {selectedStations.length}/3
-                      </span>
-                    </div>
+                    {/* 2.b LiDAR & Splay Analyzátor Anomálií */}
+                    {isPlyLidar && (
+                      <div className="cad-card">
+                        <div className="cad-card-header">
+                          <div className="cad-card-title">
+                            <span className="material-symbols-outlined">analytics</span>
+                            {lang === 'sk' ? 'LiDAR detektor komínov' : 'LiDAR Anomaly Detector'}
+                          </div>
+                        </div>
+                        
+                        <button 
+                          onClick={isLiDARAnalyzing ? cancelLiDARAnalysis : runLiDARAnalysis}
+                          className="btn-mini"
+                          style={{ width: '100%', marginBottom: '6px', padding: '6px', color: 'var(--cv-primary)' }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>youtube_searched_for</span>
+                          <span>{isLiDARAnalyzing ? (lang === 'sk' ? 'Zrušiť LiDAR analýzu' : 'Cancel LiDAR analysis') : (lang === 'sk' ? 'Detegovať komíny a okná' : 'Detect Chimneys & Windows')}</span>
+                        </button>
 
-                    {/* Ak sú vybrané 3 body, zobrazíme živé výsledky priamo v bočnom paneli */}
-                    {selectedStations.length === 3 && (() => {
-                      const tect = calculateTectonics(selectedStations[0].pos, selectedStations[1].pos, selectedStations[2].pos, lang);
-                      if (!tect) return null;
-                      return (
-                        <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                            <div style={{ background: '#0f172a', padding: '6px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                              <div style={{ color: '#64748b', fontSize: '8px' }}>{t('tectonics.dip')}</div>
-                              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#60a5fa', fontFamily: 'monospace' }}>
-                                {tect.dipAngle.toFixed(1)}°
+                        <button
+                          onClick={isLidarMapGenerating ? cancelLidarPlanMap : generateLidarPlanMap}
+                          className="btn-mini"
+                          disabled={!cave.points || cave.pointCount === 0}
+                          style={{
+                            width: '100%',
+                            marginBottom: '8px',
+                            padding: '6px',
+                            color: '#10b981',
+                            opacity: (!cave.points || cave.pointCount === 0) ? 0.45 : 1
+                          }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>map</span>
+                          <span>{isLidarMapGenerating ? (lang === 'sk' ? 'Zrušiť kreslenie mapy' : 'Cancel map drawing') : (lang === 'sk' ? 'Nakresliť 2D mapu z LiDARu' : 'Draw 2D LiDAR map')}</span>
+                        </button>
+
+                        {anomalies.length > 0 ? (
+                          <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px', paddingRight: '2px' }}>
+                            {anomalies.map((a) => (
+                              <div 
+                                key={a.id} 
+                                onClick={() => setActiveAnomalyId(activeAnomalyId === a.id ? null : a.id)}
+                                className="cad-subcard"
+                                style={{ 
+                                  cursor: 'pointer',
+                                  borderColor: activeAnomalyId === a.id ? 'var(--cv-primary)' : undefined,
+                                  background: activeAnomalyId === a.id ? 'rgba(0,210,255,0.12)' : undefined,
+                                  marginTop: '2px',
+                                  padding: '6px'
+                                }}
+                              >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9px' }}>
+                                  <span style={{ 
+                                    fontWeight: 'bold', 
+                                    color: a.type === 'chimney' ? '#f97316' : a.type === 'window' ? '#06b6d4' : 'var(--cv-primary)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>
+                                      {a.type === 'chimney' ? 'vertical_align_top' : a.type === 'window' ? 'open_in_new' : 'splitscreen'}
+                                    </span>
+                                    {a.type === 'chimney' ? (lang === 'sk' ? 'Komín / Dóm' : 'Chimney') : a.type === 'window' ? (lang === 'sk' ? 'Okno / Puklina' : 'Window') : (lang === 'sk' ? 'Geologická anomália' : 'Anomaly')}
+                                  </span>
+                                  <span style={{ color: '#10b981', fontWeight: 'bold' }}>{a.confidence.toFixed(0)}% spoľ.</span>
+                                </div>
+                                <div style={{ fontSize: '8px', color: 'var(--cv-text-muted)', lineHeight: '1.2' }}>
+                                  {a.description} (Veľkosť: {a.size.toFixed(1)}m)
+                                </div>
                               </div>
-                            </div>
-                            <div style={{ background: '#0f172a', padding: '6px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                              <div style={{ color: '#64748b', fontSize: '8px' }}>{t('tectonics.dipDirection')}</div>
-                              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#4ade80', fontFamily: 'monospace' }}>
-                                {tect.dipDirection.toFixed(1)}° <span style={{ fontSize: '10px', color: '#86efac' }}>({tect.cardinalDirection})</span>
-                              </div>
-                            </div>
+                            ))}
                           </div>
-
-                          <div style={{ background: '#0f172a', padding: '6px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)', fontSize: '9px', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <span>{t('tectonics.strike')}:</span>
-                              <strong style={{ color: '#fde047', fontFamily: 'monospace' }}>{`${tect.strike[0].toFixed(0)}° - ${tect.strike[1].toFixed(0)}°`}</strong>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <span>{t('tectonics.triangleArea')}:</span>
-                              <strong style={{ color: '#e2e8f0', fontFamily: 'monospace' }}>{tect.area.toFixed(2)} m²</strong>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <span>Geol. zápis:</span>
-                              <strong style={{ color: '#c084fc', fontFamily: 'monospace' }}>{tect.notation}</strong>
-                            </div>
+                        ) : (
+                          <div style={{ fontSize: '9px', color: 'var(--cv-text-muted)', textAlign: 'center', padding: '6px 0' }}>
+                            {lang === 'sk' ? 'Žiadne zistené anomálie. Spusťte analýzu.' : 'No anomalies detected yet. Click scan.'}
                           </div>
-
-                          <button
-                            onClick={() => {
-                              const strikeStr = `${tect.strike[0].toFixed(0)}° - ${tect.strike[1].toFixed(0)}°`;
-                              const text = `Tektonika / Geológia:\nSklon po spádnici: ${tect.dipAngle.toFixed(1)}°\nAzimut spádnice: ${tect.dipDirection.toFixed(1)}° (${tect.cardinalDirection})\nSmer vrstvy (Strike): ${strikeStr}\nPlocha: ${tect.area.toFixed(2)} m²\nGeol. zápis: ${tect.notation}`;
-                              navigator.clipboard.writeText(text);
-                            }}
-                            className="btn-back"
-                            style={{
-                              width: '100%',
-                              background: 'rgba(192,132,252,0.12)',
-                              color: '#c084fc',
-                              borderColor: 'rgba(192,132,252,0.25)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '6px',
-                              padding: '5px',
-                              fontSize: '9px'
-                            }}
-                          >
-                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>content_copy</span>
-                            <span>{t('tectonics.copyData')}</span>
-                          </button>
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  {/* 2. 3D Kalibrácia Terénu (Gizmo) */}
-                  <div style={{ background: 'rgba(30,41,59,0.3)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
-                    <div className="toggle-row" style={{ border: 'none', padding: 0, marginBottom: '6px' }}>
-                      <label className="toggle-label" style={{ fontSize: '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#38bdf8' }}>open_with</span>
-                        {lang === 'sk' ? '3D kalibračné gizmo terénu' : '3D Terrain Gizmo'}
-                      </label>
-                      <div className={`switch${opts.terrainCalibrationMode ? ' on' : ''}`}
-                        onClick={() => setOpts(p => ({ ...p, terrainCalibrationMode: !p.terrainCalibrationMode }))}
-                        role="switch"
-                        aria-checked={opts.terrainCalibrationMode}
-                        tabIndex={0}
-                      />
-                    </div>
-                    <p style={{ fontSize: '9px', color: '#64748b', margin: '0 0 8px 0', lineHeight: '1.3' }}>
-                      {lang === 'sk' ? 'Aktivuje 3D manipulačné šípky priamo nad terénom v scéne pre real-time doladenie pozície.' : 'Activates 3D transformation arrows directly above the terrain in the scene for real-time alignment.'}
-                    </p>
-                    {opts.surfaceOffset && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9px', color: '#94a3b8', background: '#0f172a', padding: '4px 8px', borderRadius: '4px', fontFamily: 'monospace' }}>
-                        <span>Offset:</span>
-                        <span>X: {opts.surfaceOffset.x} | Y: {opts.surfaceOffset.y} | Z: {opts.surfaceOffset.z}m</span>
+                        )}
                       </div>
                     )}
-                  </div>
 
-                  {/* 2. LiDAR & Splay Analyzátor Anomálií */}
-                  <div style={{ background: 'rgba(30,41,59,0.3)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
-                    <div style={{ fontSize: '10px', color: '#e2e8f0', marginBottom: '8px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#a855f7' }}>analytics</span>
-                      {lang === 'sk' ? 'LiDAR & Splay detektor komínov' : 'LiDAR Anomaly Detector'}
-                    </div>
-                    
-                    <button 
-                      onClick={isLiDARAnalyzing ? cancelLiDARAnalysis : runLiDARAnalysis}
-                      className="btn-back"
-                      style={{ width: '100%', marginBottom: '8px', background: 'rgba(147, 51, 234, 0.1)', color: '#c084fc', borderColor: 'rgba(147, 51, 234, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '6px', fontSize: '10px' }}
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>youtube_searched_for</span>
-                      <span>{isLiDARAnalyzing ? (lang === 'sk' ? 'Zrušiť LiDAR analýzu' : 'Cancel LiDAR analysis') : (lang === 'sk' ? 'Detegovať komíny, okná a pukliny' : 'Detect Chimneys & Windows')}</span>
-                    </button>
+                    {/* 3. Objemový Profiler a 2D rezy */}
+                    <div className="cad-card">
+                      <div className="cad-card-header">
+                        <div className="cad-card-title">
+                          <span className="material-symbols-outlined">layers</span>
+                          {lang === 'sk' ? '2D rez chodbou a objem' : '2D Cross-section & Volume'}
+                        </div>
+                      </div>
 
-                    <button
-                      onClick={isLidarMapGenerating ? cancelLidarPlanMap : generateLidarPlanMap}
-                      className="btn-back"
-                      disabled={!cave.points || cave.pointCount === 0}
-                      style={{
-                        width: '100%',
-                        marginBottom: '8px',
-                        background: 'rgba(15,118,110,0.12)',
-                        color: '#5eead4',
-                        borderColor: 'rgba(20,184,166,0.25)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                        padding: '6px',
-                        fontSize: '10px',
-                        opacity: (!cave.points || cave.pointCount === 0) ? 0.45 : 1
-                      }}
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>map</span>
-                      <span>{isLidarMapGenerating ? (lang === 'sk' ? 'Zrušiť kreslenie mapy' : 'Cancel map drawing') : (lang === 'sk' ? 'Nakresliť 2D mapu z LiDARu' : 'Draw 2D LiDAR map')}</span>
-                    </button>
-
-                    {anomalies.length > 0 ? (
-                      <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px', paddingRight: '2px' }}>
-                        {anomalies.map((a) => (
-                          <div 
-                            key={a.id} 
-                            onClick={() => setActiveAnomalyId(activeAnomalyId === a.id ? null : a.id)}
-                            style={{ 
-                              padding: '6px', 
-                              borderRadius: '4px', 
-                              background: activeAnomalyId === a.id ? 'rgba(147,51,234,0.2)' : 'rgba(15,23,42,0.6)', 
-                              border: `1px solid ${activeAnomalyId === a.id ? '#c084fc' : 'rgba(255,255,255,0.05)'}`,
-                              cursor: 'pointer',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '2px',
-                              transition: 'all 0.2s'
-                            }}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9px' }}>
-                              <span style={{ 
-                                fontWeight: 'bold', 
-                                color: a.type === 'chimney' ? '#f97316' : a.type === 'window' ? '#06b6d4' : '#c084fc',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                              }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>
-                                  {a.type === 'chimney' ? 'vertical_align_top' : a.type === 'window' ? 'open_in_new' : 'splitscreen'}
-                                </span>
-                                {a.type === 'chimney' ? (lang === 'sk' ? 'Komín / Dóm' : 'Chimney') : a.type === 'window' ? (lang === 'sk' ? 'Okno / Puklina' : 'Window') : (lang === 'sk' ? 'Geologická anomália' : 'Anomaly')}
-                              </span>
-                              <span style={{ color: '#10b981', fontWeight: 'bold' }}>{a.confidence.toFixed(0)}% spoľ.</span>
+                      {selectedSegmentProfile ? (
+                        <div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '6px' }}>
+                            <div className="sidebar-stat-card">
+                              <span className="sidebar-stat-label">{lang === 'sk' ? 'Prierezová plocha' : 'Cross-section area'}</span>
+                              <span className="sidebar-stat-val accent">{(selectedSegmentProfile.area ?? 0).toFixed(1)} m²</span>
                             </div>
-                            <div style={{ fontSize: '8px', color: '#94a3b8', lineHeight: '1.2' }}>
-                              {a.description} (Veľkosť: {a.size.toFixed(1)}m)
+                            <div className="sidebar-stat-card">
+                              <span className="sidebar-stat-label">{lang === 'sk' ? 'Odhadovaný objem' : 'Cave segment volume'}</span>
+                              <span className="sidebar-stat-val" style={{ color: '#10b981' }}>{(selectedSegmentProfile.volume ?? 0).toFixed(1)} m³</span>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div style={{ fontSize: '9px', color: '#64748b', textAlign: 'center', padding: '6px 0' }}>
-                        {lang === 'sk' ? 'Žiadne zistené anomálie. Spusťte analýzu.' : 'No anomalies detected yet. Click scan.'}
-                      </div>
-                    )}
-                  </div>
 
-                  {/* 3. Objemový Profiler a 2D rezy */}
-                  <div style={{ background: 'rgba(30,41,59,0.3)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
-                    <div style={{ fontSize: '10px', color: '#e2e8f0', marginBottom: '8px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#06b6d4' }}>layers</span>
-                      {lang === 'sk' ? '2D rez chodbou a objem' : '2D Cross-section & Volume'}
+                          <div className="cad-subcard" style={{ marginBottom: '6px', fontSize: '9px', color: 'var(--cv-text-muted)', display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Dĺžka úseku: <strong style={{ color: 'var(--cv-text)' }}>{(selectedSegmentProfile.length ?? 0).toFixed(1)} m</strong></span>
+                            <span>LRUD: <strong style={{ color: 'var(--cv-text)' }}>{(selectedSegmentProfile.lrud?.l ?? 0).toFixed(1)}/{(selectedSegmentProfile.lrud?.r ?? 0).toFixed(1)}/{(selectedSegmentProfile.lrud?.u ?? 0).toFixed(1)}/{(selectedSegmentProfile.lrud?.d ?? 0).toFixed(1)}</strong></span>
+                          </div>
+
+                          {/* Textový výpis profilu chodby */}
+                          <div className="cad-subcard" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{ fontSize: '8.5px', color: 'var(--cv-primary)', fontWeight: 'bold' }}>
+                              {lang === 'sk' ? 'Tvar profilu chodby' : 'Passage shape'}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '9px', color: 'var(--cv-text-muted)' }}>
+                              <div>Strop: <strong style={{ color: 'var(--cv-text)' }}>{(selectedSegmentProfile.lrud?.u ?? 0).toFixed(1)}m</strong></div>
+                              <div>Dno: <strong style={{ color: 'var(--cv-text)' }}>{(selectedSegmentProfile.lrud?.d ?? 0).toFixed(1)}m</strong></div>
+                              <div>Ľavá: <strong style={{ color: 'var(--cv-text)' }}>{(selectedSegmentProfile.lrud?.l ?? 0).toFixed(1)}m</strong></div>
+                              <div>Pravá: <strong style={{ color: 'var(--cv-text)' }}>{(selectedSegmentProfile.lrud?.r ?? 0).toFixed(1)}m</strong></div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '9px', color: 'var(--cv-text-muted)', textAlign: 'center', padding: '8px 0', lineHeight: '1.4' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '18px', display: 'block', marginBottom: '4px', opacity: 0.6 }}>query_stats</span>
+                          {lang === 'sk' ? 'Pre výpočet objemu a 2D prierezu chodby zapnite režim merania a kliknite na 2 po sebe nasledujúce stanice.' : 'To compute volume & 2D cross-section, turn on measurement tool and select two connected stations.'}
+                        </div>
+                      )}
                     </div>
-
-                    {selectedSegmentProfile ? (
-                      <div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '8px', fontSize: '9px', color: '#94a3b8' }}>
-                          <div style={{ background: '#0f172a', padding: '4px 6px', borderRadius: '4px' }}>
-                            <div style={{ color: '#64748b', fontSize: '8px' }}>{lang === 'sk' ? 'Prierezová plocha' : 'Cross-section area'}</div>
-                            <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#06b6d4', fontFamily: 'monospace' }}>{(selectedSegmentProfile.area ?? 0).toFixed(1)} m²</div>
-                          </div>
-                          <div style={{ background: '#0f172a', padding: '4px 6px', borderRadius: '4px' }}>
-                            <div style={{ color: '#64748b', fontSize: '8px' }}>{lang === 'sk' ? 'Odhadovaný objem' : 'Cave segment volume'}</div>
-                            <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#10b981', fontFamily: 'monospace' }}>{(selectedSegmentProfile.volume ?? 0).toFixed(1)} m³</div>
-                          </div>
-                        </div>
-
-                        <div style={{ background: '#0f172a', padding: '4px 6px', borderRadius: '4px', marginBottom: '8px', fontSize: '9px', color: '#94a3b8', display: 'flex', justifyContent: 'space-between' }}>
-                          <span>Dĺžka úseku: <strong style={{ color: '#e2e8f0' }}>{(selectedSegmentProfile.length ?? 0).toFixed(1)} m</strong></span>
-                          <span>LRUD: <strong style={{ color: '#e2e8f0' }}>{(selectedSegmentProfile.lrud?.l ?? 0).toFixed(1)}/{(selectedSegmentProfile.lrud?.r ?? 0).toFixed(1)}/{(selectedSegmentProfile.lrud?.u ?? 0).toFixed(1)}/{(selectedSegmentProfile.lrud?.d ?? 0).toFixed(1)}</strong></span>
-                        </div>
-
-                        {/* Textový výpis profilu chodby (bez SVG grafiky) */}
-                        <div style={{ background: '#090d16', borderRadius: '6px', padding: '8px', border: '1px solid rgba(6,182,212,0.15)', display: 'flex', flexDirection: 'column' }}>
-                          <div style={{ fontSize: '8px', color: '#06b6d4', fontWeight: 'bold', marginBottom: '4px' }}>
-                            {lang === 'sk' ? 'Tvar profilu chodby' : 'Passage shape'}
-                          </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '9px', color: '#94a3b8' }}>
-                            <div>Strop: <strong style={{ color: '#e2e8f0' }}>{(selectedSegmentProfile.lrud?.u ?? 0).toFixed(1)}m</strong></div>
-                            <div>Dno: <strong style={{ color: '#e2e8f0' }}>{(selectedSegmentProfile.lrud?.d ?? 0).toFixed(1)}m</strong></div>
-                            <div>Ľavá: <strong style={{ color: '#e2e8f0' }}>{(selectedSegmentProfile.lrud?.l ?? 0).toFixed(1)}m</strong></div>
-                            <div>Pravá: <strong style={{ color: '#e2e8f0' }}>{(selectedSegmentProfile.lrud?.r ?? 0).toFixed(1)}m</strong></div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ fontSize: '9px', color: '#64748b', textAlign: 'center', padding: '10px 0', lineHeight: '1.4' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px', display: 'block', marginBottom: '4px', color: '#64748b' }}>query_stats</span>
-                        {lang === 'sk' ? 'Pre výpočet objemu a 2D prierezu chodby zapnite režim merania a kliknite na 2 po sebe nasledujúce stanice.' : 'To compute volume & 2D cross-section, turn on measurement tool and select two connected stations.'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                </div>}{/* end analysis tab */}
+                  </>
+                )}
 
                 {/* Help, Presentation, Legend — cave tab (bottom) */}
-                {sidebarTab === 'cave' && <div>
-
-                <div>
-                  <div className="s-label">{t('ui.help')}</div>
-                  <div className="help-text" style={{ fontSize: '10px', color: '#94a3b8', lineHeight: '1.6', background: 'rgba(30,41,59,0.3)', padding: '8px', borderRadius: '6px' }}>
-                    {t('ui.helpRotate')}<br />
-                    {t('ui.helpPan')}<br />
-                    {t('ui.helpZoom')}<br />
-                    {t('ui.helpTouch')}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="s-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
-                    {lang === 'sk' ? 'Prezentácia' : 'Presentation'}
-                  </div>
-                  <div className="toggle-row">
-                    <label className="toggle-label">{lang === 'sk' ? 'Auto-rotácia' : 'Auto-rotate'}</label>
-                    <div className={`switch${opts.autoRotate ? ' on' : ''}`}
-                      onClick={() => toggleOpt('autoRotate')} role="switch"
-                      aria-checked={opts.autoRotate} tabIndex={0} />
-                  </div>
-                  {opts.autoRotate && (
-                    <div style={{ marginTop: '8px', padding: '0 4px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
-                        <span>{lang === 'sk' ? 'Rýchlosť' : 'Speed'}</span>
-                        <span style={{ color: '#4fc3f7' }}>{opts.autoRotateSpeed.toFixed(1)}x</span>
+                {sidebarTab === 'cave' && (
+                  <>
+                    {/* Prezentácia */}
+                    <div className="cad-card">
+                      <div className="cad-card-header">
+                        <div className="cad-card-title">
+                          <span className="material-symbols-outlined">videocam</span>
+                          {lang === 'sk' ? 'Prezentácia & Záznam' : 'Presentation & Recording'}
+                        </div>
                       </div>
-                      <input type="range" min={0.1} max={10} step={0.1}
-                        value={opts.autoRotateSpeed}
-                        onChange={e => setOpts(p => ({ ...p, autoRotateSpeed: Number(e.target.value) }))}
-                        className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500" />
-                    </div>
-                  )}
-                  <div className="toggle-row" style={{ borderBottom: 'none' }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b', marginBottom: '4px' }}>
-                        <span>{lang === 'sk' ? 'Dĺžka (sekundy)' : 'Duration (sec)'}</span>
-                        <span style={{ color: '#818cf8' }}>{opts.recordingDuration === 0 ? (lang === 'sk' ? 'Manuálne' : 'Manual') : `${opts.recordingDuration}s`}</span>
+                      <div className="toggle-row">
+                        <label className="toggle-label">{lang === 'sk' ? 'Auto-rotácia' : 'Auto-rotate'}</label>
+                        <div className={`switch${opts.autoRotate ? ' on' : ''}`}
+                          onClick={() => toggleOpt('autoRotate')} role="switch"
+                          aria-checked={opts.autoRotate} tabIndex={0} />
                       </div>
-                      <input type="range" min={0} max={60} step={5}
-                        value={opts.recordingDuration}
-                        onChange={e => setOpts(p => ({ ...p, recordingDuration: Number(e.target.value) }))}
-                        className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500" />
+                      {opts.autoRotate && (
+                        <div className="cad-subcard" style={{ marginTop: '6px' }}>
+                          <div className="cad-control-row">
+                            <span className="cad-control-label">{lang === 'sk' ? 'Rýchlosť rotácie' : 'Rotate speed'}</span>
+                            <span className="cad-control-value">{opts.autoRotateSpeed.toFixed(1)}x</span>
+                          </div>
+                          <input type="range" min={0.1} max={10} step={0.1}
+                            value={opts.autoRotateSpeed}
+                            onChange={e => setOpts(p => ({ ...p, autoRotateSpeed: Number(e.target.value) }))}
+                            className="cad-slider" />
+                        </div>
+                      )}
+                      <div className="cad-subcard" style={{ marginTop: '6px' }}>
+                        <div className="cad-control-row">
+                          <span className="cad-control-label">{lang === 'sk' ? 'Dĺžka záznamu' : 'Record duration'}</span>
+                          <span className="cad-control-value">{opts.recordingDuration === 0 ? (lang === 'sk' ? 'Manuálne' : 'Manual') : `${opts.recordingDuration}s`}</span>
+                        </div>
+                        <input type="range" min={0} max={60} step={5}
+                          value={opts.recordingDuration}
+                          onChange={e => setOpts(p => ({ ...p, recordingDuration: Number(e.target.value) }))}
+                          className="cad-slider" />
+                      </div>
+                      <button 
+                        className={`btn-record ${isRecording ? 'recording' : ''}`}
+                        disabled={isRecording}
+                        style={{ marginTop: '8px', width: '100%' }}
+                        onClick={() => {
+                          const container = document.getElementById('main-cave-canvas')
+                          const canvas = container?.querySelector('canvas') as HTMLCanvasElement
+                          if (!canvas) {
+                            alert('Canvas not found!')
+                            return
+                          }
+                          
+                          try {
+                            const captureStream = (canvas as any).captureStream || (canvas as any).webkitCaptureStream
+                            if (!captureStream) throw new Error('CaptureStream not supported')
+                            
+                            const stream = captureStream.call(canvas, 60)
+                            const mimeTypes = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
+                            const mimeType = mimeTypes.find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm'
+                            
+                            const recorder = new MediaRecorder(stream, { mimeType })
+                            const chunks: Blob[] = []
+                            
+                            recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data) }
+                            recorder.onstop = () => {
+                              const blob = new Blob(chunks, { type: mimeType.split(';')[0] })
+                              const url = URL.createObjectURL(blob)
+                              const a = document.createElement('a')
+                              a.href = url; a.download = `cave_presentation_${new Date().getTime()}.webm`
+                              a.click()
+                              setTimeout(() => URL.revokeObjectURL(url), 0)
+                              setIsRecording(false)
+                              delete (window as any)._activeRecorder
+                            }
+                            
+                            (window as any)._activeRecorder = recorder
+                            setIsRecording(true)
+                            recorder.start()
+                            
+                            if (opts.recordingDuration > 0) {
+                              setTimeout(() => {
+                                if (recorder.state === 'recording') recorder.stop()
+                              }, opts.recordingDuration * 1000)
+                            }
+                          } catch (err) {
+                            console.error('Recording error:', err)
+                            alert('Error starting recording')
+                            setIsRecording(false)
+                          }
+                        }}
+                      >
+                        <div className="record-dot" />
+                        {isRecording 
+                          ? (lang === 'sk' ? 'Nahráva sa...' : 'Recording...') 
+                          : (lang === 'sk' ? 'Nahrať prezentáciu' : 'Record Presentation')}
+                      </button>
                     </div>
-                  </div>
-                  <button 
-                    className={`btn-record ${isRecording ? 'recording' : ''}`}
-                    disabled={isRecording}
-                    onClick={() => {
-                      const container = document.getElementById('main-cave-canvas')
-                      const canvas = container?.querySelector('canvas') as HTMLCanvasElement
-                      if (!canvas) {
-                        alert('Canvas not found!')
-                        return
-                      }
-                      
-                      try {
-                        const captureStream = (canvas as any).captureStream || (canvas as any).webkitCaptureStream
-                        if (!captureStream) throw new Error('CaptureStream not supported')
-                        
-                        const stream = captureStream.call(canvas, 60)
-                        const mimeTypes = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
-                        const mimeType = mimeTypes.find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm'
-                        
-                        const recorder = new MediaRecorder(stream, { mimeType })
-                        const chunks: Blob[] = []
-                        
-                        recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data) }
-                        recorder.onstop = () => {
-                          const blob = new Blob(chunks, { type: mimeType.split(';')[0] })
-                          const url = URL.createObjectURL(blob)
-                          const a = document.createElement('a')
-                          a.href = url; a.download = `cave_presentation_${new Date().getTime()}.webm`
-                          a.click()
-                          setTimeout(() => URL.revokeObjectURL(url), 0)
-                          setIsRecording(false)
-                          delete (window as any)._activeRecorder
-                        }
-                        
-                        (window as any)._activeRecorder = recorder
-                        setIsRecording(true)
-                        recorder.start()
-                        
-                        if (opts.recordingDuration > 0) {
-                          setTimeout(() => {
-                            if (recorder.state === 'recording') recorder.stop()
-                          }, opts.recordingDuration * 1000)
-                        }
-                      } catch (err) {
-                        console.error('Recording error:', err)
-                        alert('Error starting recording')
-                        setIsRecording(false)
-                      }
-                    }}
-                  >
-                    <div className="record-dot" />
-                    {isRecording 
-                      ? (lang === 'sk' ? 'Nahráva sa...' : 'Recording...') 
-                      : (lang === 'sk' ? 'Nahrať prezentáciu' : 'Record Presentation')}
-                  </button>
-                </div>
 
-                <div>
-                  <div className="s-label">{t('legend.title')}</div>
-                  {[
-                    { color: '#4fc3f7', label: t('legend.cave') },
-                    { color: '#78909c', label: t('legend.splay') },
-                    { color: '#81c784', label: t('legend.surface') },
-                  ].map(({ color, label }) => (
-                    <div className="toggle-row" key={label} style={{ marginBottom: '4px' }}>
-                      <div className="toggle-label">
-                        <div className="dot" style={{ background: color }} />
-                        <span style={{ fontSize: '11px' }}>{label}</span>
+                    {/* Legenda */}
+                    <div className="cad-card">
+                      <div className="cad-card-header">
+                        <div className="cad-card-title">
+                          <span className="material-symbols-outlined">palette</span>
+                          {t('legend.title')}
+                        </div>
+                      </div>
+                      {[
+                        { color: '#4fc3f7', label: t('legend.cave') },
+                        { color: '#78909c', label: t('legend.splay') },
+                        { color: '#81c784', label: t('legend.surface') },
+                      ].map(({ color, label }) => (
+                        <div className="toggle-row" key={label} style={{ padding: '3px 0' }}>
+                          <div className="toggle-label">
+                            <div className="dot" style={{ background: color }} />
+                            <span style={{ fontSize: '11px' }}>{label}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Nápoveda */}
+                    <div className="cad-card">
+                      <div className="cad-card-header">
+                        <div className="cad-card-title">
+                          <span className="material-symbols-outlined">help_outline</span>
+                          {t('ui.help')}
+                        </div>
+                      </div>
+                      <div className="cad-subcard" style={{ fontSize: '9.5px', color: 'var(--cv-text-muted)', lineHeight: '1.6' }}>
+                        {t('ui.helpRotate')}<br />
+                        {t('ui.helpPan')}<br />
+                        {t('ui.helpZoom')}<br />
+                        {t('ui.helpTouch')}
                       </div>
                     </div>
-                  ))}
-                </div>
-                </div>}{/* end cave tab (help+legend) */}
-              </aside>
+                  </>
+                )}
+                    </div>{/* end sidebar-scrollable-body */}
+                  </aside>
               {isMobileMenuOpen && (
                 <button
                   type="button"
@@ -6167,7 +6285,7 @@ export default function App() {
                   <span>{lang === 'sk' ? 'Zavrieť nastavenia' : 'Close settings'}</span>
                 </button>
               )}
-              </div>}
+              </div>)}
             <ScaleBar cameraData={cameraData} />
             <ColorScaleLegend 
               caveLegend={legendCave} 

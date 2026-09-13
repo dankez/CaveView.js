@@ -835,13 +835,15 @@ function buildResult(
   const centerOffset: Vec3 = { x: cx, y: cy, z: cz }
   const centeredSurfaces = surfaces.map(s => ({ ...s, centerOffset }))
 
-  // Convert stations to Float32Array points for rendering
-  const pointCount = centeredStations.length
-  const pointsTyped = new Float32Array(pointCount * 3)
-  for (let i = 0; i < pointCount; i++) {
-    pointsTyped[i*3] = centeredStations[i].x
-    pointsTyped[i*3+1] = centeredStations[i].y
-    pointsTyped[i*3+2] = centeredStations[i].z
+  // Convert stations to Float32Array points for rendering only if LiDAR
+  const pointCount = isLiDAR ? centeredStations.length : 0
+  const pointsTyped = isLiDAR ? new Float32Array(pointCount * 3) : undefined
+  if (isLiDAR && pointsTyped) {
+    for (let i = 0; i < pointCount; i++) {
+      pointsTyped[i*3] = centeredStations[i].x
+      pointsTyped[i*3+1] = centeredStations[i].y
+      pointsTyped[i*3+2] = centeredStations[i].z
+    }
   }
 
   return {

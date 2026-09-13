@@ -20,7 +20,6 @@ import {
 import { TectonicPlaneVisual } from '@shared/components/TectonicPlaneVisual'
 import { Scraps, ClippingEdges } from '@shared/components/Scraps'
 import { SplayCaveWalls } from './SplayCaveWalls'
-import { SSAOPass } from '@shared/components/SSAOPass'
 import { EDLPass } from '../../v2/components/EDLPass'
 import { ProjectionController, calculateFitParams } from '@shared/components/ProjectionController'
 import { elevColor, normZ } from '@shared/utils/colorUtils'
@@ -1877,6 +1876,7 @@ const CaveViewer3D = ({
     ctx.fillStyle = grad
     ctx.fillRect(0, 0, 2, 512)
     const tex = new THREE.CanvasTexture(canvas)
+    tex.colorSpace = THREE.SRGBColorSpace
     return tex
   }, [o.colorBackground, o.colorBackground2])
 
@@ -2024,25 +2024,27 @@ const CaveViewer3D = ({
         )}
 
         {/* ── LiDAR Point Cloud ── */}
-        {o.showScraps && cave.pointCount > 0 && (
-          <>
-            <PointCloud 
-              key={`pointcloud-${o.scrapsAltitude}-${o.showCaveLiDAR}`}
-              cave={cave} 
-              options={o} 
-              clippingPlanes={caveClippingPlanes} 
-              onSurfaceClick={onSurfaceClick} 
-              isMoving={!isFullyIdle} 
-            />
-            <OrganicShell 
-              key={`organic-${o.organicLevel}-${o.organicVoxelSize}-${o.organicDilation}-${o.smoothScraps}-${o.accurateScraps}`}
-              cave={cave} 
-              options={o} 
-              clippingPlanes={caveClippingPlanes} 
-              onSurfaceClick={onSurfaceClick} 
-              isMoving={!isFullyIdle} 
-            />
-          </>
+        {o.showScraps && cave.pointCount > 0 && cave.isLiDAR && (
+          <PointCloud 
+            key={`pointcloud-${o.scrapsAltitude}-${o.showCaveLiDAR}`}
+            cave={cave} 
+            options={o} 
+            clippingPlanes={caveClippingPlanes} 
+            onSurfaceClick={onSurfaceClick} 
+            isMoving={!isFullyIdle} 
+          />
+        )}
+
+        {/* ── Organický vyhladený model (nezávislý od "Zobraziť steny", rovnaké správanie ako Splay SDF steny) ── */}
+        {cave.pointCount > 0 && cave.isLiDAR && (
+          <OrganicShell 
+            key={`organic-${o.organicLevel}-${o.organicVoxelSize}-${o.organicDilation}-${o.smoothScraps}-${o.accurateScraps}`}
+            cave={cave} 
+            options={o} 
+            clippingPlanes={caveClippingPlanes} 
+            onSurfaceClick={onSurfaceClick} 
+            isMoving={!isFullyIdle} 
+          />
         )}
 
         {/* ── Cave traverse (3D rúrky) ── */}
@@ -2113,7 +2115,6 @@ const CaveViewer3D = ({
         autoRotateSpeed={o.autoRotateSpeed}
       />
 
-      {o.enableSSAO && <SSAOPass intensity={1.5} radius={3.0} />}
       {o.enableEDL && <EDLPass strength={o.edlStrength || 1.0} radius={o.edlRadius || 1.0} />}
 
       <CameraMonitor onUpdate={(data) => {

@@ -60,7 +60,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 {isSk ? 'LochViewer — Používateľská príručka' : 'LochViewer — User Guide'}
               </h2>
               <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-                {isSk ? 'Kompletný sprievodca funkciami a ovládacími prvkami v2.4.15' : 'Comprehensive guide to tools, shortcuts & workflows v2.4.15'}
+                {isSk ? 'Kompletný sprievodca funkciami a ovládacími prvkami v2.4.25 (Stitch CAD Design)' : 'Comprehensive guide to tools, shortcuts & workflows v2.4.25 (Stitch CAD Design)'}
               </span>
             </div>
           </div>
@@ -273,6 +273,8 @@ export const HelpModal: React.FC<HelpModalProps> = ({
               <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '12px 16px', borderRadius: '8px', borderLeft: '4px solid #3b82f6', marginTop: '12px' }}>
                 <strong style={{ color: '#93c5fd' }}>{isSk ? 'Hlavné výhody:' : 'Key Highlights:'}</strong>
                 <ul style={{ margin: '6px 0 0 0', paddingLeft: '18px', fontSize: '12px' }}>
+                  <li><strong>{isSk ? 'Samostatná CAD karta' : 'Dedicated CAD Card'}</strong>: {isSk ? 'Dostupná v záložke Jaskyňa so živým počítadlom lúčov nezávisle od typu modelu.' : 'Available in Cave tab with live ray counter across all survey models.'}</li>
+                  <li><strong>{isSk ? 'Hranatosť stien (Sharpness)' : 'Wall Sharpness (Angular)'}</strong>: {isSk ? 'Posuvník 0.02 (ostré hrany chodby) až 0.25 (hladké organické erózne steny).' : 'Slider from 0.02 (sharp technical facets) to 0.25 (smooth rounded erosion walls).'}</li>
                   <li><strong>{isSk ? 'Bisektorová rovina' : 'Bisector Normal Plane'}</strong>: {isSk ? 'Zamedzuje prekrývaniu a kolíziám lúčov medzi susednými stanicami.' : 'Eliminates overlapping cone artifacts between adjacent stations.'}</li>
                   <li><strong>{isSk ? 'Pamäťová Cache' : 'Session Cache'}</strong>: {isSk ? 'Vygenerovaná sieť je uložená v RAM — zapínanie a vypínanie je bleskové.' : 'Calculated mesh is cached in RAM for zero-latency toggling.'}</li>
                   <li><strong>{isSk ? 'Farbenie podľa výšky' : 'Color by Height'}</strong>: {isSk ? 'Plná podpora hypsometrickej speleologickej škály.' : 'Full support for elevation hypsometric gradients.'}</li>
@@ -322,10 +324,11 @@ export const HelpModal: React.FC<HelpModalProps> = ({
               <h3 style={{ color: '#60a5fa', marginTop: 0 }}>☁️ {isSk ? 'LiDAR Point Cloud (Engine v2)' : 'LiDAR Point Cloud (Engine v2)'}</h3>
               <p>
                 {isSk
-                  ? 'Špecializovaný motor pre laserové skeny (.ply) s miliónmi bodov. Využíva Octree LOD streaming (60 FPS) a Eye-Dome Lighting (EDL) post-processing pre plastické tieňovanie detailov.'
-                  : 'High-performance engine for massive point clouds (.ply) with Octree streaming (60 FPS) and Eye-Dome Lighting (EDL) depth shading.'}
+                  ? 'Špecializovaný motor pre laserové skeny (.ply) s miliónmi bodov. Prepínač LiDAR NEXTGEN a editačné nástroje sa zobrazujú výhradne pri načítaných mračnách bodov formátu PLY (bežné polygónové modely ako .lox a .3d tento režim nepotrebujú). Využíva Octree LOD streaming (60 FPS) a Eye-Dome Lighting (EDL) post-processing pre plastické tieňovanie detailov.'
+                  : 'High-performance engine for massive point clouds (.ply) with Octree streaming (60 FPS) and Eye-Dome Lighting (EDL) depth shading. The LiDAR NEXTGEN switch and editing tools appear exclusively when PLY point cloud datasets are loaded.'}
               </p>
               <ul style={{ paddingLeft: '18px', fontSize: '12px', color: '#cbd5e1' }}>
+                <li><strong>{isSk ? 'Exkluzivita pre PLY' : 'Exclusive to PLY'}</strong>: {isSk ? 'Čisté rozhranie bez zbytočných prepínačov pre bežné meračské polygóny.' : 'Clean UI hiding LiDAR controls when viewing standard survey polygons.'}</li>
                 <li><strong>{isSk ? 'Guma & Štetec' : 'Eraser & Brush'}</strong>: {isSk ? 'Interaktívne vymazanie šumu a vegetácie.' : 'Interactively erase scan noise or vegetation.'}</li>
                 <li><strong>{isSk ? '2D Pôdorysná mapa' : '2D Plan Map'}</strong>: {isSk ? 'Generovanie a PNG export ortofoto mapy z hustoty bodov.' : 'Generate high-resolution PNG plan raster from point density.'}</li>
               </ul>
