@@ -1,6 +1,30 @@
-# 🛠️ LochViewer - Developer & Mathematical Specification (v2.4.23)
+# 🛠️ LochViewer - Developer & Mathematical Specification (v2.4.34)
 
 *Comprehensive technical architecture, mathematical formulations, shader models, and Web Worker data flows for developers and contributors.*
+
+### Station selection, measurement and quick toolbar (2.4.34)
+
+`StationLabel.pos`, `SelStation.pos` and the optional `StationClick` point use **centered survey XYZ (Z-up)**. Scene placement is `T(p) = (x + cx, z + cz, -y - cy)`, with calibration `c`; `sceneToSurvey` performs its inverse exactly once for v2 hits. Original source coordinates are `p + cave.centerOffset`. A picked surface is inverse-transformed into the cave group's local frame before rendering. Distance/polygon calculations use that same local frame, so markers, lines and readouts agree even across calibrated cave/terrain geometry.
+
+`SurveyPointPicker` projects enabled survey/splay targets on a native captured click, accepts the closest candidate within 10 CSS pixels (frontmost depth breaks screen-distance ties) and consumes the event before mesh handlers. Pointer movement over 5 px marks an orbit gesture, not a pick. No per-frame picking, extra GPU targets or worker protocol changes are introduced. v2 restricts free picks to the point-cloud group, ignores helpers and recovers exact vertices from `Intersection.index` and `matrixWorld`. Mesh/terrain selection occurs on click rather than pointer-down.
+
+`measureDistance` computes `d3 = hypot(dx,dy,dz)`, `dXY = hypot(dx,dy)`, slope `atan2(dz,dXY)` and grid azimuth `atan2(dx,dy) mod 360°`. For ordered planar vertices, `measurePolygon` uses `A = |Σ((pi-p0) × (pi+1-p0))|/2` and closed 3D perimeter; non-planar results are vector/projected areas, not triangulated mesh surface areas. Tectonic orientation still uses the first three vertices. Depth is `DTM(X+caveOffsetXY-surfaceOffsetXY)+surfaceOffsetZ-Z-caveOffsetZ` only when covered by finite DTM samples.
+
+LOX metadata retains `isFixed` (`m_flags & 0x04`) and `qualifiedName` (`station@survey.parent`), resolving survey parents with cycle protection. `ViewerOptions` adds optional `showFixedStations`, `showCenterline` (undefined means visible) and `stationLabelMode: off|short|full|altitude|gps`; legacy name/altitude switches clear the explicit mode. GPS mode is skipped if no station has GPS.
+
+Shared URLs preserve these options as `cline=0`, `fixed=1` and `labels=off|short|full|altitude|gps`; unknown label values are ignored. Both Canvas wrappers isolate their CSS stacking contexts so projected HTML labels cannot cover measurement panels or other application controls.
+
+View presets animate an independent position vector and apply each update to the live R3F camera. Switching projection can replace the camera without discarding the pending plan/elevation animation; replacing a preset or unmounting cancels its tween. Toolbar Plan cycles `top`/`bottom`, Elevation cycles `front` (from south, camera at +Z) → `east` (+X) → `back` (−Z) → `side` (−X); all are `ViewPreset` values from `@shared/types`. `bottom` places the camera at −Y with `up = (0,0,−1)`, so north stays screen-up and east/west are mirrored. On slow software-GL frames GSAP lag smoothing stretches the 0.65 s tween, so E2E polls allow 20 s.
+
+`ViewerToolbar` reuses typed navigation callbacks and existing Lucide SVGs; its image dialog and layer-restore snapshots are local and do not update App/Canvas. Layer actions intentionally update shared options. Surface/wall quick toggles snapshot their representations, hide all and restore on re-enable. Reload reparses retained original bytes through the existing parser worker. `MeasurementOverlay` renders transparent, depth-independent lines in a late render-order group and noninteractive A/B HTML markers. No new runtime dependency.
+
+### Unified navigation (2.4.33)
+
+`src/shared/components/NavigationSidebar/` contains the sidebar shell, native-button accordions, typed bindings and Project/View/Layers/Surface/Analysis/System sections. Surface is a subgroup of Layers, not a sixth navigation category. Cave/surface calibration lives only there; WebM recording/duration lives only in Project → Sharing and available exports.
+
+`App` retains dataset state, `ViewerOptions`, workers and scene-affecting handlers. `NavigationBindings` is the typed UI boundary; sections consume only their required fields. The shell owns active category, desktop collapse and mobile drawer state; each accordion owns its expansion state. These local updates do not render App or its Canvas sibling. Changing a viewer option intentionally updates the renderer; resizing the viewport after collapse can still cause a renderer resize/frame.
+
+Sections stay mounted but hidden when inactive, preserving file input refs and accordion settings. Primary switches stay outside collapsed details; SDF details require its enabled flag, and LiDAR controls retain the PLY guards. At ≤768 px the drawer traps Tab/Shift+Tab, makes scene siblings inert, handles Escape and restores focus. Share/help actions dismiss the drawer before opening external dialogs. The `navigation` translation namespace covers SK/EN/FR/DE. No worker protocols, geometry algorithms or dependencies change.
 
 ---
 
@@ -14,6 +38,7 @@
 7. [Parallel Web Workers & Zero-Copy Transferable Objects](#7-parallel-web-workers--zero-copy-transferable-objects)
 8. [URL Serialization Schema & State Hydration](#8-url-serialization-schema--state-hydration)
 9. [Stitch CAD Design System & CSS Tokens](#9-stitch-cad-design-system--css-tokens)
+10. [Performance Optimization, React Render Decoupling & WebGL Render Loop](#10-performance-optimization-react-render-decoupling--webgl-render-loop)
 
 ---
 
@@ -221,5 +246,79 @@ Introduced in v2.4.22 and refined through v2.4.25, the **Precision Speleology & 
   * Scope-isolated theme switching dynamically bound via `.viewer-shell.theme-{currentTheme}`.
 
 ---
-*LochViewer Developer Team — Documentation is automatically maintained with every codebase change.*
 
+## 10. Performance Optimization, React Render Decoupling & WebGL Render Loop
+
+Implemented in **v2.4.27** to guarantee sub-16ms latency, rock-solid 60 FPS interactions, and zero CPU/GPU overhead when idle:
+
+### 1. Persistent Surface & Wall Transparency During Motion:
+- In `CaveViewer3D` (`TerrainMesh`), `Scraps`, and `SplayCaveWalls`, eliminated forced opacity resets to `1.0` during camera motion (`isMoving` / `!isFullyIdle`). Surface and wall opacity stays stable and continuous without flashing to opaque.
+- Decoupled `terrainSubsample` in `TerrainTile` from `props.isMoving`, avoiding synchronous geometry rebuilds and BVH tree regenerations on the main thread when camera rotation starts or stops.
+- Extracted `props.opacity` from `contourMat` shader `useMemo` dependencies to eliminate runtime GLSL shader recompilations; dynamically set `depthWrite={props.opacity === 1}`.
+
+### 2. Elimination of 10Hz Re-render Cascades in `App.tsx`:
+- `CameraMonitor` in both `CaveViewer3D` and `CaveViewerNextGen` throttles updates to `setCameraData`: dispatches only when horizontal azimuth shifts by $\ge 1^\circ$, contour distance bucket changes, or translation exceeds $0.25\ \text{m}^2$ (with 150 ms throttle).
+- Halted the continuous 60 FPS 2D particle `requestAnimationFrame` loop on `bg-canvas` when in 3D viewer mode (`appState === 'viewer'`).
+
+### 3. Prop Reference Stabilization (React.memo):
+- Wrapped callbacks (`handleProcessingEnd`, `handleTextureReady`, `handleSurfaceOffsetChange`) in `useCallback` and `manualConnection` in `useMemo`, allowing `React.memo` on `<CaveViewer3D>` and `<CaveViewerNextGen>` to fully eliminate redundant 3D scene re-renders during sidebar and slider interaction.
+
+### 4. Geometry Consolidation in `Scraps.tsx` (50% CPU & VRAM Savings):
+- Unified duplicate geometry construction (`currentSolid` and `currentAlt`) into a single `BufferGeometry` with vertex colors. Materials without `vertexColors` automatically bypass color attributes, cutting `mergeVertices`, Taubin smoothing, normal computation, and BVH trees in half.
+
+### 5. Zero-Copy Web Worker Transferables & VRAM Lifecycle Management:
+- Extended `parser.worker.ts` transferables array to include `dtm.data.buffer` and `bitmapData.buffer`, enabling zero-copy transfer of digital elevation models and raster maps.
+- Removed redundant `buf.slice(0)` buffer allocations during file ingestion in `App.tsx`.
+- Explicitly hooked `dispose()` calls on geometries, BVH trees (`disposeBoundsTree`), and textures in `CaveLegs`, `PointCloud`, `OrganicShell`, `TerrainMesh`, and `Scraps` to guarantee zero GPU VRAM leaks on model or mode switches.
+
+### 6. 180ms Immediate On-Demand Idle Transition:
+- Shortened camera idle timeout (`idleTimeoutRef`) from 1500 ms to 180 ms, bringing `frameloop="demand"` into passive 0% CPU/GPU state immediately after camera motion ceases.
+
+---
+
+## 11. Shaded Surface Opacity, Dual-Axis Contour Edge Intersections & Triangle Mesh Axonometry (v2.4.28)
+
+### 1. Shaded Surface & Height Network Opacity:
+- Added dedicated `surfaceOpacity` slider in `src/App.tsx` active during `showSurfaceMesh` or `showSurfaceNetwork`.
+- Bound to `TerrainTile` in `CaveViewer3D.tsx` with `transparent={props.opacity < 1}`, `opacity={props.opacity}`, and `depthWrite={props.opacity === 1}` with polygon offset discipline.
+
+### 2. Dual-Axis Edge Intersections for Contour Altitude Labels (`ContourLabels`):
+- Refactored `ContourLabels` in `CaveViewer3D.tsx` to detect contour crossings across both horizontal edges $(r, c) \leftrightarrow (r, c+\Delta c)$ and vertical edges $(r, c) \leftrightarrow (r+\Delta r, c)$ on a refined $36 \times 36$ sampling grid.
+- Enforced spatial distance thresholding $d_{\min} = \max(30\ \text{m}, \frac{\text{maxDim}}{14})$, ensuring each major contour interval maintains at least one clear, readable elevation label in the active view field without cluttering.
+
+### 3. Conditional Visibility for Splay SDF Walls:
+- In `src/App.tsx`, the *Splay SDF Walls (2D/3D)* card is conditioned on `{cave && splayCount > 0 && (...)}`, hiding the card for models without radial splay rays.
+
+### 4. Unified Splay Ray and Point Visibility:
+- `ViewerOptions.showSplay` controls both the splay line segments in `CaveLegs` and the splay endpoint geometry in `Stations`.
+- `showStations` controls only regular traverse stations, so hiding that layer does not detach splay dots from the splay rays toggle.
+
+### 5. Triangle Mesh & Technical Axonometry Mode (`Scraps.tsx`):
+- Integrated `options.accurateScraps` across `CaveViewer3D.tsx`, `CaveViewerNextGen.tsx`, and `Scraps.tsx`:
+  - Scraps mesh mounts when `(o.showScraps || o.accurateScraps || o.scrapsWireframe) && cave.scraps?.length > 0`, allowing standalone usage.
+  - Enables `flatShading={options.accurateScraps || !smooth}` for crisp faceted triangle shading.
+  - Renders wireframe in `renderOrder={10}` with `options.colorScrapsWire` and `depthWrite={!showSolid && !showAltitude}` for authentic speleological axonometry.
+- v2.5.0: `LayersSection.tsx` shows the *Triangle mesh* switch only when `isPlyLidar`. For other models `wireOn = scrapsWireframe || (!isPlyLidar && accurateScraps)` and toggling sets `{ scrapsWireframe: !wireOn, accurateScraps: false }` (legacy URLs with `acc=1` stay readable). `traverseAltitude` / `scrapsAltitude` toggles live in the accordion `primary` slot; the duplicate *Scale (Caver)* card was removed — `placedCaver` is set from `StationDetailCard`.
+
+---
+## 12. Memory and Network Optimizations (v2.4.30)
+
+- Floor-map point matching uses a `Map<string, StationLabel>` and preserves the first station for duplicate names, matching the previous `Array.find()` behavior. Matching is O(P + S) instead of O(P × S).
+- `PointCloudLOD` aborts its fetch when unmounted or when its URL changes. The direct-render path allocates and attaches a normal buffer only when valid source normals exist, and changes to the `cave.pointNormals` reference invalidate memoized geometry.
+- Splay geometry uses a 256 MiB LRU cache, sized by the combined `byteLength` of position, normal, and index buffers. Reads and writes mark entries most-recently-used; least-recently-used entries are evicted to stay within budget, and a single oversized geometry is not cached.
+- Each XYZ tile candidate has a 15-second timeout. On timeout, an `AbortController` cancels that request and the downloader advances to its fallback; timers are cleared in all outcomes.
+
+## 13. Deferred Mapbox Terrain Loading (v2.4.31)
+
+- `CaveViewerNextGen` imports `MapboxTerrain` with `React.lazy()` and `React.Suspense`; the module is requested only when GPS coordinates, the terrain toggle, and a Mapbox token are all present.
+- `three-geo` is isolated in a `vendor-mapbox-terrain` chunk behind that dynamic import and is no longer forced into Vite `optimizeDeps`, avoiding dev-server prebundling and keeping terrain-only modules off the initial production route.
+- Removed the unused direct `pdfjs-dist` dependency from the package manifest and lockfile.
+
+## 14. Accessible Switches and Document Language (v2.4.32)
+
+- `.switch` controls are `<button type="button" role="switch">` elements with `aria-checked` and localized `aria-label` values. Native button activation provides Enter and Space support without a custom `onKeyDown`.
+- An `App.tsx` effect keeps `document.documentElement.lang` synchronized with the selected `lang` state for assistive technologies.
+- `index.html` defines the application title, description, Open Graph metadata, and local SVG favicon.
+
+---
+*LochViewer Developer Team — Documentation is automatically maintained with every codebase change.*

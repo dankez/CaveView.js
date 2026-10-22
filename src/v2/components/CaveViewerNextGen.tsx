@@ -5,7 +5,7 @@ import * as THREE from 'three'
 import gsap from 'gsap'
 import { PointCloudDirect, PointCloudLOD } from './PointCloudLOD'
 import { EDLPass } from './EDLPass'
-import MapboxTerrain from './MapboxTerrain'
+const MapboxTerrain = React.lazy(() => import('./MapboxTerrain'))
 import { 
   Stations, 
   StationLabels, 
@@ -15,6 +15,9 @@ import {
   ManualConnection 
 } from '@shared/components/CaveSharedElements'
 import { TectonicPlaneVisual } from '@shared/components/TectonicPlaneVisual'
+import { SurveyPointPicker } from '@shared/components/SurveyPointPicker'
+import { MeasurementOverlay } from '@shared/components/MeasurementOverlay'
+import { sceneToSurvey } from '@shared/utils/stationInteraction'
 import { Scraps } from '@shared/components/Scraps'
 import { SplayCaveWalls } from '../../v1/components/SplayCaveWalls'
 import { ProjectionController, calculateFitParams } from '@shared/components/ProjectionController'
@@ -43,6 +46,8 @@ const CameraMonitor = ({ controlsRef, onUpdate }: {
   const lastPos = useRef(new THREE.Vector3())
   const lastQuat = useRef(new THREE.Quaternion())
   const lastTime = useRef(0)
+  const lastHeading = useRef(-999)
+  const lastDistBucket = useRef(-1)
 
   useEffect(() => {
     if (!onUpdate) return
@@ -55,12 +60,28 @@ const CameraMonitor = ({ controlsRef, onUpdate }: {
       const quatChanged = camera.quaternion.angleTo(lastQuat.current) > 0.001
       if (!posChanged && !quatChanged) return
 
+      const target = controlsRef.current?.target || new THREE.Vector3(0, 0, 0)
+      const dist = camera.position.distanceTo(target)
+
+      const dx = target.x - camera.position.x
+      const dz = target.z - camera.position.z
+      const heading = Math.round((Math.atan2(dx, -dz) * (180 / Math.PI) + 360) % 360)
+      const distBucket = dist < 25 ? 0 : dist < 60 ? 1 : dist < 120 ? 2 : dist < 300 ? 3 : dist < 600 ? 4 : dist < 1200 ? 5 : dist < 3000 ? 6 : 7
+
+      const headingChanged = Math.abs(heading - lastHeading.current) >= 1
+      const bucketChanged = distBucket !== lastDistBucket.current
+      const largePosChange = camera.position.distanceToSquared(lastPos.current) > 0.25
+
+      if (!headingChanged && !bucketChanged && !largePosChange && now - lastTime.current < 150) {
+        return
+      }
+
       lastTime.current = now
       lastPos.current.copy(camera.position)
       lastQuat.current.copy(camera.quaternion)
+      lastHeading.current = heading
+      lastDistBucket.current = distBucket
 
-      const target = controlsRef.current?.target || new THREE.Vector3(0, 0, 0)
-      const dist = camera.position.distanceTo(target)
       const perspective = camera as THREE.PerspectiveCamera
       onUpdate({
         dist,
@@ -144,6 +165,7 @@ const NavigationHandler = ({
 }) => {
   const { camera, scene, raycaster, gl } = useThree();
   const historyRef = useRef<{ pos: THREE.Vector3, target: THREE.Vector3 }[]>([]);
+  const clickStart = useRef<{ x: number; y: number; dragged: boolean } | null>(null)
 
   const getCanvasPointer = useCallback((e: MouseEvent) => {
     const rect = gl.domElement.getBoundingClientRect();
@@ -254,7 +276,7 @@ const NavigationHandler = ({
   }, [camera, scene, raycaster, isMeasuringMode, flyTo, getCanvasPointer]);
 
   const handleClick = useCallback((e: MouseEvent) => {
-    if (!isMeasuringMode) return;
+    if (clickStart.current?.dragged || e.button !== 0) return;
 
     const mouse = getCanvasPointer(e);
     if (!mouse) return;
@@ -263,13 +285,31 @@ const NavigationHandler = ({
     raycaster.params.Points = { threshold: 0.2 };
     
     const intersects = raycaster.intersectObjects(scene.children, true);
-    if (intersects.length > 0) {
-      const point = intersects[0].point;
-      onStationClick?.(-1, e.clientX, e.clientY, e.ctrlKey, point);
+    const hit = intersects.find(intersection => {
+      let object: THREE.Object3D | null = intersection.object
+      while (object) {
+        if (!object.visible) return false
+        if (object.userData.measurementSource) return true
+        object = object.parent
+      }
+      return false
+    })
+    if (hit) {
+      const point = hit.object instanceof THREE.Points && hit.index !== undefined
+        ? new THREE.Vector3().fromBufferAttribute(hit.object.geometry.getAttribute('position'), hit.index).applyMatrix4(hit.object.matrixWorld)
+        : hit.point
+      onStationClick?.(-1, e.clientX, e.clientY, e.ctrlKey || e.metaKey, sceneToSurvey(point, offset));
     }
-  }, [camera, scene, raycaster, isMeasuringMode, onStationClick, getCanvasPointer]);
+  }, [camera, scene, raycaster, isMeasuringMode, onStationClick, getCanvasPointer, offset]);
 
   useEffect(() => {
+    const onPointerDown = (e: PointerEvent) => { clickStart.current = { x: e.clientX, y: e.clientY, dragged: false } }
+    const onPointerMove = (e: PointerEvent) => {
+      const start = clickStart.current
+      if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 5) start.dragged = true
+    }
+    gl.domElement.addEventListener('pointerdown', onPointerDown)
+    gl.domElement.addEventListener('pointermove', onPointerMove)
     gl.domElement.addEventListener('dblclick', handleDoubleClick);
     gl.domElement.addEventListener('click', handleClick);
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -281,6 +321,8 @@ const NavigationHandler = ({
     window.addEventListener('cave-navigation-undo', onUndoEvent);
 
     return () => {
+      gl.domElement.removeEventListener('pointerdown', onPointerDown)
+      gl.domElement.removeEventListener('pointermove', onPointerMove)
       gl.domElement.removeEventListener('dblclick', handleDoubleClick);
       gl.domElement.removeEventListener('click', handleClick);
       window.removeEventListener('keydown', handleKeyDown);
@@ -356,7 +398,7 @@ const CaveViewerNextGen = ({
     if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current)
     idleTimeoutRef.current = setTimeout(() => {
       setIsFullyIdle(true)
-    }, 1500)
+    }, 180)
   }
 
   const handleCameraChange = useCallback(() => {
@@ -372,7 +414,7 @@ const CaveViewerNextGen = ({
     if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current)
     idleTimeoutRef.current = setTimeout(() => {
       setIsFullyIdle(true)
-    }, 1500)
+    }, 180)
   }, [isMoving, isFullyIdle])
 
   useEffect(() => {
@@ -439,6 +481,7 @@ const CaveViewerNextGen = ({
   return (
     <Canvas
       id="nextgen-cave-canvas"
+      style={{ isolation: 'isolate' }}
       frameloop={o.autoRotate || isMoving || !isFullyIdle ? 'always' : 'demand'}
       dpr={isLargeModel ? 1.0 : (typeof window !== 'undefined' && window.devicePixelRatio > 1.5 ? 1.5 : 1)}
       gl={{ 
@@ -479,6 +522,7 @@ const CaveViewerNextGen = ({
         -(o.caveCalibrationOffset?.y || 0)
       ]}>
         <Stations cave={cave} options={o} />
+        <SurveyPointPicker cave={cave} options={o} onStationClick={onStationClick} />
         <CaveLegs cave={cave} options={o} showSplay={o.showSplay} showAltitude={o.traverseAltitude} clippingPlanes={compositeClippingPlanes} isMoving={!isFullyIdle} isLargeModel={isLargeModel} />
         <group visible={isFullyIdle}>
           <StationLabels cave={cave} options={o} showNames={o.showStationNames} showAltitudes={o.showStationAlt} />
@@ -499,15 +543,15 @@ const CaveViewerNextGen = ({
           />
         )}
 
-        {o.showScraps && cave.scraps?.length > 0 && (
+        {(o.showScraps || o.accurateScraps || o.scrapsWireframe) && cave.scraps?.length > 0 && (
           <Scraps 
             cave={cave} 
             options={o}
             opacity={o.scrapsOpacity}
-            showSolid={cave.pointCount === 0 ? o.scrapsSolid : (o.smoothScraps || o.accurateScraps)}
+            showSolid={o.showScraps && (cave.pointCount === 0 ? o.scrapsSolid : (o.smoothScraps || o.accurateScraps))}
             showWire={o.scrapsWireframe}
             showAltitude={o.scrapsAltitude}
-            smooth={o.smoothScraps}
+            smooth={o.smoothScraps && !o.accurateScraps}
             showRender={o.showRenderCave}
             caveTexture={o.caveTexture}
             renderOpacity={o.renderOpacity}
@@ -519,7 +563,8 @@ const CaveViewerNextGen = ({
           />
         )}
 
-        {selectedStations && selectedStations.length === 2 && (
+        {isMeasuringMode && <MeasurementOverlay stations={selectedStations ?? []} />}
+        {!isMeasuringMode && selectedStations && selectedStations.length === 2 && (
           <ManualConnection p1={selectedStations[0].pos} p2={selectedStations[1].pos} />
         )}
 
@@ -535,6 +580,7 @@ const CaveViewerNextGen = ({
           <Character3D pos={o.placedCaver.pos} pose={o.placedCaver.pose} clippingPlanes={compositeClippingPlanes} />
         )}
 
+        <group visible={o.showScraps} userData={{ measurementSource: true }}>
         {cave.pointCloudUrl && (
           <PointCloudLOD 
             url={cave.pointCloudUrl} 
@@ -577,6 +623,7 @@ const CaveViewerNextGen = ({
           />
         )}
 
+        </group>
         {/* LiDAR Anomálie */}
         {anomalies && anomalies.map((a) => {
           const isSelected = activeAnomalyId === a.id;
@@ -667,15 +714,17 @@ const CaveViewerNextGen = ({
               -(o.surfaceOffset?.y || 0)
             ]}
           >
-            <MapboxTerrain 
-              lat={gpsCenter.lat}
-              lng={gpsCenter.lng}
-              radius={o.mapboxRadius || 2.0}
-              zoom={o.mapboxZoom || 13}
-              opacity={o.mapboxOpacity || 0.5}
-              visible={o.showMapboxTerrain}
-              mapboxToken={o.mapboxToken}
-            />
+            <React.Suspense fallback={null}>
+              <MapboxTerrain 
+                lat={gpsCenter.lat}
+                lng={gpsCenter.lng}
+                radius={o.mapboxRadius || 2.0}
+                zoom={o.mapboxZoom || 13}
+                opacity={o.mapboxOpacity || 0.5}
+                visible={o.showMapboxTerrain}
+                mapboxToken={o.mapboxToken}
+              />
+            </React.Suspense>
           </group>
         )}
 

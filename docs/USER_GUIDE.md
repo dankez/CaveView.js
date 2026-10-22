@@ -1,4 +1,4 @@
-# 📖 LochViewer - Complete User Guide (v2.4.25)
+# 📖 LochViewer - Complete User Guide (v2.4.34)
 
 *Web-based 3D platform for speleological visualization, survey measurement, and spatial analysis of cave systems & LiDAR point clouds.*  
 *Design System: Stitch CAD Precision Glassmorphism & Fieldwork High-Contrast (including gentle sand vertical gradient in light mode).*  
@@ -44,9 +44,25 @@ LochViewer executes 100% inside your web browser using WebGL and parallel Web Wo
 
 ## 2. User Interface (Top Bar & Tool Controls)
 
-Once a model is loaded, the top bar provides instant access to essential tools:
+Once a model is loaded, the sidebar groups detailed controls into five categories. A compact top toolbar provides direct access to frequent actions; hover an icon for its name. Cyan highlights indicate enabled modes. On small screens, scroll the icon strip horizontally.
+
+The quick actions, from left to right, are: **Open model, Reload original model, Export PNG, Automatic rotation, Orthographic/perspective, Plan, Elevation, Fit, Entrances, Fixed stations, All stations, Station labels, Centerline, Splays, Walls, Surface, Add image to surface, Measurement and Fullscreen**. Reload reparses the retained original file, discarding model edits; it does not refresh the page or reread a changed disk file. Fixed stations are available only when the format supplies that metadata (LOX fixed flag); they are not inferred from GPS or entrances. Repeated **Plan** clicks toggle the view from above ↔ from below (north stays up; the view from below is mirrored). Repeated **Elevation** clicks orbit the model around four sides: from south → east → north → west. The current side is shown in the button tooltip.
+
+**Station labels** cycles through **number → full name → elevation → GPS → off**; GPS is skipped when unavailable. Full survey names such as `1@survey` are retained from LOX. Walls and Surface hide their constituent representations and restore them when re-enabled. The image button opens a small menu for a local image, its calibration file or ZBGIS orthophoto; detailed terrain calibration stays under **Layers & data → Surface**. Measurement and the combined splay-ray/endpoint toggle are additional quick actions.
+
+| Category | Controls |
+| :--- | :--- |
+| **Files & projects** | Open/close models, demos; **Sharing and available exports** contains sharing/iframe, PNG, generated texture/calibration and WebM recording with duration settings. |
+| **View & camera** | Perspective/orthographic projection, technical presets, Fit, altitude reference and automatic rotation. |
+| **Layers & data** | Survey legs, splays and endpoint dots, walls, stations and LiDAR. **Surface** exclusively contains terrain, texture sources, TIFF import and cave/surface calibration including the 3D gizmo. |
+| **Tools & analysis** | Distance/polygon measurement, horizontal/profile cuts, tectonics, cross-section/volume and LiDAR analysis/maps. |
+| **Settings & help** | Theme, legend, language, fullscreen and help. |
+
+Layer switches remain accessible without opening their **Details** accordions. Opacity, color, SDF and LiDAR parameters are disclosed inside the relevant accordion and gated by layer/data availability. Collapse the sidebar to its icon rail; select any category to reopen it. On mobile, the menu button opens an overlay drawer: Tab/Shift+Tab stay inside, Escape or the close button dismisses it and restores focus. Enter/Space activate switches and accordion buttons. Categories are translated into SK/EN/FR/DE.
 
 ![Main 3D Viewport & Clean Topbar](images/02_main_viewer_3d.png)
+
+The following tools remain available in the categories above; frequent actions also have top-toolbar shortcuts:
 
 | Icon | Tool Name | Description |
 | :--- | :--- | :--- |
@@ -58,7 +74,7 @@ Once a model is loaded, the top bar provides instant access to essential tools:
 | 🏔️ | **Surface Terrain** | Toggles overhead surface elevation model, hillshade, or aerial orthophoto. |
 | 🔲 | **Bounding Box** | Toggles the 3D bounding box showing spatial dimensions ($X, Y, Z$) and total cave vertical relief. |
 | ✂️ | **Horizontal Z-Slice** | Opens the floating vertical clipping slider to slice through horizontal cave levels. |
-| ⚡ | **Laser Splays** | Toggles visibility of laser survey measurement rays fired from stations to passage walls. |
+| ⚡ | **Laser Splays & Points** | Toggles laser survey rays and their endpoint dots together. |
 | 📏 / 📐 | **Measurement Tool** | 3-State cycling button: **Disabled** ➡️ **Distance (2 points)** ➡️ **Area / Polygon (3+ points)**. |
 | 🎨 | **Color Palette** | Switches between elevation hypsometry, monochrome rock material, and gradients. |
 | 📊 | **Altitude Mode (ABS / REL)** | Switches between absolute altitude above sea level ($m\ \text{a.s.l.}$) and relative elevation from the entrance ($+120\ \text{m},\ -35\ \text{m}$). |
@@ -67,11 +83,11 @@ Once a model is loaded, the top bar provides instant access to essential tools:
 | ✖ | **Close Model** | Releases GPU/CPU memory and returns to the initial welcome screen. |
 
 ### Visual Themes & Design Styling:
-In the sidebar (**Cave** tab) or via the URL parameter `?theme=`, three calibrated themes can be toggled:
+In **Settings & help → Appearance and legend** or via the URL parameter `?theme=`, three calibrated themes can be toggled:
 * **Precision CAD (`precision`)**: Default technical dark mode featuring a calibrated vertical blue gradient (deep night blue `#103258` at the top transitioning to a luminous technical blue `#1d5b9b` at the bottom) with high-contrast electric cyan (`#00d2ff`) / emerald (`#10b981`) accents synthesized from Google Stitch CAD specifications. Provides superior spatial depth and exceptional contrast for survey centerlines.
 * **Light Sand (`light`)**: Natural high-contrast outdoor mode featuring an eye-friendly vertical sandy gradient – light ivory sand at the top (`#f7f3eb`) transitioning smoothly into darker warm limestone sand at the bottom (`#d5c4ad`). Sidebar cards, metrics, and sliders harmonize with this warm sand tone, providing superb legibility and zero glare during daytime fieldwork.
 * **Classic Speleo (`classic`)**: Traditional nocturnal deep blue theme with indigo background gradient.
-* **Sidebar Hiding & Reopening:** The sidebar can be collapsed anytime for full-screen 3D exploration. It can be reopened using the top bar control or the floating `◀ Settings` tab docked on the right screen edge.
+* **Sidebar Hiding & Reopening:** Collapse to the icon rail on desktop and select a category to reopen it. On mobile, use the menu button at the right edge of the viewport.
 
 ---
 
@@ -102,27 +118,32 @@ Surveys created with modern laser distometers (DistoX, CaveTRom, BRIC) contain h
 
 ![Splay SDF 3D Cave Walls](images/04_splay_sdf_walls.png)
 
-### How to Use Splay SDF Walls:
-1. Open the sidebar (**Cave** tab $\to$ dedicated **Splay SDF Cave Walls** card) and enable **Splay SDF Walls (2D/3D)**. The card displays the live count of radial survey splays (e.g., `149 rays`) and is available for all survey models.
+### How to Use Splay SDF Walls & Triangle Mesh (Axonometry):
+1. Open the sidebar (**Cave** tab $\to$ dedicated **Splay SDF Walls (2D/3D)** card) and toggle **Splay SDF Walls (2D/3D)**. This card appears conditionally only when the model contains radial survey splays (`splayCount > 0`). For models without splays, the card is hidden.
 2. **Angular / Sharpness**: Dedicated CAD slider ranging from sharp facets (`0.02` - precise technical passage boundaries) to smooth rounded contours (`0.25` - organic erosion walls).
-3. The progress indicator will display reconstruction status in real time.
-4. **Session Cache**: Once calculated, the mesh remains stored in memory for instant toggling.
+3. **Wireframe / Triangle mesh (Axonometry mode)**: For LOX/3D/PLT models the *Cave Walls* card offers a single *Wireframe* switch that draws the triangulation of the walls — standalone as a wire model or combined with solid walls as a CAD axonometric model. The separate *Triangle mesh* switch appears only for LiDAR PLY clouds, where it changes the surface reconstruction.
+4. **Color by height** is shown directly (without opening details) in both the *Survey* and *Cave Walls* cards. Caver scale figures are placed from the station detail card (the separate sidebar card was removed).
+4. The progress indicator will display reconstruction status in real time.
+5. **Session Cache**: Once calculated, the mesh remains stored in memory for instant toggling.
 
 ---
 
 ## 5. Survey Measurement, Polygon Area & Structural Geology (Tectonics)
 
-Activate the ruler icon in the top bar to open the dockable **Measurement Panel**:
+Click a station outside measurement mode to inspect its name, original X/Y, source height, GPS when convertible and depth below a covering DTM. Missing GPS/terrain is shown as unavailable, not estimated. Unreferenced LiDAR height is the file's Z, not a guaranteed sea-level elevation.
+
+Select the ruler in the top toolbar or **Tools & analysis → Measurement** to open the **Measurement Panel**. Survey stations and enabled splay endpoints snap within 10 screen pixels in both engines; dragging rotates without adding points. Cave meshes/terrain and LiDAR points can also be picked.
 
 ![Measurement Panel in Action](images/05_measurement_panel.png)
 
 ### 1. Distance Measurement (2 Points):
 * Click station or splay endpoint $P_1$ and $P_2$.
 * **Outputs**: 3D spatial distance ($m$), horizontal distance ($m$), elevation difference ($\Delta H$), azimuth ($^\circ$), and inclination / slope ($^\circ$).
+* **A/B markers** and the highlighted line remain attached to the picked geometry. The next click replaces B; **Swap A/B** reverses direction, **Remove last point** undoes a pick, **New measurement** clears the selection and **Escape** exits. Starting measurement stops automatic rotation.
 
 ### 2. Polygon & Passage Area (3+ Points):
 * Successively pick perimeter points ($P_1, P_2, P_3 \dots$).
-* **Outputs**: 3D planar area ($m^2$), 2D horizontal footprint area ($m^2$), and total perimeter length ($m$).
+* Pick boundary points in order without crossings. **Outputs**: planar vector area ($m^2$) using every selected vertex, and total 3D perimeter ($m$). For non-planar boundaries the area is projected, not the surface area of a reconstructed mesh; geological orientation uses the first three points.
 
 ### 3. Structural Geology & Tectonic Measurement (3-Point Plane):
 * Pick 3 points on a fault plane, bedding joint, or passage wall.
@@ -139,7 +160,7 @@ Activate the ruler icon in the top bar to open the dockable **Measurement Panel*
 
 ![Floating Z-Clipping Slider](images/07_z_clipping_slider.png)
 
-* Click the scissors icon ✂️ in the top bar (or press key `Z`) to open the **Floating Z-Slice Slider**.
+* Enable **Tools & analysis → Horizontal Section (Z)** to open the **Floating Z-Slice Slider**.
 * Drag the handle to dynamically slice through upper levels of multi-story cave systems.
 * Displays the active cutting elevation in meters above sea level or relative to the entrance.
 * Intersection edges between slicing planes and cave geometry are highlighted with bright outlines.
@@ -165,8 +186,11 @@ For massive LiDAR scans (`.ply` format), LochViewer automatically activates **En
 ## 8. Surface Terrain, Official GKÚ ZBGIS WMS & 3D Calibration
 
 * **Official GKÚ SR WMS**: Streams official aerial orthophotos, high-resolution DMR 5.0 hillshading, and topographic maps from the Slovak Geodetic Institute.
-* **Mapbox 3D Terrain**: Automatically renders regional 3D topography based on GPS coordinates.
+* **Mapbox 3D Terrain**: Automatically renders regional 3D topography based on GPS coordinates. Its heavy renderer is downloaded only when Mapbox terrain is enabled, keeping the initial cave-view load lean.
 * **3D Position Calibration**: Fine-tune the cave position relative to surface terrain in $X, Y, Z$ axes (0.5m increments) and export calibration files.
+* **Persistent Transparency & Sub-16ms Latency (v2.4.27)**: Set surface and cave wall opacity levels remain active during camera navigation and rotation without flipping to opaque. The optimized on-demand WebGL render loop (`frameloop="demand"`) settles after 180 ms for instant zero-CPU/GPU idle consumption and rock-solid 60 FPS interaction.
+* **Surface Opacity for Shaded & Network Models (v2.4.28)**: Dedicated *Surface opacity* slider (5% – 100%) in the *Terrain* tab directly controls translucency for both *Shaded model* and *Network model (heights)* without requiring bitmap textures.
+* **Balanced Contour Altitude Labels (v2.4.28)**: *Show altitudes* detects dual-axis edge crossings on a finer grid combined with spatial distance filtering, ensuring thick index contour lines display at least one legible elevation label in any active camera view.
 
 ---
 
@@ -193,7 +217,7 @@ All view settings, camera angles, active layers, clipping heights, and SDF param
 
 ## 10. In-App Interactive Guide (Help Modal)
 
-Clicking the **❓ Help** icon in the top bar or on the welcome screen opens the interactive user guide at any time:
+Select **Settings & help → Help** or use the welcome-screen guide button to open the interactive user guide:
 
 ![In-App Interactive Help Modal](images/11_help_modal.png)
 
@@ -216,8 +240,13 @@ Clicking the **❓ Help** icon in the top bar or on the welcome screen opens the
 | **`M`** | Cycle Measurement Modes (Off $\to$ Distance $\to$ Polygon) |
 | **`Z`** | Toggle Horizontal Z-Slice Slider |
 | **`Ctrl + Z`** | Step Back in Navigation History (Undo Flight) |
+| **`Tab`, `Enter`, `Space`** | Navigate switches with Tab; activate the focused switch with Enter or Space |
 | **Double Click** | Smooth Flight Transition to Target Point |
 | **Click Compass** | Reset Camera Yaw to Grid North ($0^\circ$) |
+
+## 12. Reliable Loading and Memory Management
+
+Floor-map points are matched to survey stations efficiently, including for large surveys. Point-cloud downloads are cancelled automatically when the model is replaced. Generated Splay walls remain cached for quick toggling, with a 256 MiB memory limit and older geometry released as needed. Map tile requests move to another available source after 15 seconds.
 
 ---
 *Created for the Slovak Speleological Society (SSS) and the global speleological community.*

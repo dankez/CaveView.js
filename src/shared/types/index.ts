@@ -1,5 +1,7 @@
 import { Vector3 } from 'three';
 
+export type ViewPreset = 'top' | 'bottom' | 'front' | 'east' | 'back' | 'side' | 'iso'
+
 export interface Vec3 { x: number; y: number; z: number; relHeight?: number }
 
 export interface Station {
@@ -52,11 +54,13 @@ export interface Segment {
 
 /** Per-station metadata for label display */
 export interface StationLabel {
-  pos: Vec3        // centered 3-D position (Three.js coords)
+  pos: Vec3        // centered survey XYZ, Z-up (scene uses X, Z, -Y)
   name: string     // station name from file
   altitude: number // original Z (metres above sea level, before centering)
   isEntrance?: boolean // true if identified as an entrance
+  isFixed?: boolean
   fullLabel?: string   // more descriptive name (e.g. from comments)
+  qualifiedName?: string // station@survey hierarchy, when preserved by the format
   gps?: { lat: number; lon: number; zone?: number; epsg?: string } | null
 }
 
@@ -169,6 +173,9 @@ export interface SurveyData {
 export type PointCloudShape = 'square' | 'sphere' | 'diamond' | 'hex' | 'surfel'
 
 export interface ViewerOptions {
+  showCenterline?: boolean
+  showFixedStations?: boolean
+  stationLabelMode?: 'off' | 'short' | 'full' | 'altitude' | 'gps'
   // Engine selection
   engine:              'v1' | 'v2'
   // Advanced rendering toggles
@@ -321,7 +328,7 @@ export interface LiDARWorkerMessage {
 export interface CaveViewerNextGenProps {
   cave: ParsedCave;
   options: ViewerOptions;
-  onStationClick?: (idx: number, screenX: number, screenY: number, ctrlKey: boolean, point?: any) => void;
+  onStationClick?: (idx: number, screenX: number, screenY: number, ctrlKey: boolean, point?: Vec3) => void;
   onCameraUpdate?: (data: ViewerCameraSnapshot) => void;
   onStatusChange?: (status: { msg: string, type: 'info' | 'error' | 'success' | 'progress', progress?: number } | null) => void;
   fitTrigger?: number;

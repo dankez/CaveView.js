@@ -1,5 +1,76 @@
 # Changelog
 
+## [2.5.0] - 2026-10-22
+### LochViewer 2.5 — nová navigácia, meranie a čistejší bočný panel / new navigation, measurement and leaner sidebar
+- Súhrn 2.4.x: zjednotený bočný panel (Súbor, Pohľad, Vrstvy, Nástroje, Nastavenia), rýchla horná lišta v štýle LOCH, cyklické pohľady, profesionálne meranie a karty bodov (GPS, výška, hĺbka pod DTM), optimalizácie výkonu, lazy-loading a prístupnosť. / 2.4.x summary: unified sidebar, LOCH-style quick toolbar, cycling views, professional measurement and point cards, performance, lazy-loading and accessibility.
+- Pri LOX zlúčené prepínače Drôtený model a Trojuholník. mesh; Triangle mesh ostáva iba pre LiDAR PLY. / LOX Wireframe and Triangle mesh merged; Triangle mesh kept only for LiDAR PLY.
+- „Farebné podľa výšky“ je viditeľné hneď pri polygóne aj stenách. / “Color by height” is always visible for survey and walls.
+- Odstránená duplicitná karta „Mierka (Jaskyniar)“; postava sa pridáva z karty bodu. / Removed duplicate “Scale (Caver)” card; the figure is placed from the point card.
+
+## [2.4.35] - 2026-10-22
+### Cyklické pohľady a export PNG / Cycling views and PNG export
+- Pôdorys v hornej lište prepína zhora ↔ zdola, Nárys obieha juh → východ → sever → západ; aktuálna strana v popise tlačidla (SK/EN/FR/DE). / Plan toggles above ↔ below, Elevation cycles south → east → north → west with the side shown in the tooltip.
+- Opravený Export PNG (Render to file): hľadal R3F obal `div` namiesto `<canvas>`, čo rozbíjalo aj nahrávanie a LiDAR štetec. / Fixed PNG export resolving the R3F wrapper div instead of its canvas (also affected recording and LiDAR brush).
+- Unit a E2E test cyklu pohľadov pre LOX aj PLY. / Unit and E2E coverage for view cycling on LOX and PLY.
+
+## [2.4.34] - 2026-10-22
+### Výber bodov, meranie a rýchla lišta / Point inspection, measurement and quick toolbar
+- Opravená zámena meračských XYZ a Three.js súradníc, ktorá posúvala meranie mimo modelu a blokovala karty staníc. Spoločný 10 px výber staníc/splayov v oboch enginoch; ťahanie nepridáva body. / Fixed survey/scene coordinate confusion and restored station inspection with shared screen-space snapping.
+- Karta ukazuje úplné meno, pôvodné X/Y/Z, dostupné GPS a hĺbku voči DTM; v2 vyberá skutočné vrcholy, nie pomocnú geometriu. / Point cards expose source coordinates, available GPS and DTM depth; v2 ignores helper geometry.
+- Ukotvené A/B, zvýraznená spojnica, výmena koncov, odobratie bodu, nové meranie a Escape. Plocha zahŕňa všetky vrcholy polygónu. / Anchored A/B measurement, undo/swap/reset/Escape and all-vertex polygon area.
+- Horná lišta s 19 SVG ikonami, cyklom číslo/úplné meno/výška/GPS/vypnuté, LOX pevnými stanicami a menu obrazov povrchu; zdieľané options so sidebarom, lokálny dialóg. / Quick toolbar with cycling labels, LOX fixed stations, surface-image menu and shared layer state.
+- Kompletné skrývanie/obnova povrchu a stien, samostatný prepínač celého polygonálneho ťahu. / Complete surface/wall visibility and an independent whole-centerline switch.
+- SK/EN príručky a pomocník, názvy nových ovládačov SK/EN/FR/DE, regresné a skutočné klikacie E2E testy. / Bilingual guides/help, four-language controls and regression/canvas E2E coverage.
+
+## [2.4.33] - 2026-10-22
+### Zjednotená navigácia / Unified navigation
+- Päť kategórií a modulárny `NavigationSidebar` nahrádzajú roztrieštené horné ovládanie a záložky Jaskyňa/Terén/Analýza. / Five categories replace scattered toolbar controls and legacy tabs.
+- Lokálny stav kategórií, accordionov a zbalenia nevyvoláva render App/Canvas; hlavné prepínače zostávajú dostupné, detaily rešpektujú aktívne vrstvy a dostupnosť dát. / Local navigation state isolates scene renders; contextual details retain primary switches.
+- Mobilný drawer s Escape, uzamknutím a obnovou fokusu; kategórie SK/EN/FR/DE. / Accessible mobile drawer with keyboard focus management and translated categories.
+- Kalibrácia je iba pod Vrstvy → Povrch; WebM vrátane nastavení iba pod Súbor → Zdieľanie a dostupné exporty. / Calibration is grouped under Surface; WebM recording/settings under sharing and exports.
+
+## [2.4.32] - 2026-10-22
+### Prístupné prepínače, synchronizácia jazyka a SEO metadáta
+- Všetky prepínače v aplikácii sú natívne tlačidlá s rolou `switch`, pomenovaním pre čítačky obrazovky a klávesnicovou aktiváciou Enter/Space.
+- Jazyk rozhrania sa synchronizuje s atribútom `lang` elementu `<html>`.
+- Doplnený vlastný LochViewer favicon, presný titulok, meta description a Open Graph metadáta.
+
+## [2.4.31] - 2026-10-22
+### Lazy loading terénu a odstránenie nepoužívanej závislosti
+- Mapbox 3D terén a závislosť `three-geo` sa načítajú až po zapnutí Mapbox terénu; odstránená je aj ich vynútená optimalizácia pri štarte vývojového servera.
+- Odstránená nepoužívaná závislosť `pdfjs-dist`.
+
+## [2.4.30] - 2026-10-22
+### Optimalizácia staníc, mračien bodov, Splay cache a načítania dlaždíc
+- Mapovanie bodov podkladových máp na stanice používa mapu s časovou zložitosťou O(P + S) a zachováva prvú stanicu pri duplicitnom názve.
+- Načítanie mračna bodov sa ruší pri odmontovaní komponentu alebo zmene URL; pole normál sa alokuje iba pri platných zdrojových normálach.
+- Splay geometrie sa ukladajú do LRU cache s limitom 256 MiB podľa veľkosti dátových bufferov.
+- Požiadavky na XYZ dlaždice majú 15-sekundový timeout a pri zlyhaní pokračujú na záložný zdroj.
+
+## [2.4.29] - 2026-10-22
+### Zjednotené zobrazenie splay lúčov a bodov
+- Prepínač *Splay* teraz súčasne skrýva alebo zobrazuje splay lúče aj ich koncové bodky v modeloch `.lox` a ďalších meračských formátoch. Ostatné stanice zostávajú nezávislé.
+
+## [2.4.28] - 2026-10-16
+### Priehľadnosť tieňovaného povrchu, hustejšie výšky vrstevníc, skrytie splayov a oprava trojuholníkovej siete (Axonometria)
+- **Priehľadnosť povrchu pre tieňovaný model a výškovú sieť:** V záložke *Terén* bol doplnený posuvník *Priehľadnosť povrchu* (5 % – 100 %) pre režimy *Tieňovaný povrch* (`showSurfaceMesh`) aj *Výšková sieť* (`showSurfaceNetwork`). Umožňuje plynulé nastavenie priehľadnosti terénu bez nutnosti zapínania textúry, pričom priehľadnosť ostáva stabilná aj počas pohybu kamery.
+- **Hustejšie a lepšie rozmiestnené výškové kóty vrstevníc:** Algoritmus generovania výškových štítkov (`ContourLabels`) v `CaveViewer3D` bol vylepšený o 2D obojsmernú detekciu hrán (horizontálne aj vertikálne pretnutia výškových intervalov na jemnejšom rastri) a priestorové filtrovanie vzdialeností. Tým sa zabezpečilo, že každá hlavná (hrubá) vrstevnica má v zornom poli používateľa vždy minimálne jednu dobre čitateľnú hodnotu nadmorskej výšky bez zhlukovania.
+- **Podmienené zobrazenie Splay SDF stien:** Karta *Splay SDF steny (2D/3D)* v bočnom paneli sa teraz zobrazuje výhradne vtedy, keď načítaný model skutočne obsahuje splay lúče (`splayCount > 0`). Pre modely bez pomocných splay zámerov je táto karta automaticky skrytá, čo sprehľadňuje rozhranie.
+- **Oprava Trojuholníkovej siete (Triangle mesh / Axonometria):** Režim *Trojuholník. mesh* (`accurateScraps`) bol plne integrovaný do vykresľovacieho potrubia stien jaskyne (`Scraps.tsx`, `CaveViewer3D.tsx` a `CaveViewerNextGen.tsx`). Režim teraz funguje spoľahlivo aj samostatne (bez nutnosti mať vopred zapnuté plné steny) a zobrazuje precíznu trianguláciu stien jaskyne s plochým tieňovaním faziet a kontrastnými drôtenými hranami v klasickom technickom axonometrickom štýle.
+
+## [2.4.27] - 2026-10-16
+### Výkonnostná optimalizácia WebGL jadra, fix priehľadnosti povrchov a nulové vyťaženie CPU v kľude
+- **Fix straty priehľadnosti povrchov a stien pri pohybe kamery:** Odstránené nútené prepínanie priehľadnosti na nepriehľadnú hodnotu (`1.0`) pri rotácii a manipulácii s kamerou v komponentoch `CaveViewer3D` (`TerrainMesh`), `Scraps` a `SplayCaveWalls`. Povrch terénu aj steny jaskyne ostávajú plynulo a stabilne priesvitné podľa nastaveného posuvníka bez preblikávania a bez zakrytia jaskynných chodieb.
+- **Odstránenie synchrónneho re-buildingu terénu a BVH stromu:** `TerrainTile` už neprepína úroveň prevzorkovania (`terrainSubsample`) pri každom štarte a zastavení pohybu kamery, čo eliminovalo trhanie a zamŕzanie hlavného vlákna. `props.opacity` bolo odstránené zo závislostí `useMemo` pre shaderové materiály, čím sa predišlo rekompiláciám WebGL shaderov za behu; `depthWrite` je správne viazané na `opacity === 1`.
+- **Zastavenie 10Hz re-render kaskády `App.tsx`:** `CameraMonitor` v oboch motoroch (`CaveViewer3D` aj `CaveViewerNextGen`) bol optimalizovaný s inteligentným filtrom – stav `cameraData` v hlavnom komponente `App.tsx` sa aktualizuje len pri skutočnej zmene azimutu (o viac ako 1°), prechode kategórie vrstevníc alebo pri väčšom posune. Tým sa zabránilo 10 neustálym re-renderom celého DOM stromu rozhrania za sekundu počas rotácie modelu.
+- **Vypnutie skrytého pozadového plátna (`bg-canvas`):** Nekonečný 60 FPS animačný cyklus `requestAnimationFrame` s časticami sa automaticky pozastavuje, ak aplikácia nie je na úvodnej (welcome) alebo chybovej obrazovke.
+- **Stabilizácia referencií props pre 3D prehliadače:** Všetky pomocné handlery (`handleProcessingEnd`, `handleTextureReady`, `handleSurfaceOffsetChange`) a objekt manuálneho prepojenia staníc (`manualConnectionMemo`) boli obalené do `useCallback` a `useMemo`. Tým sa naplno aktivovala optimalizácia `React.memo` na `<CaveViewer3D>` a `<CaveViewerNextGen>` pri práci s bočným panelom, posuvníkmi a kartami.
+- **50 % úspora CPU a VRAM v `Scraps.tsx`:** Odstránené duplicitné generovanie geometrie (`currentSolid` a `currentAlt`). Využíva sa jediná `BufferGeometry` s atribútom `color`; materiály bez farebného režimu atribút automaticky ignorujú. Zredukované volania `mergeVertices`, Taubin smoothing a stavba BVH stromu na polovicu.
+- **Zero-copy Web Worker I/O & odstránenie alokácií:** V `parser.worker.ts` boli výškové polia terénu DTM a rastrové textúry pridané do zoznamu `Transferable` objektov `postMessage()`. V `App.tsx` boli odstránené redundantné kópie `buf.slice(0)`.
+- **Prevencia únikov GPU pamäte (VRAM disposal):** Do komponentov `CaveLegs`, `PointCloud`, `OrganicShell`, `TerrainMesh` a `Scraps` boli implementované čistiace háky `useEffect`, ktoré pri zmene parametrov a demontáži komponentov explicitne volajú `dispose()` na Three.js geometriách, boundsTree stromoch a textúrach.
+- **Blesková odozva po zastavení kamery (180 ms):** `idleTimeoutRef` bol skrátený z 1500 ms na 180 ms, vďaka čomu sa on-demand renderovanie (`frameloop="demand"`) a stabilizácia aktivujú okamžite po zastavení používateľa s nulovým vyťažením CPU a GPU.
+- **Optimalizácia bundle splittingu:** Nápoveda `HelpModal` bola konvertovaná na `React.lazy` s dynamickým načítaním pri otvorení, a import `three` v `App.tsx` bol zúžený na čisté typové deklarácie.
+
 ## [2.4.26] - 2026-09-13
 ### Oprava mapového zdroja Freemap (ortofotomapa) a detekcia placeholder dlaždíc
 - **Aktualizácia endpointu Freemap ortofoto:** Nahradený zastaraný serverový endpoint `tiles.freemap.sk/o/{z}/{x}/{y}.jpg` (ktorý pre väčšinu moderných súradníc vracal iba 1843-bajtový PNG obrázok s textom *"no map data"*) za oficiálny aktívny server `https://ortofoto.tiles.freemap.sk/{z}/{x}/{y}.jpg`.

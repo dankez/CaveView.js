@@ -1,4 +1,4 @@
-# 📖 LochViewer - Kompletná používateľská príručka (v2.4.25)
+# 📖 LochViewer - Kompletná používateľská príručka (v2.4.34)
 
 *Webová 3D platforma pre vizualizáciu, speleologické meranie a analýzu jaskynných systémov a LiDAR dát.*  
 *Dizajnový systém: Stitch CAD Precision Glassmorphism & Fieldwork High-Contrast (vrátane jemného pieskového gradientu vo svetlom režime).*  
@@ -43,9 +43,25 @@ LochViewer spracováva dáta priamo vo vašom internetovom prehliadači prostred
 
 ## 2. Používateľské rozhranie (Horná lišta a nástroje)
 
-Po načítaní modelu sa v hornej časti zobrazuje moderná piktogramová lišta umožňujúca okamžité ovládanie všetkých funkcií:
+Po načítaní modelu bočný panel združuje podrobné nastavenia do piatich kategórií. Horná lišta obsahuje rýchle ikony s názvom pri podržaní kurzora; tyrkysová označuje zapnutý režim. Na malých obrazovkách pás ikon posúvajte vodorovne.
+
+Poradie rýchlych akcií: **Otvoriť model, Znovu načítať pôvodný model, Export PNG, Rotácia, Ortogonál/perspektíva, Pôdorys, Nárys, Fit, Vchody, Pevné stanice, Všetky stanice, Popisy staníc, Polygonálny ťah, Splaye, Steny, Povrch, Pridať obraz na povrch, Meranie a Celá obrazovka**. Reload znovu spracuje uchovaný pôvodný súbor a zahodí úpravy modelu; neobnovuje stránku ani nečíta zmenený súbor z disku. Pevné stanice sú dostupné len pri príslušných metadátach formátu (príznak fixed v LOX), nie podľa GPS či vchodu. Opakované kliknutie na **Pôdorys** prepína pohľad zhora ↔ zdola (sever ostáva hore, pohľad zdola je zrkadlový). Opakované kliknutie na **Nárys** obieha model zo štyroch strán: z juhu → z východu → zo severu → zo západu. Aktuálna strana sa zobrazí v popise tlačidla.
+
+**Popisy staníc** cyklujú **číslo → úplný názov → nadmorská výška → GPS → vypnuté**; bez dostupných GPS sa tento krok preskočí. LOX zachováva úplné mená typu `1@jaskyna`. Steny a Povrch skryjú jednotlivé reprezentácie vrstvy a opätovným zapnutím obnovia ich nastavenie. Obraz na povrch otvorí menu pre miestny obraz, jeho kalibráciu alebo ortofotomapu ZBGIS; podrobné kalibrácie zostávajú vo **Vrstvy & dáta → Povrch**. Dodatočné rýchle ikony sprístupňujú Meranie a spoločné splay lúče/body.
+
+| Kategória | Ovládanie |
+| :--- | :--- |
+| **Súbor & projekty** | Otvorenie/zatvorenie modelu, ukážky; **Zdieľanie a dostupné exporty** obsahuje zdieľanie/iframe, PNG, vytvorenú textúru/kalibráciu a WebM záznam vrátane dĺžky nahrávania. |
+| **Pohľad & kamera** | Perspektíva/ortogonál, prednastavené pohľady, Fit, výškový systém a automatická rotácia. |
+| **Vrstvy & dáta** | Meračská sieť, splay lúče aj koncové body, steny, stanice a LiDAR. **Povrch** výhradne združuje terén, zdroje textúr, TIFF import a kalibráciu jaskyne/povrchu vrátane 3D gizma. |
+| **Nástroje & analýza** | Meranie vzdialenosti/plochy, horizontálne/profilové rezy, tektonika, prierez/objem a LiDAR analýzy/mapy. |
+| **Nastavenia & pomoc** | Motív, legenda, jazyk, celá obrazovka a pomocník. |
+
+Hlavné prepínače vrstiev sú dostupné bez otvorenia **Podrobností**. Priehľadnosť, farby, SDF a LiDAR parametre sú v príslušnom accordione a zobrazujú sa podľa aktívnej vrstvy alebo dostupných dát. Na počítači panel zbalíte na pás ikon a otvoríte výberom kategórie. Na mobile ho otvorí tlačidlo menu; Tab/Shift+Tab zostávajú v paneli, Escape alebo krížik ho zatvoria a vrátia fokus. Enter/medzerník ovládajú prepínače aj accordiony. Kategórie sú preložené do SK/EN/FR/DE.
 
 ![Hlavné 3D rozhranie a horná lišta](images/02_main_viewer_3d.png)
+
+Nasledujúce nástroje zostávajú v uvedených kategóriách; najčastejšie akcie majú aj skratku v hornej lište:
 
 | Ikona | Názov nástroja | Popis funkcie |
 | :--- | :--- | :--- |
@@ -57,7 +73,7 @@ Po načítaní modelu sa v hornej časti zobrazuje moderná piktogramová lišta
 | 🏔️ | **Povrchový terén (Terrain)** | Zobrazuje / skrýva 3D model nadložného povrchu, DMR tieňovanie alebo satelitnú mapu. |
 | 🔲 | **Ohraničujúci kváder (Box)** | Zobrazí priestorový bounding box s vyznačením rozmerov $X, Y, Z$ a celkového prevýšenia jaskyne. |
 | ✂️ | **Horizontálny rez (Z-Clip)** | Otvorí plávajúci posuvník pre horizontálne zrezávanie modelu podľa nadmorskej výšky. |
-| ⚡ | **Laserové lúče (Splays)** | Zobrazí všetky pomocné laserové lúče zamerané zo staníc k stenám jaskyne. |
+| ⚡ | **Laserové lúče a body (Splays)** | Spoločne zapína / vypína pomocné laserové lúče aj ich koncové splay body zamerané zo staníc k stenám jaskyne. |
 | 📏 / 📐 | **Merací nástroj (3-Stavový)** | Cyklický prepínač merania: **Vypnuté** ➡️ **Vzdialenosť (2 body)** ➡️ **Plocha/Polygón (3+ body)**. |
 | 🎨 | **Farebná schéma** | Prepína medzi speleologickým výškovým spektrom, jednofarebným technickým materiálom a gradientom. |
 | 📊 | **Výškový systém (ABS / REL)** | Prepína výškové zobrazenie medzi absolútnou nadmorskou výškou ($m\ \text{n. m.}$) a relatívnou výškou k vchodu ($+120\ \text{m},\ -35\ \text{m}$). |
@@ -66,11 +82,11 @@ Po načítaní modelu sa v hornej časti zobrazuje moderná piktogramová lišta
 | ✖ | **Zavrieť model** | Uvoľní pamäť a vráti vás na úvodnú obrazovku. |
 
 ### Farebné motívy a vizuálny štýl (Themes):
-V bočnom paneli (záložka **Jaskyňa**) alebo cez URL parameter `?theme=` je možné zvoliť jeden z troch kalibrovaných motívov:
+V **Nastavenia & pomoc → Vzhľad a legenda** alebo cez URL parameter `?theme=` je možné zvoliť jeden z troch kalibrovaných motívov:
 * **Precision CAD (`precision`)**: Predvolený profesionálny technický motív s kalibrovaným vertikálnym modrým gradientom (zhora tmavá nočná modrá `#103258` prechádzajúca do svetlejšej technickej modrej `#1d5b9b`), vysoko kontrastnými tyrkysovými (`#00d2ff`) a smaragdovými (`#10b981`) akcentmi podľa špecifikácie Google Stitch CAD. Poskytuje dokonalú priestorovú hĺbku a vysokú čitateľnosť pre speleologické polygóny.
 * **Svetlý pieskový motív (`light`)**: Prírodný vysokokontrastný terénny režim s jemným vertikálnym pieskovým gradientom – svetlá slonovinová piesková hore (`#f7f3eb`) prechádzajúca do teplejšej tmavej pieskovej / vápencovej dole (`#d5c4ad`). Prvky CAD rozhrania v tomto režime plynulo ladia s teplou pieskovou paletou, čo znižuje únavu očí pri dennom svetle a zabezpečuje excelentnú čitateľnosť meračských polygónov a textov staníc.
 * **Classic Speleo (`classic`)**: Tradičný nočný modrý motív s indigovým gradientom pozadia.
-* **Skrytie a znovuotvorenie bočného panela:** Bočný panel je možné kedykoľvek minimalizovať pre plnoobrazovkové zobrazenie 3D jaskyne. Pre opätovné otvorenie slúži tlačidlo v hornej lište alebo plávajúce tlačidlo `◀ Nastavenia` na pravom okraji obrazovky.
+* **Skrytie a znovuotvorenie bočného panela:** Na počítači panel zbalíte na pás ikon a otvoríte výberom kategórie. Na mobile slúži tlačidlo menu pri pravom okraji plátna.
 
 ---
 
@@ -102,22 +118,27 @@ Tradičné jaskynné polygóny často obsahujú stovky až tisíce laserových z
 
 ![Splay SDF 3D model stien](images/04_splay_sdf_walls.png)
 
-### Ako pracovať so Splay SDF stenami:
-1. V bočnom paneli (záložka **Jaskyňa** $\to$ samostatná karta **Splay SDF Rekonštrukcia stien**) aktivujte prepínač **Splay SDF steny (2D/3D)**. Karta zobrazuje presný počet zameraných laserových lúčov (napr. `149 rays`) a je dostupná pre všetky zamerané modely.
+### Ako pracovať so Splay SDF stenami a trojuholníkovou sieťou (Axonometria):
+1. Vo **Vrstvy & dáta → Splay SDF steny (2D/3D)** aktivujte prepínač vrstvy a rozbaľte Podrobnosti. Karta sa zobrazuje iba pri modeloch so splay lúčmi (`splayCount > 0`).
 2. **Hranatosť / Ostré steny (Angular / Sharpness)**: Vyhradený CAD posuvník s rozsahom od ostrých faziet (`0.02` - presné technické hrany chodby) po hladké zaoblenie (`0.25` - organické erózne steny).
-3. V stavovom riadku sa zobrazí indikátor výpočtu. Akonáhle worker vytvorí sieť, model sa okamžite vykreslí v scéne.
-4. **Session Cache**: Vygenerovaný model sa uloží do dočasnej pamäte prehliadača. Pri ďalšom zapnutí/vypnutí je zobrazenie okamžité bez čakania.
+3. **Drôtený model / Trojuholník. mesh (Axonometria)**: Pri modeloch LOX/3D/PLT má karta *Steny jaskyne* jediný prepínač *Drôtený model*, ktorý kreslí trianguláciu stien — samostatne ako drôtený model alebo so stenami ako technickú axonometriu. Samostatný prepínač *Trojuholník. mesh* sa zobrazuje iba pri LiDAR PLY mračnách, kde mení rekonštrukciu povrchu.
+4. **Farebné podľa výšky** je viditeľné hneď (bez rozbaľovania detailov) v kartách *Polygón* aj *Steny jaskyne*. Postavu jaskyniara na mierku pridáte z karty detailu bodu (samostatná karta v bočnom paneli bola odstránená).
+4. V stavovom riadku sa zobrazí indikátor výpočtu. Akonáhle worker vytvorí sieť, model sa okamžite vykreslí v scéne.
+5. **Session Cache**: Vygenerovaný model sa uloží do dočasnej pamäte prehliadača. Pri ďalšom zapnutí/vypnutí je zobrazenie okamžité bez čakania.
 
 ---
 
 ## 5. Nástroje merania vzdialeností, plôch a štruktúrnej geológie (Tektonika)
 
-Kliknutím na ikonu pravítka v hornej lište alebo v bočnom paneli aktivujete vyhradený merací režim s plávajúcim dokovateľným panelom (`MeasurementPanel`).
+Kliknutím na stanicu mimo meracieho režimu zobrazíte meno, pôvodné X/Y, výšku zo súboru, GPS pri známej konverzii a hĺbku pod pokrývajúcim DTM. Chýbajúce GPS alebo terén sa označia ako nedostupné, neodhadujú sa. Výška nereferencovaného LiDAR modelu je Z zo súboru, nie zaručená nadmorská výška.
+
+Pravítkom v hornej lište alebo vo **Nástroje & analýza → Meranie** otvoríte merací panel. Stanice a zapnuté splay konce sa v oboch enginoch prichytávajú do 10 pixelov od kliknutia. Ťahanie otáča model bez pridania bodu. Vyberať možno aj povrch siete/terénu a body LiDAR.
 
 ![Merací panel v akcii](images/05_measurement_panel.png)
 
 ### 1. Meranie vzdialenosti (2 body):
 * Kliknite na počiatočný bod $P_1$ a koncový bod $P_2$ (stanice alebo splay body).
+* Značky **A/B** a zvýraznená spojnica sú ukotvené na vybranej geometrii. Ďalší klik presunie B; **Vymeniť A/B** obráti smer, **Odobrať posledný bod** vráti výber, **Nové meranie** ho vyčistí a **Escape** meranie ukončí. Zapnutie merania zastaví automatickú rotáciu.
 * **Zobrazené veličiny**:
   * **3D priama vzdialenosť**: reálna dĺžka spojnice v metroch.
   * **Pôdorysná (horizontálna) vzdialenosť**: priemet do roviny $X-Y$.
@@ -128,9 +149,9 @@ Kliknutím na ikonu pravítka v hornej lište alebo v bočnom paneli aktivujete 
 ### 2. Meranie plochy a polygónu (3 a viac bodov):
 * Postupným klikaním definujte obvod priestoru ($P_1, P_2, P_3 \dots$).
 * **Zobrazené veličiny**:
-  * **3D Plocha ($m^2$)**: skutočná plocha preloženej priestorovej roviny.
-  * **Pôdorysná plocha ($m^2$)**: plošný priemet do mapy.
+  * **Plocha ($m^2$)**: vektorová plocha zo všetkých vybraných vrcholov. Pri nerovinnom obvode ide o projekčnú plochu, nie povrch rekonštruovanej siete.
   * **Obvod polygónu ($m$)**: celková dĺžka trasy.
+* Body zadávajte po obvode bez kríženia. Geologickú orientáciu určuje prvá trojica bodov.
 
 ### 3. Štruktúrna geológia a Tektonické meranie (3-bodová rovina):
 * Zvoľte 3 body na pukline, vrstvovej ploche alebo stene jaskyne.
@@ -149,7 +170,7 @@ Pre detailné skúmanie poschodových jaskýň a horizontálnych úrovní slúž
 
 ![Horizontálny rez Z-Clipping](images/07_z_clipping_slider.png)
 
-1. Kliknite na ikonu nožníc ✂️ v hornej lište (alebo stlačte kláves `Z`).
+1. Zapnite **Nástroje & analýza → Horizontálny rez (Z)**.
 2. V pravom hornom rohu sa vysunie **Plávajúci posuvník rezu**.
 3. Pohybom jazdca plynulo zrezávate nadložie modelu.
 4. Nad posuvníkom sa v reálnom čase zobrazuje presná **nadmorská výška rezu** v metroch (v absolútnom aj relatívnom móde).
@@ -182,9 +203,17 @@ Jaskyňa neexistuje vo vákuu – pochopenie jej vzťahu k povrchovému reliéfu
    * Možnosť voľby: **Letecká ortofotomapa SR**, **Tieňovaný digitálny model reliéfu DMR 5.0** alebo **Základná topografická mapa**.
 2. **Mapbox 3D Satelitný terén**:
    * Pre modely so zadanými GPS súradnicami automaticky stiahne 3D povrchový reliéf celého masívu.
+   * Ťažká 3D vrstva sa načíta až po zapnutí Mapbox terénu; pri bežnom zobrazení jaskyne nezvyšuje úvodné načítanie.
 3. **3D Kalibrácia polohy jaskyne voči povrchu**:
    * Nástroj **Kalibrácia** v bočnom paneli umožňuje jemný posun jaskyne v osiach $X, Y, Z$ s krokom $0.5\ \text{m}$ pre dokonalé zosúladenie vchodu s reálnym terénom.
    * Umožňuje export a opätovné načítanie kalibračného súboru.
+4. **Stabilná priehľadnosť a okamžitá odozva (v2.4.27)**:
+   * Nastavená priehľadnosť povrchového terénu aj stien jaskyne (`surfaceOpacity`, `scrapsOpacity`) zostáva trvalo zachovaná aj počas otáčania a navigácie v 3D priestore bez nežiaduceho preblikávania do nepriehľadnej farby.
+   * Optimalizovaný renderovací cyklus (`frameloop="demand"`) s bleskovou 180 ms stabilizáciou garantuje plynulých 60 FPS pri pohybe a nulové zaťaženie procesora/grafickej karty v pokoji.
+5. **Priehľadnosť tieňovaného povrchu a výškovej siete (v2.4.28)**:
+   * Pri zapnutí *Tieňovaného povrchu* alebo *Výškovej siete* vo *Vrstvy & dáta → Povrch* otvorte Podrobnosti terénu: posuvník *Priehľadnosť povrchu* (5 % – 100 %) umožní odhalenie podzemných chodieb bez nahrávania textúry.
+6. **Optimalizovaná hustota kót vrstevníc (v2.4.28)**:
+   * Voľba *Zobraziť výšky* využíva obojsmerné vyhodnocovanie 2D pretnutí (horizontálne aj vertikálne hrany výškového rastra) v kombinácii s priestorovým filtrovaním. V každom zornom poli kamery je na hlavných (hrubých) vrstevniciach zaručená minimálne jedna jasne čitateľná hodnota nadmorskej výšky bez vizuálneho zahltenia.
 
 ---
 
@@ -195,7 +224,7 @@ Každé nastavenie scény (farby, natočenie kamery, zapnuté vrstvy, výška re
 ![Dialóg zdieľania modelu](images/10_share_dialog.png)
 
 ### Vloženie modelu do webstránky (Iframe Embed):
-Kliknite na tlačidlo **🔗 Zdieľať** v hornej lište a skopírujte pripravený HTML kód:
+Vo **Súbor & projekty → Zdieľanie a dostupné exporty** kliknite na **Zdieľať** a skopírujte pripravený HTML kód:
 ```html
 <iframe 
   src="https://loch.sss.sk/?model=https://...&embed=true&theme=precision&sdf=1" 
@@ -212,7 +241,7 @@ Kliknite na tlačidlo **🔗 Zdieľať** v hornej lište a skopírujte pripraven
 
 ## 10. Interaktívny sprievodca v aplikácii (Help Modal)
 
-Kedykoľvek počas práce s modelom môžete kliknúť na ikonu **❓ Návod** v hornej lište alebo na úvodnej obrazovke:
+Použite **Nastavenia & pomoc → Návod** alebo tlačidlo príručky na úvodnej obrazovke:
 
 ![Interaktívny pomocník v aplikácii](images/11_help_modal.png)
 
@@ -235,8 +264,13 @@ Kedykoľvek počas práce s modelom môžete kliknúť na ikonu **❓ Návod** v
 | **`M`** | Cyklovať režimy merania (Off $\to$ Vzdialenosť $\to$ Plocha) |
 | **`Z`** | Otvoriť / Zavrieť horizontálny rez (Z-Clip) |
 | **`Ctrl + Z`** | Krok späť v histórii pohybu kamery (Undo flight) |
+| **`Tab`, `Enter`, `Space`** | Ovládanie prepínačov: Tab presúva fokus, Enter alebo medzerník prepne stav |
 | **Dvojklik** | Rýchly hladký prelet kamery na kliknutý bod |
 | **Klik na ružicu** | Vyrovnať rotáciu kamery na Sever ($0^\circ$) |
+
+## 12. Spoľahlivé načítanie a správa pamäte
+
+Podkladové mapy sa párujú so stanicami bez spomalenia pri rozsiahlych meraniach. Načítanie mračna bodov sa automaticky zruší pri výmene modelu. Vygenerované Splay steny zostávajú v pamäti pre rýchle prepínanie, pričom cache má limit 256 MiB a staršie geometrie sa podľa potreby uvoľnia. Pri mapových dlaždiciach sa po 15 sekundách skúsi ďalší dostupný zdroj.
 
 ---
 *Vytvorené pre Slovenskú speleologickú spoločnosť (SSS) a jaskyniarsku komunitu.*

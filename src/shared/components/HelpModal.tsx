@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react'
+import packageJson from '../../../package.json'
 
 export interface HelpModalProps {
   isOpen: boolean
@@ -60,7 +61,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 {isSk ? 'LochViewer — Používateľská príručka' : 'LochViewer — User Guide'}
               </h2>
               <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-                {isSk ? 'Kompletný sprievodca funkciami a ovládacími prvkami v2.4.25 (Stitch CAD Design)' : 'Comprehensive guide to tools, shortcuts & workflows v2.4.25 (Stitch CAD Design)'}
+                {isSk ? `Kompletný sprievodca funkciami a ovládacími prvkami v${packageJson.version} (Stitch CAD Design)` : `Comprehensive guide to tools, shortcuts & workflows v${packageJson.version} (Stitch CAD Design)`}
               </span>
             </div>
           </div>
@@ -207,17 +208,30 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 ))}
               </div>
 
-              <h4 style={{ color: '#38bdf8', marginTop: '20px' }}>🧭 {isSk ? 'Horná piktogramová lišta' : 'Top Bar Controls'}</h4>
+              <h4 style={{ color: '#38bdf8', marginTop: '20px' }}>🧭 {isSk ? 'Zjednotené menu' : 'Unified Sidebar'}</h4>
               <p>
                 {isSk 
-                  ? 'Všetky nástroje v hornej lište obsahujú prehľadné ikony s okamžitou odozvou:'
-                  : 'All essential tools in the clean top bar are accessible with a single click:'}
+                  ? 'Ovládanie je v piatich kategóriách bočného panela; hlavné prepínače vrstiev zostávajú mimo zbaliteľných Podrobností:'
+                  : 'Controls are grouped in the five-category sidebar; layer switches remain available outside their Details accordions:'}
               </p>
+              <p>{isSk
+                ? 'Súbor & projekty: import, zdieľanie a exporty vrátane WebM. Pohľad & kamera: projekcia, Fit a rotácia. Vrstvy & dáta: jaskyňa, LiDAR a Povrch; kalibrácia je výhradne pod Povrchom. Nástroje & analýza: meranie a rezy. Nastavenia & pomoc: motív, jazyk a návod.'
+                : 'Files & projects: import, sharing and exports including WebM. View & camera: projection, Fit and rotation. Layers & data: cave, LiDAR and Surface; calibration lives exclusively under Surface. Tools & analysis: measurement and cuts. Settings & help: theme, language and help.'}</p>
+              <p>{isSk
+                ? 'Panel zbalíte na ikony a otvoríte výberom kategórie. Na mobile použite menu; Tab/Shift+Tab zostávajú v draweri a Escape ho zatvorí s návratom fokusu. Enter a medzerník ovládajú prepínače aj Podrobnosti.'
+                : 'Collapse the sidebar to icons and select a category to reopen it. On mobile, open the menu; Tab/Shift+Tab stay in the drawer and Escape closes it with focus restoration. Enter and Space activate switches and Details.'}</p>
+              <p>{isSk
+                ? 'Horná lišta: Otvoriť, Reload pôvodných dát, PNG, rotácia, ortogonál/perspektíva, pôdorys, nárys, Fit, vchody, pevné a všetky stanice, cyklické popisy, polygonálny ťah, splay lúče/body, steny, povrch, obraz na povrch, meranie a celá obrazovka. Názov zobrazíte podržaním kurzora; na mobile pás posúvajte vodorovne.'
+                : 'Top toolbar: Open, Reload original data, PNG, rotation, projection, plan, elevation, Fit, entrances, fixed/all stations, cycling labels, centerline, splays, walls, surface, surface image, measurement and fullscreen. Hover for names; scroll the strip horizontally on mobile.'}</p>
+              <p>{isSk
+                ? 'Popisy cyklujú číslo → úplné meno → výška → GPS → vypnuté; GPS sa bez dát preskočí. LOX zachováva mená typu 1@jaskyna aj príznak pevnej stanice. Menu obrazu ponúka miestny súbor, kalibráciu a ZBGIS ortofoto. Reload zahodí úpravy a znovu spracuje uchovaný súbor, nie zmenený súbor na disku.'
+                : 'Labels cycle number → full name → elevation → GPS → off, skipping GPS when unavailable. LOX preserves names such as 1@survey and fixed-station flags. The image menu offers a local image, calibration and ZBGIS orthophoto. Reload discards edits and reparses retained bytes, not a changed disk file.'}</p>
               <ul style={{ paddingLeft: '20px', color: '#cbd5e1', fontSize: '12px' }}>
                 <li><strong>📷 Export PNG</strong> — {isSk ? 'Snímka vo vysokom rozlíšení so severkou a mierkou' : 'High-res screenshot with compass & scale'}</li>
                 <li><strong>🧊/📐 Projekcia (O)</strong> — {isSk ? 'Prepínač Perspektíva ↔ Ortogonálne zobrazenie' : 'Perspective ↔ Orthographic camera toggle'}</li>
                 <li><strong>⛶ Zoom to Fit (F)</strong> — {isSk ? 'Vycentrovanie jaskyne do zorného poľa' : 'Recenter and fit model to screen'}</li>
                 <li><strong>📈 Centerline (C)</strong> — {isSk ? 'Kostra polygonálneho ťahu a staníc' : 'Survey centerline traverse network'}</li>
+                <li><strong>⚡ {isSk ? 'Splay lúče a body' : 'Splay rays & points'}</strong> — {isSk ? 'Spoločne zobrazí alebo skryje pomocné lúče aj ich koncové body' : 'Toggles auxiliary survey rays and their endpoint dots together'}</li>
                 <li><strong>🪨 Steny (W)</strong> — {isSk ? 'Plné 3D steny (Scraps, Splay SDF, STL)' : '3D cave wall meshes'}</li>
                 <li><strong>🏔️ Terén (T)</strong> — {isSk ? 'Nadložný povrch, DMR tieňovanie a ortofotomapa' : 'Overhead surface terrain & orthophoto'}</li>
                 <li><strong>✂️ Z-Clip (Z)</strong> — {isSk ? 'Horizontálny posuvník rezu nadmorskej výšky' : 'Floating horizontal slicing plane'}</li>
@@ -254,8 +268,10 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                     <li><kbd style={{ background: '#1e293b', padding: '1px 5px', borderRadius: '3px', border: '1px solid #475569' }}>2</kbd> — {isSk ? 'Pozdĺžny profil (Profile)' : 'Profile View (Front)'}</li>
                     <li><kbd style={{ background: '#1e293b', padding: '1px 5px', borderRadius: '3px', border: '1px solid #475569' }}>3</kbd> — {isSk ? 'Priečny profil (Section)' : 'Cross Section (Side)'}</li>
                     <li><kbd style={{ background: '#1e293b', padding: '1px 5px', borderRadius: '3px', border: '1px solid #475569' }}>4</kbd> — {isSk ? '3D Izometria' : '3D Isometric view'}</li>
+                    <li>{isSk ? 'Horná lišta: Pôdorys opakovaným klikom prepína zhora ↔ zdola; Nárys postupne z juhu → východu → severu → západu.' : 'Toolbar: repeated Plan clicks toggle above ↔ below; Elevation cycles from south → east → north → west.'}</li>
                     <li><kbd style={{ background: '#1e293b', padding: '1px 5px', borderRadius: '3px', border: '1px solid #475569' }}>O</kbd> — {isSk ? 'Ortogonál ↔ Perspektíva' : 'Ortho ↔ Perspective'}</li>
                     <li><kbd style={{ background: '#1e293b', padding: '1px 5px', borderRadius: '3px', border: '1px solid #475569' }}>Ctrl+Z</kbd> — {isSk ? 'Späť v histórii pohľadov' : 'Undo navigation flight'}</li>
+                    <li>{isSk ? 'Prepínače: fokus cez Tab, aktivácia klávesom Enter alebo medzerníkom' : 'Switches: focus with Tab; activate with Enter or Space'}</li>
                   </ul>
                 </div>
               </div>
@@ -273,11 +289,12 @@ export const HelpModal: React.FC<HelpModalProps> = ({
               <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '12px 16px', borderRadius: '8px', borderLeft: '4px solid #3b82f6', marginTop: '12px' }}>
                 <strong style={{ color: '#93c5fd' }}>{isSk ? 'Hlavné výhody:' : 'Key Highlights:'}</strong>
                 <ul style={{ margin: '6px 0 0 0', paddingLeft: '18px', fontSize: '12px' }}>
-                  <li><strong>{isSk ? 'Samostatná CAD karta' : 'Dedicated CAD Card'}</strong>: {isSk ? 'Dostupná v záložke Jaskyňa so živým počítadlom lúčov nezávisle od typu modelu.' : 'Available in Cave tab with live ray counter across all survey models.'}</li>
+                  <li><strong>{isSk ? 'Podmienená CAD karta' : 'Conditional CAD Card'}</strong>: {isSk ? 'Vo Vrstvy & dáta iba pri modeloch so splay lúčmi. Zapnite vrstvu a rozbaľte Podrobnosti.' : 'Under Layers & data only for models with splay rays. Enable the layer and open Details.'}</li>
                   <li><strong>{isSk ? 'Hranatosť stien (Sharpness)' : 'Wall Sharpness (Angular)'}</strong>: {isSk ? 'Posuvník 0.02 (ostré hrany chodby) až 0.25 (hladké organické erózne steny).' : 'Slider from 0.02 (sharp technical facets) to 0.25 (smooth rounded erosion walls).'}</li>
+                  <li><strong>{isSk ? 'Trojuholník. mesh (Axonometria)' : 'Triangle Mesh (Axonometry)'}</strong>: {isSk ? 'Pri LOX zlúčené s prepínačom Drôtený model (drôtený model alebo axonometria stien); samostatný prepínač iba pre LiDAR PLY, kde mení rekonštrukciu povrchu.' : 'For LOX merged into the Wireframe switch (wire model or wall axonometry); a separate switch appears only for LiDAR PLY, where it changes surface reconstruction.'}</li>
                   <li><strong>{isSk ? 'Bisektorová rovina' : 'Bisector Normal Plane'}</strong>: {isSk ? 'Zamedzuje prekrývaniu a kolíziám lúčov medzi susednými stanicami.' : 'Eliminates overlapping cone artifacts between adjacent stations.'}</li>
-                  <li><strong>{isSk ? 'Pamäťová Cache' : 'Session Cache'}</strong>: {isSk ? 'Vygenerovaná sieť je uložená v RAM — zapínanie a vypínanie je bleskové.' : 'Calculated mesh is cached in RAM for zero-latency toggling.'}</li>
-                  <li><strong>{isSk ? 'Farbenie podľa výšky' : 'Color by Height'}</strong>: {isSk ? 'Plná podpora hypsometrickej speleologickej škály.' : 'Full support for elevation hypsometric gradients.'}</li>
+                  <li><strong>{isSk ? 'Pamäťová Cache' : 'Session Cache'}</strong>: {isSk ? 'Vygenerovaná sieť sa ukladá do pamäte s limitom 256 MiB; najstaršie modely sa pri prekročení limitu automaticky uvoľnia.' : 'Generated geometry is cached up to 256 MiB; least-recently-used models are released when the limit is reached.'}</li>
+                  <li><strong>{isSk ? 'Farbenie podľa výšky' : 'Color by Height'}</strong>: {isSk ? 'Plná podpora hypsometrickej škály; prepínač je viditeľný hneď pri polygóne aj stenách.' : 'Full support for elevation hypsometric gradients; the switch is always visible for survey and walls.'}</li>
                 </ul>
               </div>
             </div>
@@ -288,9 +305,15 @@ export const HelpModal: React.FC<HelpModalProps> = ({
               <h3 style={{ color: '#60a5fa', marginTop: 0 }}>📐 {isSk ? 'Meranie & Štruktúrna geológia' : 'Measurement & Structural Geology'}</h3>
               <p>
                 {isSk
-                  ? 'Kliknutím na ikonu pravítka v hornej lište cyklujete medzi režimami merania. Otvorí sa presúvateľný panel (MeasurementPanel):'
-                  : 'Click the ruler icon to cycle measurement modes. A draggable floating dock appears with comprehensive readouts:'}
+                  ? 'Pravítkom v hornej lište alebo vo Nástroje & analýza → Meranie otvoríte panel. Mimo merania kliknutie otvorí kartu stanice s menom, X/Y, výškou, dostupnými GPS a hĺbkou pod terénom; chýbajúce dáta sa neodhadujú.'
+                  : 'Use the top-toolbar ruler or Tools & analysis → Measurement. Outside measurement, a click opens station details: name, X/Y, height, available GPS and DTM depth. Missing data is not estimated.'}
               </p>
+              <p>{isSk
+                ? 'Stanice a zapnuté splay body sa prichytávajú do 10 px. Body A/B aj čiara zostanú na modeli; ďalší klik presunie B. Vymeniť A/B obráti smer, Odobrať posledný bod vráti výber, Nové meranie ho vyčistí a Escape meranie ukončí. Ťahanie len otáča, začatie merania zastaví automatickú rotáciu.'
+                : 'Stations and enabled splay endpoints snap within 10 px. A/B markers and the line remain on the model; the next click replaces B. Swap A/B reverses direction, Remove last point undoes a pick, New measurement clears it and Escape exits. Dragging only orbits; starting measurement stops automatic rotation.'}</p>
+              <p>{isSk
+                ? 'Plochu zadávajte po obvode bez kríženia: výpočet zahŕňa všetky vrcholy. Pri nerovinnom obvode ide o projekčnú plochu; orientáciu určuje prvá trojica. Výška nereferencovaného LiDAR je Z zo súboru, nie zaručená nadmorská výška.'
+                : 'Pick polygon boundaries in order without crossings: area uses all vertices. Non-planar boundaries produce projected areas; orientation uses the first three points. Unreferenced LiDAR height is source Z, not a guaranteed sea-level elevation.'}</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginTop: '12px' }}>
                 <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '12px', borderRadius: '8px' }}>
                   <h4 style={{ margin: '0 0 6px 0', color: '#a5b4fc' }}>📏 {isSk ? 'Vzdialenosť (2 Body)' : 'Distance (2 Points)'}</h4>
@@ -331,6 +354,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 <li><strong>{isSk ? 'Exkluzivita pre PLY' : 'Exclusive to PLY'}</strong>: {isSk ? 'Čisté rozhranie bez zbytočných prepínačov pre bežné meračské polygóny.' : 'Clean UI hiding LiDAR controls when viewing standard survey polygons.'}</li>
                 <li><strong>{isSk ? 'Guma & Štetec' : 'Eraser & Brush'}</strong>: {isSk ? 'Interaktívne vymazanie šumu a vegetácie.' : 'Interactively erase scan noise or vegetation.'}</li>
                 <li><strong>{isSk ? '2D Pôdorysná mapa' : '2D Plan Map'}</strong>: {isSk ? 'Generovanie a PNG export ortofoto mapy z hustoty bodov.' : 'Generate high-resolution PNG plan raster from point density.'}</li>
+                <li><strong>{isSk ? 'Zrušenie načítania' : 'Cancel Loading'}</strong>: {isSk ? 'Pri výmene alebo zatvorení mračna sa jeho rozpracované sieťové načítanie automaticky preruší.' : 'An in-progress point-cloud download is cancelled when the cloud is replaced or closed.'}</li>
               </ul>
             </div>
           )}
@@ -340,9 +364,15 @@ export const HelpModal: React.FC<HelpModalProps> = ({
               <h3 style={{ color: '#60a5fa', marginTop: 0 }}>🏔️ {isSk ? 'Povrchový terén, WMS ZBGIS & Kalibrácia' : 'Terrain, ZBGIS WMS & Calibration'}</h3>
               <p>
                 {isSk
-                  ? 'Pripojenie na oficiálny štátny mapový WMS server GKÚ SR (Ortofoto a DMR 5.0 tieňovanie) a Mapbox 3D terén. Nástroj Kalibrácia umožňuje jemný 3D posun jaskyne voči povrchu v krokoch po 0.5 m.'
-                  : 'Official Slovak Geodetic Institute (GKÚ ZBGIS) WMS integration, Mapbox 3D satellite surfaces, and 0.5m 3D cave-to-surface position calibration.'}
+                  ? 'Pripojenie na oficiálny štátny mapový WMS server GKÚ SR (Ortofoto a DMR 5.0 tieňovanie) a Mapbox 3D terén. Mapbox 3D modul sa načíta až po zapnutí terénu. Nástroj Kalibrácia umožňuje jemný 3D posun jaskyne voči povrchu v krokoch po 0.5 m.'
+                  : 'Official Slovak Geodetic Institute (GKÚ ZBGIS) WMS integration, Mapbox 3D satellite surfaces (loaded only when terrain is enabled), and 0.5m 3D cave-to-surface position calibration.'}
               </p>
+              <ul style={{ paddingLeft: '18px', fontSize: '12px', color: '#cbd5e1' }}>
+                <li><strong>{isSk ? 'Priehľadnosť povrchu' : 'Surface Opacity'}</strong>: {isSk ? 'Vyhradený posuvník priehľadnosti pre tieňovaný terén a výškovú sieť bez nutnosti textúry.' : 'Dedicated opacity slider for shaded relief and height network.'}</li>
+                <li><strong>{isSk ? 'Kóty vrstevníc' : 'Contour Altitudes'}</strong>: {isSk ? 'Dvojitá 2D detekcia zaručuje v zornom poli čitateľnú hodnotu výšky na každej hrubej vrstevnici.' : 'Dual-axis edge detection provides legible contour elevation labels in active view.'}</li>
+                <li><strong>{isSk ? 'Stabilná priehľadnosť' : 'Persistent Transparency'}</strong>: {isSk ? 'Priehľadnosť povrchu terénu aj stien ostáva trvalo aktívna aj počas otáčania kamery bez preblikávania.' : 'Surface and wall transparency remains active during camera movement without flipping to opaque.'}</li>
+                <li><strong>{isSk ? 'Okamžitá odozva' : 'Instant 60 FPS'}</strong>: {isSk ? 'On-demand WebGL vykresľovanie s bleskovou 180 ms stabilizáciou šetrí CPU/GPU batériu a zabezpečuje plynulý beh.' : 'On-demand WebGL render loop with 180 ms idle settling minimizes CPU/GPU load while delivering 60 FPS.'}</li>
+              </ul>
             </div>
           )}
 

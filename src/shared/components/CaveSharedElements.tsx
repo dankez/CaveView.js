@@ -66,26 +66,37 @@ export const Stations = React.memo(({ cave, options: o }: { cave: ParsedCave, op
     gP.setAttribute('position', new THREE.BufferAttribute(pP, 3));
     const gS = new THREE.BufferGeometry();
     gS.setAttribute('position', new THREE.BufferAttribute(pS, 3));
-    return { polyGeo: gP, splayGeo: gS };
+    const fixedPositions = cave.stationLabels.filter(label => label.isFixed).flatMap(label => [label.pos.x, label.pos.z, -label.pos.y])
+    const fixedGeo = new THREE.BufferGeometry()
+    fixedGeo.setAttribute('position', new THREE.Float32BufferAttribute(fixedPositions, 3))
+    return { polyGeo: gP, splayGeo: gS, fixedGeo };
   }, [cave]);
 
   useEffect(() => {
     return () => {
       geos.polyGeo.dispose();
       geos.splayGeo.dispose();
+      geos.fixedGeo.dispose();
     }
   }, [geos]);
 
-  if (!o.showStations) return null;
+  if (!o.showStations && !o.showSplay && !o.showFixedStations) return null;
 
   return (
     <group renderOrder={12}>
-      <points geometry={geos.splayGeo}>
-        <pointsMaterial color={o.colorStations} size={2} sizeAttenuation={false} depthTest={true} />
-      </points>
-      <points geometry={geos.polyGeo}>
-        <pointsMaterial color={o.colorStations} size={5} sizeAttenuation={false} depthTest={true} />
-      </points>
+      {o.showFixedStations && <points geometry={geos.fixedGeo}>
+        <pointsMaterial color="#fbbf24" size={9} sizeAttenuation={false} depthTest={true} />
+      </points>}
+      {o.showSplay && (
+        <points geometry={geos.splayGeo}>
+          <pointsMaterial color={o.colorStations} size={2} sizeAttenuation={false} depthTest={true} />
+        </points>
+      )}
+      {o.showStations && (
+        <points geometry={geos.polyGeo}>
+          <pointsMaterial color={o.colorStations} size={5} sizeAttenuation={false} depthTest={true} />
+        </points>
+      )}
     </group>
   );
 });
@@ -112,7 +123,10 @@ export const StationLabels = React.memo(({ cave, showNames, showAltitudes, optio
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', userSelect: 'none' }}>
               {showNames && sl.name !== '' && (
                 <span style={{ fontSize: '9px', fontFamily: 'Inter, monospace', color: o.colorStationNames, fontWeight: 600, textShadow: '0 0 3px #000,0 0 6px #000', lineHeight: 1.2 }}>
-                  {sl.name}
+                  {o.stationLabelMode === 'gps'
+                    ? sl.gps ? `${sl.gps.lat.toFixed(6)}, ${sl.gps.lon.toFixed(6)}` : '—'
+                    : o.stationLabelMode === 'short' ? sl.name.split('@')[0].split('.').pop()
+                      : o.stationLabelMode === 'full' ? sl.qualifiedName || sl.fullLabel || sl.name : sl.name}
                 </span>
               )}
               {showAltitudes && sl.name !== '' && (
@@ -176,9 +190,21 @@ export const CaveLegs = React.memo(({ cave, showSplay, showAltitude, options: o,
     return geo;
   }, [splayLegs]);
 
+  useEffect(() => {
+    return () => {
+      points.dispose();
+    };
+  }, [points]);
+
+  useEffect(() => {
+    return () => {
+      splayPoints.dispose();
+    };
+  }, [splayPoints]);
+
   return (
     <group renderOrder={10}>
-      <lineSegments geometry={points}>
+      {o.showCenterline !== false && <lineSegments geometry={points}>
         <lineBasicMaterial 
           color={o.colorTraverse} 
           vertexColors={showAltitude} 
@@ -186,7 +212,7 @@ export const CaveLegs = React.memo(({ cave, showSplay, showAltitude, options: o,
           transparent={false}
           depthTest={true}
         />
-      </lineSegments>
+      </lineSegments>}
       {showSplay && splayLegs.length > 0 && (!isMoving || !isLargeModel) && (
         <lineSegments geometry={splayPoints}>
           <lineBasicMaterial color={o.colorSplay} transparent opacity={0.45} depthTest={true} />

@@ -85,8 +85,8 @@ export const SplayCaveWalls: React.FC<SplayCaveWallsProps> = ({
 
   const showAltitude = showAltitudeProp ?? options?.scrapsAltitude ?? false;
   const wallColor = color ?? options?.colorScraps ?? '#cbd5e1';
-  const wallOpacity = isMoving ? 1.0 : (opacity ?? options?.scrapsOpacity ?? 0.85);
-  const wallTransparent = isMoving ? false : (transparent ?? (wallOpacity < 1.0));
+  const wallOpacity = opacity ?? options?.scrapsOpacity ?? 0.85;
+  const wallTransparent = transparent ?? (wallOpacity < 1.0);
 
   const stations = useMemo(() => {
     if (stationsProp && stationsProp.length > 0) return stationsProp;

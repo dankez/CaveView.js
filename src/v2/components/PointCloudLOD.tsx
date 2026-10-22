@@ -356,6 +356,7 @@ export const PointCloudLOD: React.FC<PointCloudRenderProps & { url: string }> = 
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
     const worker = new Worker(new URL('../parsers/pointcloud.worker.ts', import.meta.url), {
       type: 'module'
     });
@@ -419,15 +420,19 @@ export const PointCloudLOD: React.FC<PointCloudRenderProps & { url: string }> = 
       }
     };
 
-    fetch(url)
+    fetch(url, { signal: controller.signal })
       .then(res => res.arrayBuffer())
       .then(buffer => {
         if (active) worker.postMessage({ buffer }, [buffer]);
       })
-      .catch(err => console.error('Failed to fetch pointcloud:', err));
+      .catch((err: unknown) => {
+        if (err && typeof err === 'object' && 'name' in err && err.name === 'AbortError') return;
+        console.error('Failed to fetch pointcloud:', err);
+      });
 
     return () => {
       active = false;
+      controller.abort();
       worker.terminate();
       
       // CRITICAL: 100% reliable GPU VRAM resource cleanup to prevent memory leaks!
@@ -574,11 +579,10 @@ export const PointCloudDirect: React.FC<PointCloudRenderProps & { cave: ParsedCa
 
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
-    const normals = new Float32Array(count * 3);
+    const normals = hasDirectPointNormals(cave) ? new Float32Array(count * 3) : null;
     const intensity = new Float32Array(count);
     const relHeight = buildDirectRelHeights(cave);
     const hasColors = hasSourceVertexColors && !!cave.pointColors && cave.pointColors.length >= count * 3;
-    const hasNormals = hasDirectPointNormals(cave);
     const hasIntensity = !!cave.pointIntensity && cave.pointIntensity.length >= count;
 
     for (let i = 0; i < count; i++) {
@@ -597,7 +601,7 @@ export const PointCloudDirect: React.FC<PointCloudRenderProps & { cave: ParsedCa
         colors[src + 2] = 0;
       }
 
-      if (hasNormals) {
+      if (normals) {
         normals[src] = cave.pointNormals![src];
         normals[src + 1] = cave.pointNormals![src + 2];
         normals[src + 2] = -cave.pointNormals![src + 1];
@@ -609,12 +613,12 @@ export const PointCloudDirect: React.FC<PointCloudRenderProps & { cave: ParsedCa
     const directGeometry = new THREE.BufferGeometry();
     directGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     directGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    directGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+    if (normals) directGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
     directGeometry.setAttribute('intensity', new THREE.BufferAttribute(intensity, 1));
     directGeometry.setAttribute('relHeight', new THREE.BufferAttribute(relHeight, 1));
     directGeometry.computeBoundingSphere();
     return directGeometry;
-  }, [cave, hasSourceVertexColors]);
+  }, [cave, cave.pointNormals, hasSourceVertexColors]);
 
   const material = useMemo(() => new THREE.ShaderMaterial({
     uniforms: {

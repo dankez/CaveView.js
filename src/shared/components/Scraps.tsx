@@ -3,7 +3,8 @@ import * as THREE from 'three'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { elevColor, normZ } from '@shared/utils/colorUtils'
 import { buildSplayWallGeometry } from '@shared/utils/surfaceReconstruction'
-import type { ParsedCave, ViewerOptions, StationLabel, Vec3 } from '@shared/types'
+import type { ParsedCave, ViewerOptions, Vec3 } from '@shared/types'
+import { createStationLabelMap } from '@shared/utils/stationLabelMap'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -558,26 +559,30 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
   onProcessingEnd?: () => void
 }) => {
   const { onProcessingStart, onProcessingEnd, onSurfaceClick } = props as any;
-  const [geos, setGeos] = useState<{ solid: THREE.BufferGeometry | null, alt: THREE.BufferGeometry | null }>({ solid: null, alt: null })
+  const [scrapGeo, setScrapGeo] = useState<THREE.BufferGeometry | null>(null)
   const [floorTex, setFloorTex] = useState<THREE.Texture | null>(null)
   const [floorAffine, setFloorAffine] = useState<{a:number,b:number,c:number,d:number,e:number,f:number} | null>(null)
 
   useEffect(() => {
-    if (geos.solid) {
+    if (scrapGeo) {
       // @ts-ignore
-      geos.solid.computeBoundsTree?.();
+      scrapGeo.computeBoundsTree?.();
     }
-    if (geos.alt) {
-      // @ts-ignore
-      geos.alt.computeBoundsTree?.();
-    }
-  }, [geos]);
+    return () => {
+      if (scrapGeo) {
+        // @ts-ignore
+        if (scrapGeo.boundsTree) scrapGeo.disposeBoundsTree?.();
+        scrapGeo.dispose();
+      }
+    };
+  }, [scrapGeo]);
 
   useEffect(() => {
     let active = true
     let objectUrl: string | null = null
 
     if (!options.floorMapSvg && !options.floorMapTh2) { setFloorTex(null); return }
+    const stationsByName = createStationLabelMap(cave.stationLabels)
     
     if (options.floorMapSvg) {
       const isDataUrl = options.floorMapSvg.startsWith('data:image')
@@ -613,7 +618,7 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
         const svgStations = parseSVGStations(options.floorMapSvg)
         const matches: any[] = []
         svgStations.forEach(ss => {
-          const caveS = cave.stationLabels.find((l: StationLabel) => l.name === ss.name)
+          const caveS = stationsByName.get(ss.name)
           if (caveS) matches.push({ src: { x: caveS.pos.x, y: -caveS.pos.z }, dst: { x: ss.x, y: ss.y } })
         })
         if (matches.length >= 2) setFloorAffine(solveAffine(matches))
@@ -635,7 +640,7 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
         scraps.forEach(s => s.lines.forEach((l: any) => { ctx.beginPath(); l.points.forEach((p: any, i: number) => { if (i===0) ctx.moveTo(p.x*scale+ox, p.y*scale+oy); else ctx.lineTo(p.x*scale+ox, p.y*scale+oy) }); ctx.stroke() }))
         const tex = new THREE.CanvasTexture(canvas); setFloorTex(tex)
         const matches: any[] = []
-        scraps.forEach(s => s.points.forEach((p: any) => { const caveS = cave.stationLabels.find(l => l.name === p.name); if (caveS) matches.push({ src: { x: caveS.pos.x, y: -caveS.pos.z }, dst: { x: p.x, y: p.y } }) }))
+        scraps.forEach(s => s.points.forEach((p: any) => { const caveS = stationsByName.get(p.name); if (caveS) matches.push({ src: { x: caveS.pos.x, y: -caveS.pos.z }, dst: { x: p.x, y: p.y } }) }))
         if (matches.length >= 2) setFloorAffine(solveAffine(matches))
       }
     }
@@ -653,25 +658,26 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
   useEffect(() => {
     if (onProcessingStart) onProcessingStart('Generujem steny jaskyne...')
     
-    let currentSolid: THREE.BufferGeometry | null = null
-    let currentAlt: THREE.BufferGeometry | null = null
+    let currentGeo: THREE.BufferGeometry | null = null
 
     const timer = setTimeout(() => {
-      currentSolid = buildScrapsGeo(cave, false, smooth, options.organicLevel)
-      currentAlt = buildScrapsGeo(cave, true, smooth, options.organicLevel)
-      setGeos({ solid: currentSolid, alt: currentAlt })
+      currentGeo = buildScrapsGeo(cave, true, smooth, options.organicLevel)
+      setScrapGeo(currentGeo)
       if (onProcessingEnd) onProcessingEnd()
     }, 50)
 
     return () => {
       clearTimeout(timer)
-      if (currentSolid) currentSolid.dispose()
-      if (currentAlt) currentAlt.dispose()
+      if (currentGeo) {
+        // @ts-ignore
+        if (currentGeo.boundsTree) currentGeo.disposeBoundsTree?.();
+        currentGeo.dispose()
+      }
     }
-  }, [cave, smooth, options.organicLevel])
+  }, [cave, smooth, options.organicLevel, options.accurateScraps])
 
-  const solidGeo = geos.solid
-  const altGeo = geos.alt
+  const solidGeo = scrapGeo
+  const altGeo = scrapGeo
  
   const materialPreset = CAVE_MATERIAL_PRESETS[caveTexture] || CAVE_MATERIAL_PRESETS.limestone
   const reliefTex = useMemo(() => createCaveReliefTexture(), [])
@@ -714,8 +720,8 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
     return () => tex.dispose()
   }, [materialPreset.texturePath])
 
-  const handlePointerDown = (e: any) => {
-    if (!onSurfaceClick) return
+  const handleSurfacePick = (e: any) => {
+    if (!onSurfaceClick || e.delta > 5) return
     e.stopPropagation()
     const p = e.point
     if (!p) return
@@ -728,17 +734,16 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
     onSurfaceClick(realX, realY, realZ, e.clientX, e.clientY)
   }
 
-  const fullyIdle = isFullyIdle !== undefined ? isFullyIdle : !isMoving;
-  const effectiveOpacity = fullyIdle ? opacity : 1.0;
-  const effectiveTransparent = fullyIdle && opacity < 1.0;
-  const effectiveRenderOpacity = fullyIdle ? renderOpacity : 1.0;
-  const effectiveRenderTransparent = fullyIdle && renderOpacity < 1.0;
+  const effectiveOpacity = opacity;
+  const effectiveTransparent = opacity < 1.0;
+  const effectiveRenderOpacity = renderOpacity;
+  const effectiveRenderTransparent = renderOpacity < 1.0;
 
   return (
     <>
       {/* ── Tieňovaný solid mesh ── */}
       {showSolid && !showRender && solidGeo && (
-        <mesh geometry={solidGeo} renderOrder={5} onPointerDown={onSurfaceClick ? handlePointerDown : undefined}>
+        <mesh geometry={solidGeo} renderOrder={5} onClick={onSurfaceClick ? handleSurfacePick : undefined}>
           <meshStandardMaterial
             key={`solid-${scrapFilterKey}-${scrapVisualKey}`}
             color={options.colorScraps}
@@ -747,6 +752,7 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
             opacity={effectiveOpacity}
             roughness={materialPreset.roughness}
             metalness={materialPreset.metalness}
+            flatShading={options.accurateScraps || !smooth}
             bumpMap={reliefMap}
             bumpScale={reliefStrength * materialPreset.bumpScale * (smooth ? 0.46 : 0.78)}
             polygonOffset
@@ -760,7 +766,7 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
 
       {/* ── Realistický render mode s textúrou ── */}
       {showRender && solidGeo && (
-        <mesh geometry={solidGeo} renderOrder={4} onPointerDown={onSurfaceClick ? handlePointerDown : undefined}>
+        <mesh geometry={solidGeo} renderOrder={4} onClick={onSurfaceClick ? handleSurfacePick : undefined}>
           <meshStandardMaterial
             key={`render-${scrapFilterKey}-${scrapVisualKey}`}
             map={rockTex || null}
@@ -785,7 +791,7 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
 
       {/* ── Farebné podľa výšky ── */}
       {showAltitude && altGeo && (
-        <mesh geometry={altGeo} renderOrder={3} onPointerDown={onSurfaceClick ? handlePointerDown : undefined}>
+        <mesh geometry={altGeo} renderOrder={3} onClick={onSurfaceClick ? handleSurfacePick : undefined}>
           <meshStandardMaterial
             key={`altitude-${scrapFilterKey}-${scrapVisualKey}`}
             vertexColors
@@ -794,6 +800,7 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
             opacity={effectiveOpacity}
             roughness={materialPreset.roughness}
             metalness={materialPreset.metalness}
+            flatShading={options.accurateScraps || !smooth}
             bumpMap={reliefMap}
             bumpScale={reliefStrength * materialPreset.bumpScale * (smooth ? 0.38 : 0.68)}
             clippingPlanes={props.clippingPlanes}
@@ -804,7 +811,7 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
 
       {/* ── Pôdorysná Mapa (Projektovaná) ── */}
       {floorTex && floorAffine && solidGeo && (
-        <mesh geometry={solidGeo} renderOrder={6} onPointerDown={onSurfaceClick ? handlePointerDown : undefined}>
+        <mesh geometry={solidGeo} renderOrder={6} onClick={onSurfaceClick ? handleSurfacePick : undefined}>
           <meshBasicMaterial 
             map={floorTex} 
             transparent 
@@ -854,11 +861,11 @@ export const Scraps = React.memo(({ cave, opacity, showSolid, showWire, showAlti
         </mesh>
       )}
 
-      {/* ── Drôtený model ── */}
-      {showWire && solidGeo && (
+      {/* ── Drôtený model / Triangle mesh (Axonometria) ── */}
+      {(showWire || options.accurateScraps) && solidGeo && (
         <mesh geometry={solidGeo} renderOrder={10}>
-          <meshBasicMaterial color={options.colorScrapsWire} wireframe depthWrite={false} transparent={true}
-            opacity={showSolid || showAltitude ? 0.28 : 0.65} 
+          <meshBasicMaterial color={options.colorScrapsWire} wireframe depthWrite={!showSolid && !showAltitude} transparent={true}
+            opacity={showSolid || showAltitude ? 0.65 : 0.85} 
             clippingPlanes={props.clippingPlanes} />
         </mesh>
       )}

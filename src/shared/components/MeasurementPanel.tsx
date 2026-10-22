@@ -1,6 +1,9 @@
 import React, { useState, useRef } from 'react'
 import type { SelStation } from '../../App'
 import { calculateTectonics } from '@shared/utils/tectonics'
+import { measureDistance, measurePolygon } from '@shared/utils/stationInteraction'
+import { getTranslation } from '@shared/i18n'
+import './MeasurementPanel.css'
 
 export interface MeasurementPanelProps {
   mode: 'distance' | 'polygon'
@@ -8,6 +11,8 @@ export interface MeasurementPanelProps {
   onDeletePoint: (index: number) => void
   onClear: () => void
   onClose: () => void
+  onSwap?: () => void
+  onModeChange?: (mode: 'distance' | 'polygon') => void
   onSetProfile?: (stations: SelStation[]) => void
   lang?: 'sk' | 'en' | 'fr' | 'de'
   baseAltitude?: number
@@ -20,6 +25,8 @@ export const MeasurementPanel: React.FC<MeasurementPanelProps> = ({
   onDeletePoint,
   onClear,
   onClose,
+  onSwap,
+  onModeChange,
   onSetProfile,
   lang = 'sk',
   baseAltitude,
@@ -28,6 +35,16 @@ export const MeasurementPanel: React.FC<MeasurementPanelProps> = ({
   const [posOffset, setPosOffset] = useState({ x: 0, y: 0 })
   const dragRef = useRef<{ startX: number; startY: number; isDragging: boolean }>({ startX: 0, startY: 0, isDragging: false })
   const [copied, setCopied] = useState(false)
+  const [copyError, setCopyError] = useState<string | null>(null)
+  const t = (key: string) => getTranslation(lang, key)
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || document.querySelector('dialog[open]') || (e.target instanceof HTMLElement && e.target.closest('input, textarea, select, [contenteditable="true"]'))) return
+      if (e.key === 'Escape') { e.preventDefault(); onClose() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   const isRel = altitudeMode === 'relative'
   const base = baseAltitude ?? 0
@@ -59,21 +76,8 @@ export const MeasurementPanel: React.FC<MeasurementPanelProps> = ({
     if (stations.length < 2) return null
     const p1 = stations[0]
     const p2 = stations[1]
-    const dx = p2.origX - p1.origX
-    const dy = p2.origY - p1.origY
-    const dz = p2.altitude - p1.altitude
-    const dist3d = Math.sqrt(dx * dx + dy * dy + dz * dz)
-    const dist2d = Math.sqrt(dx * dx + dy * dy)
-    const slopeDeg = dist2d > 0.001 ? Math.atan2(dz, dist2d) * (180 / Math.PI) : (dz >= 0 ? 90 : -90)
-    let azimuthDeg = Math.atan2(dx, dy) * (180 / Math.PI)
-    if (azimuthDeg < 0) azimuthDeg += 360
-
     return {
-      dist3d,
-      dist2d,
-      dz,
-      slopeDeg,
-      azimuthDeg,
+      ...measureDistance(p1.pos, p2.pos),
       p1,
       p2
     }
@@ -86,30 +90,17 @@ export const MeasurementPanel: React.FC<MeasurementPanelProps> = ({
     const p2 = stations[1]
     const p3 = stations[2]
     const tectonics = calculateTectonics(
-      { x: p1.origX, y: p1.origY, z: p1.altitude },
-      { x: p2.origX, y: p2.origY, z: p2.altitude },
-      { x: p3.origX, y: p3.origY, z: p3.altitude },
+      p1.pos, p2.pos, p3.pos,
       lang
     )
 
-    // Polygon perimeter
-    let perimeter = 0
-    for (let i = 0; i < stations.length; i++) {
-      const curr = stations[i]
-      const next = stations[(i + 1) % stations.length]
-      const dx = next.origX - curr.origX
-      const dy = next.origY - curr.origY
-      const dz = next.altitude - curr.altitude
-      perimeter += Math.sqrt(dx * dx + dy * dy + dz * dz)
-    }
-
     return {
       tectonics,
-      perimeter
+      ...measurePolygon(stations.map(s => s.pos)),
     }
   }, [stations, lang])
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     let text = ''
     if (mode === 'distance' && distData) {
       text = [
@@ -126,7 +117,7 @@ export const MeasurementPanel: React.FC<MeasurementPanelProps> = ({
       const t = polyData.tectonics
       text = [
         `=== ${lang === 'sk' ? 'Meranie plochy a tektoniky' : 'Area & Tectonic Measurement'} ===`,
-        `Plocha: ${t.area.toFixed(2)} m²`,
+        `Plocha: ${polyData.area.toFixed(2)} m²`,
         `Obvod: ${polyData.perimeter.toFixed(2)} m`,
         `Sklon roviny (Dip): ${t.dipAngle.toFixed(1)}°`,
         `Smer sklonu (Dip direction): ${t.dipDirection.toFixed(1)}° (${t.cardinalDirection})`,
@@ -136,21 +127,29 @@ export const MeasurementPanel: React.FC<MeasurementPanelProps> = ({
       ].join('\n')
     }
     if (text) {
-      navigator.clipboard.writeText(text)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      try {
+        await navigator.clipboard.writeText(text)
+        setCopyError(null)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch (error) {
+        console.error('Measurement clipboard export failed', error)
+        setCopyError(error instanceof Error ? error.message : String(error))
+      }
     }
   }
 
   const isDistance = mode === 'distance'
 
   return (
-    <div style={{
+    <div className="measurement-panel" role="region" aria-label={t('navigation.measurement')} style={{
       position: 'fixed',
       top: 68 + posOffset.y,
       right: 20 - posOffset.x,
       zIndex: 250,
-      width: 320,
+      width: 'min(340px, calc(100vw - 24px))',
+      maxHeight: 'calc(100dvh - 96px)',
+      overflowY: 'auto',
       background: 'rgba(15, 23, 42, 0.95)',
       backdropFilter: 'blur(16px)',
       border: `1px solid ${isDistance ? 'rgba(99, 102, 241, 0.4)' : 'rgba(168, 85, 247, 0.4)'}`,
@@ -159,7 +158,6 @@ export const MeasurementPanel: React.FC<MeasurementPanelProps> = ({
       color: '#f8fafc',
       fontFamily: 'Inter, system-ui, sans-serif',
       fontSize: '12px',
-      overflow: 'hidden',
       userSelect: 'none'
     }}>
       {/* Header - Drag Handle */}
@@ -186,6 +184,8 @@ export const MeasurementPanel: React.FC<MeasurementPanelProps> = ({
           </span>
         </div>
         <button
+          type="button"
+          aria-label={t('toolbar.exitMeasurement')}
           onClick={onClose}
           style={{
             background: 'transparent',
@@ -205,9 +205,17 @@ export const MeasurementPanel: React.FC<MeasurementPanelProps> = ({
 
       {/* Content Area */}
       <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div className="measurement-actions">
+          {onModeChange && <>
+            <button type="button" aria-pressed={isDistance} onClick={() => onModeChange('distance')}>{t('navigation.distance')}</button>
+            <button type="button" aria-pressed={!isDistance} onClick={() => onModeChange('polygon')}>{t('navigation.area')}</button>
+          </>}
+        </div>
+        <p className="measurement-hint">{t('toolbar.pickHint')}</p>
+        {!isDistance && <p className="measurement-hint">{t('toolbar.polygonHint')}</p>}
         
         {/* Status Prompt */}
-        <div style={{
+        <div role="status" aria-live="polite" style={{
           padding: '7px 10px',
           borderRadius: '6px',
           background: 'rgba(30, 41, 59, 0.6)',
@@ -222,7 +230,7 @@ export const MeasurementPanel: React.FC<MeasurementPanelProps> = ({
             {isDistance ? (
               stations.length === 0 ? (lang === 'sk' ? '👉 Kliknite na 1. bod v 3D scéne' : '👉 Click 1st point in 3D scene')
               : stations.length === 1 ? (lang === 'sk' ? '👉 Kliknite na 2. bod v 3D scéne' : '👉 Click 2nd point in 3D scene')
-              : (lang === 'sk' ? '✓ Vzdialenosť nameraná' : '✓ Distance measured')
+              : t('toolbar.distanceComplete')
             ) : (
               stations.length < 3 
                 ? (lang === 'sk' ? `👉 Pridajte min. 3 body (${stations.length}/3)` : `👉 Add min. 3 points (${stations.length}/3)`)
@@ -278,7 +286,7 @@ export const MeasurementPanel: React.FC<MeasurementPanelProps> = ({
                       color: isDistance ? '#818cf8' : '#c084fc',
                       minWidth: '20px'
                     }}>
-                      P{idx + 1}
+                      {idx < 2 ? ['A', 'B'][idx] : idx + 1}
                     </span>
                     <span style={{ color: '#f1f5f9', fontWeight: 600 }}>
                       {st.name || `St_${st.idx}`}
@@ -356,7 +364,7 @@ export const MeasurementPanel: React.FC<MeasurementPanelProps> = ({
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
               <span style={{ color: '#94a3b8', fontSize: '11px' }}>{lang === 'sk' ? 'Plocha roviny' : 'Surface Area'}</span>
-              <span style={{ color: '#c084fc', fontWeight: 800, fontSize: '16px' }}>{polyData.tectonics.area.toFixed(2)} m²</span>
+              <span style={{ color: '#c084fc', fontWeight: 800, fontSize: '16px' }}>{polyData.area.toFixed(2)} m²</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: '#94a3b8', fontSize: '11px' }}>{lang === 'sk' ? 'Obvod polygónu' : 'Perimeter'}</span>
@@ -375,9 +383,15 @@ export const MeasurementPanel: React.FC<MeasurementPanelProps> = ({
           </div>
         )}
 
+        <div className="measurement-actions">
+          <button type="button" disabled={!stations.length} onClick={() => onDeletePoint(stations.length - 1)}>{t('toolbar.undo')}</button>
+          {isDistance && onSwap && <button type="button" disabled={stations.length !== 2} onClick={onSwap}>{t('toolbar.swap')}</button>}
+        </div>
+        {copyError && <p role="alert">{copyError}</p>}
         {/* Footer Actions */}
         <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
           <button
+            aria-label={t('toolbar.newMeasurement')}
             onClick={onClear}
             style={{
               flex: 1,
@@ -397,7 +411,7 @@ export const MeasurementPanel: React.FC<MeasurementPanelProps> = ({
             title={lang === 'sk' ? 'Vyčistiť body a začať nové meranie' : 'Clear points and start new measurement'}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>restart_alt</span>
-            {lang === 'sk' ? 'Reštartovať' : 'Reset'}
+            {t('toolbar.newMeasurement')}
           </button>
 
           {(distData || polyData) && (

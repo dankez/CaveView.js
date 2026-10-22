@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react'
 import { useThree, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import gsap from 'gsap'
-import type { ParsedCave } from '@shared/types'
+import type { ParsedCave, ViewPreset } from '@shared/types'
 
 export interface ProjectionControllerProps {
   projection: 'perspective' | 'orthographic'
@@ -17,18 +17,18 @@ export function calculateFitParams(
   bounds: ParsedCave['bounds'],
   size: { width: number; height: number },
   fovDeg: number = 55,
-  viewType: 'top' | 'front' | 'side' | 'iso' | 'current' = 'iso'
+  viewType: ViewPreset | 'fit' | 'reset' | 'current' = 'iso'
 ) {
   const sx = bounds.size.x || 1
   const sy = bounds.size.y || 1
   const sz = bounds.size.z || 1
   
   let radius = Math.sqrt(sx * sx + sy * sy + sz * sz) / 2
-  if (viewType === 'top') {
+  if (viewType === 'top' || viewType === 'bottom') {
     radius = Math.sqrt(sx * sx + sy * sy) / 2
-  } else if (viewType === 'front') {
+  } else if (viewType === 'front' || viewType === 'back') {
     radius = Math.sqrt(sx * sx + sz * sz) / 2
-  } else if (viewType === 'side') {
+  } else if (viewType === 'side' || viewType === 'east') {
     radius = Math.sqrt(sy * sy + sz * sz) / 2
   }
   radius = Math.max(radius, 0.5)
@@ -54,13 +54,14 @@ export function calculateFitParams(
  * and handles view preset events ('cave-set-view' for Plan, Profile, Section, and Isometric).
  */
 export function ProjectionController({ projection, cave, controlsRef }: ProjectionControllerProps) {
-  const { camera, set, size, controls: contextControls, invalidate } = useThree() as any
-  const modeRef = useRef<'perspective' | 'orthographic'>(projection)
+  const { camera, set, get, size, controls: contextControls, invalidate } = useThree() as any
+  const viewTween = useRef<gsap.core.Tween | null>(null)
+
+  useEffect(() => () => { viewTween.current?.kill() }, [])
 
   // Switch between Perspective and Orthographic camera
   useEffect(() => {
-    if (modeRef.current === projection) return
-    modeRef.current = projection
+    if ((projection === 'orthographic') === (camera instanceof THREE.OrthographicCamera)) return
 
     const currentControls = controlsRef?.current || contextControls
     const target = currentControls?.target
@@ -107,7 +108,7 @@ export function ProjectionController({ projection, cave, controlsRef }: Projecti
       }
     }
     invalidate()
-  }, [projection, cave, set, size, contextControls, controlsRef, invalidate])
+  }, [projection, camera, cave, set, size, contextControls, controlsRef, invalidate])
 
   // Keep orthographic frustum in sync with window resize / distance changes without continuous loop
   useFrame(() => {
@@ -147,12 +148,24 @@ export function ProjectionController({ projection, cave, controlsRef }: Projecti
           endPos.set(target.x, target.y + fitDist, target.z)
           endUp.set(0, 0, -1)
           break
+        case 'bottom': // Pohľad zdola (North stays screen UP, image is mirrored E-W)
+          endPos.set(target.x, target.y - fitDist, target.z)
+          endUp.set(0, 0, -1)
+          break
         case 'front': // Pozdĺžny profil (South -> North)
           endPos.set(target.x, target.y, target.z + fitDist)
           endUp.set(0, 1, 0)
           break
         case 'side': // Priečny profil (West -> East)
           endPos.set(target.x - fitDist, target.y, target.z)
+          endUp.set(0, 1, 0)
+          break
+        case 'east': // Pohľad z východu (East -> West)
+          endPos.set(target.x + fitDist, target.y, target.z)
+          endUp.set(0, 1, 0)
+          break
+        case 'back': // Pohľad zo severu (North -> South)
+          endPos.set(target.x, target.y, target.z - fitDist)
           endUp.set(0, 1, 0)
           break
         case 'fit': // Zoom to fit keeping current camera angle
@@ -181,34 +194,33 @@ export function ProjectionController({ projection, cave, controlsRef }: Projecti
       }
 
       gsap.killTweensOf(camera.position)
-      gsap.to(camera.position, {
+      viewTween.current?.kill()
+      const position = camera.position.clone()
+      // A projection switch can replace the camera while this preset is animating.
+      const applyPosition = () => {
+        const state = get()
+        const activeCamera = state.camera
+        activeCamera.position.copy(position)
+        activeCamera.up.copy(endUp)
+        activeCamera.lookAt(target)
+        const activeControls = controlsRef?.current || state.controls
+        activeControls?.update()
+        invalidate()
+      }
+      viewTween.current = gsap.to(position, {
         x: endPos.x,
         y: endPos.y,
         z: endPos.z,
         duration: 0.65,
         ease: 'power2.out',
-        onUpdate: () => {
-          camera.up.copy(endUp)
-          camera.lookAt(target)
-          if (currentControls) {
-            currentControls.update()
-          }
-          invalidate()
-        },
-        onComplete: () => {
-          camera.up.copy(endUp)
-          camera.lookAt(target)
-          if (currentControls) {
-            currentControls.update()
-          }
-          invalidate()
-        }
+        onUpdate: applyPosition,
+        onComplete: applyPosition
       })
     }
 
     window.addEventListener('cave-set-view', handleSetView)
     return () => window.removeEventListener('cave-set-view', handleSetView)
-  }, [cave, camera, contextControls, controlsRef, size, invalidate])
+  }, [cave, camera, get, contextControls, controlsRef, size, invalidate])
 
   return null
 }

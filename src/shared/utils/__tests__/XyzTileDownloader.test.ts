@@ -29,6 +29,7 @@ describe('XyzTileDownloader', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
@@ -113,6 +114,35 @@ describe('XyzTileDownloader', () => {
 
     expect(result.successfulTiles).toBe(result.totalTiles);
     expect(fetchMock.mock.calls.some(([url]) => String(url).startsWith('/bad/'))).toBe(true);
+    expect(fetchMock.mock.calls.some(([url]) => String(url).startsWith('/ok/'))).toBe(true);
+  });
+
+  it('aborts a timed-out tile candidate and continues to its fallback', async () => {
+    const abortedSignals: AbortSignal[] = [];
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.startsWith('/slow/')) {
+        const signal = init?.signal as AbortSignal;
+        abortedSignals.push(signal);
+        return new Promise((_resolve, reject) => {
+          signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+        });
+      }
+      return Promise.resolve(imageResponse());
+    });
+
+    const download = downloadTiledXyz(
+      ['/slow/{z}/{x}/{y}.jpg', '/ok/{z}/{x}/{y}.jpg'],
+      '-500100,-1200100,-500000,-1200000',
+      'image/jpeg',
+      undefined,
+      15,
+      { cache: null, requestTimeoutMs: 10 }
+    );
+    const result = await download;
+
+    expect(result.successfulTiles).toBe(result.totalTiles);
+    expect(abortedSignals.length).toBeGreaterThan(0);
+    expect(abortedSignals.every(signal => signal.aborted)).toBe(true);
     expect(fetchMock.mock.calls.some(([url]) => String(url).startsWith('/ok/'))).toBe(true);
   });
 

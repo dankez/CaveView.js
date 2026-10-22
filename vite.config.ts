@@ -30,7 +30,6 @@ export default defineConfig({
     dedupe: ['three'],
   },
   optimizeDeps: {
-    include: ['three-geo'],
     esbuildOptions: {
       define: {
         global: 'globalThis',
@@ -52,7 +51,10 @@ export default defineConfig({
           if (normalized.includes('/node_modules/three/') || normalized.includes('/node_modules/three-mesh-bvh/')) {
             return 'vendor-three';
           }
-          if (normalized.includes('/node_modules/geotiff/') || normalized.includes('/node_modules/proj4/') || normalized.includes('/node_modules/three-geo/')) {
+          if (normalized.includes('/node_modules/three-geo/')) {
+            return 'vendor-mapbox-terrain';
+          }
+          if (normalized.includes('/node_modules/geotiff/') || normalized.includes('/node_modules/proj4/')) {
             return 'vendor-geo';
           }
           if (normalized.includes('/node_modules/gsap/')) {
