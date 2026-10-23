@@ -8,6 +8,8 @@ import { ViewerToolbar } from '../ViewerToolbar'
 
 afterEach(cleanup)
 
+const startProfilePick = vi.fn()
+
 function setup(gps = false) {
   const cave = parsePlt('M 0 0 0\nD 10 10 10 station')
   cave.hasSurface = true
@@ -27,6 +29,7 @@ function setup(gps = false) {
       setActiveViewPreset, activeViewPreset,
       handleExportScreenshot: vi.fn(), toggleFullscreen: vi.fn(), measurementMode: 'off', cycleMeasurementMode: vi.fn(),
       textureFileInputRef: useRef<HTMLInputElement>(null), calibFileInputRef: useRef<HTMLInputElement>(null),
+      profilePicking: false, startProfilePick, setProfileClipping: vi.fn(),
     }} />
   }
   render(<Harness />)
@@ -65,5 +68,22 @@ describe('viewer quick actions', () => {
     window.removeEventListener('cave-set-view', onView)
     expect(views).toEqual(['top', 'bottom', 'top', 'front', 'east', 'back', 'side', 'front'])
     expect(screen.getByRole('button', { name: /^Plan view$/ })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('reveals the matching sidebar control and starts the section tool', () => {
+    setup()
+    const reveals: unknown[] = []
+    const listen = (e: Event) => reveals.push((e as CustomEvent).detail)
+    window.addEventListener('cv-nav-reveal', listen)
+    fireEvent.click(screen.getByRole('button', { name: 'Walls' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Measurement:/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Vertical section (2 points)' }))
+    window.removeEventListener('cv-nav-reveal', listen)
+    expect(reveals).toEqual([
+      { category: 'layers', target: 'walls' },
+      { category: 'analysis', target: 'measurement' },
+      { category: 'analysis', target: 'profile' },
+    ])
+    expect(startProfilePick).toHaveBeenCalledOnce()
   })
 })

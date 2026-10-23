@@ -2,13 +2,15 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NavigationSidebar } from '../NavigationSidebar'
 import { SidebarAccordion } from '../SidebarAccordion'
+import { revealInSidebar } from '../reveal'
+import { act } from 'react'
 
 let mobile = false
 const sections = {
   project: <button>Import</button>,
   view: <button>Fit</button>,
   layers: <SidebarAccordion heading={<h3>Walls</h3>} detailsLabel="Details"><input aria-label="Opacity" defaultValue="75" /></SidebarAccordion>,
-  analysis: <button>Measure</button>,
+  analysis: <button data-nav-target="measurement">Measure</button>,
   system: <button data-close-navigation>Help</button>,
 }
 
@@ -24,6 +26,18 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('NavigationSidebar', () => {
+  it('reveals a toolbar target in its category without rendering the scene sibling', () => {
+    const renderScene = vi.fn()
+    function Scene() { renderScene(); return <canvas /> }
+    render(<><Scene /><NavigationSidebar lang="en" sections={sections} /></>)
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse to icons' }))
+    act(() => revealInSidebar('analysis', 'measurement'))
+    const target = screen.getByRole('button', { name: 'Measure' })
+    expect(target).toBeVisible()
+    expect(target).toHaveClass('nav-reveal')
+    expect(renderScene).toHaveBeenCalledOnce()
+  })
+
   it('keeps category, accordion and collapse changes local without rendering the scene sibling', () => {
     const renderScene = vi.fn()
     function Scene() { renderScene(); return <canvas data-testid="scene" /> }

@@ -5,11 +5,11 @@ import { SidebarAccordion } from './SidebarAccordion';
 
 import { calculateTectonics } from '@shared/utils/tectonics';
 
-export function AnalysisSection({ bindings }: { bindings: Pick<NavigationBindings, 't' | 'opts' | 'toggleOpt' | 'setOpts' | 'cave' | 'activeProfilePoints' | 'lang' | 'measurementMode' | 'cycleMeasurementMode' | 'selectedStations' | 'setSelectedStations' | 'isPlyLidar' | 'isLiDARAnalyzing' | 'cancelLiDARAnalysis' | 'runLiDARAnalysis' | 'isLidarMapGenerating' | 'cancelLidarPlanMap' | 'generateLidarPlanMap' | 'anomalies' | 'setActiveAnomalyId' | 'activeAnomalyId' | 'selectedSegmentProfile'> }) {
-  const { t, opts, toggleOpt, setOpts, cave, activeProfilePoints, lang, measurementMode, cycleMeasurementMode, selectedStations, setSelectedStations, isPlyLidar, isLiDARAnalyzing, cancelLiDARAnalysis, runLiDARAnalysis, isLidarMapGenerating, cancelLidarPlanMap, generateLidarPlanMap, anomalies, setActiveAnomalyId, activeAnomalyId, selectedSegmentProfile } = bindings
+export function AnalysisSection({ bindings }: { bindings: Pick<NavigationBindings, 't' | 'opts' | 'toggleOpt' | 'setOpts' | 'cave' | 'activeProfilePoints' | 'profilePicking' | 'startProfilePick' | 'setProfileClipping' | 'lang' | 'measurementMode' | 'cycleMeasurementMode' | 'selectedStations' | 'setSelectedStations' | 'isPlyLidar' | 'isLiDARAnalyzing' | 'cancelLiDARAnalysis' | 'runLiDARAnalysis' | 'isLidarMapGenerating' | 'cancelLidarPlanMap' | 'generateLidarPlanMap' | 'anomalies' | 'setActiveAnomalyId' | 'activeAnomalyId' | 'selectedSegmentProfile'> }) {
+  const { t, opts, toggleOpt, setOpts, cave, activeProfilePoints, profilePicking, startProfilePick, setProfileClipping, lang, measurementMode, cycleMeasurementMode, selectedStations, setSelectedStations, isPlyLidar, isLiDARAnalyzing, cancelLiDARAnalysis, runLiDARAnalysis, isLidarMapGenerating, cancelLidarPlanMap, generateLidarPlanMap, anomalies, setActiveAnomalyId, activeAnomalyId, selectedSegmentProfile } = bindings
   return <>
-<button type="button" className="btn-back" onClick={cycleMeasurementMode} aria-pressed={measurementMode !== 'off'}>{t('navigation.measurement')}: {measurementMode === 'off' ? t('navigation.off') : measurementMode === 'distance' ? t('navigation.distance') : t('navigation.area')}</button>
-      <SidebarAccordion heading={<div className="cad-card-header">
+<button type="button" className="btn-back" data-nav-target="measurement" onClick={cycleMeasurementMode} aria-pressed={measurementMode !== 'off'}>{t('navigation.measurement')}: {measurementMode === 'off' ? t('navigation.off') : measurementMode === 'distance' ? t('navigation.distance') : t('navigation.area')}</button>
+      <SidebarAccordion navTarget="clipping" heading={<div className="cad-card-header">
                     <div className="cad-card-title">
                       <span className="material-symbols-outlined" aria-hidden="true">content_cut</span>
                       <span>{t('clipping.title')}</span>
@@ -25,29 +25,19 @@ export function AnalysisSection({ bindings }: { bindings: Pick<NavigationBinding
 <div className="toggle-row" style={{ marginBottom: opts.showProfileClipping ? '8px' : '0' }}>
                     <span className="cad-control-label">{t('clipping.vert')}</span>
                     <button type="button" className={`switch${opts.showProfileClipping ? ' on' : ''}`}
-                      onClick={() => toggleOpt('showProfileClipping')} role="switch"
+                      onClick={() => setProfileClipping(!opts.showProfileClipping)} role="switch" data-nav-target="profile"
                       aria-checked={opts.showProfileClipping} aria-label={t('clipping.vert')}
                     />
-                  </div></>}>
-
-                  {opts.showClipping && (
-                    <div className="cad-subcard" style={{ marginBottom: '10px' }}>
-                      <div className="cad-control-row">
-                        <span>{t('clipping.height')}</span>
-                        <span className="cad-control-value">{opts.clippingHeight.toFixed(1)} m</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <button onClick={() => setOpts(p => ({ ...p, clippingHeight: p.clippingHeight - 1 }))}
-                          className="cad-tool-btn" style={{ width: '26px', height: '26px', padding: 0 }}>-</button>
-                        <input type="range" className="cad-slider flex-1"
-                          min={(cave.bounds.min.z + (cave.centerOffset?.z || 0)) - 10} max={(cave.bounds.max.z + (cave.centerOffset?.z || 0)) + 10}
-                          step={0.1} value={opts.clippingHeight} onChange={(e) => setOpts(p => ({ ...p, clippingHeight: parseFloat(e.target.value) }))} />
-                        <button onClick={() => setOpts(p => ({ ...p, clippingHeight: p.clippingHeight + 1 }))}
-                          className="cad-tool-btn" style={{ width: '26px', height: '26px', padding: 0 }}>+</button>
-                      </div>
+                  </div>
+                  {opts.showProfileClipping && (
+                    <div className="cad-subcard" role="status" style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '10px', color: 'var(--cv-text-muted)' }}>
+                      {profilePicking && <span>{t('clipping.pickHint')}</span>}
+                      <button type="button" className="cad-tool-btn" onClick={startProfilePick} aria-pressed={profilePicking} style={{ width: '100%' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }} aria-hidden="true">timeline</span>
+                        <span>{t('clipping.create')}</span>
+                      </button>
                     </div>
                   )}
-
                   {opts.showProfileClipping && activeProfilePoints && (
                     <div className="cad-subcard" style={{ marginTop: '8px', marginBottom: '8px' }}>
                       <div className="cad-control-row">
@@ -73,7 +63,26 @@ export function AnalysisSection({ bindings }: { bindings: Pick<NavigationBinding
                         <span>{t('clipping.flip')}</span>
                       </button>
                     </div>
+                  )}</>}>
+
+                  {opts.showClipping && (
+                    <div className="cad-subcard" style={{ marginBottom: '10px' }}>
+                      <div className="cad-control-row">
+                        <span>{t('clipping.height')}</span>
+                        <span className="cad-control-value">{opts.clippingHeight.toFixed(1)} m</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button onClick={() => setOpts(p => ({ ...p, clippingHeight: p.clippingHeight - 1 }))}
+                          className="cad-tool-btn" style={{ width: '26px', height: '26px', padding: 0 }}>-</button>
+                        <input type="range" className="cad-slider flex-1"
+                          min={(cave.bounds.min.z + (cave.centerOffset?.z || 0)) - 10} max={(cave.bounds.max.z + (cave.centerOffset?.z || 0)) + 10}
+                          step={0.1} value={opts.clippingHeight} onChange={(e) => setOpts(p => ({ ...p, clippingHeight: parseFloat(e.target.value) }))} />
+                        <button onClick={() => setOpts(p => ({ ...p, clippingHeight: p.clippingHeight + 1 }))}
+                          className="cad-tool-btn" style={{ width: '26px', height: '26px', padding: 0 }}>+</button>
+                      </div>
+                    </div>
                   )}
+
 
                   {(opts.showClipping || opts.showProfileClipping) && (
                     <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--cv-border)' }}>

@@ -320,5 +320,11 @@ Implemented in **v2.4.27** to guarantee sub-16ms latency, rock-solid 60 FPS inte
 - An `App.tsx` effect keeps `document.documentElement.lang` synchronized with the selected `lang` state for assistive technologies.
 - `index.html` defines the application title, description, Open Graph metadata, and local SVG favicon.
 
+## 15. Direct Vertical Section and Toolbar → Sidebar Reveal (v2.5.1)
+
+- `App.tsx` keeps `profilePicking`. `startProfilePick()` enables `showProfileClipping`, clears `activeProfilePoints` and reuses `measurementMode = 'distance'` (same snapping and A/B overlay). An effect promotes the first two `selectedStations` to `activeProfilePoints`, then leaves measurement mode. `setProfileClipping(on)` re-enables an existing line or starts picking when none exists. The clip plane stays $\mathbf{n} = \widehat{(p_2 - p_1) \times \hat{y}}$, $d = -\mathbf{n}\cdot p_1 - \text{offset}$ in both engines.
+- `NavigationSidebar/reveal.ts` dispatches `window` event `cv-nav-reveal` with `{ category, target }`. `ViewerToolbar` tools pass `reveal={[category, target]}`; `NavigationSidebar` switches its local category, expands on desktop (mobile drawer stays closed), and flashes `[data-nav-target]` (closest `.toggle-row`) with `.nav-reveal`. `SidebarAccordion` exposes `navTarget`.
+- Only `.nav-panel-content` is scrolled (`scrollBy`), never `scrollIntoView`: scrolling ancestors resized the R3F canvas and the v2 refit moved the orbit target during view tweens.
+
 ---
 *LochViewer Developer Team — Documentation is automatically maintained with every codebase change.*

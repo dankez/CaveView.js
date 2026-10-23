@@ -335,5 +335,11 @@ Vo verzii **v2.4.27** bola zrealizovaná komplexná výkonnostná stabilizácia 
 - Efekt v `App.tsx` synchronizuje stav `lang` s `document.documentElement.lang`, aby ho správne oznamovali asistenčné technológie.
 - `index.html` poskytuje názov, popis, Open Graph metadáta a lokálny SVG favicon.
 
+## 15. Priamy vertikálny rez a odhalenie v bočnom paneli z lišty (v2.5.1)
+
+- `App.tsx` drží `profilePicking`. `startProfilePick()` zapne `showProfileClipping`, vymaže `activeProfilePoints` a využije `measurementMode = 'distance'` (rovnaký snap aj A/B overlay). Efekt prevezme prvé dva `selectedStations` do `activeProfilePoints` a ukončí meranie. `setProfileClipping(on)` obnoví existujúcu líniu alebo spustí výber, ak žiadna nie je. Rovina rezu ostáva $\mathbf{n} = \widehat{(p_2 - p_1) \times \hat{y}}$, $d = -\mathbf{n}\cdot p_1 - \text{offset}$ v oboch enginoch.
+- `NavigationSidebar/reveal.ts` posiela udalosť `cv-nav-reveal` s `{ category, target }`. Nástroje `ViewerToolbar` majú `reveal={[kategória, cieľ]}`; `NavigationSidebar` lokálne prepne kategóriu, na desktope sa rozbalí (mobilný drawer ostáva zatvorený) a zvýrazní `[data-nav-target]` (najbližší `.toggle-row`) triedou `.nav-reveal`. `SidebarAccordion` má prop `navTarget`.
+- Posúva sa iba `.nav-panel-content` (`scrollBy`), nie `scrollIntoView`: posun nadradených kontajnerov menil veľkosť R3F plátna a refit v2 posúval cieľ kamery počas animácie pohľadu.
+
 ---
 *LochViewer Developer Team — Dokumentácia je automaticky udržiavaná a synchronizovaná pri každej zmene kódu.*

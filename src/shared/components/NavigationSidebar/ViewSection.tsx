@@ -6,7 +6,7 @@ import { SidebarAccordion } from './SidebarAccordion';
 export function ViewSection({ bindings }: { bindings: Pick<NavigationBindings, 't' | 'setOpts' | 'opts' | 'setActiveViewPreset' | 'activeViewPreset' | 'setFitTrigger' | 'lang' | 'toggleOpt'> }) {
   const { t, setOpts, opts, setActiveViewPreset, activeViewPreset, setFitTrigger, lang, toggleOpt } = bindings
   return <>
-<section className="cad-card"><div className="cad-card-header">
+<section className="cad-card" data-nav-target="views"><div className="cad-card-header">
                         <div className="cad-card-title">
                           <span className="material-symbols-outlined" aria-hidden="true">videocam</span>
                           {t('projection.title')}
@@ -80,7 +80,7 @@ export function ViewSection({ bindings }: { bindings: Pick<NavigationBindings, '
 </section>
       <button type="button" className="btn-back" onClick={() => { setFitTrigger(p => p + 1); window.dispatchEvent(new CustomEvent('cave-set-view', { detail: { view: 'fit' } })) }}>{t('navigation.fit')}</button>
       <button type="button" className="btn-back" onClick={() => setOpts(p => ({ ...p, altitudeMode: p.altitudeMode === 'relative' ? 'absolute' : 'relative' }))}>{t('navigation.altitude')}: {opts.altitudeMode === 'relative' ? 'REL' : 'ASL'}</button>
-      <SidebarAccordion heading={<h3>{t('navigation.rotation')}</h3>} detailsLabel={t('navigation.details')}>
+      <SidebarAccordion navTarget="rotation" heading={<h3>{t('navigation.rotation')}</h3>} detailsLabel={t('navigation.details')}>
         <div className="toggle-row">
                         <label className="toggle-label">{lang === 'sk' ? 'Auto-rotácia' : 'Auto-rotate'}</label>
                         <button type="button" className={`switch${opts.autoRotate ? ' on' : ''}`}

@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { getTranslation, type Language } from '@shared/i18n';
 import './NavigationSidebar.css'
+import { NAV_REVEAL_EVENT, type NavRevealDetail } from './reveal'
 
 const categories = [
   { id: 'project', icon: 'folder_open' },
@@ -32,6 +33,43 @@ export function NavigationSidebar({
   const id = useId()
   const visible = mobile ? mobileOpen : !collapsed
   const t = (key: string) => getTranslation(lang, `navigation.${key}`)
+  const pendingReveal = useRef<string | null>(null)
+  const [revealTick, setRevealTick] = useState(0)
+
+  useEffect(() => {
+    const onReveal = (event: Event) => {
+      const { category, target } = (event as CustomEvent<NavRevealDetail>).detail
+      setActiveCategory(category)
+      if (!mobile) setCollapsed(false)
+      pendingReveal.current = target ?? null
+      setRevealTick(n => n + 1)
+    }
+    window.addEventListener(NAV_REVEAL_EVENT, onReveal)
+    return () => window.removeEventListener(NAV_REVEAL_EVENT, onReveal)
+  }, [mobile])
+
+  useEffect(() => {
+    const target = pendingReveal.current
+    pendingReveal.current = null
+    if (!target) return
+    const node = rootRef.current?.querySelector<HTMLElement>(`[data-nav-target="${target}"]`)
+    const box = node?.closest<HTMLElement>('.toggle-row') ?? node
+    if (!box || box.closest('[hidden]')) return
+    // Scroll only the panel: scrollIntoView would also scroll ancestors and resize the 3D canvas.
+    const panel = box.closest<HTMLElement>('.nav-panel-content')
+    if (panel) {
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      const area = panel.getBoundingClientRect()
+      const rect = box.getBoundingClientRect()
+      const delta = rect.top < area.top ? rect.top - area.top - 8 : rect.bottom > area.bottom ? rect.bottom - area.bottom + 8 : 0
+      if (delta) panel.scrollBy({ top: delta, behavior: reduced ? 'auto' : 'smooth' })
+    }
+    box.classList.remove('nav-reveal')
+    void box.offsetWidth
+    box.classList.add('nav-reveal')
+    const timer = window.setTimeout(() => box.classList.remove('nav-reveal'), 1400)
+    return () => window.clearTimeout(timer)
+  }, [revealTick])
 
   useEffect(() => {
     const media = window.matchMedia(mobileQuery)

@@ -12,7 +12,7 @@ export function LayersSection({ bindings }: { bindings: NavigationBindings }) {
   // LOX: legacy accurateScraps (e.g. from shared URL) renders the same wire overlay.
   const wireOn = opts.scrapsWireframe || (!isPlyLidar && opts.accurateScraps)
   return <>
-<SidebarAccordion heading={<div className="cad-card-header">
+<SidebarAccordion navTarget="survey" heading={<div className="cad-card-header">
                     <div className="cad-card-title">
                       <span className="material-symbols-outlined" aria-hidden="true">polyline</span>
                       <span>{t('survey.title')}</span>
@@ -21,7 +21,7 @@ export function LayersSection({ bindings }: { bindings: NavigationBindings }) {
                   <div className="toggle-row">
                     <span className="toggle-label">{t('toolbar.centerline')}</span>
                     <button type="button" className={`switch${opts.showCenterline !== false ? ' on' : ''}`} role="switch"
-                      aria-checked={opts.showCenterline !== false} aria-label={t('toolbar.centerline')}
+                      aria-checked={opts.showCenterline !== false} aria-label={t('toolbar.centerline')} data-nav-target="centerline"
                       onClick={() => setOpts(p => ({ ...p, showCenterline: p.showCenterline === false }))} />
                   </div>
                   {splayCount > 0 && (<div className="toggle-row">
@@ -31,7 +31,7 @@ export function LayersSection({ bindings }: { bindings: NavigationBindings }) {
 
                     </label>
                     <button type="button" className={`switch${opts.showSplay ? ' on' : ''}`}
-                      onClick={() => toggleOpt('showSplay')} role="switch"
+                      onClick={() => toggleOpt('showSplay')} role="switch" data-nav-target="splays"
                       aria-checked={opts.showSplay} aria-label={t('survey.splay')} />
                   </div>)}
 <div className="toggle-row">
@@ -185,7 +185,7 @@ export function LayersSection({ bindings }: { bindings: NavigationBindings }) {
 
 </SidebarAccordion>
                 )}{(cave.scrapCount > 0 || isPlyLidar) && (
-                  <SidebarAccordion heading={<div className="cad-card-header">
+                  <SidebarAccordion navTarget="walls" heading={<div className="cad-card-header">
                       <div className="cad-card-title">
                         <div className="dot" style={{ background: opts.colorScraps }} />
                         <span>{isPlyLidar ? 'LiDAR' : t('cave.title')}</span>
@@ -627,7 +627,7 @@ export function LayersSection({ bindings }: { bindings: NavigationBindings }) {
                     )}
 
 </SidebarAccordion>
-                )}<SidebarAccordion heading={<div className="cad-card-header">
+                )}<SidebarAccordion navTarget="stations" heading={<div className="cad-card-header">
                         <div className="cad-card-title">
                           <span className="material-symbols-outlined" aria-hidden="true">radio_button_checked</span>
                           {t('stations.title')}

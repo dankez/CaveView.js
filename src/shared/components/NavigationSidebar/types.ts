@@ -54,6 +54,9 @@ export interface NavigationBindings {
   handleTiffFile: (tifFile: File, tfwFile?: File) => Promise<void>
   tfwFileInputRef: React.RefObject<HTMLInputElement>
   activeProfilePoints: SelStation[] | null
+  profilePicking: boolean
+  startProfilePick: () => void
+  setProfileClipping: (on: boolean) => void
   measurementMode: "off" | "distance" | "polygon"
   cycleMeasurementMode: () => void
   selectedStations: SelStation[]

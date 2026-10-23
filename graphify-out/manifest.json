@@ -56,8 +56,8 @@
     "hash": "e54fc599f48e365e708597ed9cdc2ae2"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/App.tsx": {
-    "mtime": 1792693689.7721386,
-    "hash": "bb6afbca70ce3e2efa94fbbbbc325be2"
+    "mtime": 1792696675.2085648,
+    "hash": "e28bf13672a0a972c6f5407099f25e17"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/main.tsx": {
     "mtime": 1776409952.8888268,
@@ -116,24 +116,24 @@
     "hash": "2738192d873926416ef65845370f4713"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/i18n/de.ts": {
-    "mtime": 1792693682.8931987,
-    "hash": "94db534350a4ea03e3b98f4477ec5012"
+    "mtime": 1792696931.057009,
+    "hash": "6f2f44373a0e5c0315998aa242c18cb8"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/i18n/sk.ts": {
-    "mtime": 1792693682.8811986,
-    "hash": "aea6923f3fa5c96f33775925fdc3d66f"
+    "mtime": 1792696931.056009,
+    "hash": "0e017db30f08af29ec7a4f9da1103beb"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/i18n/fr.ts": {
-    "mtime": 1792693682.8931987,
-    "hash": "28f33daaa25b362508e91151e06c2c75"
+    "mtime": 1792696931.057009,
+    "hash": "333a65efc2b4ead2cba2b67e50720600"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/i18n/index.ts": {
     "mtime": 1787233713.8885746,
     "hash": "fe8379cea7f18f48709bbcc7aacac98e"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/i18n/en.ts": {
-    "mtime": 1792693682.8871987,
-    "hash": "e387d7cb4a251fed24053bb1643723a0"
+    "mtime": 1792696931.056009,
+    "hash": "d55b4877e0216ca8527b60ff5eb09ab0"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/types/index.ts": {
     "mtime": 1792693682.845199,
@@ -252,8 +252,8 @@
     "hash": "359f0bc3c26e9e8afcd929bfc50d469f"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/ViewerToolbar.tsx": {
-    "mtime": 1792693682.8811986,
-    "hash": "4e6cb80deda061dba22df9bf54b1d6bf"
+    "mtime": 1792697456.8960876,
+    "hash": "7335e623dded68775f8cd1ac1d796343"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/CalibrationModal.tsx": {
     "mtime": 1787233721.3385189,
@@ -288,8 +288,8 @@
     "hash": "5fd5dace73caae442ecf72063180f029"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/HelpModal.tsx": {
-    "mtime": 1792695844.730679,
-    "hash": "7cb2094d769165420e975389d658098a"
+    "mtime": 1792697768.053798,
+    "hash": "3ee2eec890773afc33076a1536e184af"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/MeasurementPanel.tsx": {
     "mtime": 1792690399.533192,
@@ -300,52 +300,56 @@
     "hash": "0d4c8f7718432a60c70b38f55d6d9579"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/__tests__/ViewerToolbar.test.tsx": {
-    "mtime": 1792693730.328782,
-    "hash": "2404e84b12f113a85dc5b9deb150fab3"
+    "mtime": 1792696953.13571,
+    "hash": "e03918a4723fa6df43fc6be4c75f6679"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/NavigationSidebar/NavigationSidebar.tsx": {
-    "mtime": 1792686838.0387897,
-    "hash": "7be379c203d0899396f6275d1f00a54a"
+    "mtime": 1792697456.930087,
+    "hash": "4f4d2d62b9bb1aaebb5fedc39bfa47e1"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/NavigationSidebar/controls.tsx": {
     "mtime": 1792686683.9039755,
     "hash": "8e28e48b3d77746169b99aac5f49b75d"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/NavigationSidebar/AnalysisSection.tsx": {
-    "mtime": 1792686684.3739722,
-    "hash": "bf17de4dbf0855bfa068b90d8221e20c"
+    "mtime": 1792696931.0320094,
+    "hash": "c012dd1dc70169469edf16635c20cf7c"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/NavigationSidebar/SidebarAccordion.tsx": {
-    "mtime": 1792686683.7929764,
-    "hash": "89ba1ccd25adea6534c084602ae6a936"
+    "mtime": 1792696930.99001,
+    "hash": "611e18ebf0f3bb5f44208a2a61c525db"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/NavigationSidebar/ProjectSection.tsx": {
     "mtime": 1792686683.845976,
     "hash": "62a80a7539dc4e38dbebd3abde9d5322"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/NavigationSidebar/types.ts": {
-    "mtime": 1792693709.0109699,
-    "hash": "bc659d4d402105cc9d9bce4b05147480"
+    "mtime": 1792696675.2285645,
+    "hash": "f9eb25ec0b6e4b570d06853a51f18249"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/NavigationSidebar/SurfaceSection.tsx": {
-    "mtime": 1792686683.975975,
-    "hash": "4707ff020423c4383dd2b8c3eccbd456"
+    "mtime": 1792696931.0240095,
+    "hash": "76fac9dbb99abe6cbd8d9abeb44bcbd3"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/NavigationSidebar/LayersSection.tsx": {
-    "mtime": 1792695800.4346542,
-    "hash": "a83f3ad7fb9fb39e832b057a82e28a03"
+    "mtime": 1792696931.0060098,
+    "hash": "891e5a1a47b084da7c91cf4f89958695"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/NavigationSidebar/ViewSection.tsx": {
-    "mtime": 1792686683.864976,
-    "hash": "c8a6840ec4420d3b4d6186fbf9a2d17b"
+    "mtime": 1792696931.0300095,
+    "hash": "ec813bf75459ec45febdc979da809657"
+  },
+  "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/NavigationSidebar/reveal.ts": {
+    "mtime": 1792696930.9430106,
+    "hash": "34240f32afd82d3b3ed298764aac7d88"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/NavigationSidebar/SystemSection.tsx": {
     "mtime": 1792686838.04279,
     "hash": "14c254416b81096fbea5aac2e4ad2731"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/NavigationSidebar/__tests__/NavigationSidebar.test.tsx": {
-    "mtime": 1792686863.630588,
-    "hash": "df4d690db50a9a3db8e7c0d2ff8c18f6"
+    "mtime": 1792697456.930087,
+    "hash": "5b11a48b9d374775b9f61b5ba147b578"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/core/constants.ts": {
     "mtime": 1787233713.8885746,
@@ -1112,8 +1116,8 @@
     "hash": "5e7173424ef1b31ce71756f9dc5d1a07"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/e2e/station-measurement.spec.ts": {
-    "mtime": 1792695855.2604525,
-    "hash": "db1d5130abeee2eb156703add39cd431"
+    "mtime": 1792697008.6739619,
+    "hash": "a074fd45f0e4d9004660550982573a95"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/e2e/welcome-mobile.spec.ts": {
     "mtime": 1787233721.326519,
@@ -1152,8 +1156,8 @@
     "hash": "c1870c04c463048a48a5e9923c4381b5"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/CHANGELOG.md": {
-    "mtime": 1792695844.732679,
-    "hash": "63b2a3d478df17f4b35a2b209af23d74"
+    "mtime": 1792697768.0557978,
+    "hash": "b84070d5e66bb62f59e4f0220a8585ed"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/agents.md": {
     "mtime": 1777201521.1427379,

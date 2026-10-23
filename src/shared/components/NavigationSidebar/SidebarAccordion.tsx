@@ -6,19 +6,21 @@ export function SidebarAccordion({
   children,
   primary,
   enabled = true,
+  navTarget,
 }: {
   heading: ReactNode
   detailsLabel: string
   children: ReactNode
   primary?: ReactNode
   enabled?: boolean
+  navTarget?: string
 }) {
   const [expanded, setExpanded] = useState(false)
   const id = useId()
   const open = enabled && expanded
 
   return (
-    <section className="cad-card nav-accordion">
+    <section className="cad-card nav-accordion" data-nav-target={navTarget}>
       <div id={`${id}-heading`} className="nav-accordion-heading">{heading}</div>
       {primary}
       {enabled && (

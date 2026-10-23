@@ -1,5 +1,6 @@
 export const de = {
   toolbar: {
+    profile: "Vertikalschnitt (2 Punkte)",
     title: "Schnellwerkzeuge", reload: "Originalmodell neu laden", orthographic: "Orthografische / perspektivische Projektion",
     plan: "Grundriss", elevation: "Aufriss", fixed: "Festpunkte", stations: "Alle Stationen",
     view_top: "von oben", view_bottom: "von unten", view_front: "von Süden", view_east: "von Osten", view_back: "von Norden", view_side: "von Westen",
@@ -107,6 +108,7 @@ export const de = {
     flip: "Umdrehen",
     clear: "Schnitt löschen",
     setFromSelection: "Aus Auswahl festlegen",
+    pickHint: "Klicken Sie 2 Punkte im Modell für die Schnittlinie.",
   },
   terrain: {
     title: "Gelände (Oberfläche)",

@@ -1,5 +1,6 @@
 export const sk = {
   toolbar: {
+    profile: "Vertikálny rez (2 body)",
     title: "Rýchle nástroje", reload: "Znovu načítať pôvodný model", orthographic: "Ortogonálne / perspektívne zobrazenie",
     plan: "Pôdorys", elevation: "Nárys", fixed: "Pevné stanice", stations: "Všetky stanice",
     view_top: "zhora", view_bottom: "zdola", view_front: "z juhu", view_east: "z východu", view_back: "zo severu", view_side: "zo západu",
@@ -107,6 +108,7 @@ export const sk = {
     flip: "Otočiť",
     clear: "Zrušiť rez",
     setFromSelection: "Nastaviť rez z výberu",
+    pickHint: "Klikni v modeli na 2 body – línia rezu.",
   },
   terrain: {
     title: "Terén (povrch)",

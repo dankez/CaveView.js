@@ -51,3 +51,15 @@
   .nav-panel { flex: 1; min-width: 0; width: auto; background: var(--cv-surface-card); }
   .nav-panel-content { padding: 8px; }
 }
+
+.nav-reveal {
+  animation: nav-reveal-flash 1.4s ease-out;
+  border-radius: 6px;
+}
+@keyframes nav-reveal-flash {
+  0%, 35% { box-shadow: 0 0 0 2px var(--cv-primary); background-color: color-mix(in srgb, var(--cv-primary) 18%, transparent); }
+  100% { box-shadow: 0 0 0 2px transparent; background-color: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-reveal { animation: none; box-shadow: 0 0 0 2px var(--cv-primary); }
+}

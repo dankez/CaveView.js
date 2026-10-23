@@ -1,5 +1,6 @@
 export const en = {
   toolbar: {
+    profile: "Vertical section (2 points)",
     title: "Quick tools", reload: "Reload original model", orthographic: "Orthographic / perspective projection",
     plan: "Plan view", elevation: "Elevation view", fixed: "Fixed stations", stations: "All stations",
     view_top: "from above", view_bottom: "from below", view_front: "from south", view_east: "from east", view_back: "from north", view_side: "from west",
@@ -107,6 +108,7 @@ export const en = {
     flip: "Flip",
     clear: "Clear section",
     setFromSelection: "Set from selection",
+    pickHint: "Click 2 points in the model to draw the section line.",
   },
   terrain: {
     title: "Terrain (Surface)",

@@ -1,23 +1,26 @@
 import { memo, useRef } from 'react'
 import {
   FolderOpen, RotateCw, Camera, Orbit, Box, Map, PanelTop, Scan, DoorOpen,
-  MapPin, CircleDot, Tags, Waypoints, Mountain, Layers, ImagePlus, Maximize, Ruler, Radio,
+  MapPin, CircleDot, Tags, Waypoints, Mountain, Layers, ImagePlus, Maximize, Ruler, Radio, Scissors,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { NavigationBindings } from './NavigationSidebar/types'
 import type { ViewPreset } from '@shared/types'
+import { revealInSidebar, type NavCategory } from './NavigationSidebar/reveal'
 import './ViewerToolbar.css'
 
 type Bindings = Pick<NavigationBindings,
   't' | 'cave' | 'opts' | 'setOpts' | 'toggleOpt' | 'setActiveViewPreset' |
   'activeViewPreset' | 'handleExportScreenshot' | 'toggleFullscreen' |
-  'measurementMode' | 'cycleMeasurementMode' | 'textureFileInputRef' | 'calibFileInputRef'>
+  'measurementMode' | 'cycleMeasurementMode' | 'textureFileInputRef' | 'calibFileInputRef' |
+  'profilePicking' | 'startProfilePick' | 'setProfileClipping'>
 
-function Tool({ label, icon: Icon, action, active, disabled, badge }: {
+function Tool({ label, icon: Icon, action, active, disabled, badge, reveal }: {
   label: string; icon: LucideIcon; action: () => void; active?: boolean; disabled?: boolean; badge?: string
+  reveal?: [NavCategory, string]
 }) {
   return <button type="button" title={label} aria-label={label} aria-pressed={active}
-    disabled={disabled} onClick={action} className="viewer-tool">
+    disabled={disabled} onClick={() => { action(); if (reveal) revealInSidebar(...reveal) }} className="viewer-tool">
     <Icon size={18} strokeWidth={1.7} aria-hidden="true" />
     {badge && <span className="viewer-tool-badge" aria-hidden="true">{badge}</span>}
   </button>
@@ -88,36 +91,38 @@ export const ViewerToolbar = memo(function ViewerToolbar({ bindings: b, onOpen, 
       <Tool icon={Camera} label={t('navigation.screenshot')} action={b.handleExportScreenshot} />
     </div>
     <div className="viewer-tool-group">
-      <Tool icon={Orbit} label={t('navigation.rotation')} active={opts.autoRotate} action={() => toggleOpt('autoRotate')} />
+      <Tool icon={Orbit} label={t('navigation.rotation')} active={opts.autoRotate} action={() => toggleOpt('autoRotate')} reveal={['view', 'rotation']} />
       <Tool icon={Box} label={t('toolbar.orthographic')} active={opts.cameraProjection === 'orthographic'}
-        action={() => setOpts(p => ({ ...p, cameraProjection: p.cameraProjection === 'orthographic' ? 'perspective' : 'orthographic' }))} />
-      <Tool icon={Map} label={viewLabel(t('toolbar.plan'), isPlan)} active={isPlan} action={() => preset(nextIn(planCycle))} />
-      <Tool icon={PanelTop} label={viewLabel(t('toolbar.elevation'), isElevation)} active={isElevation} action={() => preset(nextIn(elevationCycle))} />
+        action={() => setOpts(p => ({ ...p, cameraProjection: p.cameraProjection === 'orthographic' ? 'perspective' : 'orthographic' }))} reveal={['view', 'views']} />
+      <Tool icon={Map} label={viewLabel(t('toolbar.plan'), isPlan)} active={isPlan} action={() => preset(nextIn(planCycle))} reveal={['view', 'views']} />
+      <Tool icon={PanelTop} label={viewLabel(t('toolbar.elevation'), isElevation)} active={isElevation} action={() => preset(nextIn(elevationCycle))} reveal={['view', 'views']} />
       <Tool icon={Scan} label={t('navigation.fit')} action={() => preset('fit')} />
     </div>
     <div className="viewer-tool-group">
       <Tool icon={DoorOpen} label={t('stations.entrances')} active={opts.showEntrances}
-        disabled={!cave.stationLabels.some(s => s.isEntrance)} action={() => toggleOpt('showEntrances')} />
+        disabled={!cave.stationLabels.some(s => s.isEntrance)} action={() => toggleOpt('showEntrances')} reveal={['layers', 'stations']} />
       <Tool icon={MapPin} label={t('toolbar.fixed')} active={opts.showFixedStations ?? false}
-        disabled={!cave.stationLabels.some(s => s.isFixed)} action={() => toggleOpt('showFixedStations')} />
+        disabled={!cave.stationLabels.some(s => s.isFixed)} action={() => toggleOpt('showFixedStations')} reveal={['layers', 'stations']} />
       <Tool icon={CircleDot} label={t('toolbar.stations')} active={opts.showStations}
-        disabled={!cave.stationLabels.some(s => s.name)} action={() => toggleOpt('showStations')} />
+        disabled={!cave.stationLabels.some(s => s.name)} action={() => toggleOpt('showStations')} reveal={['layers', 'stations']} />
       <Tool icon={Tags} label={`${t('toolbar.labels')}: ${t(`toolbar.${labelMode}`)}`} active={labelMode !== 'off'}
-        disabled={!cave.stationLabels.some(s => s.name)} action={cycleLabels}
+        disabled={!cave.stationLabels.some(s => s.name)} action={cycleLabels} reveal={['layers', 'stations']}
         badge={labelMode === 'off' ? undefined : ({ short: '1', full: '@', altitude: 'Z', gps: 'G' }[labelMode])} />
     </div>
     <div className="viewer-tool-group">
-      <Tool icon={Waypoints} label={t('toolbar.centerline')} active={opts.showCenterline !== false} disabled={!cave.segments.some(s => s.type === 'cave')} action={() => setOpts(p => ({ ...p, showCenterline: p.showCenterline === false }))} />
-      <Tool icon={Radio} label={t('toolbar.splays')} active={opts.showSplay} disabled={!cave.segments.some(s => s.type === 'splay')} action={() => toggleOpt('showSplay')} />
-      <Tool icon={Layers} label={t('toolbar.walls')} active={wallsActive} action={toggleWalls} />
+      <Tool icon={Waypoints} label={t('toolbar.centerline')} active={opts.showCenterline !== false} disabled={!cave.segments.some(s => s.type === 'cave')} action={() => setOpts(p => ({ ...p, showCenterline: p.showCenterline === false }))} reveal={['layers', 'centerline']} />
+      <Tool icon={Radio} label={t('toolbar.splays')} active={opts.showSplay} disabled={!cave.segments.some(s => s.type === 'splay')} action={() => toggleOpt('showSplay')} reveal={['layers', 'splays']} />
+      <Tool icon={Layers} label={t('toolbar.walls')} active={wallsActive} action={toggleWalls} reveal={['layers', 'walls']} />
       <Tool icon={Mountain} label={t('navigation.surface')} active={surfaceActive} disabled={!cave.hasSurface && opts.engine !== 'v2'}
-        action={toggleSurface} />
+        action={toggleSurface} reveal={['layers', 'surface']} />
       <Tool icon={ImagePlus} label={t('toolbar.image')} disabled={!cave.hasSurface}
-        action={() => surfaceMenu.current?.showModal()} />
+        action={() => surfaceMenu.current?.showModal()} reveal={['layers', 'surface']} />
     </div>
     <div className="viewer-tool-group">
       <Tool icon={Ruler} label={`${t('navigation.measurement')}: ${t(`navigation.${b.measurementMode === 'polygon' ? 'area' : b.measurementMode}`)}`}
-        active={b.measurementMode !== 'off'} action={b.cycleMeasurementMode} />
+        active={b.measurementMode !== 'off' && !b.profilePicking} action={b.cycleMeasurementMode} reveal={['analysis', 'measurement']} />
+      <Tool icon={Scissors} label={t('toolbar.profile')} active={opts.showProfileClipping}
+        action={() => opts.showProfileClipping ? b.setProfileClipping(false) : b.startProfilePick()} reveal={['analysis', 'profile']} />
       <Tool icon={Maximize} label={t('navigation.fullscreen')} action={b.toggleFullscreen} />
     </div>
     <dialog ref={surfaceMenu} className="viewer-surface-menu" aria-label={t('toolbar.image')} onClick={e => {

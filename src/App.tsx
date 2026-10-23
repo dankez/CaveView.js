@@ -856,6 +856,23 @@ export default function App() {
   const [selectedStations, setSelectedStations] = useState<SelStation[]>([])
   const [measurementMode, setMeasurementMode] = useState<'off' | 'distance' | 'polygon'>('off')
   const isMeasuringMode = measurementMode !== 'off'
+  const [profilePicking, setProfilePicking] = useState(false)
+  const startProfilePick = useCallback(() => {
+    setOpts(prev => ({ ...prev, autoRotate: false, showProfileClipping: true, profileClipOffset: 0 }))
+    setActiveProfilePoints(null)
+    setSelectedStations([])
+    setMeasurementMode('distance')
+    setProfilePicking(true)
+  }, [])
+  const setProfileClipping = useCallback((on: boolean) => {
+    if (!on) {
+      setProfilePicking(false)
+      setOpts(prev => ({ ...prev, showProfileClipping: false }))
+      return
+    }
+    if (activeProfilePoints?.length === 2) setOpts(prev => ({ ...prev, showProfileClipping: true }))
+    else startProfilePick()
+  }, [activeProfilePoints, startProfilePick])
 
   const cycleMeasurementMode = () => {
     setOpts(prev => ({ ...prev, autoRotate: false }))
@@ -1904,6 +1921,17 @@ export default function App() {
       setShowStationCard(true)
     }
   }, [cave, isMeasuringMode, measurementMode, opts.caveCalibrationOffset, opts.surfaceOffset]);
+
+  useEffect(() => {
+    if (!profilePicking) return
+    if (measurementMode !== 'distance') { setProfilePicking(false); return }
+    if (selectedStations.length !== 2) return
+    setActiveProfilePoints([...selectedStations])
+    setOpts(p => ({ ...p, showProfileClipping: true, profileClipOffset: 0 }))
+    setProfilePicking(false)
+    setMeasurementMode('off')
+    setSelectedStations([])
+  }, [profilePicking, measurementMode, selectedStations])
 
   useEffect(() => {
     if (!cave || selectedStations.length !== 2) {
@@ -3025,6 +3053,9 @@ export default function App() {
     handleTiffFile,
     tfwFileInputRef,
     activeProfilePoints,
+    profilePicking,
+    startProfilePick,
+    setProfileClipping,
     measurementMode,
     cycleMeasurementMode,
     selectedStations,

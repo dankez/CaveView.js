@@ -1,5 +1,6 @@
 export const fr = {
   toolbar: {
+    profile: "Coupe verticale (2 points)",
     title: "Outils rapides", reload: "Recharger le modèle original", orthographic: "Projection orthographique / perspective",
     plan: "Vue en plan", elevation: "Vue en élévation", fixed: "Stations fixes", stations: "Toutes les stations",
     view_top: "par le dessus", view_bottom: "par le dessous", view_front: "depuis le sud", view_east: "depuis l’est", view_back: "depuis le nord", view_side: "depuis l’ouest",
@@ -107,6 +108,7 @@ export const fr = {
     flip: "Inverser",
     clear: "Effacer la coupe",
     setFromSelection: "Définir à partir de la sélection",
+    pickHint: "Cliquez 2 points du modèle pour tracer la ligne de coupe.",
   },
   terrain: {
     title: "Terrain (Surface)",

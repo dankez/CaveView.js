@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.5.1] - 2026-10-22
+### Priamy vertikálny rez a prepojenie lišty s bočným panelom / Direct vertical section and toolbar → sidebar reveal
+- Prepínač „Vertikálny profil (línia)“ aj nová ikona nožníc v hornej lište spustia výber 2 bodov v modeli a hneď odrežú model; posun a otočenie sú viditeľné bez rozbaľovania. / The Vertical Profile switch and new toolbar scissors pick 2 model points and cut immediately; offset and flip are visible without expanding details.
+- Rýchle ikony prepnú bočný panel na príslušnú kategóriu a zvýraznia nastavenie (Meranie → Nástroje & analýza). / Quick actions reveal and highlight the matching sidebar control (Measurement → Tools & analysis).
+- Posun panelu nemení veľkosť 3D plátna (odstránená nestabilita animácie pohľadov v2). / Sidebar scrolling no longer resizes the 3D canvas (fixed v2 view-tween drift).
+
 ## [2.5.0] - 2026-10-22
 ### LochViewer 2.5 — nová navigácia, meranie a čistejší bočný panel / new navigation, measurement and leaner sidebar
 - Súhrn 2.4.x: zjednotený bočný panel (Súbor, Pohľad, Vrstvy, Nástroje, Nastavenia), rýchla horná lišta v štýle LOCH, cyklické pohľady, profesionálne meranie a karty bodov (GPS, výška, hĺbka pod DTM), optimalizácie výkonu, lazy-loading a prístupnosť. / 2.4.x summary: unified sidebar, LOCH-style quick toolbar, cycling views, professional measurement and point cards, performance, lazy-loading and accessibility.

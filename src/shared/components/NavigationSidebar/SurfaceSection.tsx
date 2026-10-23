@@ -10,7 +10,7 @@ export function SurfaceSection({ bindings }: { bindings: Pick<NavigationBindings
   return <>
 <section className="nav-surface-group" aria-label={t('navigation.surface')}>
   <h3>{t('navigation.surface')}</h3>
-      <SidebarAccordion heading={<div className="cad-card-header">
+      <SidebarAccordion navTarget="surface" heading={<div className="cad-card-header">
                         <div className="cad-card-title">
                           <span className="material-symbols-outlined" aria-hidden="true">landscape</span>
                           <span>{t('terrain.title')}</span>
