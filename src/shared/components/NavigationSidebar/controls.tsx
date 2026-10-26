@@ -140,7 +140,7 @@ export function TextureDownloadInspectorPanel({
   )
 }
 
-export const ColorPicker = ({ value, onChange, label, t }: { value: string, onChange: (c: string) => void, label?: string, t: (k: string) => string }) => {
+export const ColorPicker = ({ value, onChange, label, t, style }: { value: string, onChange: (c: string) => void, label?: string, t: (k: string) => string, style?: React.CSSProperties }) => {
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -162,7 +162,7 @@ export const ColorPicker = ({ value, onChange, label, t }: { value: string, onCh
         setIsOpen(false)
         triggerRef.current?.focus()
       }
-    }} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', marginLeft: 8 }}>
+    }} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', marginLeft: 8, ...style }}>
       <button type="button" ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
         title={label || t('ui.changeColor')}

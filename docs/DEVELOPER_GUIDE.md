@@ -1,6 +1,18 @@
-# 🛠️ LochViewer - Developer & Mathematical Specification (v2.5.8)
+# 🛠️ LochViewer - Developer & Mathematical Specification (v2.5.9)
 
 *Comprehensive technical architecture, mathematical formulations, shader models, and Web Worker data flows for developers and contributors.*
+
+### UI Architecture: Unified Single-Row Contours & Bottom Texture Placement (v2.5.9)
+
+1. **Unified Single-Row Contour Controls (`SurfaceSection.tsx`)**:
+   - **Compact Inline Layout**: The `Contours (10m)` item in `primary` integrates the label, a ColorPicker for base contours (`opts.contourColor`, default green `#00ff00`), a ColorPicker for major index contours (`opts.contourColor10`, default red `#ff0000`), and the toggle switch (`opts.showContours`).
+   - **Deduplication**: Redundant rows labeled `t('terrain.contours')` were removed from `details`, leaving only the dedicated contour elevation label toggle (`opts.showContourLabels`).
+   - **Texture Placement**: `Texture (JPG/PNG)` (`terrain.texture`) and its projection sub-options are positioned as the terminating items in both primary toggles and details.
+
+2. **`ColorPicker` Style Extension (`controls.tsx`)**:
+   - Added optional `style?: React.CSSProperties` typing with default `marginLeft: 8`, allowing inline consumers to override margins (e.g. `style={{ marginLeft: 2 }}`) for dense inline swatches.
+
+---
 
 ### UI Architecture: Dedicated Surface Tab, CAD Styling & Section Documentation Registry (v2.5.8)
 

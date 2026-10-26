@@ -1,4 +1,4 @@
-# 📖 LochViewer - Kompletná používateľská príručka (v2.4.34)
+# 📖 LochViewer - Kompletná používateľská príručka (v2.5.9)
 
 *Webová 3D platforma pre vizualizáciu, speleologické meranie a analýzu jaskynných systémov a LiDAR dát.*  
 *Dizajnový systém: Stitch CAD Precision Glassmorphism & Fieldwork High-Contrast (vrátane jemného pieskového gradientu vo svetlom režime).*  
@@ -231,6 +231,9 @@ Jaskyňa neexistuje vo vákuu – pochopenie jej vzťahu k povrchovému reliéfu
    * Súradnice stredu sa automaticky načítajú z vchodu s GPS, ľubovoľnej stanice s GPS alebo súradnicového rámca jaskyne (s možnosťou manuálneho zadania súradníc).
    * Používateľ si môže zvoliť rýchle predvoľby ($500\ \text{m}$, $1\ \text{km}$, $2\ \text{km}$) alebo nastaviť vlastný rozsah výseku s jemným krokovaním po $500\ \text{m}$ (tlačidlá $\pm 500\ \text{m}$, posuvník $500 - 5000\ \text{m}$ alebo priamy číselný vstup až do $10\ \text{km}$).
    * Vygenerovaný 3D povrch sa ihneď zobrazí v scéne a v bočnom paneli pribudne možnosť **Uložiť .tif + .tfw do PC** pre použitie v GIS nástrojoch (QGIS, Therion).
+8. **Zjednotené ovládanie vrstevníc a textúra na konci nastavení (v2.5.9)**:
+   * Ovládací riadok **Vrstevnice (10m)** zlučuje výber farby pre základné tenké línie, výber farby pre hlavné hrubé línie a prepínač zapnutia do jedného kompaktného riadku. Duplicitné farebné riadky v detailoch boli odstránené.
+   * Položka **Textúra (JPG/PNG)** je v primárnom zozname terénu aj v podrobnostiach umiestnená na poslednej pozícii za všetkými geometrickými vrstvami povrchu.
 
 ---
 

@@ -59,16 +59,38 @@ export function SurfaceSection({ bindings }: { bindings: Pick<NavigationBindings
                               aria-checked={opts.showSurfaceNetwork} aria-label={t('terrain.network')} />
                           </div>
 <div className="toggle-row">
-                            <label className="toggle-label">
+                            <div className="toggle-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <div className="dot" style={{ background: opts.contourColor, border: '1px solid #4a7c3f' }} />
-                              {t('terrain.contours')} ({contourLevels.major}m)
-                              <div style={{ display: 'flex', gap: '4px' }}>
-
+                              <span>{t('terrain.contours')}</span>
+                              <span style={{ fontSize: '9px', color: 'var(--cv-text-muted)', fontFamily: 'var(--cv-font-mono)' }}>
+                                ({contourLevels.major}m)
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }} title={`${t('terrain.contourBase')} (${lang === 'sk' ? 'tenké čiary' : 'thin lines'})`}>
+                                <span style={{ fontSize: '9px', color: 'var(--cv-text-muted)' }}>{lang === 'sk' ? 'Tenké' : 'Thin'}</span>
+                                <ColorPicker
+                                  t={t}
+                                  style={{ marginLeft: 2 }}
+                                  label={`${t('terrain.contourBase')} (${lang === 'sk' ? 'tenké' : 'thin'})`}
+                                  value={opts.contourColor}
+                                  onChange={(c) => setOpts(p => ({ ...p, contourColor: c }))}
+                                />
                               </div>
-                            </label>
-                            <button type="button" className={`switch${opts.showContours ? ' on' : ''}`}
-                              onClick={() => toggleOpt('showContours')} role="switch"
-                              aria-checked={opts.showContours} aria-label={t('terrain.contours')} />
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }} title={`${t('terrain.contourMajor')} (${lang === 'sk' ? 'hrubé čiary' : 'thick lines'})`}>
+                                <span style={{ fontSize: '9px', color: 'var(--cv-text-muted)' }}>{lang === 'sk' ? 'Hrubé' : 'Thick'}</span>
+                                <ColorPicker
+                                  t={t}
+                                  style={{ marginLeft: 2 }}
+                                  label={`${t('terrain.contourMajor')} (${lang === 'sk' ? 'hrubé' : 'thick'})`}
+                                  value={opts.contourColor10}
+                                  onChange={(c) => setOpts(p => ({ ...p, contourColor10: c }))}
+                                />
+                              </div>
+                              <button type="button" className={`switch${opts.showContours ? ' on' : ''}`}
+                                onClick={() => toggleOpt('showContours')} role="switch"
+                                aria-checked={opts.showContours} aria-label={t('terrain.contours')} />
+                            </div>
                           </div>
 <div className="toggle-row" style={{ borderBottom: opts.showSurfaceTexture ? 'none' : '1px solid var(--cv-border)' }}>
                             <label className="toggle-label">
@@ -122,13 +144,9 @@ export function SurfaceSection({ bindings }: { bindings: Pick<NavigationBindings
                                 aria-checked={opts.showSurfaceTexture} aria-label={t('terrain.texture')} />
                             </div>
                           </div></> : null}>
-{opts.showContours && <div className="toggle-row"><span>{t('terrain.contours')}</span><ColorPicker t={t} label={t('terrain.contourMajor')} value={opts.contourColor10} onChange={(c) => setOpts(p => ({ ...p, contourColor10: c }))} /></div>}
-
-{opts.showContours && <div className="toggle-row"><span>{t('terrain.contours')}</span><ColorPicker t={t} label={t('terrain.contourBase')} value={opts.contourColor} onChange={(c) => setOpts(p => ({ ...p, contourColor: c }))} /></div>}
+{opts.showSurfaceMesh && <div className="toggle-row"><span>{t('terrain.shaded')}</span><ColorPicker t={t} value={opts.surfaceColor} onChange={(c) => setOpts(p => ({ ...p, surfaceColor: c }))} /></div>}
 
 {opts.showSurfaceMeshWire && <div className="toggle-row"><span>{t('terrain.wire')}</span><ColorPicker t={t} value={opts.colorTerrainWire} onChange={(c) => setOpts(p => ({ ...p, colorTerrainWire: c }))} /></div>}
-
-{opts.showSurfaceMesh && <div className="toggle-row"><span>{t('terrain.shaded')}</span><ColorPicker t={t} value={opts.surfaceColor} onChange={(c) => setOpts(p => ({ ...p, surfaceColor: c }))} /></div>}
 
                       {cave.hasSurface ? (
                         <>

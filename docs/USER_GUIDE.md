@@ -1,4 +1,4 @@
-# 📖 LochViewer - Complete User Guide (v2.4.34)
+# 📖 LochViewer - Complete User Guide (v2.5.9)
 
 *Web-based 3D platform for speleological visualization, survey measurement, and spatial analysis of cave systems & LiDAR point clouds.*  
 *Design System: Stitch CAD Precision Glassmorphism & Fieldwork High-Contrast (including gentle sand vertical gradient in light mode).*  
@@ -204,6 +204,7 @@ For massive LiDAR scans (`.ply` format), LochViewer automatically activates **En
 * **Surface Opacity for Shaded & Network Models (v2.4.28)**: Dedicated *Surface opacity* slider (5% – 100%) in the *Terrain* tab directly controls translucency for both *Shaded model* and *Network model (heights)* without requiring bitmap textures.
 * **Balanced Contour Altitude Labels (v2.4.28)**: *Show altitudes* detects dual-axis edge crossings on a finer grid combined with spatial distance filtering, ensuring thick index contour lines display at least one legible elevation label in any active camera view.
 * **DMR 5.0 WCS Elevation Download (v2.5.7)**: When a cave lacks an embedded surface in its `.lox` file, users can directly download the official Slovak DMR 5.0 digital terrain model (1-meter LiDAR grid) from the national INSPIRE OGC WCS 2.0.1 service (`inspirews.skgeodesy.sk`). Coordinates are auto-detected from entrance GPS or stations with quick presets ($500\ \text{m}$, $1\ \text{km}$, $2\ \text{km}$) or custom extents in $500\ \text{m}$ increments ($\pm 500\ \text{m}$ buttons, $500 - 5000\ \text{m}$ slider, or direct numeric input up to $10\ \text{km}$) and one-click export of georeferenced `.tif` and `.tfw` files.
+* **Unified Single-Row Contours & Bottom Texture Placement (v2.5.9)**: The **Contours (10m)** control integrates color swatches for base lines, major lines, and the on/off toggle into a single row, clearing duplicate color rows from the details panel. **Texture (JPG/PNG)** is positioned as the final item in the terrain controls after all geometric surface modes.
 
 ---
 

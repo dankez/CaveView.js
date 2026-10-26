@@ -308,8 +308,8 @@
     "hash": "5fd5dace73caae442ecf72063180f029"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/HelpModal.tsx": {
-    "mtime": 1793031563.8366857,
-    "hash": "156d2b22a173e15a5bb179e98b20994c"
+    "mtime": 1793034712.2639995,
+    "hash": "1b29db41d36d6740f960f904d1b9c02e"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/MeasurementPanel.tsx": {
     "mtime": 1792690399.533192,
@@ -328,8 +328,8 @@
     "hash": "9c5f07736a5cc27c62288c2ed7511006"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/NavigationSidebar/controls.tsx": {
-    "mtime": 1792686683.9039755,
-    "hash": "8e28e48b3d77746169b99aac5f49b75d"
+    "mtime": 1793034572.4679482,
+    "hash": "145ba2d783ff5a0243d4598f049fec51"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/NavigationSidebar/AnalysisSection.tsx": {
     "mtime": 1793031119.5832033,
@@ -348,8 +348,8 @@
     "hash": "111b6b433ff4903c4f76a68a1a29fa8c"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/NavigationSidebar/SurfaceSection.tsx": {
-    "mtime": 1793031079.1546211,
-    "hash": "aa36ee0b4a1df45eabcb79055c55ed2c"
+    "mtime": 1793034605.4104807,
+    "hash": "9b6c8839f7cef5c7f05617fc16992e5c"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/NavigationSidebar/LayersSection.tsx": {
     "mtime": 1793030887.6386225,
@@ -1196,8 +1196,8 @@
     "hash": "c1870c04c463048a48a5e9923c4381b5"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/CHANGELOG.md": {
-    "mtime": 1793031690.010442,
-    "hash": "78afb298f50e169526e6515bcc4607f5"
+    "mtime": 1793034702.543132,
+    "hash": "083aa751abe9ab94eeb0c5c1966f40ee"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/agents.md": {
     "mtime": 1777201521.1427379,

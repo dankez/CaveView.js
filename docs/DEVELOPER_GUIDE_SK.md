@@ -1,6 +1,18 @@
-# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.5.8)
+# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.5.9)
 
 *Kompletná technická špecifikácia, matematický aparát, architektúra a flow diagramy pre vývojárov.*
+
+### Architektúra rozhrania: Zjednotený riadok vrstevníc a umiestnenie textúry (v2.5.9)
+
+1. **Unifikovaný jednoriadkový riadiaci blok vrstevníc (`SurfaceSection.tsx`)**:
+   - **Kompaktná štruktúra**: Riadok `Vrstevnice (10m)` v poli `primary` združuje označenie, ColorPicker pre základné vrstevnice (`opts.contourColor`, štandardne zelená `#00ff00`), ColorPicker pre hlavné vrstevnice (`opts.contourColor10`, štandardne červená `#ff0000`) a prepínač zapnutia/vypnutia (`opts.showContours`).
+   - **Odstránenie duplicitných riadkov**: Z poľa `details` boli odstránené redundantné riadky `t('terrain.contours')` a zachované bolo iba samostatné nastavenie pre zobrazenie výškových kót (`opts.showContourLabels`).
+   - **Pozícia textúry**: Ovládací prvok `Textúra (JPG/PNG)` (`terrain.texture`) a jeho detailné parametre projekcie boli presunuté na úplný koniec nastavení povrchu.
+
+2. **Rozšírenie komponentu `ColorPicker` (`controls.tsx`)**:
+   - Pridané voliteľné typovanie `style?: React.CSSProperties` s predvoleným `marginLeft: 8`, umožňujúce externé prepísanie (napr. `style={{ marginLeft: 2 }}`) pre kompaktné radenie vzorkovníkov vedľa seba.
+
+---
 
 ### Architektúra rozhrania: Samostatná záložka Povrch, CAD Štýl a Dokumentačný register sekcií (v2.5.8)
 
