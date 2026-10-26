@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.5.7] - 2026-10-26
+### Vlastná veľkosť výseku terénu DMR 5.0 s krokom po 500 m / Custom DMR 5.0 terrain extent with 500 m stepping
+- **Vlastný rozsah výseku terénu**: Pridaná podpora pre nastavenie ľubovoľnej veľkosti územia pri sťahovaní DMR 5.0 cez WCS (od 500 m až po 10 km). / Added custom territory extent selection when downloading DMR 5.0 elevation terrain via WCS (from 500 m up to 10 km).
+- **Jemné krokovanie po 500 m**: Rozhranie obsahuje tlačidlá rýchleho posunu `-500 m` a `+500 m`, plynulý posuvník s krokom 500 m a priamy číselný vstup pre presné zadanie rozmerov v metroch. / Integrated `±500 m` stepper buttons, 500 m range slider, and direct numeric input in meters.
+- **Predvoľby a živá telemetria**: Rýchle tlačidlá (500 m, 1 km, 2 km, Vlastný) so zobrazením rozmerov v km/m, celkovej plochy v hektároch a pixelových rozmerov rastra. / Presets (500 m, 1 km, 2 km, Custom) with live telemetry showing dimensions and area in hectares.
+
 ## [2.5.6] - 2026-10-26
 ### Sťahovanie a generovanie terénu DMR 5.0 z WCS služby GKÚ SR / DMR 5.0 WCS terrain download and 3D surface generation
 - **Priame sťahovanie DMR 5.0 cez OGC WCS 2.0.1**: Možnosť priamo z aplikácie stiahnuť certifikovaný digitálny model reliéfu DMR 5.0 (LiDAR SR v rozlíšení 1 × 1 m, INSPIRE vrstva `el__EL.GridCoverage`) zo štátnej služby GKÚ SR (`inspirews.skgeodesy.sk`). / Direct in-app download of Slovakia's certified DMR 5.0 DTM (1m resolution LiDAR raster) via national OGC WCS 2.0.1 service.

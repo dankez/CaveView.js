@@ -1,8 +1,8 @@
-# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.5.6)
+# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.5.7)
 
 *Kompletná technická špecifikácia, matematický aparát, architektúra a flow diagramy pre vývojárov.*
 
-### Sťahovanie a generovanie povrchového terénu DMR 5.0 (WCS 2.0.1) (2.5.6)
+### Sťahovanie a generovanie povrchového terénu DMR 5.0 (WCS 2.0.1) (2.5.7)
 
 1. **OGC WCS 2.0.1 protokol a INSPIRE špecifikácia (`dmrDownloader.ts`)**:
    - **Štátny server GKÚ SR**: `https://inspirews.skgeodesy.sk/geoserver/el/ows`
@@ -13,7 +13,7 @@
      $$\text{subset}=\text{N}(N_{min}, N_{max})\quad\&\quad\text{subset}=\text{E}(E_{min}, E_{max})$$
 
 2. **Matematický výpočet výseku (`calculateDmr5Bounds`) a World File (`generateTfwContent`)**:
-   - Pre zadané GPS $(\varphi, \lambda)$ a požadovaný rozsah $L \in \{300, 500, 1000, 2000\}\ \text{m}$:
+   - Pre zadané GPS $(\varphi, \lambda)$ a požadovaný rozsah $L$ (predvoľby $500, 1000, 2000\ \text{m}$ alebo vlastný rozsah s krokom $500\ \text{m}$):
      $$(E_c, N_c) = \text{proj4}(\text{WGS84}, \text{UTM34}, [\lambda, \varphi])$$
      $$E_{min} = \text{round}(E_c - L/2), \quad E_{max} = E_{min} + L$$
      $$N_{min} = \text{round}(N_c - L/2), \quad N_{max} = N_{min} + L$$

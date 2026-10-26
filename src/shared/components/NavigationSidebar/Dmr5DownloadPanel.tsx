@@ -146,22 +146,25 @@ export function Dmr5DownloadPanel({
           <span style={{ fontSize: '9px', color: 'var(--cv-text-muted)' }}>
             {isSk ? 'Rozsah výseku' : 'Tile extent'}
           </span>
-          <span style={{ fontSize: '9px', fontFamily: 'var(--cv-font-mono)', color: 'var(--cv-primary)' }}>
-            {extent} × {extent} m ({extent * extent / 10000} ha)
+          <span style={{ fontSize: '9px', fontFamily: 'var(--cv-font-mono)', color: 'var(--cv-primary)', fontWeight: 600 }}>
+            {extent >= 1000 ? `${(extent / 1000).toFixed(extent % 1000 === 0 ? 0 : 1)} km` : `${extent} m`} ({extent} × {extent} m · {((extent * extent) / 10000).toFixed(0)} ha)
           </span>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
-          {[300, 500, 1000, 2000].map((ext) => (
+
+        {/* Rýchle predvoľby vrátane vlastnej */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '6px' }}>
+          {[500, 1000, 2000].map((ext) => (
             <button
               key={ext}
               type="button"
               className={`btn-mini ${extent === ext ? 'active' : ''}`}
               style={{
                 fontSize: '9px',
-                padding: '2px 0',
+                padding: '3px 0',
                 background: extent === ext ? 'rgba(245, 158, 11, 0.2)' : undefined,
                 borderColor: extent === ext ? '#f59e0b' : undefined,
                 color: extent === ext ? '#f59e0b' : undefined,
+                fontWeight: extent === ext ? 700 : undefined,
               }}
               onClick={() => setExtent(ext)}
               disabled={isDownloading}
@@ -169,6 +172,98 @@ export function Dmr5DownloadPanel({
               {ext >= 1000 ? `${ext / 1000} km` : `${ext} m`}
             </button>
           ))}
+          <button
+            type="button"
+            className={`btn-mini ${![500, 1000, 2000].includes(extent) ? 'active' : ''}`}
+            style={{
+              fontSize: '9px',
+              padding: '3px 0',
+              background: ![500, 1000, 2000].includes(extent) ? 'rgba(245, 158, 11, 0.2)' : undefined,
+              borderColor: ![500, 1000, 2000].includes(extent) ? '#f59e0b' : undefined,
+              color: ![500, 1000, 2000].includes(extent) ? '#f59e0b' : undefined,
+              fontWeight: ![500, 1000, 2000].includes(extent) ? 700 : undefined,
+            }}
+            onClick={() => {
+              if ([500, 1000, 2000].includes(extent)) {
+                setExtent(1500);
+              }
+            }}
+            disabled={isDownloading}
+          >
+            {isSk ? 'Vlastný' : 'Custom'}
+          </button>
+        </div>
+
+        {/* Jemné krokovanie a posuvník po 500 m */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px' }}>
+          <button
+            type="button"
+            className="btn-mini"
+            onClick={() => setExtent((prev) => Math.max(500, (Math.round(prev / 500) - 1) * 500))}
+            disabled={isDownloading || extent <= 500}
+            style={{ padding: '2px 5px', fontSize: '9px', fontFamily: 'var(--cv-font-mono)', minWidth: '46px' }}
+            title={isSk ? 'Zmenšiť rozsah o 500 m' : 'Decrease extent by 500 m'}
+          >
+            -500 m
+          </button>
+
+          <input
+            type="range"
+            min="500"
+            max="5000"
+            step="500"
+            value={Math.min(extent, 5000)}
+            onChange={(e) => setExtent(parseInt(e.target.value, 10))}
+            disabled={isDownloading}
+            className="cad-slider"
+            style={{ flex: 1, margin: 0 }}
+            title={isSk ? `Rozsah výseku: ${extent} m` : `Tile extent: ${extent} m`}
+          />
+
+          <button
+            type="button"
+            className="btn-mini"
+            onClick={() => setExtent((prev) => Math.min(10000, (Math.round(prev / 500) + 1) * 500))}
+            disabled={isDownloading || extent >= 10000}
+            style={{ padding: '2px 5px', fontSize: '9px', fontFamily: 'var(--cv-font-mono)', minWidth: '46px' }}
+            title={isSk ? 'Zväčšiť rozsah o 500 m' : 'Increase extent by 500 m'}
+          >
+            +500 m
+          </button>
+        </div>
+
+        {/* Priame zadanie vlastnej hodnoty */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '8.5px', color: 'var(--cv-text-muted)' }}>
+          <span>{isSk ? 'Vlastná hodnota (krok 500 m):' : 'Custom size (500 m step):'}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+            <input
+              type="number"
+              min="500"
+              max="10000"
+              step="500"
+              value={extent}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10);
+                if (Number.isFinite(val)) {
+                  setExtent(Math.max(500, Math.min(10000, val)));
+                }
+              }}
+              disabled={isDownloading}
+              style={{
+                width: '54px',
+                fontSize: '9.5px',
+                fontFamily: 'var(--cv-font-mono)',
+                padding: '1px 4px',
+                textAlign: 'right',
+                background: 'rgba(0,0,0,0.25)',
+                border: '1px solid var(--cv-border)',
+                borderRadius: '3px',
+                color: 'var(--cv-primary)',
+                fontWeight: 600,
+              }}
+            />
+            <span>m</span>
+          </div>
         </div>
       </div>
 

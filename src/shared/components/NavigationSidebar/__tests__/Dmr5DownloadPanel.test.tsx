@@ -64,6 +64,33 @@ describe('Dmr5DownloadPanel', () => {
     expect(handleDownload).toHaveBeenCalledWith(48.665276, 20.817054, 1000);
   });
 
+  it('allows stepping extent by 500m and setting custom extent', () => {
+    const handleDownload = vi.fn();
+    render(
+      <Dmr5DownloadPanel
+        cave={mockCave}
+        lang="sk"
+        onDownload={handleDownload}
+        isDownloading={false}
+        lastDownloadedDmr={null}
+        onSaveFiles={vi.fn()}
+      />
+    );
+
+    // Initial extent is 500m, click +500 m button
+    const stepUpBtn = screen.getByText('+500 m');
+    fireEvent.click(stepUpBtn); // now 1000m
+    fireEvent.click(stepUpBtn); // now 1500m
+
+    expect(screen.getByText(/1.5 km/i)).toBeInTheDocument();
+
+    // Click download button
+    const downloadBtn = screen.getByText(/Stiahnuť a zobraziť povrch/i);
+    fireEvent.click(downloadBtn);
+
+    expect(handleDownload).toHaveBeenCalledWith(48.665276, 20.817054, 1500);
+  });
+
   it('displays save button and triggers onSaveFiles when lastDownloadedDmr is present', () => {
     const handleSave = vi.fn();
     render(

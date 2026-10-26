@@ -1,8 +1,8 @@
-# 🛠️ LochViewer - Developer & Mathematical Specification (v2.5.6)
+# 🛠️ LochViewer - Developer & Mathematical Specification (v2.5.7)
 
 *Comprehensive technical architecture, mathematical formulations, shader models, and Web Worker data flows for developers and contributors.*
 
-### DMR 5.0 Surface Download & Generation (WCS 2.0.1) (2.5.6)
+### DMR 5.0 Surface Download & Generation (WCS 2.0.1) (2.5.7)
 
 1. **OGC WCS 2.0.1 Protocol & INSPIRE Coverage (`dmrDownloader.ts`)**:
    - **National GKÚ SR Server**: `https://inspirews.skgeodesy.sk/geoserver/el/ows`
@@ -13,7 +13,7 @@
      $$\text{subset}=\text{N}(N_{min}, N_{max})\quad\&\quad\text{subset}=\text{E}(E_{min}, E_{max})$$
 
 2. **Bounding Box Calculation (`calculateDmr5Bounds`) & World File Generation (`generateTfwContent`)**:
-   - For given cave entrance/center GPS $(\varphi, \lambda)$ and chosen extent $L \in \{300, 500, 1000, 2000\}\ \text{m}$:
+   - For given cave entrance/center GPS $(\varphi, \lambda)$ and chosen extent $L$ (presets $500, 1000, 2000\ \text{m}$ or custom extent in $500\ \text{m}$ increments):
      $$(E_c, N_c) = \text{proj4}(\text{WGS84}, \text{UTM34}, [\lambda, \varphi])$$
      $$E_{min} = \text{round}(E_c - L/2), \quad E_{max} = E_{min} + L$$
      $$N_{min} = \text{round}(N_c - L/2), \quad N_{max} = N_{min} + L$$

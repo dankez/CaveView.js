@@ -223,10 +223,10 @@ Jaskyňa neexistuje vo vákuu – pochopenie jej vzťahu k povrchovému reliéfu
    * Pri zapnutí *Tieňovaného povrchu* alebo *Výškovej siete* vo *Vrstvy & dáta → Povrch* otvorte Podrobnosti terénu: posuvník *Priehľadnosť povrchu* (5 % – 100 %) umožní odhalenie podzemných chodieb bez nahrávania textúry.
 6. **Optimalizovaná hustota kót vrstevníc (v2.4.28)**:
    * Voľba *Zobraziť výšky* využíva obojsmerné vyhodnocovanie 2D pretnutí (horizontálne aj vertikálne hrany výškového rastra) v kombinácii s priestorovým filtrovaním. V každom zornom poli kamery je na hlavných (hrubých) vrstevniciach zaručená minimálne jedna jasne čitateľná hodnota nadmorskej výšky bez vizuálneho zahltenia.
-7. **Sťahovanie povrchu DMR 5.0 cez štátnu službu INSPIRE WCS (v2.5.6)**:
+7. **Sťahovanie povrchu DMR 5.0 cez štátnu službu INSPIRE WCS (v2.5.7)**:
    * Ak jaskyňa nemá povrch priamo v súbore `.lox`, aplikácia umožňuje jedným kliknutím stiahnuť oficiálny výškový model reliéfu SR (DMR 5.0) s presným rozlíšením $1 \times 1\ \text{m}$ zo štátnej služby OGC WCS 2.0.1 (`inspirews.skgeodesy.sk`).
    * Súradnice stredu sa automaticky načítajú z vchodu s GPS, ľubovoľnej stanice s GPS alebo súradnicového rámca jaskyne (s možnosťou manuálneho zadania súradníc).
-   * Používateľ si môže zvoliť rozsah výseku: $300\ \text{m}$, $500\ \text{m}$, $1\ \text{km}$ alebo $2\ \text{km}$.
+   * Používateľ si môže zvoliť rýchle predvoľby ($500\ \text{m}$, $1\ \text{km}$, $2\ \text{km}$) alebo nastaviť vlastný rozsah výseku s jemným krokovaním po $500\ \text{m}$ (tlačidlá $\pm 500\ \text{m}$, posuvník $500 - 5000\ \text{m}$ alebo priamy číselný vstup až do $10\ \text{km}$).
    * Vygenerovaný 3D povrch sa ihneď zobrazí v scéne a v bočnom paneli pribudne možnosť **Uložiť .tif + .tfw do PC** pre použitie v GIS nástrojoch (QGIS, Therion).
 
 ---
