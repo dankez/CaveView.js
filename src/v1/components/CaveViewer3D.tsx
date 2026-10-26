@@ -606,22 +606,10 @@ const CaveTraverse = React.memo(({ cave, radius, showAltitude, isMoving, ...prop
 // ─── StationLabels moved to shared ───
 
 // ─── Contour Label Item (with dynamic scaling) ──────────────────────────────
-const ContourLabelItem = ({ pos, val, color, opacity }: any) => {
-  const ref = useRef<HTMLDivElement>(null)
-  const vec = useMemo(() => new THREE.Vector3(pos[0], pos[1], pos[2]), [pos])
-
-  useFrame(({ camera }) => {
-    if (ref.current) {
-      const dist = camera.position.distanceTo(vec)
-      // Slightly larger when far away (min 0.7x), base distance 90m
-      const scale = Math.max(0.7, Math.min(1.8, 90 / dist))
-      ref.current.style.transform = `scale(${scale})`
-    }
-  })
-
+const ContourLabelItem = React.memo(({ pos, val, color, opacity }: any) => {
   return (
-    <Html position={pos} center occlude={false} style={{ pointerEvents: 'none' }}>
-      <div ref={ref} style={{
+    <Html position={pos} center distanceFactor={85} occlude={false} style={{ pointerEvents: 'none', willChange: 'transform' }}>
+      <div style={{
         fontSize: '10px',
         fontFamily: 'Inter, monospace',
         color: color || '#ffffff',
@@ -630,21 +618,23 @@ const ContourLabelItem = ({ pos, val, color, opacity }: any) => {
         opacity: opacity || 0.9,
         whiteSpace: 'nowrap',
         userSelect: 'none',
-        padding: '1px 3px',
+        padding: '1px 4px',
         borderRadius: '4px',
-        background: 'rgba(0,0,0,0.2)',
-        backdropFilter: 'blur(2px)',
-        transformOrigin: 'center center',
-        transition: 'transform 0.1s ease-out'
+        background: 'rgba(15, 23, 42, 0.75)',
+        border: '1px solid rgba(255, 255, 255, 0.15)',
+        lineHeight: 1.1
       }}>
-        {val}
+        {val} m
       </div>
     </Html>
-  )
-}
+  );
+});
 
 // ─── Contour Labels (Altitude markers for major contours) ────────────────────
-const ContourLabels = React.memo(({ surface, majorInterval, color, opacity }: any) => {
+const ContourLabels = React.memo(({ surface, majorInterval, color, opacity, isMoving }: any) => {
+  // Počas pohybu kamery skryjeme HTML overlay, aby sme garantovali okamžitú odozvu a 60 FPS
+  if (isMoving) return null;
+
   const { dtm, centerOffset } = surface;
   const { data, samples, lines, calib } = dtm;
 
@@ -723,13 +713,14 @@ const ContourLabels = React.memo(({ surface, majorInterval, color, opacity }: an
 
     const finalPts: typeof pts = [];
     grouped.forEach((levelPts) => {
+      if (finalPts.length >= 36) return;
       levelPts.sort((a, b) => a.x - b.x || a.z - b.z);
       const chosen: typeof pts = [];
       for (const p of levelPts) {
         const tooClose = chosen.some(c => Math.hypot(c.x - p.x, c.z - p.z) < minDist);
         if (!tooClose) {
           chosen.push(p);
-          if (chosen.length >= 8) break; // Dostatočný počet štítkov na vrstevnicu
+          if (chosen.length >= 3) break; // Dostatočný počet štítkov na vrstevnicu
         }
       }
       if (chosen.length === 1 && levelPts.length > 2) {
@@ -1046,7 +1037,7 @@ function getWmsImageSize(sjtskBbox: string, requestedSize: number): { width: num
   return { width: Math.max(256, Math.min(4096, Math.round(base * widthMeters / heightMeters))), height: base };
 }
 
-const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCount, imgSize, imgSizeUniformRef, xyzCalib, heightRange, ...props }: any) => {
+const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCount, imgSize, imgSizeUniformRef, xyzCalib, heightRange, contourMat, ...props }: any) => {
   const [geo, setGeo] = useState<THREE.BufferGeometry | null>(null);
   const terrainSubsample = !props.terrainReadyForFullDetail
     ? getMovingTerrainSubsample(surface.dtm.samples, surface.dtm.lines)
@@ -1063,98 +1054,6 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
       g.dispose();
     };
   }, [surface, colStart, rowStart, colCount, rowCount, imgSize, terrainSubsample, heightRange, buildPreciseBvh]);
-
-  const contourUniforms = useMemo(() => ({
-    uMajorInterval: { value: props.contourInterval || 10.0 },
-    uMinorInterval: { value: props.minorInterval || 2.5 },
-    uContourColor: { value: new THREE.Color(props.contourColor) },
-    uContourColorMajor: { value: new THREE.Color(props.contourColor10 || props.contourColor) },
-    uOpacity: { value: props.opacity || 0.8 },
-    uCenterZ: { value: surface.centerOffset.z }
-  }), [surface.centerOffset.z, props.contourInterval, props.minorInterval, props.contourColor, props.contourColor10, props.opacity]);
-
-  useEffect(() => {
-    contourUniforms.uMajorInterval.value = props.contourInterval || 10.0;
-    contourUniforms.uMinorInterval.value = props.minorInterval || 2.5;
-    contourUniforms.uContourColor.value.set(props.contourColor);
-    contourUniforms.uContourColorMajor.value.set(props.contourColor10 || props.contourColor);
-    contourUniforms.uOpacity.value = props.opacity;
-  }, [contourUniforms, props.contourInterval, props.minorInterval, props.contourColor, props.contourColor10, props.opacity]);
-
-  const contourMat = useMemo(() => {
-    return new THREE.MeshStandardMaterial({
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: props.opacity,
-      depthWrite: false,
-      polygonOffset: true,
-      polygonOffsetFactor: -10,
-      polygonOffsetUnits: -10,
-      clippingPlanes: props.clippingPlanes,
-      onBeforeCompile: (shader: any) => {
-        shader.uniforms.uMajorInterval = contourUniforms.uMajorInterval;
-        shader.uniforms.uMinorInterval = contourUniforms.uMinorInterval;
-        shader.uniforms.uContourColor = contourUniforms.uContourColor;
-        shader.uniforms.uContourColorMajor = contourUniforms.uContourColorMajor;
-        shader.uniforms.uOpacity = contourUniforms.uOpacity;
-        shader.uniforms.uCenterZ = contourUniforms.uCenterZ;
-
-        shader.vertexShader = `
-          varying float vWorldZ;
-          uniform float uCenterZ;
-          ${shader.vertexShader}
-        `.replace(
-          '#include <worldpos_vertex>',
-          `#include <worldpos_vertex>
-           vWorldZ = (modelMatrix * vec4(transformed, 1.0)).y + uCenterZ;
-          `
-        );
-
-        shader.fragmentShader = `
-          varying float vWorldZ;
-          uniform float uMajorInterval;
-          uniform float uMinorInterval;
-          uniform vec3 uContourColor;
-          uniform vec3 uContourColorMajor;
-          uniform float uOpacity;
-          ${shader.fragmentShader}
-        `.replace(
-          '#include <dithering_fragment>',
-          `#include <dithering_fragment>
-          
-          float zMaj = vWorldZ / uMajorInterval;
-          float zMin = vWorldZ / uMinorInterval;
-          
-          float fMaj = fract(zMaj + 0.5) - 0.5;
-          float fMin = fract(zMin + 0.5) - 0.5;
-          
-          float dfMaj = fwidth(zMaj);
-          float dfMin = fwidth(zMin);
-
-          // Výrazne hrubšie čiary pre lepšiu viditeľnosť
-          // Major ~ 2.2 (celková šírka cca 4.5px), Minor ~ 1.0 (celková šírka cca 2px)
-          float wMaj = 2.2 * dfMaj; 
-          float wMin = 1.0 * dfMin;
-
-          // smoothstep s rozsahom df pre maximálnu ostrosť bez aliasingu
-          float lineMaj = smoothstep(wMaj, wMaj - dfMaj, abs(fMaj));
-          float lineMin = smoothstep(wMin, wMin - dfMin, abs(fMin));
-
-          float finalLine = max(lineMaj, lineMin);
-          if (finalLine < 0.1) discard;
-
-          vec3 finalColor = mix(uContourColor, uContourColorMajor, lineMaj);
-          gl_FragColor = vec4(finalColor, finalLine * uOpacity);
-          `
-        );
-      }
-    } as any);
-  }, [surface.centerOffset.z, contourUniforms, props.clippingPlanes]);
-
-  useEffect(() => {
-    contourMat.opacity = props.opacity;
-    contourMat.clippingPlanes = props.clippingPlanes;
-  }, [contourMat, props.opacity, props.clippingPlanes]);
 
   const textureUniforms = useMemo(() => ({
     uIsLoxBitmap: { value: 0.0 },
@@ -1326,7 +1225,7 @@ const TerrainTile = React.memo(({ surface, colStart, rowStart, colCount, rowCoun
           />
         </mesh>
       )}
-      {props.showContours && (
+      {props.showContours && contourMat && (
         <mesh geometry={geo} material={contourMat} renderOrder={2} />
       )}
       {props.showMeshWire && (
@@ -1611,6 +1510,103 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, onTe
   }, [hoverGeo, hoverMat])
   const [hoveredSurf, setHoveredSurf] = useState<[number, number, number] | null>(null)
 
+  const contourUniforms = useMemo(() => ({
+    uMajorInterval: { value: props.contourInterval || 10.0 },
+    uMinorInterval: { value: props.minorInterval || 2.5 },
+    uContourColor: { value: new THREE.Color(props.contourColor) },
+    uContourColorMajor: { value: new THREE.Color(props.contourColor10 || props.contourColor) },
+    uOpacity: { value: props.opacity ?? 0.8 },
+    uCenterZ: { value: surface.centerOffset.z }
+  }), [surface.centerOffset.z, props.contourInterval, props.minorInterval, props.contourColor, props.contourColor10, props.opacity]);
+
+  useEffect(() => {
+    contourUniforms.uMajorInterval.value = props.contourInterval || 10.0;
+    contourUniforms.uMinorInterval.value = props.minorInterval || 2.5;
+    contourUniforms.uContourColor.value.set(props.contourColor);
+    contourUniforms.uContourColorMajor.value.set(props.contourColor10 || props.contourColor);
+    contourUniforms.uOpacity.value = props.opacity ?? 0.8;
+  }, [contourUniforms, props.contourInterval, props.minorInterval, props.contourColor, props.contourColor10, props.opacity]);
+
+  const contourMat = useMemo(() => {
+    return new THREE.MeshBasicMaterial({
+      side: THREE.FrontSide,
+      transparent: true,
+      opacity: props.opacity ?? 0.8,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+      clippingPlanes: props.clippingPlanes,
+      onBeforeCompile: (shader: any) => {
+        shader.uniforms.uMajorInterval = contourUniforms.uMajorInterval;
+        shader.uniforms.uMinorInterval = contourUniforms.uMinorInterval;
+        shader.uniforms.uContourColor = contourUniforms.uContourColor;
+        shader.uniforms.uContourColorMajor = contourUniforms.uContourColorMajor;
+        shader.uniforms.uOpacity = contourUniforms.uOpacity;
+        shader.uniforms.uCenterZ = contourUniforms.uCenterZ;
+
+        shader.vertexShader = `
+          varying float vWorldZ;
+          uniform float uCenterZ;
+          ${shader.vertexShader}
+        `.replace(
+          '#include <worldpos_vertex>',
+          `#include <worldpos_vertex>
+           vWorldZ = (modelMatrix * vec4(transformed, 1.0)).y + uCenterZ;
+          `
+        );
+
+        shader.fragmentShader = `
+          varying float vWorldZ;
+          uniform float uMajorInterval;
+          uniform float uMinorInterval;
+          uniform vec3 uContourColor;
+          uniform vec3 uContourColorMajor;
+          uniform float uOpacity;
+          ${shader.fragmentShader}
+        `.replace(
+          '#include <dithering_fragment>',
+          `#include <dithering_fragment>
+          
+          float zMaj = vWorldZ / uMajorInterval;
+          float zMin = vWorldZ / uMinorInterval;
+          
+          float fMaj = fract(zMaj + 0.5) - 0.5;
+          float fMin = fract(zMin + 0.5) - 0.5;
+          
+          float dfMaj = fwidth(zMaj);
+          float dfMin = fwidth(zMin);
+
+          // Major ~ 2.2 (celková šírka cca 4.5px), Minor ~ 1.0 (celková šírka cca 2px)
+          float wMaj = 2.2 * dfMaj; 
+          float wMin = 1.0 * dfMin;
+
+          // smoothstep s rozsahom df pre maximálnu ostrosť bez aliasingu
+          float lineMaj = smoothstep(wMaj, wMaj - dfMaj, abs(fMaj));
+          float lineMin = smoothstep(wMin, wMin - dfMin, abs(fMin));
+
+          float finalLine = max(lineMaj, lineMin);
+          if (finalLine < 0.1) discard;
+
+          vec3 finalColor = mix(uContourColor, uContourColorMajor, lineMaj);
+          gl_FragColor = vec4(finalColor, finalLine * uOpacity);
+          `
+        );
+      }
+    } as any);
+  }, [surface.centerOffset.z, contourUniforms, props.clippingPlanes]);
+
+  useEffect(() => {
+    contourMat.opacity = props.opacity ?? 0.8;
+    contourMat.clippingPlanes = props.clippingPlanes;
+  }, [contourMat, props.opacity, props.clippingPlanes]);
+
+  useEffect(() => {
+    return () => {
+      contourMat.dispose();
+    };
+  }, [contourMat]);
+
   if (!props.showMesh && !props.showMeshWire && !props.showTexture && !props.showNetwork && !props.showContours) return null
 
   return (
@@ -1638,6 +1634,7 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, onTe
           heightRange={heightRange}
           terrainReadyForFullDetail={terrainReadyForFullDetail}
           imgSizeUniformRef={imgSizeUniformRef}
+          contourMat={contourMat}
         />
       ))}
       
@@ -1645,12 +1642,13 @@ const TerrainMesh = React.memo(({ surface, isMeasuringMode, onStatusChange, onTe
         <mesh position={hoveredSurf} renderOrder={100} geometry={hoverGeo} material={hoverMat} />
       )}
 
-      {props.showContours && props.options.showContourLabels && terrainReadyForFullDetail && (
+      {props.showContours && props.options.showContourLabels && !props.isMoving && terrainReadyForFullDetail && (
         <ContourLabels 
           surface={surface} 
           majorInterval={props.contourInterval || 10.0} 
           color={props.contourColor10 || props.contourColor}
           opacity={props.opacity}
+          isMoving={props.isMoving}
         />
       )}
     </group>

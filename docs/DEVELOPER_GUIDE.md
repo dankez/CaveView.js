@@ -1,6 +1,31 @@
-# 🛠️ LochViewer - Developer & Mathematical Specification (v2.5.10)
+# 🛠️ LochViewer - Developer & Mathematical Specification (v2.5.11)
 
 *Comprehensive technical architecture, mathematical formulations, shader models, and Web Worker data flows for developers and contributors.*
+
+### Contour Rendering 60 FPS Performance Architecture (v2.5.11)
+
+1. **DOM Overlay Motion Gate (`ContourLabels`)**:
+   - **Root Cause**: Each elevation contour label previously instantiated an independent `@react-three/drei` `<Html>` component. On steep or large terrains (e.g., 500 m DMR 5.0), this generated 100–400 active DOM elements. During camera orbit and panning, Drei ran 3D-to-2D matrix unprojections and DOM inline transform modifications (`style.transform`) on every frame (16.6 ms). Combined with CSS `backdropFilter: blur` and per-label `useFrame` distance calculations, this caused severe layout thrashing and dropped frame rates to 15–25 FPS.
+   - **Motion Gate (`isMoving`)**:
+     ```typescript
+     const ContourLabels = React.memo(({ surface, majorInterval, color, opacity, isMoving }: any) => {
+       if (isMoving) return null;
+       // ... point extraction
+     });
+     ```
+     During continuous camera navigation (`isMoving === true`), DOM label projection is completely deferred (0 DOM operations). Once motion ceases (180 ms idle threshold), labels cleanly remount.
+   - **`ContourLabelItem` Simplification**:
+     Removed per-item `useFrame` hook, removed expensive GPU `backdropFilter: blur(2px)`, and eliminated CSS transition fight. Perspective scaling is handled directly by Drei's native `distanceFactor={85}` alongside hardware GPU layer promotion (`willChange: transform`). Label budget is constrained to a maximum of 36 globally and 3 per elevation contour.
+
+2. **Shared Lightweight Contour Material (`MeshBasicMaterial` in `TerrainMesh`)**:
+   - **Root Cause**: Previously, each terrain tile instantiated its own `MeshStandardMaterial` ($N$ tiles = $N$ compilations). Standard materials performed full PBR lighting calculations (4 lights, normal matrices, diffuse/specular evaluation) across 500,000 triangles, only for the `#include <dithering_fragment>` injection to overwrite the fragment color with an unlit line color. Face culling was also disabled (`DoubleSide`).
+   - **Consolidated Pipeline**:
+     Lifted material instantiation to `TerrainMesh` as a single shared `MeshBasicMaterial`:
+     - **Hardware Culling**: `side: THREE.FrontSide` enables GPU triangle face culling.
+     - **Zero Lighting Overhead**: `ShaderLib.basic` excludes all lighting loops and normal matrices.
+     - **Single Instance**: 1 shader compile instead of $N$, eliminating material swapping during the WebGL tile draw loop.
+
+---
 
 ### Baltic Sea Datum (Bpv), Slovak Quasigeoid Interpolator & Cave CRS Detection (v2.5.10)
 

@@ -1,4 +1,4 @@
-# 📖 LochViewer - Kompletná používateľská príručka (v2.5.10)
+# 📖 LochViewer - Kompletná používateľská príručka (v2.5.11)
 
 *Webová 3D platforma pre vizualizáciu, speleologické meranie a analýzu jaskynných systémov a LiDAR dát.*  
 *Dizajnový systém: Stitch CAD Precision Glassmorphism & Fieldwork High-Contrast (vrátane jemného pieskového gradientu vo svetlom režime).*  
@@ -244,6 +244,10 @@ Jaskyňa neexistuje vo vákuu – pochopenie jej vzťahu k povrchovému reliéfu
      - **WGS-84 (zemepisné stupne)**: automatická konverzia na UTM súradnice.
      - **Lokálne relatívne meranie** (napr. $[0, 0, Z]$): povrchový terén sa automaticky ukotví a vycentruje na GPS polohu vchodu jaskyne.
    * V paneli sťahovania DMR 5.0 sa zobrazuje prehľadný informačný odznak s identifikovaným CRS rámcom jaskyne.
+11. **Optimalizácia výkonu vrstevníc na 60 FPS počas pohybu (v2.5.11)**:
+   * **Okamžitá odozva pri rotácii a posune**: Počas aktívneho pohybu kamery sa dočasne potláča vykresľovanie HTML štítkov nadmorských výšok, čím sa eliminuje prepočítavanie DOM prvkov a prepady snímkovej frekvencie. Po zastavení pohybu (180 ms idle stabilizácia) sa kóty okamžite zobrazia na vrstevniciach.
+   * **Zdieľaný odľahčený materiál**: Vrstevnice namiesto ťažkého PBR osvetlenia používajú optimalizovaný `MeshBasicMaterial` inštanciovaný raz na úrovni celého terénu a zdieľaný naprieč všetkými dlaždicami s hardvérovým orezávaním odvrátených plôch (`FrontSide`).
+   * **Inteligentný limit hustoty**: Počet zobrazených kót je obmedzený na maximálne 36 rovnomerne rozložených štítkov, čím sa zabraňuje zahlteniu prehliadača aj pri rozsiahlych LiDAR masívoch.
 
 ---
 

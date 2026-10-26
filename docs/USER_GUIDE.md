@@ -1,4 +1,4 @@
-# 📖 LochViewer - Complete User Guide (v2.5.10)
+# 📖 LochViewer - Complete User Guide (v2.5.11)
 
 *Web-based 3D platform for speleological visualization, survey measurement, and spatial analysis of cave systems & LiDAR point clouds.*  
 *Design System: Stitch CAD Precision Glassmorphism & Fieldwork High-Contrast (including gentle sand vertical gradient in light mode).*  
@@ -212,6 +212,10 @@ For massive LiDAR scans (`.ply` format), LochViewer automatically activates **En
   - **WGS-84 (degrees)**: Automatic re-projection to UTM metric coordinates.
   - **Local relative surveys** (e.g., $[0, 0, Z]$): Surface terrain is automatically anchored and centered on the entrance GPS coordinates.
   An informative badge in the DMR 5.0 download panel displays the detected CRS frame.
+* **Contour 60 FPS Performance Optimization during Motion (v2.5.11)**:
+  - **Deferred DOM Labels during Camera Navigation**: HTML elevation markers are temporarily hidden during continuous camera orbit/pan/zoom (`isMoving`), eliminating hundreds of DOM projections, layout reflows, and frame drops. Labels reappear seamlessly after motion settles (180 ms threshold).
+  - **Shared Lightweight `MeshBasicMaterial`**: Contour lines replace the heavy double-sided `MeshStandardMaterial` (which executed full PBR lighting calculations on 500,000 triangles) with a single, shared `MeshBasicMaterial` featuring hardware front-face culling (`FrontSide`) across all terrain tiles.
+  - **Balanced Label Budget**: Capped at a maximum of 36 globally distributed labels, preventing DOM overhead and memory pressure on complex terrains.
 
 ---
 

@@ -1,6 +1,31 @@
-# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.5.10)
+# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.5.11)
 
 *Kompletná technická špecifikácia, matematický aparát, architektúra a flow diagramy pre vývojárov.*
+
+### Optimalizácia vykresľovania vrstevníc na 60 FPS počas pohybu (v2.5.11)
+
+1. **Architektúra potláčania DOM overlayov počas pohybu (`ContourLabels`)**:
+   - **Problém**: Každá výšková kóta vrstevnice bola reprezentovaná samostatnou inštanciou komponentu `<Html>` z knižnice `@react-three/drei`. Pri strmých alebo členitých modeloch terénu (napr. 500 m DMR 5.0) sa generovalo 100 až 400 DOM prvkov. Pri rotácii a pohybe kamery knižnica Drei na každej snímke (16.6 ms) vykonávala inverznú transformáciu kamery, unproject do 2D obrazovky a modifikáciu DOM inline štýlov (`style.transform`), čo spolu s CSS `backdropFilter: blur` a per-label `useFrame` hookom spôsobovalo layout thrashing a pokles snímkovej frekvencie na 15–25 FPS.
+   - **Riešenie (`isMoving` brána)**:
+     ```typescript
+     const ContourLabels = React.memo(({ surface, majorInterval, color, opacity, isMoving }: any) => {
+       if (isMoving) return null;
+       // ... generovanie bodov
+     });
+     ```
+     Počas pohybu kamery (`isMoving === true`) je vykresľovanie HTML kót okamžite potlačené (0 DOM operácií). Po uvoľnení manipulácie (180 ms idle prah) sa kóty okamžite zobrazia.
+   - **Optimalizácia `ContourLabelItem`**:
+     Odstránený per-item hook `useFrame`, odstránený `backdropFilter: blur(2px)` a konfliktná CSS `transition`. Perspektívne škálovanie zabezpečuje priamo Drei `distanceFactor={85}` a hardvérové vrstvenie `willChange: transform`. Maximálny rozpočet kót je obmedzený na 36 prvkov globálne a 3 na jednu výškovú hladinu.
+
+2. **Konsolidácia a odľahčenie materiálu vrstevníc (`MeshBasicMaterial` v `TerrainMesh`)**:
+   - **Problém**: Pôvodná implementácia inštanciovala `MeshStandardMaterial` v každej dlaždici terénu samostatne ($N$-krát pre $N$ dlaždíc). Standard materiál vykonával kompletný fyzikálny PBR výpočet osvetlenia (4 bodové/smerové svetlá, normálové matice, odrazy) na 500 000 trojuholníkoch, hoci výstup fragment shaderu v `#include <dithering_fragment>` bol nahradený unlit farbou vrstevnice. Súčasne bol vypnutý face culling (`DoubleSide`).
+   - **Riešenie**:
+     Materiál bol presunutý na úroveň rodičovského komponentu `TerrainMesh` ako jediná zdieľaná inštancia `MeshBasicMaterial`:
+     - **Hardware culling**: `side: THREE.FrontSide` umožňuje GPU zahodiť odvrátené trojuholníky terénu.
+     - **Žiadne svetelné výpočty**: `ShaderLib.basic` neobsahuje žiadne svetelné cykly ani PBR kalkulácie.
+     - **Zdieľanie inštancie**: 1 kompilácia shaderu namiesto $N$, nulové prepínanie materiálov vo WebGL renderovacom stave pri prechode dlaždicami.
+
+---
 
 ### Výškový systém Bpv, model kvázigeoidu SR a detekcia CRS jaskyne (v2.5.10)
 
