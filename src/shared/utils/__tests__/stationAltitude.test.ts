@@ -4,6 +4,7 @@ import {
   isSurfaceStation,
   findReferenceStation,
   sampleDtmAt,
+  findClosestSurfacePoint,
   sampleSurfaceElevationAt,
   calculateStationDepths,
 } from '../stationAltitude'
@@ -164,8 +165,70 @@ describe('stationAltitude', () => {
 
       expect(result.surfaceZ).toBeNull()
       expect(result.distToSurf).toBeNull()
+      expect(result.closestSurfDist).toBeNull()
+      expect(result.closestSurfWorld).toBeNull()
       expect(result.denivEntrance).toBeCloseTo(25, 3) // +25m above entrance
       expect(result.refStationName).toBe('Vchod')
+    })
+
+    it('finds closest 3D surface point on a sloped terrain (shorter than straight up)', () => {
+      // Sloped hill where Z = 100 - x. (each 10m step in X drops Z by 10m)
+      const slopeSurface: CaveSurface = {
+        dtm: {
+          samples: 5,
+          lines: 5,
+          calib: {
+            xOrigin: 0,
+            yOrigin: 0,
+            xx: 10,
+            xy: 0,
+            yx: 0,
+            yy: 10,
+          },
+          // x values: 0, 10, 20, 30, 40
+          // z values: 100, 90, 80, 70, 60
+          data: new Float64Array([
+            100, 90, 80, 70, 60,
+            100, 90, 80, 70, 60,
+            100, 90, 80, 70, 60,
+            100, 90, 80, 70, 60,
+            100, 90, 80, 70, 60,
+          ]),
+        },
+        bitmapUrl: null,
+        centerOffset: { x: 0, y: 0, z: 0 },
+      }
+
+      // Station at x=10, y=20, z=60.
+      // Vertical overhead: x=10, y=20 -> surfaceZ = 90m -> vertical depth = 90 - 60 = 30m.
+      // Plane equation: x + z - 100 = 0.
+      // Distance from (10, 20, 60) to plane is |10 + 60 - 100| / sqrt(2) = 30 / sqrt(2) ≈ 21.213m.
+      const closest = findClosestSurfacePoint([slopeSurface], 10, 20, 60)
+      expect(closest).not.toBeNull()
+      if (closest) {
+        expect(closest.distance3d).toBeCloseTo(30 / Math.SQRT2, 2) // ≈ 21.21m
+        expect(closest.distance3d).toBeLessThan(30) // strictly shorter than straight vertical
+        expect(closest.closestWorld.x).toBeCloseTo(25, 1)
+        expect(closest.closestWorld.y).toBeCloseTo(20, 1)
+        expect(closest.closestWorld.z).toBeCloseTo(75, 1)
+        expect(closest.horizontalDist).toBeCloseTo(15, 1) // 15m horizontal offset towards hillside
+      }
+
+      // calculateStationDepths must return both vertical depth (30m) and 3D closest distance (~21.21m)
+      const mockSlopeCave = {
+        stationLabels: [
+          { name: '0', altitude: 60, pos: { x: 10, y: 20, z: 0 }, gps: null },
+        ],
+        surfaces: [slopeSurface],
+        centerOffset: { x: 0, y: 0, z: 0 },
+      } as unknown as ParsedCave
+
+      const depths = calculateStationDepths(mockSlopeCave, { x: 10, y: 20, z: 60 })
+      expect(depths.distToSurf).toBeCloseTo(30, 2)
+      expect(depths.surfaceZ).toBeCloseTo(90, 2)
+      expect(depths.closestSurfDist).toBeCloseTo(30 / Math.SQRT2, 2)
+      expect(depths.closestHorizontalDist).toBeCloseTo(15, 1)
+      expect(depths.closestSurfAltitude).toBeCloseTo(75, 1)
     })
   })
 })

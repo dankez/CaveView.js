@@ -251,8 +251,13 @@ export interface SelStation {
   altitude:     number    // m n.m.
   pos:          Vec3      // Pridané súradnice pre 3D
   gps:          { lat: number; lon: number; zone?: number; epsg?: string } | null
-  distToSurf:   number | null   // m, kladné = jaskyňa je pod povrchom, záporné = nad povrchom
+  distToSurf:   number | null   // m, kladné = jaskyňa je pod povrchom, záporné = nad povrchom (kolmo hore)
   surfaceZ?:    number | null   // m n.m. nadmorská výška povrchu priamo kolmo nad bodom
+  closestSurfDist?: number | null // m, najkratšia 3D vzdialenosť k povrchu
+  closestSurfPos?: Vec3 | null    // Centrované súradnice najbližšieho bodu povrchu (pre 3D visual)
+  closestSurfWorld?: Vec3 | null  // World súradnice najbližšieho bodu povrchu
+  closestSurfAltitude?: number | null // m n.m. v najbližšom bode povrchu
+  closestHorizontalDist?: number | null // m, horizontálny posun od kolmice
   entranceAlt?: number | null   // m n.m. nadmorská výška referenčného vchodu / bodu
   denivEntrance?: number | null // m, prevýšenie / denivelácia od vchodu (altitude - entranceAlt)
   refStationName?: string | null // meno referenčného vchodu / bodu
@@ -500,7 +505,18 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
               />
             )}
 
-            {/* 2. Hĺbka pod povrchom (DTM mriežka kolmo nad bodom) */}
+            {/* 2. Najkratšia 3D vzdialenosť k povrchu (minimálna hrúbka masívu) */}
+            {stations.length === 1 && (
+              <Row
+                label={t('stations.closestSurfaceDist')}
+                value={st.closestSurfDist === null || st.closestSurfDist === undefined ? t('measuring.unavailable') : `${st.closestSurfDist.toFixed(1)} m`}
+                sub={st.closestSurfDist === null || st.closestSurfDist === undefined
+                  ? t('stations.noSurfaceDtm')
+                  : `${t('stations.minRockCover')}${st.closestHorizontalDist !== null && st.closestHorizontalDist !== undefined ? ` (${t('stations.horizontalOffset')}: ${st.closestHorizontalDist.toFixed(1)} m, ${t('stations.surfaceAltitude')}: ${st.closestSurfAltitude?.toFixed(1)} m)` : ''}`}
+              />
+            )}
+
+            {/* 3. Vertikálna hĺbka pod povrchom (kolmo hore) */}
             {stations.length === 1 && (
               <Row
                 label={t('stations.surfaceDepth')}
@@ -1902,10 +1918,21 @@ export default function App() {
       { caveCalibrationOffset: opts.caveCalibrationOffset, surfaceOffset: opts.surfaceOffset }
     )
 
+    const closestPosCentered = depthInfo.closestSurfWorld ? {
+      x: depthInfo.closestSurfWorld.x - cave.centerOffset.x,
+      y: depthInfo.closestSurfWorld.y - cave.centerOffset.y,
+      z: depthInfo.closestSurfWorld.z - cave.centerOffset.z,
+    } : null
+
     const newSt: SelStation = { 
       idx, name, origX: ox, origY: oy, altitude: alt, gps,
       distToSurf: depthInfo.distToSurf,
       surfaceZ: depthInfo.surfaceZ,
+      closestSurfDist: depthInfo.closestSurfDist,
+      closestSurfPos: closestPosCentered,
+      closestSurfWorld: depthInfo.closestSurfWorld,
+      closestSurfAltitude: depthInfo.closestSurfAltitude,
+      closestHorizontalDist: depthInfo.closestHorizontalDist,
       denivEntrance: depthInfo.denivEntrance,
       refStationName: depthInfo.refStationName,
       refStationType: depthInfo.refStationType,
@@ -1999,6 +2026,11 @@ export default function App() {
     )
 
     const sid = `Z${surfNextId.current++}`
+    const surfPos = {
+      x: origX - cave.centerOffset.x - opts.caveCalibrationOffset.x,
+      y: origY - cave.centerOffset.y - opts.caveCalibrationOffset.y,
+      z: altitude - cave.centerOffset.z - opts.caveCalibrationOffset.z
+    }
     const newSt: SelStation = {
       idx: -1,
       name: sid,
@@ -2006,16 +2038,17 @@ export default function App() {
       gps,
       distToSurf: 0,
       surfaceZ: altitude,
+      closestSurfDist: 0,
+      closestSurfPos: surfPos,
+      closestSurfWorld: { x: origX, y: origY, z: altitude },
+      closestSurfAltitude: altitude,
+      closestHorizontalDist: 0,
       denivEntrance: depthInfo.denivEntrance,
       refStationName: depthInfo.refStationName,
       refStationType: depthInfo.refStationType,
       entranceAlt: depthInfo.entranceAlt,
       screenX, screenY,
-      pos: {
-        x: origX - cave.centerOffset.x - opts.caveCalibrationOffset.x,
-        y: origY - cave.centerOffset.y - opts.caveCalibrationOffset.y,
-        z: altitude - cave.centerOffset.z - opts.caveCalibrationOffset.z
-      },
+      pos: surfPos,
       centerX: cave.centerOffset?.x || 0, centerY: cave.centerOffset?.y || 0, centerZ: cave.centerOffset?.z || 0
     }
     
@@ -2118,6 +2151,12 @@ export default function App() {
         { caveCalibrationOffset: opts.caveCalibrationOffset, surfaceOffset: opts.surfaceOffset }
       )
 
+      const closestPosCentered = depthInfo.closestSurfWorld ? {
+        x: depthInfo.closestSurfWorld.x - newOffsetX,
+        y: depthInfo.closestSurfWorld.y - newOffsetY,
+        z: depthInfo.closestSurfWorld.z - newOffsetZ,
+      } : null
+
       return { 
         ...s, 
         origX: ox, 
@@ -2126,6 +2165,11 @@ export default function App() {
         gps: gpsNew || null,
         distToSurf: depthInfo.distToSurf,
         surfaceZ: depthInfo.surfaceZ,
+        closestSurfDist: depthInfo.closestSurfDist,
+        closestSurfPos: closestPosCentered,
+        closestSurfWorld: depthInfo.closestSurfWorld,
+        closestSurfAltitude: depthInfo.closestSurfAltitude,
+        closestHorizontalDist: depthInfo.closestHorizontalDist,
         denivEntrance: depthInfo.denivEntrance,
         refStationName: depthInfo.refStationName,
         refStationType: depthInfo.refStationType,
@@ -2158,10 +2202,21 @@ export default function App() {
       { caveCalibrationOffset: opts.caveCalibrationOffset, surfaceOffset: opts.surfaceOffset }
     )
 
+    const closestPosCentered = depthInfo.closestSurfWorld ? {
+      x: depthInfo.closestSurfWorld.x - (cave.centerOffset?.x || 0),
+      y: depthInfo.closestSurfWorld.y - (cave.centerOffset?.y || 0),
+      z: depthInfo.closestSurfWorld.z - (cave.centerOffset?.z || 0),
+    } : null
+
     return { 
       idx, name: sl.name, origX, origY, altitude, gps,
       distToSurf: depthInfo.distToSurf,
       surfaceZ: depthInfo.surfaceZ,
+      closestSurfDist: depthInfo.closestSurfDist,
+      closestSurfPos: closestPosCentered,
+      closestSurfWorld: depthInfo.closestSurfWorld,
+      closestSurfAltitude: depthInfo.closestSurfAltitude,
+      closestHorizontalDist: depthInfo.closestHorizontalDist,
       denivEntrance: depthInfo.denivEntrance,
       refStationName: depthInfo.refStationName,
       refStationType: depthInfo.refStationType,

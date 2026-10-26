@@ -1,8 +1,8 @@
-# 🛠️ LochViewer - Developer & Mathematical Specification (v2.5.2)
+# 🛠️ LochViewer - Developer & Mathematical Specification (v2.5.3)
 
 *Comprehensive technical architecture, mathematical formulations, shader models, and Web Worker data flows for developers and contributors.*
 
-### Distinct surface depth vs entrance denivelation with 3D visualization (2.5.2)
+### Shortest 3D Distance to Surface (Minimum Rock Cover) and Vertical Depth (2.5.3)
 
 1. **Mathematical formulation and reference point hierarchy (`findReferenceStation`)**:
    - **Priority 1 (Cave Entrance)**: Station flagged with `isEntrance === true` or named with entrance keywords (`vchod`, `vstup`, `entrance`, `eingang`, `trou`, `boca`, `zavrt`). Reference altitude is $Z_{entrance}$. If GPS is present (`gps !== null`), type is `'entrance_gps'`, otherwise `'entrance'`.
@@ -17,16 +17,24 @@
      $$Y_{DTM} = Y_{cave} + o_{cave, y} - o_{surf, y}$$
    - Sampling the DTM elevation grid yields raw altitude $Z_{raw} = \text{sampleDtmAt}(X_{DTM}, Y_{DTM})$. Real-world surface altitude is:
      $$Z_{surface} = Z_{raw} + o_{surf, z}$$
-   - Point depth below surface:
+   - Vertical depth below surface:
      $$\text{distToSurf} = Z_{surface} - (Z_{point} + o_{cave, z})$$
-     If $\text{distToSurf} \ge 0$, the passage is underground; if $\text{distToSurf} < 0$, the point is above the terrain.
 
-3. **3D visualization (`SurfaceDepthVisual`)**:
+3. **True shortest 3D distance to surface (`findClosestSurfacePoint`)**:
+   - For a cave survey point $\mathbf{Q} = (X_q, Y_q, Z_q)$ and a surface mesh represented by a triangulated DTM grid, find point $\mathbf{P}^* \in \mathcal{S}_{DTM}$ that minimizes 3D Euclidean distance:
+     $$d_{3D}^* = \min_{\mathbf{P} \in \mathcal{S}_{DTM}} \|\mathbf{Q} - \mathbf{P}\|$$
+   - **Search space bounding**: Because vertical depth $d_{vert} = |Z_{surface} - Z_q|$ is known, the shortest distance satisfies $d_{3D}^* \le d_{vert}$. The horizontal search radius is bounded by $R_{max} = d_{vert}$, corresponding to a compact cell window $[c_{min}, c_{max}] \times [r_{min}, r_{max}]$ via inverse DTM calibration transform.
+   - **Exact point-to-triangle projection (Christer Ericson algorithm)**: Each quad cell is split into triangles $(V_{00}, V_{10}, V_{01})$ and $(V_{10}, V_{11}, V_{01})$. Point projection operates without heap allocations using Voronoi feature regions (vertices, edges, interior).
+   - On inclined terrain (e.g. slope angle $\alpha = 45^\circ$), closest distance is $d_{3D}^* = d_{vert} \cdot \cos(\alpha) \approx 0.707 \cdot d_{vert}$, yielding the critical minimal rock cover.
+
+4. **3D visualization (`SurfaceDepthVisual`)**:
    - Rendered in centered survey local space within the cave group.
-   - Point in cave: $\mathbf{p}_1 = (pos.x, pos.z, -pos.y)$.
-   - Surface point directly above: $\mathbf{p}_2 = (pos.x, pos.z + \text{distToSurf}, -pos.y)$.
-   - The vertical line along the scene Y axis uses `@react-three/drei`'s `Line` (`dashed={true}`, `dashSize=0.8`, `gapSize=0.4`, `color="#38bdf8"`).
-   - At $\mathbf{p}_2$, a horizontal circular target (`ring` + `circle` with `rotation={[-π/2, 0, 0]}`) and an HTML badge display $Z_{surface}$. At line midpoint, an HTML badge displays the depth in meters in scale.
+   - Point in cave: $\mathbf{p}_{station} = (pos.x, pos.z, -pos.y)$.
+   - Surface point directly above: $\mathbf{p}_{vert} = (pos.x, pos.z + \text{distToSurf}, -pos.y)$.
+   - Closest 3D surface point: $\mathbf{p}_{closest} = (closestSurfPos.x, closestSurfPos.z, -closestSurfPos.y)$.
+   - **Shortest 3D line**: prominent amber/orange dashed line (`color="#f59e0b"`, `lineWidth={3.8}`) with double target marker and scale label.
+   - **Vertical line**: fine cyan dashed line (`color="#38bdf8"`, `lineWidth={1.8}`) with overhead elevation label.
+   - **Graceful coincidence**: When $\|\mathbf{p}_{vert} - \mathbf{p}_{closest}\| < 0.25\text{ m}$ (flat terrain overhead), a single consolidated amber line is rendered to eliminate visual overlap and z-fighting.
    - 100% parity across Engine v1 (`CaveViewer3D`) and Engine v2 (`CaveViewerNextGen`).
 
 ### Station selection, measurement and quick toolbar (2.4.34)

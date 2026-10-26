@@ -1,8 +1,8 @@
-# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.5.2)
+# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.5.3)
 
 *Kompletná technická špecifikácia, matematický aparát, architektúra a flow diagramy pre vývojárov.*
 
-### Rozlíšenie hĺbky pod povrchom a denivelácie od vchodu s 3D vizualizáciou (2.5.2)
+### Najkratšia 3D vzdialenosť k povrchu (minimálna hrúbka masívu) a vertikálna hĺbka (2.5.3)
 
 1. **Matematický aparát a hierarchia referenčného bodu (`findReferenceStation`)**:
    - **Priorita 1 (Vchod jaskyne)**: Stanica s `isEntrance === true` alebo názvom obsahujúcim `vchod`, `vstup`, `entrance`, `eingang`, `trou`, `boca`, `zavrt`. Výška vchodu je $Z_{vchod}$. Ak má stanica priradené GPS (`gps !== null`), typ je `'entrance_gps'`, inak `'entrance'`.
@@ -17,16 +17,24 @@
      $$Y_{DTM} = Y_{cave} + o_{cave, y} - o_{surf, y}$$
    - Z mriežky DTM sa interpoluje nadmorská výška povrchu $Z_{raw} = \text{sampleDtmAt}(X_{DTM}, Y_{DTM})$. Skutočná výška povrchu v scéne je:
      $$Z_{povrch} = Z_{raw} + o_{surf, z}$$
-   - Hĺbka bodu pod povrchom:
+   - Vertikálna hĺbka bodu priamo pod povrchom:
      $$\text{distToSurf} = Z_{povrch} - (Z_{bod} + o_{cave, z})$$
-     Ak $\text{distToSurf} \ge 0$, jaskyňa sa nachádza pod terénom; ak $\text{distToSurf} < 0$, bod leží nad povrchom terénu.
 
-3. **3D vizualizácia (`SurfaceDepthVisual`)**:
+3. **Geometricky najkratšia 3D vzdialenosť k povrchu (`findClosestSurfacePoint`)**:
+   - Pre bod v jaskyni $\mathbf{Q} = (X_q, Y_q, Z_q)$ a povrch reprezentovaný triangulovanou DTM mriežkou hľadáme bod $\mathbf{P}^* \in \mathcal{S}_{DTM}$, ktorý minimalizuje euklidovskú vzdialenosť v 3D:
+     $$d_{3D}^* = \min_{\mathbf{P} \in \mathcal{S}_{DTM}} \|\mathbf{Q} - \mathbf{P}\|$$
+   - **Ohraničenie vyhľadávacieho priestoru**: Ak je známa zvislá hĺbka $d_{vert} = |Z_{povrch} - Z_q|$, najkratšia vzdialenosť spĺňa $d_{3D}^* \le d_{vert}$. Horizontálny polomer hľadania v rovine $X-Y$ je preto striktne obmedzený $R_{max} = d_{vert}$. Cez inverznú maticu DTM kalibrácie sa ohraničí rozsah mriežky $[c_{min}, c_{max}] \times [r_{min}, r_{max}]$.
+   - **Projekcia bodu na trojuholník (Christer Ericson algorithm)**: Každý štvorcový element mriežky je rozdelený na dva trojuholníky $(V_{00}, V_{10}, V_{01})$ a $(V_{10}, V_{11}, V_{01})$. Výpočet projekcie $\mathbf{Q}$ na trojuholník prebieha bez alokácie pamäte v pamäťovom registri s overením Voronoiových oblastí vrcholov, hrán a plochy trojuholníka.
+   - V strmom svahu (napr. uhol sklonu $\alpha = 45^\circ$) je najkratšia vzdialenosť $d_{3D}^* = d_{vert} \cdot \cos(\alpha) \approx 0.707 \cdot d_{vert}$, čo predstavuje kľúčovú hodnotu minimálnej hrúbky horninového masívu.
+
+4. **3D vizualizácia (`SurfaceDepthVisual`)**:
    - Vykresľuje sa v rámci lokálnych centrovaných súradníc skupiny jaskyne.
-   - Počiatočný bod v jaskyni: $\mathbf{p}_1 = (pos.x, pos.z, -pos.y)$.
-   - Koncový bod na povrchu priamo kolmo nad bodom: $\mathbf{p}_2 = (pos.x, pos.z + \text{distToSurf}, -pos.y)$.
-   - Vertikálna čiarkovaná línia pozdĺž osi Y scény využíva `@react-three/drei` komponent `Line` (`dashed={true}`, `dashSize=0.8`, `gapSize=0.4`, `color="#38bdf8"`).
-   - Na povrchu $\mathbf{p}_2$ je umiestnený horizontálny terč (ring + circle s `rotation={[-π/2, 0, 0]}`) a HTML štítok s $Z_{povrch}$. V polovici zvislej línie sa zobrazuje HTML kóta s hĺbkou v metroch v mierke.
+   - Počiatočný bod v jaskyni: $\mathbf{p}_{station} = (pos.x, pos.z, -pos.y)$.
+   - Kolmý bod na povrchu: $\mathbf{p}_{vert} = (pos.x, pos.z + \text{distToSurf}, -pos.y)$.
+   - Najbližší 3D bod na povrchu: $\mathbf{p}_{closest} = (closestSurfPos.x, closestSurfPos.z, -closestSurfPos.y)$.
+   - **Najkratšia 3D spojnica**: výrazná jantárovo-oranžová línia (`color="#f59e0b"`, `lineWidth={3.8}`, `dashed={true}`) s dvojitým terčom na povrchu a štítkom mierky $\min d_{3D}$.
+   - **Vertikálna línia**: jemná svetlomodrá čiarkovaná línia (`color="#38bdf8"`, `lineWidth={1.8}`) s kótou $Z_{povrch}$ kolmo hore.
+   - **Separácia a zjednotenie**: Ak je vzdialenosť $\|\mathbf{p}_{vert} - \mathbf{p}_{closest}\| < 0.25\text{ m}$ (rovný terén nad jaskyňou), línia sa vykreslí v jednom dominantnom štýle so združeným popisom, čím sa predchádza prekrývaniu a vizuálnemu šumu.
    - Komponent je plne paritný pre Engine v1 (`CaveViewer3D`) aj Engine v2 (`CaveViewerNextGen`).
 
 ### Výber staníc, meranie a rýchla lišta (2.4.34)
