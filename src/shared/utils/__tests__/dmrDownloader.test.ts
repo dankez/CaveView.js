@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   wgs84ToUtm34,
   utm34ToWgs84,
@@ -6,8 +6,24 @@ import {
   calculateDmr5Bounds,
   buildDmr5WcsUrl,
   guessCaveCoordinates,
+  createDmr5Surface,
 } from '../dmrDownloader';
 import type { ParsedCave } from '@shared/types';
+
+vi.mock('@v1/parsers/tiffParser', () => ({
+  parseGeoTiff: vi.fn().mockImplementation(() => Promise.resolve({
+    dtm: {
+      data: new Float64Array([854.18, 855.0, 856.0]),
+      samples: 3,
+      lines: 1,
+      calib: { xOrigin: 486279, yOrigin: 5390513, xx: 1, xy: 0, yx: 0, yy: -1 },
+      minZ: 854.18,
+      maxZ: 856.0,
+    },
+    bounds: { minZ: 854.18, maxZ: 856.0, width: 3, height: 1 },
+    centerOffset: { x: 0, y: 0, z: 0 },
+  })),
+}));
 
 describe('dmrDownloader', () => {
   const JASOV_GPS = { lat: 48.665276, lon: 20.817054 };
@@ -107,6 +123,24 @@ describe('dmrDownloader', () => {
       expect(guess?.source).toBe('center_offset_utm');
       expect(guess?.lat).toBeCloseTo(JASOV_GPS.lat, 2);
       expect(guess?.lon).toBeCloseTo(JASOV_GPS.lon, 2);
+    });
+  });
+
+  describe('createDmr5Surface with Bpv quasigeoid reduction', () => {
+    it('reduces elevation by Slovak quasigeoid undulation in Bpv mode', async () => {
+      const resBpv = await createDmr5Surface(new ArrayBuffer(10), 486279, 5390513, null, { heightSystem: 'bpv' });
+      expect(resBpv.heightSystem).toBe('bpv');
+      expect(resBpv.quasigeoidUndulation).toBeGreaterThan(41.5);
+      expect(resBpv.quasigeoidUndulation).toBeLessThan(41.65);
+      // Elevation should be ~812.60 m
+      expect(resBpv.surface.dtm.data[0]).toBeCloseTo(812.60, 1);
+      expect(resBpv.surface.bounds?.minZ).toBeCloseTo(812.60, 1);
+
+      const resEtrs = await createDmr5Surface(new ArrayBuffer(10), 486279, 5390513, null, { heightSystem: 'etrs89' });
+      expect(resEtrs.heightSystem).toBe('etrs89');
+      expect(resEtrs.quasigeoidUndulation).toBe(0);
+      // Raw ellipsoidal elevation preserved
+      expect(resEtrs.surface.dtm.data[0]).toBeCloseTo(854.18, 2);
     });
   });
 });

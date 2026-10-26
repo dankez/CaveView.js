@@ -1073,6 +1073,8 @@ export default function App() {
     maxZ: number;
     width: number;
     height: number;
+    heightSystem?: 'bpv' | 'etrs89';
+    quasigeoidUndulation?: number;
   } | null>(null)
   const [currentTheme, setCurrentTheme] = useState<string>('precision')
   
@@ -2800,16 +2802,16 @@ export default function App() {
     }
   };
 
-  const handleDownloadDmr5 = useCallback(async (lat: number, lon: number, extentMeters = 500) => {
+  const handleDownloadDmr5 = useCallback(async (lat: number, lon: number, extentMeters = 500, heightSystem: 'bpv' | 'etrs89' = 'bpv') => {
     try {
       setIsDmrDownloading(true);
-      setAppStatus({ msg: `Sťahujem výškový model DMR 5.0 (${extentMeters}×${extentMeters} m)...`, type: 'progress' });
-
       const bounds = calculateDmr5Bounds(lat, lon, extentMeters);
+      setAppStatus({ msg: `Sťahujem výškový model DMR 5.0 (${bounds.width}×${bounds.height} m)...`, type: 'progress' });
+
       const tifBuffer = await fetchDmr5GeoTiff(bounds.minE, bounds.maxE, bounds.minN, bounds.maxN);
 
       setAppStatus({ msg: 'Spracovávam DMR 5.0 GeoTIFF a generujem 3D povrch...', type: 'progress' });
-      const { surface, tfwText } = await createDmr5Surface(tifBuffer, bounds.minE, bounds.maxN, cave);
+      const { surface, tfwText, quasigeoidUndulation } = await createDmr5Surface(tifBuffer, bounds.minE, bounds.maxN, cave, { heightSystem });
 
       setCave((prev: ParsedCave | null) => {
         if (!prev) return prev;
@@ -2826,7 +2828,8 @@ export default function App() {
         showSurfaceNetwork: false,
       }));
 
-      const filename = `dmr5_${lat.toFixed(4)}_${lon.toFixed(4)}_${extentMeters}m`;
+      const sysSuffix = heightSystem === 'bpv' ? 'bpv' : 'etrs89';
+      const filename = `dmr5_${lat.toFixed(4)}_${lon.toFixed(4)}_${extentMeters}m_${sysSuffix}`;
       setLastDownloadedDmr({
         tifBuffer,
         tfwText,
@@ -2835,10 +2838,15 @@ export default function App() {
         maxZ: surface.bounds?.maxZ || 0,
         width: bounds.width,
         height: bounds.height,
+        heightSystem,
+        quasigeoidUndulation,
       });
 
+      const sysText = heightSystem === 'bpv'
+        ? `Bpv m n.m. (-${quasigeoidUndulation.toFixed(1)} m kvázigeoid)`
+        : 'ETRS89 elipsoidické';
       setAppStatus({
-        msg: `DMR 5.0 úspešne načítaný (${bounds.width}×${bounds.height} m, ${(surface.bounds?.minZ || 0).toFixed(1)} – ${(surface.bounds?.maxZ || 0).toFixed(1)} m n.m.)`,
+        msg: `DMR 5.0 úspešne načítaný (${bounds.width}×${bounds.height} m, ${(surface.bounds?.minZ || 0).toFixed(1)} – ${(surface.bounds?.maxZ || 0).toFixed(1)} m n.m., ${sysText})`,
         type: 'success',
       });
     } catch (err: any) {

@@ -1,4 +1,4 @@
-# 📖 LochViewer - Complete User Guide (v2.5.9)
+# 📖 LochViewer - Complete User Guide (v2.5.10)
 
 *Web-based 3D platform for speleological visualization, survey measurement, and spatial analysis of cave systems & LiDAR point clouds.*  
 *Design System: Stitch CAD Precision Glassmorphism & Fieldwork High-Contrast (including gentle sand vertical gradient in light mode).*  
@@ -205,6 +205,13 @@ For massive LiDAR scans (`.ply` format), LochViewer automatically activates **En
 * **Balanced Contour Altitude Labels (v2.4.28)**: *Show altitudes* detects dual-axis edge crossings on a finer grid combined with spatial distance filtering, ensuring thick index contour lines display at least one legible elevation label in any active camera view.
 * **DMR 5.0 WCS Elevation Download (v2.5.7)**: When a cave lacks an embedded surface in its `.lox` file, users can directly download the official Slovak DMR 5.0 digital terrain model (1-meter LiDAR grid) from the national INSPIRE OGC WCS 2.0.1 service (`inspirews.skgeodesy.sk`). Coordinates are auto-detected from entrance GPS or stations with quick presets ($500\ \text{m}$, $1\ \text{km}$, $2\ \text{km}$) or custom extents in $500\ \text{m}$ increments ($\pm 500\ \text{m}$ buttons, $500 - 5000\ \text{m}$ slider, or direct numeric input up to $10\ \text{km}$) and one-click export of georeferenced `.tif` and `.tfw` files.
 * **Unified Single-Row Contours & Bottom Texture Placement (v2.5.9)**: The **Contours (10m)** control integrates color swatches for base lines, major lines, and the on/off toggle into a single row, clearing duplicate color rows from the details panel. **Texture (JPG/PNG)** is positioned as the final item in the terrain controls after all geometric surface modes.
+* **Automatic Bpv Height Correction via Slovak Quasigeoid (v2.5.10)**: The official Slovak INSPIRE WCS provides elevation data referenced to the GRS80 ellipsoid (ETRS89-TM34). In Slovakia, ellipsoidal heights exceed true sea-level heights (Baltic 1957 / Bpv) by $+41$ to $+45\ \text{m}$. Version 2.5.10 embeds the high-precision national quasigeoid grid (DMQSK2014-E / DVRM05) with zero network latency and $\approx 1\ \text{cm}$ interpolation accuracy. **Bpv (sea level)** is enabled by default ($H = h - \zeta$), with a segmented switch to raw **ETRS89** ellipsoidal heights if needed.
+* **Automatic Cave Coordinate Reference System (CRS) Detection & True North Alignment (v2.5.10)**: On loading `.lox`/`.3d` files, CaveView analyzes station and entrance coordinates (`caveCoordinateSystem.ts`):
+  - **S-JTSK (Křovák)**: coordinates $X < -150\,000$, $Y < -900\,000$. An affine transformation with meridian convergence compensation ($\gamma \approx -2.8^\circ$ to $-3.5^\circ$) aligns geographic grid north with cave north.
+  - **GPS UTM (34N/35N)**: $X \in [100\,000, 900\,000]$, $Y \in [4\,700\,000, 5\,600\,000]$. Projected directly in the UTM metric frame.
+  - **WGS-84 (degrees)**: Automatic re-projection to UTM metric coordinates.
+  - **Local relative surveys** (e.g., $[0, 0, Z]$): Surface terrain is automatically anchored and centered on the entrance GPS coordinates.
+  An informative badge in the DMR 5.0 download panel displays the detected CRS frame.
 
 ---
 

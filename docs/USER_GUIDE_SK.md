@@ -1,4 +1,4 @@
-# 📖 LochViewer - Kompletná používateľská príručka (v2.5.9)
+# 📖 LochViewer - Kompletná používateľská príručka (v2.5.10)
 
 *Webová 3D platforma pre vizualizáciu, speleologické meranie a analýzu jaskynných systémov a LiDAR dát.*  
 *Dizajnový systém: Stitch CAD Precision Glassmorphism & Fieldwork High-Contrast (vrátane jemného pieskového gradientu vo svetlom režime).*  
@@ -234,6 +234,16 @@ Jaskyňa neexistuje vo vákuu – pochopenie jej vzťahu k povrchovému reliéfu
 8. **Zjednotené ovládanie vrstevníc a textúra na konci nastavení (v2.5.9)**:
    * Ovládací riadok **Vrstevnice (10m)** zlučuje výber farby pre základné tenké línie, výber farby pre hlavné hrubé línie a prepínač zapnutia do jedného kompaktného riadku. Duplicitné farebné riadky v detailoch boli odstránené.
    * Položka **Textúra (JPG/PNG)** je v primárnom zozname terénu aj v podrobnostiach umiestnená na poslednej pozícii za všetkými geometrickými vrstvami povrchu.
+9. **Automatická Bpv výšková korekcia cez slovenský kvázigeoid (v2.5.10)**:
+   * Štátna služba INSPIRE WCS vracia výšky v elipsoidickom referenčnom rámci ETRS89 (elipsoid GRS80). Na území SR to spôsobuje systematickú odchýlku $+41$ až $+45\ \text{m}$ voči skutočnej nadmorskej výške Balt po vyrovnaní (Bpv).
+   * Verzia 2.5.10 integruje oficiálny model kvázigeoidu SR (DMQSK2014-E / DVRM05) s nulovou sieťovou latenciou a presnosťou interpolácie $\approx 1\ \text{cm}$. Predvolenou voľbou je **Bpv (nadmorská výška)**, kde je odchýlka kvázigeoidu automaticky odpočítaná ($H = h - \zeta$). V paneli sťahovania DMR 5.0 je k dispozícii segmentový prepínač na surové elipsoidické výšky **ETRS89** pre špecifické GIS spracovanie.
+10. **Automatická detekcia súradnicového systému jaskyne a korekcia severu (v2.5.10)**:
+   * Aplikácia pri načítaní modelu `.lox`/`.3d` automaticky analyzuje súradnice staníc a vchodu (`caveCoordinateSystem.ts`):
+     - **S-JTSK (Křovák)**: súradnice $X < -150\,000$, $Y < -900\,000$. Aplikuje sa afinná transformácia s korekciou meridiánovej konvergencie ($\gamma \approx -2.8^\circ$ až $-3.5^\circ$), vďaka čomu sa sever jaskyne a povrchu presne prekrývajú.
+     - **GPS UTM (34N/35N)**: $X \in [100\,000, 900\,000]$, $Y \in [4\,700\,000, 5\,600\,000]$. Terén sa priradí priamo v metrickej UTM rovine.
+     - **WGS-84 (zemepisné stupne)**: automatická konverzia na UTM súradnice.
+     - **Lokálne relatívne meranie** (napr. $[0, 0, Z]$): povrchový terén sa automaticky ukotví a vycentruje na GPS polohu vchodu jaskyne.
+   * V paneli sťahovania DMR 5.0 sa zobrazuje prehľadný informačný odznak s identifikovaným CRS rámcom jaskyne.
 
 ---
 

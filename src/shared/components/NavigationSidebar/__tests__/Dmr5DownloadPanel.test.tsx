@@ -61,7 +61,7 @@ describe('Dmr5DownloadPanel', () => {
     fireEvent.click(downloadBtn);
 
     expect(handleDownload).toHaveBeenCalledTimes(1);
-    expect(handleDownload).toHaveBeenCalledWith(48.665276, 20.817054, 1000);
+    expect(handleDownload).toHaveBeenCalledWith(48.665276, 20.817054, 1000, 'bpv');
   });
 
   it('allows stepping extent by 500m and setting custom extent', () => {
@@ -88,7 +88,29 @@ describe('Dmr5DownloadPanel', () => {
     const downloadBtn = screen.getByText(/Stiahnuť a zobraziť povrch/i);
     fireEvent.click(downloadBtn);
 
-    expect(handleDownload).toHaveBeenCalledWith(48.665276, 20.817054, 1500);
+    expect(handleDownload).toHaveBeenCalledWith(48.665276, 20.817054, 1500, 'bpv');
+  });
+
+  it('allows switching to raw ETRS89 ellipsoidal height system', () => {
+    const handleDownload = vi.fn();
+    render(
+      <Dmr5DownloadPanel
+        cave={mockCave}
+        lang="sk"
+        onDownload={handleDownload}
+        isDownloading={false}
+        lastDownloadedDmr={null}
+        onSaveFiles={vi.fn()}
+      />
+    );
+
+    const etrsBtn = screen.getByText(/ETRS89 \(elipsoid\)/i);
+    fireEvent.click(etrsBtn);
+
+    const downloadBtn = screen.getByText(/Stiahnuť a zobraziť povrch/i);
+    fireEvent.click(downloadBtn);
+
+    expect(handleDownload).toHaveBeenCalledWith(48.665276, 20.817054, 500, 'etrs89');
   });
 
   it('displays save button and triggers onSaveFiles when lastDownloadedDmr is present', () => {

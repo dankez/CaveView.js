@@ -97,6 +97,10 @@ export interface CaveSurface {
     width: number;
     height: number;
   }
+  /** Vertical reference system used for heights ('bpv' = Baltic sea level altitude, 'etrs89' = GRS80 ellipsoid) */
+  heightSystem?: 'bpv' | 'etrs89'
+  /** Quasigeoid undulation offset applied to convert ETRS89 ellipsoidal to Bpv (in metres) */
+  quasigeoidUndulation?: number
 }
 
 export interface SurfaceTextureCalibrationPoint {

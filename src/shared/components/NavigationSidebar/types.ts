@@ -81,7 +81,7 @@ export interface NavigationBindings {
   handleReset: () => void
   downloadableTexture: { dataUrl: string; bbox: string; } | null
   downloadGeneratedTexture: () => void
-  handleDownloadDmr5: (lat: number, lon: number, extentMeters: number) => Promise<void>
+  handleDownloadDmr5: (lat: number, lon: number, extentMeters: number, heightSystem?: 'bpv' | 'etrs89') => Promise<void>
   isDmrDownloading: boolean
   lastDownloadedDmr: {
     tifBuffer: ArrayBuffer;
@@ -91,6 +91,8 @@ export interface NavigationBindings {
     maxZ: number;
     width: number;
     height: number;
+    heightSystem?: 'bpv' | 'etrs89';
+    quasigeoidUndulation?: number;
   } | null
   handleSaveDmrFiles: () => void
 }

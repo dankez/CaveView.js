@@ -5,6 +5,8 @@ import { getSjtskBoundsFromDtm } from './surfaceBounds';
 import { findReferenceStation } from './stationAltitude';
 import { tryUtmToWgs84, tryJtskToWgs84 } from './coords';
 import { buildMapProxyUrlCandidates } from './mapProxyUrls';
+import { getSlovakiaQuasigeoidUndulation } from './slovakiaQuasigeoid';
+import { detectCaveCoordinateSystem } from './caveCoordinateSystem';
 
 /** ETRS89 / UTM zóna 34N (EPSG:3046 / EPSG:25834) používaná pre celoštátny DMR 5.0 SR */
 export const UTM34_DEF = "+proj=utm +zone=34 +ellps=GRS80 +units=m +no_defs";
@@ -207,34 +209,74 @@ export async function fetchDmr5GeoTiff(
   throw lastError || new Error('Nepodarilo sa stiahnuť DMR 5.0 GeoTIFF z dostupných serverov.');
 }
 
+export interface CreateDmr5SurfaceOptions {
+  /** Výškový referenčný systém: 'bpv' (predvolené, nadmorská výška znížená o kvázigeoid) alebo 'etrs89' (surová elipsoidická) */
+  heightSystem?: 'bpv' | 'etrs89';
+}
+
+export interface Dmr5SurfaceResult {
+  surface: CaveSurface;
+  tfwText: string;
+  heightSystem: 'bpv' | 'etrs89';
+  quasigeoidUndulation: number;
+}
+
 /**
  * Vytvorí plnohodnotný CaveSurface objekt z binárneho GeoTIFF bufferu
  * a presne ho napasuje na súradnicový systém a stred jaskyne.
+ * Predvolene prevedie elipsoidické výšky ETRS89 na normálne nadmorské výšky Bpv (Balt po vyrovnaní)
+ * odpočítaním odľahlosti slovenského kvázigeoidu zeta(lat, lon).
  */
 export async function createDmr5Surface(
   tifBuffer: ArrayBuffer,
   minE: number,
   maxN: number,
-  cave?: ParsedCave | null
-): Promise<{ surface: CaveSurface; tfwText: string }> {
+  cave?: ParsedCave | null,
+  options?: CreateDmr5SurfaceOptions
+): Promise<Dmr5SurfaceResult> {
+  const heightSystem = options?.heightSystem ?? 'bpv';
   const tfwText = generateTfwContent(minE, maxN, 1.0);
   const centerOffset = cave ? { ...cave.centerOffset } : { x: minE, y: maxN, z: 0 };
 
   const { parseGeoTiff } = await import('@v1/parsers/tiffParser');
   const surface = await parseGeoTiff(tifBuffer, tfwText, centerOffset);
 
+  // 1. Zisťovanie stredu stiahnutého rastra vo WGS84 pre výpočet odľahlosti kvázigeoidu
+  const extentWidth = surface.dtm.samples * Math.abs(surface.dtm.calib.xx || 1.0);
+  const extentHeight = surface.dtm.lines * Math.abs(surface.dtm.calib.yy || 1.0);
+  const centerE = minE + extentWidth / 2;
+  const centerN = maxN - extentHeight / 2;
+  const [centerLat, centerLon] = utm34ToWgs84(centerE, centerN);
+
+  let quasigeoidUndulation = 0;
+  if (heightSystem === 'bpv') {
+    quasigeoidUndulation = getSlovakiaQuasigeoidUndulation(centerLat, centerLon);
+    // Odpočítanie odľahlosti kvázigeoidu: H_Bpv = h_ETRS89 - zeta
+    const data = surface.dtm.data;
+    for (let i = 0; i < data.length; i++) {
+      if (data[i] > -9000 && data[i] < 1e30) {
+        data[i] -= quasigeoidUndulation;
+      }
+    }
+    if (surface.bounds) {
+      surface.bounds.minZ -= quasigeoidUndulation;
+      surface.bounds.maxZ -= quasigeoidUndulation;
+    }
+  }
+
+  surface.heightSystem = heightSystem;
+  surface.quasigeoidUndulation = quasigeoidUndulation;
+
+  // 2. Geodetické zosúladenie s jaskyňou podľa detekovaného CRS
   if (cave) {
+    const crsInfo = detectCaveCoordinateSystem(cave);
     const cal = surface.dtm.calib;
-    const { x: cx, y: cy } = cave.centerOffset;
 
-    const isCaveUtm = cx > 100000 && cx < 900000 && cy > 4700000 && cy < 5600000;
-    const isCaveJtsk = cx > -950000 && cx < -150000 && cy > -1350000 && cy < -900000;
-
-    if (isCaveUtm) {
-      // Jaskyňa je priamo v UTM
+    if (crsInfo.type === 'utm') {
+      // Jaskyňa je priamo v UTM 34N
       surface.centerOffset = { ...cave.centerOffset };
-    } else if (isCaveJtsk) {
-      // Jaskyňa je v S-JTSK: prepočítaj kalibráciu DTM z UTM 34N do S-JTSK
+    } else if (crsInfo.type === 'sjtsk') {
+      // Jaskyňa je v S-JTSK: prepočítaj kalibráciu DTM z UTM 34N do S-JTSK vrátane meridiánovej konvergencie
       try {
         const oWgs = proj4(UTM34_DEF, "WGS84", [cal.xOrigin, cal.yOrigin]);
         const oTarget = proj4("WGS84", SJTSK_DEF, oWgs);
@@ -284,7 +326,7 @@ export async function createDmr5Surface(
     surface.sjtskAspect = sjtskBounds.aspect;
   }
 
-  return { surface, tfwText };
+  return { surface, tfwText, heightSystem, quasigeoidUndulation };
 }
 
 /**

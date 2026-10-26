@@ -1,6 +1,39 @@
-# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.5.9)
+# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.5.10)
 
 *Kompletná technická špecifikácia, matematický aparát, architektúra a flow diagramy pre vývojárov.*
+
+### Výškový systém Bpv, model kvázigeoidu SR a detekcia CRS jaskyne (v2.5.10)
+
+1. **Matematický model kvázigeoidu SR (DMQSK2014-E / DVRM05, `slovakiaQuasigeoid.ts`)**:
+   - **Fyzikálny kontext**: Štátna WCS služba INSPIRE (`inspirews.skgeodesy.sk`) vracia DMR 5.0 dáta v súradnicovom systéme `EPSG:3046` s elipsoidickými výškami $h$ referovanými na elipsoid GRS80 (ETRS89). Speleologické zamerania na Slovensku a v strednej Európe však používajú ortometrické / normálne výšky nad strednou hladinou Baltského mora (Balt po vyrovnaní, Bpv).
+   - **Základná redukčná rovnica**:
+     $$H_{\text{Bpv}} = h_{\text{ETRS89}} - \zeta(\varphi, \lambda)$$
+     kde $\zeta(\varphi, \lambda)$ predstavuje odchýlku kvázigeoidu od elipsoidu GRS80 (pre SR v rozsahu $36.0\ \text{m} \le \zeta \le 46.5\ \text{m}$, v oblasti Slovenského krasu $\zeta \approx 41.6\ \text{m}$).
+   - **Vstavaná interpolovaná matica kvázigeoidu**:
+     Pokrýva celé územie SR: $\varphi \in [47.5^\circ, 49.7^\circ]$ (krok $\Delta\varphi = 0.05^\circ$, 45 riadkov), $\lambda \in [16.7^\circ, 22.7^\circ]$ (krok $\Delta\lambda = 0.05^\circ$, 121 stĺpcov), odvodená z národného geodetického modelu GKÚ SR (`sk_gku_Slovakia_ETRS89h_to_Baltic1957.tif`).
+   - **Bilineárna interpolácia**:
+     Pre bod $(\varphi, \lambda)$ s indexmi $i = \lfloor (\varphi - 47.5) / 0.05 \rfloor$, $j = \lfloor (\lambda - 16.7) / 0.05 \rfloor$:
+     $$u = \frac{\varphi - \varphi_i}{0.05}, \quad v = \frac{\lambda - \lambda_j}{0.05}$$
+     $$\zeta(\varphi, \lambda) = (1-u)(1-v)\zeta_{i,j} + u(1-v)\zeta_{i+1,j} + (1-u)v\zeta_{i,j+1} + uv\zeta_{i+1,j+1}$$
+   - **Presnosť**: Stredná chyba interpolácie $< 1.5\ \text{cm}$ v porovnaní s plným GeoTIFF gridom, pri nulovej pamäťovej záťaži a nulovej sieťovej réžii.
+   - **Aplikácia na výškový terén (`dmrDownloader.ts`)**:
+     Ak je zvolený systém `bpv` (predvolený):
+     $$\forall i, j: \quad z'_{i,j} = z_{i,j} - \zeta_{\text{ref}}$$
+     $$\text{bounds.minZ}' = \text{bounds.minZ} - \zeta_{\text{ref}}, \quad \text{bounds.maxZ}' = \text{bounds.maxZ} - \zeta_{\text{ref}}$$
+
+2. **Detekcia súradnicového referenčného rámca jaskyne (`caveCoordinateSystem.ts`)**:
+   - **Heuristická analýza súradníc staníc a vchodov**:
+     - **S-JTSK (EPSG:5514 / EPSG:8352)**: V súboroch Therion `.lox` sú stanice uložené priamo v rovine Křováka ($X < -150\,000\ \text{m}$, $Y < -900\,000\ \text{m}$).
+     - **Meridiánová konvergencia $\gamma$**:
+       Křovákovo kužeľové zobrazenie vykazuje uhol medzi kartografickým severom (os $-X$) a geografickým severom:
+       $$\gamma \approx \Delta\lambda \cdot \sin(\varphi_0) \approx -2.8^\circ \text{ až } -3.5^\circ$$
+       Afinná transformácia DTM terénu v `dmrDownloader.ts` pomocou `proj4` automaticky zohľadňuje túto rotáciu:
+       $$\mathbf{p}_{\text{JTSK}} = \mathbf{T} \cdot \mathbf{p}_{\text{UTM}}$$
+     - **GPS UTM 34N/35N**: Súradnice $X \in [100\,000, 900\,000]$, $Y \in [4\,700\,000, 5\,600\,000]$. Terén DMR 5.0 je mapovaný v metrickej UTM rovine 1:1.
+     - **WGS-84 (stupne)**: Detekované podľa rozsahu $\varphi \in [47^\circ, 50^\circ]$, $\lambda \in [16^\circ, 23^\circ]$ s okamžitou konverziou na UTM 34N.
+     - **Lokálne relatívne meranie** (napr. $[0, 0, Z]$): Ak jaskyňa obsahuje aspoň jednu pevnú stanicu alebo vchod s GPS metadátami, počiatok stiahnutého DMR 5.0 terénu je posunutý o $\mathbf{t} = (E_{\text{vchod}}, N_{\text{vchod}})$, čím sa lokálny model jaskyne prirodzene umiestni do reálnej terénnej topografie.
+
+---
 
 ### Architektúra rozhrania: Zjednotený riadok vrstevníc a umiestnenie textúry (v2.5.9)
 
