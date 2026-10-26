@@ -121,6 +121,13 @@ export const de = {
     contourBase: "Grundfarbe",
     contourMajor: "Hauptfarbe",
     opacity: "Deckkraft",
+    dmr5Title: "DMR 5.0 herunterladen (GKÚ LiDAR)",
+    dmr5Desc: "Landesweites slowakisches digitales Geländemodell (1 m Auflösung) über INSPIRE OGC WCS.",
+    dmr5Download: "DMR 5.0 Gelände herunterladen",
+    dmr5Extent: "Kachelausdehnung",
+    dmr5Downloading: "DMR 5.0 wird heruntergeladen...",
+    dmr5Success: "DMR 5.0 Gelände erfolgreich geladen",
+    dmr5DownloadFiles: "Dateien herunterladen (.tif + .tfw)",
   },
   cave: {
     title: "Höhlenwände",

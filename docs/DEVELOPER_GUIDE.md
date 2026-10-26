@@ -1,6 +1,34 @@
-# 🛠️ LochViewer - Developer & Mathematical Specification (v2.5.5)
+# 🛠️ LochViewer - Developer & Mathematical Specification (v2.5.6)
 
 *Comprehensive technical architecture, mathematical formulations, shader models, and Web Worker data flows for developers and contributors.*
+
+### DMR 5.0 Surface Download & Generation (WCS 2.0.1) (2.5.6)
+
+1. **OGC WCS 2.0.1 Protocol & INSPIRE Coverage (`dmrDownloader.ts`)**:
+   - **National GKÚ SR Server**: `https://inspirews.skgeodesy.sk/geoserver/el/ows`
+   - **Elevation Layer**: `el__EL.GridCoverage` (LiDAR DMR 5.0 Slovakia in 1 m resolution, 100% nationwide coverage).
+   - **Coordinate Reference System**: ETRS89 / UTM Zone 34N (`EPSG:3046` / `EPSG:25834`, GRS80 ellipsoid).
+   - **Output Format**: `image/tiff;application=geotiff` (32-bit IEEE Float raster).
+   - **KVP Subsetting Request**:
+     $$\text{subset}=\text{N}(N_{min}, N_{max})\quad\&\quad\text{subset}=\text{E}(E_{min}, E_{max})$$
+
+2. **Bounding Box Calculation (`calculateDmr5Bounds`) & World File Generation (`generateTfwContent`)**:
+   - For given cave entrance/center GPS $(\varphi, \lambda)$ and chosen extent $L \in \{300, 500, 1000, 2000\}\ \text{m}$:
+     $$(E_c, N_c) = \text{proj4}(\text{WGS84}, \text{UTM34}, [\lambda, \varphi])$$
+     $$E_{min} = \text{round}(E_c - L/2), \quad E_{max} = E_{min} + L$$
+     $$N_{min} = \text{round}(N_c - L/2), \quad N_{max} = N_{min} + L$$
+   - The standard 6-line ESRI World File (`.tfw`) defines pixel scale and top-left pixel center:
+     $$\text{Line 1}: 1.0, \quad \text{Line 2}: 0.0, \quad \text{Line 3}: 0.0, \quad \text{Line 4}: -1.0$$
+     $$\text{Line 5}: E_{min} + 0.5, \quad \text{Line 6}: N_{max} - 0.5$$
+
+3. **Geodetic Alignment with Cave Survey Frame (`createDmr5Surface`)**:
+   - **Cave in UTM 34N**: Direct alignment `surface.centerOffset = cave.centerOffset`.
+   - **Cave in S-JTSK**: Rigorous surface calibration transform via `proj4(UTM34_DEF, SJTSK_DEF, ...)`.
+   - **Cave in Local Survey Coordinates**: When entrance GPS $(\varphi_{ent}, \lambda_{ent}) \rightarrow (E_{ent}, N_{ent})$ and local survey coordinates $(x_{ent}, y_{ent})$ are known:
+     $$E_{origin} = E_{ent} - x_{ent}, \quad N_{origin} = N_{ent} - y_{ent}$$
+     $$X_{origin, calib} = E_{min} - E_{origin}, \quad Y_{origin, calib} = N_{max} - N_{origin}$$
+     The generated surface aligns seamlessly with zero offset relative to the entrance.
+   - **Texture & Layer Support**: Generates an immediate `sjtskBbox` on the created surface, enabling instant overlay of ZBGIS Orthophoto, DMR shaded relief, and geological maps.
 
 ### Shortest 3D Distance to Surface (Minimum Rock Cover), GPS & ZBGIS LiDAR (2.5.5)
 

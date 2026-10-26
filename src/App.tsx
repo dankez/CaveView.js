@@ -32,6 +32,12 @@ import { FloatingClippingSlider } from '@shared/components/FloatingClippingSlide
 import { MeasurementPanel } from '@shared/components/MeasurementPanel';
 import { resolveStationPosition } from '@shared/utils/stationInteraction'
 import { calculateStationDepths, findReferenceStation, sampleDtmAt } from '@shared/utils/stationAltitude'
+import {
+  calculateDmr5Bounds,
+  fetchDmr5GeoTiff,
+  createDmr5Surface,
+  downloadDmrFiles,
+} from '@shared/utils/dmrDownloader'
 
 const HelpModal = React.lazy(() => import('@shared/components/HelpModal').then(m => ({ default: m.HelpModal })))
 
@@ -270,12 +276,13 @@ export interface SelStation {
   centerZ?:     number
 }
 
-function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUpdateGps, t, lang, baseAltitude, altitudeMode }: { 
+function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUpdateGps, onDownloadDmr, t, lang, baseAltitude, altitudeMode }: { 
   stations: SelStation[]; 
   onClose: () => void;
   onPlaceCaver: (pos: [number, number, number] | null, pose: 'standing' | 'crawling') => void;
   onSetProfile: (sts: SelStation[]) => void;
   onUpdateGps: (stIdx: number, lat: number, lon: number, alt: number) => void;
+  onDownloadDmr?: (lat: number, lon: number, extentMeters: number) => Promise<void>;
   t: (key: string) => string;
   lang: string;
   baseAltitude?: number;
@@ -569,8 +576,34 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
                     )}
                   </div>
                 ) : (
-                  <div style={{ fontSize: 10, color: '#64748b', marginTop: 3 }}>
-                    {t('stations.noSurfaceDtm')}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 3 }}>
+                    <div style={{ fontSize: 10, color: '#64748b' }}>
+                      {t('stations.noSurfaceDtm')}
+                    </div>
+                    {st.gps && onDownloadDmr && (
+                      <button
+                        type="button"
+                        onClick={() => onDownloadDmr(st.gps!.lat, st.gps!.lon, 500)}
+                        style={{
+                          background: 'rgba(245, 158, 11, 0.15)',
+                          border: '1px solid rgba(245, 158, 11, 0.4)',
+                          borderRadius: '4px',
+                          color: '#f59e0b',
+                          fontSize: '10px',
+                          padding: '3px 6px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          alignSelf: 'flex-start',
+                          marginTop: '2px',
+                        }}
+                        title={lang === 'sk' ? "Stiahnuť terén DMR 5.0 (GKÚ SR LiDAR) pre okolie tohto bodu" : "Download DMR 5.0 terrain around this point"}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>cloud_download</span>
+                        <span>{lang === 'sk' ? 'Stiahnuť DMR 5.0 (500m)' : 'Download DMR 5.0 (500m)'}</span>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -1033,6 +1066,16 @@ export default function App() {
   const [appStatus, setAppStatus] = useState<{ msg: string; type: 'info' | 'error' | 'success' | 'progress'; progress?: number } | null>(null)
   const [downloadableTexture, setDownloadableTexture] = useState<{ dataUrl: string, bbox: string } | null>(null)
   const [textureDownloadInfo, setTextureDownloadInfo] = useState<TextureDownloadInspector | null>(null)
+  const [isDmrDownloading, setIsDmrDownloading] = useState(false)
+  const [lastDownloadedDmr, setLastDownloadedDmr] = useState<{
+    tifBuffer: ArrayBuffer;
+    tfwText: string;
+    filename: string;
+    minZ: number;
+    maxZ: number;
+    width: number;
+    height: number;
+  } | null>(null)
   const [currentTheme, setCurrentTheme] = useState<string>('precision')
   
   // Speleological & LiDAR analysis states
@@ -2759,6 +2802,63 @@ export default function App() {
     }
   };
 
+  const handleDownloadDmr5 = useCallback(async (lat: number, lon: number, extentMeters = 500) => {
+    try {
+      setIsDmrDownloading(true);
+      setAppStatus({ msg: `Sťahujem výškový model DMR 5.0 (${extentMeters}×${extentMeters} m)...`, type: 'progress' });
+
+      const bounds = calculateDmr5Bounds(lat, lon, extentMeters);
+      const tifBuffer = await fetchDmr5GeoTiff(bounds.minE, bounds.maxE, bounds.minN, bounds.maxN);
+
+      setAppStatus({ msg: 'Spracovávam DMR 5.0 GeoTIFF a generujem 3D povrch...', type: 'progress' });
+      const { surface, tfwText } = await createDmr5Surface(tifBuffer, bounds.minE, bounds.maxN, cave);
+
+      setCave((prev: ParsedCave | null) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          surfaces: [surface],
+          hasSurface: true,
+        };
+      });
+
+      setOpts(prev => ({
+        ...prev,
+        showSurfaceMesh: true,
+        showSurfaceNetwork: false,
+      }));
+
+      const filename = `dmr5_${lat.toFixed(4)}_${lon.toFixed(4)}_${extentMeters}m`;
+      setLastDownloadedDmr({
+        tifBuffer,
+        tfwText,
+        filename,
+        minZ: surface.bounds?.minZ || 0,
+        maxZ: surface.bounds?.maxZ || 0,
+        width: bounds.width,
+        height: bounds.height,
+      });
+
+      setAppStatus({
+        msg: `DMR 5.0 úspešne načítaný (${bounds.width}×${bounds.height} m, ${(surface.bounds?.minZ || 0).toFixed(1)} – ${(surface.bounds?.maxZ || 0).toFixed(1)} m n.m.)`,
+        type: 'success',
+      });
+    } catch (err: any) {
+      console.error('[DMR5] Download error:', err);
+      setAppStatus({
+        msg: `Chyba pri sťahovaní DMR 5.0: ${err?.message || String(err)}`,
+        type: 'error',
+      });
+    } finally {
+      setIsDmrDownloading(false);
+    }
+  }, [cave]);
+
+  const handleSaveDmrFiles = useCallback(() => {
+    if (!lastDownloadedDmr) return;
+    downloadDmrFiles(lastDownloadedDmr.tifBuffer, lastDownloadedDmr.tfwText, lastDownloadedDmr.filename);
+  }, [lastDownloadedDmr]);
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault(); setIsDragging(false)
     const files = Array.from(e.dataTransfer.files)
@@ -3258,6 +3358,10 @@ export default function App() {
     handleReset,
     downloadableTexture,
     downloadGeneratedTexture,
+    handleDownloadDmr5,
+    isDmrDownloading,
+    lastDownloadedDmr,
+    handleSaveDmrFiles,
   } satisfies NavigationBindings : null
 
   return (
@@ -4065,6 +4169,7 @@ export default function App() {
                         setShowStationCard(false)
                       }}
                       onUpdateGps={handleUpdateGps}
+                      onDownloadDmr={handleDownloadDmr5}
                       t={t}
                       lang={lang}
                       baseAltitude={baseAltitude}

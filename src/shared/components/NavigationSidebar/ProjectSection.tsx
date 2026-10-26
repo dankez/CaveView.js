@@ -3,8 +3,8 @@
 import type { NavigationBindings } from './types';
 import { SidebarAccordion } from './SidebarAccordion';
 
-export function ProjectSection({ bindings }: { bindings: Pick<NavigationBindings, 't' | 'lang' | 'isPlyLidar' | 'loadedFile' | 'cave' | 'handleExportScreenshot' | 'isEmbedMode' | 'openShareDialog' | 'opts' | 'toggleOpt' | 'setOpts' | 'isRecording' | 'setIsRecording' | 'handleFile' | 'loadFromUrl' | 'handleReset' | 'downloadableTexture' | 'downloadGeneratedTexture'> }) {
-  const { t, lang, isPlyLidar, loadedFile, cave, handleExportScreenshot, isEmbedMode, openShareDialog, opts, toggleOpt, setOpts, isRecording, setIsRecording, handleFile, loadFromUrl, handleReset, downloadableTexture, downloadGeneratedTexture } = bindings
+export function ProjectSection({ bindings }: { bindings: Pick<NavigationBindings, 't' | 'lang' | 'isPlyLidar' | 'loadedFile' | 'cave' | 'handleExportScreenshot' | 'isEmbedMode' | 'openShareDialog' | 'opts' | 'toggleOpt' | 'setOpts' | 'isRecording' | 'setIsRecording' | 'handleFile' | 'loadFromUrl' | 'handleReset' | 'downloadableTexture' | 'downloadGeneratedTexture' | 'lastDownloadedDmr' | 'handleSaveDmrFiles'> }) {
+  const { t, lang, isPlyLidar, loadedFile, cave, handleExportScreenshot, isEmbedMode, openShareDialog, opts, toggleOpt, setOpts, isRecording, setIsRecording, handleFile, loadFromUrl, handleReset, downloadableTexture, downloadGeneratedTexture, lastDownloadedDmr, handleSaveDmrFiles } = bindings
   return <>
 <div className="sidebar-dataset-banner">
                         <div className="sidebar-dataset-top">
@@ -98,6 +98,31 @@ export function ProjectSection({ bindings }: { bindings: Pick<NavigationBindings
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: '14px' }} aria-hidden="true">download</span>
                   {lang === 'sk' ? 'Textúra' : 'Texture'}
+                </button>
+              )}
+              {lastDownloadedDmr && (
+                <button
+                  type="button"
+                  onClick={handleSaveDmrFiles}
+                  style={{
+                    padding: '4px 8px',
+                    background: '#f59e0b',
+                    color: '#0f172a',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                    flexShrink: 0
+                  }}
+                  title={lang === 'sk' ? "Stiahnuť DMR 5.0 GeoTIFF a World súbor (.tfw)" : "Download DMR 5.0 GeoTIFF and World file (.tfw)"}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }} aria-hidden="true">terrain</span>
+                  DMR 5.0
                 </button>
               )}
         <SidebarAccordion heading={<div className="cad-card-header">

@@ -81,4 +81,16 @@ export interface NavigationBindings {
   handleReset: () => void
   downloadableTexture: { dataUrl: string; bbox: string; } | null
   downloadGeneratedTexture: () => void
+  handleDownloadDmr5: (lat: number, lon: number, extentMeters: number) => Promise<void>
+  isDmrDownloading: boolean
+  lastDownloadedDmr: {
+    tifBuffer: ArrayBuffer;
+    tfwText: string;
+    filename: string;
+    minZ: number;
+    maxZ: number;
+    width: number;
+    height: number;
+  } | null
+  handleSaveDmrFiles: () => void
 }

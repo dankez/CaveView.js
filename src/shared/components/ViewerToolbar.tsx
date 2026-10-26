@@ -132,6 +132,7 @@ export const ViewerToolbar = memo(function ViewerToolbar({ bindings: b, onOpen, 
       <button type="button" onClick={() => chooseImage(() => b.textureFileInputRef.current?.click())}>{t('toolbar.localImage')}</button>
       <button type="button" onClick={() => chooseImage(() => b.calibFileInputRef.current?.click())}>{t('toolbar.calibration')}</button>
       <button type="button" onClick={() => chooseImage(() => setOpts(p => ({ ...p, showSurfaceTexture: true, surfaceTextureSource: 'wms-orto' })))}>{t('toolbar.mapImage')} · ZBGIS</button>
+      <button type="button" onClick={() => chooseImage(() => revealInSidebar('layers', 'surface'))}>🏔️ {t('terrain.dmr5Title')}</button>
       <button type="button" onClick={() => surfaceMenu.current?.close()}>{t('ui.close')}</button>
     </dialog>
   </div>

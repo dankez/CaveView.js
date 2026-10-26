@@ -121,6 +121,13 @@ export const sk = {
     contourBase: "Základná farba",
     contourMajor: "Hlavná farba",
     opacity: "Priehľadnosť",
+    dmr5Title: "Stiahnuť DMR 5.0 (GKÚ LiDAR SR)",
+    dmr5Desc: "Celoštátny digitálny model reliéfu SR (1 m rozlíšenie) cez INSPIRE OGC WCS službu.",
+    dmr5Download: "Stiahnuť terén DMR 5.0",
+    dmr5Extent: "Rozsah výseku",
+    dmr5Downloading: "Sťahujem DMR 5.0...",
+    dmr5Success: "DMR 5.0 terén bol úspešne načítaný",
+    dmr5DownloadFiles: "Stiahnuť súbory (.tif + .tfw)",
   },
   cave: {
     title: "Steny jaskyne",

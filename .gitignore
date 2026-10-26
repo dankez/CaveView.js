@@ -24,6 +24,7 @@ test_model/map-downloader-for-therion-main/
 graphify-out/cache/
 
 # Local test runs
+terrain_dmr5/
 .playwright-cli/
 .playwright-mcp/
 /*.png

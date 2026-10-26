@@ -121,6 +121,13 @@ export const fr = {
     contourBase: "Couleur de base",
     contourMajor: "Couleur majeure",
     opacity: "Opacité",
+    dmr5Title: "Télécharger MNT 5.0 (GKÚ LiDAR)",
+    dmr5Desc: "Modèle numérique de terrain slovaque (résolution 1 m) via le service INSPIRE OGC WCS.",
+    dmr5Download: "Télécharger le terrain MNT 5.0",
+    dmr5Extent: "Étendue de la tuile",
+    dmr5Downloading: "Téléchargement de MNT 5.0...",
+    dmr5Success: "Terrain MNT 5.0 chargé avec succès",
+    dmr5DownloadFiles: "Télécharger les fichiers (.tif + .tfw)",
   },
   cave: {
     title: "Parois de la grotte",

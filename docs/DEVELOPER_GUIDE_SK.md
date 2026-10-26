@@ -1,6 +1,34 @@
-# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.5.4)
+# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.5.6)
 
 *Kompletná technická špecifikácia, matematický aparát, architektúra a flow diagramy pre vývojárov.*
+
+### Sťahovanie a generovanie povrchového terénu DMR 5.0 (WCS 2.0.1) (2.5.6)
+
+1. **OGC WCS 2.0.1 protokol a INSPIRE špecifikácia (`dmrDownloader.ts`)**:
+   - **Štátny server GKÚ SR**: `https://inspirews.skgeodesy.sk/geoserver/el/ows`
+   - **Vrstva reliéfu**: `el__EL.GridCoverage` (LiDAR DMR 5.0 SR v 1 m rastri, 100% národné pokrytie).
+   - **Referenčný systém**: ETRS89 / UTM zóna 34N (`EPSG:3046` / `EPSG:25834`, kódovanie elipsoidu GRS80).
+   - **Výstupný formát**: `image/tiff;application=geotiff` (32-bit IEEE Float raster).
+   - **KVP Subsetting požiadavka**:
+     $$\text{subset}=\text{N}(N_{min}, N_{max})\quad\&\quad\text{subset}=\text{E}(E_{min}, E_{max})$$
+
+2. **Matematický výpočet výseku (`calculateDmr5Bounds`) a World File (`generateTfwContent`)**:
+   - Pre zadané GPS $(\varphi, \lambda)$ a požadovaný rozsah $L \in \{300, 500, 1000, 2000\}\ \text{m}$:
+     $$(E_c, N_c) = \text{proj4}(\text{WGS84}, \text{UTM34}, [\lambda, \varphi])$$
+     $$E_{min} = \text{round}(E_c - L/2), \quad E_{max} = E_{min} + L$$
+     $$N_{min} = \text{round}(N_c - L/2), \quad N_{max} = N_{min} + L$$
+   - Štandardný 6-riadkový ESRI World File (`.tfw`) definuje stred ľavého horného pixela:
+     $$\text{Line 1}: 1.0, \quad \text{Line 2}: 0.0, \quad \text{Line 3}: 0.0, \quad \text{Line 4}: -1.0$$
+     $$\text{Line 5}: E_{min} + 0.5, \quad \text{Line 6}: N_{max} - 0.5$$
+
+3. **Geodetické zosúladenie s jaskynným meračským rámcom (`createDmr5Surface`)**:
+   - **Jaskyňa v UTM 34N**: Priame zjednotenie `surface.centerOffset = cave.centerOffset`.
+   - **Jaskyňa v S-JTSK**: Rigorózny prepočet kalibračnej matice povrchu cez `proj4(UTM34_DEF, SJTSK_DEF, ...)`.
+   - **Jaskyňa v lokálnych meračských súradniciach**: Ak je známa poloha referenčného vchodu $(\varphi_{ent}, \lambda_{ent}) \rightarrow (E_{ent}, N_{ent})$ a jeho lokálne súradnice $(x_{ent}, y_{ent})$:
+     $$E_{origin} = E_{ent} - x_{ent}, \quad N_{origin} = N_{ent} - y_{ent}$$
+     $$X_{origin, calib} = E_{min} - E_{origin}, \quad Y_{origin, calib} = N_{max} - N_{origin}$$
+     Povrch sa po prechode do scény prepočíta s nulovou odchýlkou voči vchodu.
+   - **Podpora textúr**: Na vygenerovaný povrch sa okamžite vypočíta `sjtskBbox`, vďaka čomu je možné naň priamo aplikovať ZBGIS Ortofotomapu, DMR tieňovaný reliéf alebo geologickú mapu.
 
 ### Najkratšia 3D vzdialenosť k povrchu (minimálna hrúbka masívu), GPS a ZBGIS LiDAR (2.5.5)
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.5.6] - 2026-10-26
+### Sťahovanie a generovanie terénu DMR 5.0 z WCS služby GKÚ SR / DMR 5.0 WCS terrain download and 3D surface generation
+- **Priame sťahovanie DMR 5.0 cez OGC WCS 2.0.1**: Možnosť priamo z aplikácie stiahnuť certifikovaný digitálny model reliéfu DMR 5.0 (LiDAR SR v rozlíšení 1 × 1 m, INSPIRE vrstva `el__EL.GridCoverage`) zo štátnej služby GKÚ SR (`inspirews.skgeodesy.sk`). / Direct in-app download of Slovakia's certified DMR 5.0 DTM (1m resolution LiDAR raster) via national OGC WCS 2.0.1 service.
+- **Automatické vytvorenie 3D povrchu**: Získaný GeoTIFF raster sa v prehliadači okamžite prevedie na plnohodnotný 3D povrch jaskyne s tieňovaným reliéfom, vrstevnicami a hypsometrickým farbením. Podporuje okamžitú aplikáciu ortofotomapy ZBGIS alebo geologickej mapy. / Instant generation of 3D terrain surface from downloaded elevation GeoTIFF with shaded relief, contour lines, elevation coloring, and full support for ZBGIS orthophoto texture draping.
+- **Export `.tif` a `.tfw` súborov**: Používateľ si môže stiahnutý DMR 5.0 raster uložiť do počítača spolu s vygenerovaným ESRI World súborom (`.tfw`) pre použitie v GIS nástrojoch (QGIS, ArcGIS) alebo archiváciu. / Direct export/download of georeferenced `.tif` and `.tfw` (ESRI World File) pairs to local disk for GIS workflows.
+- **Inteligentný odhad súradníc a voľba rozsahu**: Aplikácia automaticky predvyplní GPS súradnice vchodu alebo centra jaskyne s možnosťou manuálnej úpravy a voľby výseku (300 m, 500 m, 1 km, 2 km). / Automated coordinate guessing from cave entrance/center with extent selection presets (300 m, 500 m, 1 km, 2 km).
+- **Integrácia do rozhrania**: Nástroj je prístupný v bočnom paneli (karta Povrch & Terén), v hornej lište (menu povrchov) aj v sekcii Projekt / Export. / Accessible via Surface & Terrain sidebar accordion, quick toolbar surface menu, and Project export section.
+
 ## [2.5.5] - 2026-10-26
 ### Presná bodová identifikácia v portáli ZBGIS Terén / Exact point identification pin in ZBGIS Terrain portal
 - **Presná identifikácia bodu na ZBGIS**: Aktualizovaný formát odkazu na štátny portál ZBGIS Terén (`https://zbgis.skgeodesy.sk/mapka/sk/teren/identification/point/{lat},{lon}?pos={lat},{lon},18`), ktorý pri otvorení priamo umiestni identifikačný terč a otvorí informačný dialóg s presnou nadmorskou výškou a údajmi DMR 5.0 pre zadané súradnice (aplikované pre jaskynné stanice aj najbližšie body povrchu). / Exact point identification URL in ZBGIS: updated link structure to activate the identify pin and elevation popup dialog directly at the target coordinates while centering the map at zoom 18 for both underground survey stations and closest surface points.

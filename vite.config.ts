@@ -72,6 +72,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: path => path.replace(/^\/wms-proxy\/orto/, '/zbgis_ortofoto_wms/service.svc/get'),
       },
+      // INSPIRE WCS DMR 5.0 (GKÚ SR)
+      '/wcs-proxy/el': {
+        target: 'https://inspirews.skgeodesy.sk',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/wcs-proxy\/el/, '/geoserver/el/ows'),
+      },
       // Geologická mapa — ags.geology.sk (WMS 1.1.1 ArcGIS)
       '/wms-proxy/geology': {
         target: 'https://ags.geology.sk',

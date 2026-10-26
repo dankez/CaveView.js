@@ -26,6 +26,10 @@ $sources = [
         'base' => 'https://zbgisws.skgeodesy.sk/zbgis_dmr_wms/service.svc/get',
         'pathRequired' => false,
     ],
+    'inspire-wcs-dmr' => [
+        'base' => 'https://inspirews.skgeodesy.sk/geoserver/el/ows',
+        'pathRequired' => false,
+    ],
 ];
 
 header('Access-Control-Allow-Origin: *');

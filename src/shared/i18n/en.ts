@@ -121,6 +121,13 @@ export const en = {
     contourBase: "Base color",
     contourMajor: "Major color",
     opacity: "Opacity",
+    dmr5Title: "Download DMR 5.0 (GKÚ LiDAR)",
+    dmr5Desc: "Nationwide Slovak digital terrain model (1 m resolution) via INSPIRE OGC WCS service.",
+    dmr5Download: "Download DMR 5.0 Terrain",
+    dmr5Extent: "Tile extent",
+    dmr5Downloading: "Downloading DMR 5.0...",
+    dmr5Success: "DMR 5.0 terrain loaded successfully",
+    dmr5DownloadFiles: "Download files (.tif + .tfw)",
   },
   cave: {
     title: "Cave Walls",

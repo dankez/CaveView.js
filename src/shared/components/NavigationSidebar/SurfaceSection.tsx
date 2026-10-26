@@ -4,9 +4,10 @@ import type { NavigationBindings } from './types';
 import type { ViewerOptions } from '@shared/types';
 import { SidebarAccordion } from './SidebarAccordion';
 import { ColorPicker, isRemoteTextureSource, TextureDownloadInspectorPanel } from './controls';
+import { Dmr5DownloadPanel } from './Dmr5DownloadPanel';
 
-export function SurfaceSection({ bindings }: { bindings: Pick<NavigationBindings, 't' | 'cave' | 'lang' | 'opts' | 'setOpts' | 'toggleOpt' | 'contourLevels' | 'trackObjectUrl' | 'clearSurfaceTextureUrl' | 'textureDownloadInfo' | 'handleClearTileCache' | 'textureFileInputRef' | 'shiftTexture' | 'calibFileInputRef' | 'handleCalibFile' | 'handleTextureFile' | 'shiftCave' | 'tiffFileInputRef' | 'handleTiffFile' | 'tfwFileInputRef'> }) {
-  const { t, cave, lang, opts, setOpts, toggleOpt, contourLevels, trackObjectUrl, clearSurfaceTextureUrl, textureDownloadInfo, handleClearTileCache, textureFileInputRef, shiftTexture, calibFileInputRef, handleCalibFile, handleTextureFile, shiftCave, tiffFileInputRef, handleTiffFile, tfwFileInputRef } = bindings
+export function SurfaceSection({ bindings }: { bindings: Pick<NavigationBindings, 't' | 'cave' | 'lang' | 'opts' | 'setOpts' | 'toggleOpt' | 'contourLevels' | 'trackObjectUrl' | 'clearSurfaceTextureUrl' | 'textureDownloadInfo' | 'handleClearTileCache' | 'textureFileInputRef' | 'shiftTexture' | 'calibFileInputRef' | 'handleCalibFile' | 'handleTextureFile' | 'shiftCave' | 'tiffFileInputRef' | 'handleTiffFile' | 'tfwFileInputRef' | 'handleDownloadDmr5' | 'isDmrDownloading' | 'lastDownloadedDmr' | 'handleSaveDmrFiles'> }) {
+  const { t, cave, lang, opts, setOpts, toggleOpt, contourLevels, trackObjectUrl, clearSurfaceTextureUrl, textureDownloadInfo, handleClearTileCache, textureFileInputRef, shiftTexture, calibFileInputRef, handleCalibFile, handleTextureFile, shiftCave, tiffFileInputRef, handleTiffFile, tfwFileInputRef, handleDownloadDmr5, isDmrDownloading, lastDownloadedDmr, handleSaveDmrFiles } = bindings
   return <>
 <section className="nav-surface-group" aria-label={t('navigation.surface')}>
   <h3>{t('navigation.surface')}</h3>
@@ -290,10 +291,15 @@ export function SurfaceSection({ bindings }: { bindings: Pick<NavigationBindings
                           )}
                         </>
                       ) : (
-                        <div className="cad-subcard" style={{ textAlign: 'center', padding: '12px 8px' }}>
-                          <span style={{ fontSize: '10px', color: 'var(--cv-text-muted)' }}>
-                            {lang === 'sk' ? 'Model nemá povrch.' : 'No surface for this model.'}
-                          </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <Dmr5DownloadPanel
+                            cave={cave}
+                            lang={lang}
+                            onDownload={handleDownloadDmr5}
+                            isDownloading={isDmrDownloading}
+                            lastDownloadedDmr={lastDownloadedDmr}
+                            onSaveFiles={handleSaveDmrFiles}
+                          />
                         </div>
                       )}
 
@@ -454,6 +460,20 @@ export function SurfaceSection({ bindings }: { bindings: Pick<NavigationBindings
                         />
                       </div>
 
+</SidebarAccordion><SidebarAccordion heading={<div className="cad-card-header">
+                        <div className="cad-card-title">
+                          <span className="material-symbols-outlined" style={{ color: '#f59e0b' }} aria-hidden="true">cloud_download</span>
+                          <span>{lang === 'sk' ? 'Stiahnuť DMR 5.0 (GKÚ LiDAR SR)' : 'Download DMR 5.0 (GKÚ LiDAR)'}</span>
+                        </div>
+                      </div>} detailsLabel={t('navigation.details')}>
+                        <Dmr5DownloadPanel
+                          cave={cave}
+                          lang={lang}
+                          onDownload={handleDownloadDmr5}
+                          isDownloading={isDmrDownloading}
+                          lastDownloadedDmr={lastDownloadedDmr}
+                          onSaveFiles={handleSaveDmrFiles}
+                        />
 </SidebarAccordion>
       {opts.engine === 'v2' && <div className="toggle-row"><span>{t('navigation.mapbox')}</span><button type="button" className={`switch${opts.showMapboxTerrain ? ' on' : ''}`} role="switch" aria-label={t('navigation.mapbox')} aria-checked={opts.showMapboxTerrain} onClick={() => toggleOpt('showMapboxTerrain')} /></div>}
       </section>
