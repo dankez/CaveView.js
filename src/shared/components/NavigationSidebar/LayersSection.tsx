@@ -3,7 +3,6 @@
 import type { NavigationBindings } from './types';
 import { SidebarAccordion } from './SidebarAccordion';
 import { ColorPicker, POINT_CLOUD_SHAPE_ICONS, POINT_CLOUD_SHAPE_LABELS_SK, POINT_CLOUD_SHAPE_LABELS_EN } from './controls';
-import { SurfaceSection } from './SurfaceSection';
 import { CheckCircle2 as CheckCircleIcon, Eraser as EraserIcon, MousePointer2 as MousePointerIcon, X as XIcon, Undo2 as UndoIcon, RotateCcw as RotateCcwIcon } from 'lucide-react';
 import { DEFAULT_POINT_CLOUD_SHAPE, POINT_CLOUD_SHAPE_OPTIONS } from '@v2/components/pointCloudShape';
 
@@ -12,7 +11,7 @@ export function LayersSection({ bindings }: { bindings: NavigationBindings }) {
   // LOX: legacy accurateScraps (e.g. from shared URL) renders the same wire overlay.
   const wireOn = opts.scrapsWireframe || (!isPlyLidar && opts.accurateScraps)
   return <>
-<SidebarAccordion navTarget="survey" heading={<div className="cad-card-header">
+<SidebarAccordion navTarget="survey" infoTopic="survey" lang={lang} heading={<div className="cad-card-header">
                     <div className="cad-card-title">
                       <span className="material-symbols-outlined" aria-hidden="true">polyline</span>
                       <span>{t('survey.title')}</span>
@@ -92,7 +91,7 @@ export function LayersSection({ bindings }: { bindings: NavigationBindings }) {
                   )}
 
 </SidebarAccordion>{cave && splayCount > 0 && (
-                  <SidebarAccordion heading={<div className="cad-card-header">
+                  <SidebarAccordion infoTopic="splay_walls" lang={lang} heading={<div className="cad-card-header">
                       <div className="cad-card-title">
                         <span className="material-symbols-outlined" aria-hidden="true">polyline</span>
                         <span>{lang === 'sk' ? 'Splay SDF steny (2D/3D)' : 'Splay SDF Walls (2D/3D)'}</span>
@@ -185,7 +184,7 @@ export function LayersSection({ bindings }: { bindings: NavigationBindings }) {
 
 </SidebarAccordion>
                 )}{(cave.scrapCount > 0 || isPlyLidar) && (
-                  <SidebarAccordion navTarget="walls" heading={<div className="cad-card-header">
+                  <SidebarAccordion navTarget="walls" infoTopic={isPlyLidar ? 'lidar' : 'walls'} lang={lang} heading={<div className="cad-card-header">
                       <div className="cad-card-title">
                         <div className="dot" style={{ background: opts.colorScraps }} />
                         <span>{isPlyLidar ? 'LiDAR' : t('cave.title')}</span>
@@ -627,7 +626,7 @@ export function LayersSection({ bindings }: { bindings: NavigationBindings }) {
                     )}
 
 </SidebarAccordion>
-                )}<SidebarAccordion navTarget="stations" heading={<div className="cad-card-header">
+                )}<SidebarAccordion navTarget="stations" infoTopic="stations" lang={lang} heading={<div className="cad-card-header">
                         <div className="cad-card-title">
                           <span className="material-symbols-outlined" aria-hidden="true">radio_button_checked</span>
                           {t('stations.title')}
@@ -681,6 +680,7 @@ export function LayersSection({ bindings }: { bindings: NavigationBindings }) {
                       </div>
 
 </SidebarAccordion>
-      <SurfaceSection bindings={bindings} />
   </>
 }
+
+export { LayersSection as CaveSection };

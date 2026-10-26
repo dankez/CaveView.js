@@ -1,6 +1,41 @@
-# 🛠️ LochViewer - Developer & Mathematical Specification (v2.5.7)
+# 🛠️ LochViewer - Developer & Mathematical Specification (v2.5.8)
 
 *Comprehensive technical architecture, mathematical formulations, shader models, and Web Worker data flows for developers and contributors.*
+
+### UI Architecture: Dedicated Surface Tab, CAD Styling & Section Documentation Registry (v2.5.8)
+
+1. **Separation of Cave (`cave`) and Surface (`surface`) Sidebar Tabs**:
+   - **Navigation Categories (`reveal.ts`)**: Expanded `NavCategory` union type to `'project' | 'view' | 'cave' | 'surface' | 'analysis' | 'system'`.
+   - **Backward Compatibility**: `revealInSidebar` automatically normalizes legacy `'layers'` requests to `'cave'`. In `NavigationSidebar`, the cave section evaluates `sections.cave ?? sections.layers`, ensuring 100% backward compatibility with existing tests and deep links.
+   - **Toolbar Integration (`ViewerToolbar.tsx`)**: Centerline, splays, walls, and stations reveal the `'cave'` category. Surface toggle, surface image menu, and DMR 5.0 WCS downloads reveal the `'surface'` category.
+
+2. **Section Documentation Registry (`sectionDocRegistry.ts`) & Info Dialog (`SectionInfoModal.tsx`)**:
+   - **Centralized Dictionary**: Each sidebar section has bilingual metadata defined in `sectionDocRegistry.ts`:
+     ```typescript
+     export interface SectionDoc {
+       title: string;
+       badge?: string;
+       desc: string;
+       bullets: string[];
+       helpTab?: 'basics' | 'nav' | 'splays' | 'measuring' | 'clipping' | 'lidar' | 'terrain' | 'share';
+     }
+     ```
+   - **Contextual Info Icon (`SidebarAccordion.tsx`)**: The component automatically mounts a `.cad-info-btn` with the `ℹ️` icon whenever `infoTopic` and `lang` are provided.
+   - **Accessibility & Modal Interface**: Clicking opens `SectionInfoModal` with an amber title header, CAD badge, key feature bullets, and a direct button to open the corresponding chapter in the global `HelpModal`.
+
+3. **Geolocated Language Detection & Language Bar (`i18n/index.ts`, `ViewerToolbar.tsx`)**:
+   - `getBrowserLanguage()` resolves user language in priority order:
+     1. Stored value in `localStorage.getItem('cv-language')`.
+     2. Client timezone inspection via `Intl.DateTimeFormat().resolvedOptions().timeZone`: matching `Europe/Bratislava` or `Europe/Prague` returns `'sk'`.
+     3. Browser language check `navigator.language`: starting with `sk` or `cs` returns `'sk'`.
+     4. Defaults to `'en'` for all other regions.
+   - A dedicated `SK | EN | DE | FR` language bar in the top-right toolbar updates language reactively and persists selections to `localStorage`.
+
+4. **Unified Amber CAD Styling**:
+   - Section headers styled in amber `#f59e0b` matching `Dmr5DownloadPanel`.
+   - Full-width tactile action buttons (`btn-fullwidth`) with high-contrast outlines for reliable touch interaction in fieldwork conditions.
+
+---
 
 ### DMR 5.0 Surface Download & Generation (WCS 2.0.1) (2.5.7)
 

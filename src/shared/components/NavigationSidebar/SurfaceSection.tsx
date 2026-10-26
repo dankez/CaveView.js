@@ -9,9 +9,7 @@ import { Dmr5DownloadPanel } from './Dmr5DownloadPanel';
 export function SurfaceSection({ bindings }: { bindings: Pick<NavigationBindings, 't' | 'cave' | 'lang' | 'opts' | 'setOpts' | 'toggleOpt' | 'contourLevels' | 'trackObjectUrl' | 'clearSurfaceTextureUrl' | 'textureDownloadInfo' | 'handleClearTileCache' | 'textureFileInputRef' | 'shiftTexture' | 'calibFileInputRef' | 'handleCalibFile' | 'handleTextureFile' | 'shiftCave' | 'tiffFileInputRef' | 'handleTiffFile' | 'tfwFileInputRef' | 'handleDownloadDmr5' | 'isDmrDownloading' | 'lastDownloadedDmr' | 'handleSaveDmrFiles'> }) {
   const { t, cave, lang, opts, setOpts, toggleOpt, contourLevels, trackObjectUrl, clearSurfaceTextureUrl, textureDownloadInfo, handleClearTileCache, textureFileInputRef, shiftTexture, calibFileInputRef, handleCalibFile, handleTextureFile, shiftCave, tiffFileInputRef, handleTiffFile, tfwFileInputRef, handleDownloadDmr5, isDmrDownloading, lastDownloadedDmr, handleSaveDmrFiles } = bindings
   return <>
-<section className="nav-surface-group" aria-label={t('navigation.surface')}>
-  <h3>{t('navigation.surface')}</h3>
-      <SidebarAccordion navTarget="surface" heading={<div className="cad-card-header">
+      <SidebarAccordion navTarget="surface" infoTopic="surface" lang={lang} heading={<div className="cad-card-header">
                         <div className="cad-card-title">
                           <span className="material-symbols-outlined" aria-hidden="true">landscape</span>
                           <span>{t('terrain.title')}</span>
@@ -303,7 +301,7 @@ export function SurfaceSection({ bindings }: { bindings: Pick<NavigationBindings
                         </div>
                       )}
 
-</SidebarAccordion><SidebarAccordion heading={<div className="cad-card-header">
+</SidebarAccordion><SidebarAccordion infoTopic="calibration" lang={lang} heading={<div className="cad-card-header">
                           <div className="cad-card-title">
                             <span className="material-symbols-outlined" aria-hidden="true">location_on</span>
                             <span>{lang === 'sk' ? 'Kalibrácia modelu (X, Y, Z)' : 'Cave calibration (X, Y, Z)'}</span>
@@ -350,7 +348,7 @@ export function SurfaceSection({ bindings }: { bindings: Pick<NavigationBindings
                           </button>
                         </div>
 
-</SidebarAccordion><SidebarAccordion heading={<div className="cad-card-header">
+</SidebarAccordion><SidebarAccordion infoTopic="calibration" lang={lang} heading={<div className="cad-card-header">
                           <div className="cad-card-title">
                             <span className="material-symbols-outlined" aria-hidden="true">terrain</span>
                             <span>{lang === 'sk' ? 'Kalibrácia povrchu (X, Y, Z)' : 'Surface calibration (X, Y, Z)'}</span>
@@ -395,7 +393,7 @@ export function SurfaceSection({ bindings }: { bindings: Pick<NavigationBindings
                           </button>
                         </div>
 
-</SidebarAccordion><SidebarAccordion heading={<div className="cad-card-header">
+</SidebarAccordion><SidebarAccordion infoTopic="calibration" lang={lang} heading={<div className="cad-card-header">
                         <div className="cad-card-title">
                           <span className="material-symbols-outlined" aria-hidden="true">open_with</span>
                           {lang === 'sk' ? '3D kalibračné gizmo terénu' : '3D Terrain Gizmo'}
@@ -418,7 +416,7 @@ export function SurfaceSection({ bindings }: { bindings: Pick<NavigationBindings
                         </div>
                       )}
 
-</SidebarAccordion><SidebarAccordion heading={<div className="cad-card-header">
+</SidebarAccordion><SidebarAccordion infoTopic="surface" lang={lang} heading={<div className="cad-card-header">
                         <div className="cad-card-title">
                           <span className="material-symbols-outlined" aria-hidden="true">upload_file</span>
                           <span>{lang === 'sk' ? 'Pridať TIFF povrch' : 'Add TIFF surface'}</span>
@@ -460,7 +458,7 @@ export function SurfaceSection({ bindings }: { bindings: Pick<NavigationBindings
                         />
                       </div>
 
-</SidebarAccordion><SidebarAccordion heading={<div className="cad-card-header">
+</SidebarAccordion><SidebarAccordion navTarget="dmr5" infoTopic="dmr5" lang={lang} heading={<div className="cad-card-header">
                         <div className="cad-card-title">
                           <span className="material-symbols-outlined" style={{ color: '#f59e0b' }} aria-hidden="true">cloud_download</span>
                           <span>{lang === 'sk' ? 'Stiahnuť DMR 5.0 (GKÚ LiDAR SR)' : 'Download DMR 5.0 (GKÚ LiDAR)'}</span>
@@ -475,7 +473,20 @@ export function SurfaceSection({ bindings }: { bindings: Pick<NavigationBindings
                           onSaveFiles={handleSaveDmrFiles}
                         />
 </SidebarAccordion>
-      {opts.engine === 'v2' && <div className="toggle-row"><span>{t('navigation.mapbox')}</span><button type="button" className={`switch${opts.showMapboxTerrain ? ' on' : ''}`} role="switch" aria-label={t('navigation.mapbox')} aria-checked={opts.showMapboxTerrain} onClick={() => toggleOpt('showMapboxTerrain')} /></div>}
-      </section>
+      {opts.engine === 'v2' && (
+        <SidebarAccordion infoTopic="mapbox" lang={lang} heading={<div className="cad-card-header">
+          <div className="cad-card-title">
+            <span className="material-symbols-outlined" aria-hidden="true">public</span>
+            <span>{t('navigation.mapbox')}</span>
+          </div>
+          <button type="button" className={`switch${opts.showMapboxTerrain ? ' on' : ''}`} role="switch" aria-label={t('navigation.mapbox')} aria-checked={opts.showMapboxTerrain} onClick={() => toggleOpt('showMapboxTerrain')} />
+        </div>} detailsLabel={t('navigation.details')}>
+          <div className="cad-subcard" style={{ fontSize: '9px', color: 'var(--cv-text-muted)', lineHeight: '1.4' }}>
+            {lang === 'sk'
+              ? 'Dynamický 3D terén a satelitné snímky generované zo služby Mapbox pre Engine v2.'
+              : 'Dynamic 3D surface mesh and satellite imagery streamed from Mapbox for Engine v2.'}
+          </div>
+        </SidebarAccordion>
+      )}
   </>
 }

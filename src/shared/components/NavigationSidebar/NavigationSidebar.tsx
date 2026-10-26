@@ -6,12 +6,13 @@ import { NAV_REVEAL_EVENT, type NavRevealDetail } from './reveal'
 const categories = [
   { id: 'project', icon: 'folder_open' },
   { id: 'view', icon: 'view_in_ar' },
-  { id: 'layers', icon: 'layers' },
+  { id: 'cave', icon: 'layers' },
+  { id: 'surface', icon: 'terrain' },
   { id: 'analysis', icon: 'straighten' },
   { id: 'system', icon: 'settings' },
 ] as const
 
-type Category = typeof categories[number]['id']
+export type Category = typeof categories[number]['id']
 const mobileQuery = '(max-width: 768px)'
 const focusableSelector = 'button:not([disabled]):not([tabindex="-1"]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex="0"]'
 
@@ -20,9 +21,9 @@ export function NavigationSidebar({
   sections,
 }: {
   lang: Language
-  sections: Record<Category, ReactNode>
+  sections: Partial<Record<Category | 'layers', ReactNode>>
 }) {
-  const [activeCategory, setActiveCategory] = useState<Category>('layers')
+  const [activeCategory, setActiveCategory] = useState<Category>('cave')
   const [collapsed, setCollapsed] = useState(false)
   const [mobile, setMobile] = useState(() => window.matchMedia(mobileQuery).matches)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -39,7 +40,11 @@ export function NavigationSidebar({
   useEffect(() => {
     const onReveal = (event: Event) => {
       const { category, target } = (event as CustomEvent<NavRevealDetail>).detail
-      setActiveCategory(category)
+      let resolvedCategory: Category = (category === 'layers' ? 'cave' : category) as Category
+      if (category === 'layers' && (target === 'surface' || target === 'terrain' || target === 'wms' || target === 'mapbox' || target === 'dmr5' || target === 'texture' || target === 'calibration')) {
+        resolvedCategory = 'surface'
+      }
+      setActiveCategory(resolvedCategory)
       if (!mobile) setCollapsed(false)
       pendingReveal.current = target ?? null
       setRevealTick(n => n + 1)
@@ -187,7 +192,7 @@ export function NavigationSidebar({
         <div className="nav-panel-content">
           {categories.map(({ id: category }) => (
             <section key={category} id={`${id}-${category}`} aria-label={t(category)} hidden={category !== activeCategory}>
-              {sections[category]}
+              {category === 'cave' ? (sections.cave ?? sections.layers) : sections[category]}
             </section>
           ))}
         </div>

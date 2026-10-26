@@ -9,7 +9,7 @@ export function AnalysisSection({ bindings }: { bindings: Pick<NavigationBinding
   const { t, opts, toggleOpt, setOpts, cave, activeProfilePoints, profilePicking, startProfilePick, setProfileClipping, lang, measurementMode, cycleMeasurementMode, selectedStations, setSelectedStations, isPlyLidar, isLiDARAnalyzing, cancelLiDARAnalysis, runLiDARAnalysis, isLidarMapGenerating, cancelLidarPlanMap, generateLidarPlanMap, anomalies, setActiveAnomalyId, activeAnomalyId, selectedSegmentProfile } = bindings
   return <>
 <button type="button" className="btn-back" data-nav-target="measurement" onClick={cycleMeasurementMode} aria-pressed={measurementMode !== 'off'}>{t('navigation.measurement')}: {measurementMode === 'off' ? t('navigation.off') : measurementMode === 'distance' ? t('navigation.distance') : t('navigation.area')}</button>
-      <SidebarAccordion navTarget="clipping" heading={<div className="cad-card-header">
+      <SidebarAccordion navTarget="clipping" infoTopic="clipping" lang={lang} heading={<div className="cad-card-header">
                     <div className="cad-card-title">
                       <span className="material-symbols-outlined" aria-hidden="true">content_cut</span>
                       <span>{t('clipping.title')}</span>
@@ -128,7 +128,7 @@ export function AnalysisSection({ bindings }: { bindings: Pick<NavigationBinding
                     </div>
                   )}
 
-</SidebarAccordion><SidebarAccordion heading={<div className="cad-card-header">
+</SidebarAccordion><SidebarAccordion infoTopic="tectonics" lang={lang} heading={<div className="cad-card-header">
                         <div className="cad-card-title">
                           <span className="material-symbols-outlined" aria-hidden="true">architecture</span>
                           {lang === 'sk' ? 'Tektonické meranie (3 body: Sklon & Spádnica)' : 'Tectonic Plane (Dip & Dip Direction)'}
@@ -256,7 +256,7 @@ export function AnalysisSection({ bindings }: { bindings: Pick<NavigationBinding
                       })()}
 
 </SidebarAccordion>{isPlyLidar && (
-                      <SidebarAccordion heading={<div className="cad-card-header">
+                      <SidebarAccordion infoTopic="lidar" lang={lang} heading={<div className="cad-card-header">
                           <div className="cad-card-title">
                             <span className="material-symbols-outlined" aria-hidden="true">analytics</span>
                             {lang === 'sk' ? 'LiDAR detektor komínov' : 'LiDAR Anomaly Detector'}
@@ -331,7 +331,7 @@ export function AnalysisSection({ bindings }: { bindings: Pick<NavigationBinding
                         )}
 
 </SidebarAccordion>
-                    )}<SidebarAccordion heading={<div className="cad-card-header">
+                    )}<SidebarAccordion infoTopic="speleo_analysis" lang={lang} heading={<div className="cad-card-header">
                         <div className="cad-card-title">
                           <span className="material-symbols-outlined" aria-hidden="true">layers</span>
                           {lang === 'sk' ? '2D rez chodbou a objem' : '2D Cross-section & Volume'}

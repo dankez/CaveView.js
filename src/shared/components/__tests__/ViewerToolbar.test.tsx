@@ -30,6 +30,7 @@ function setup(gps = false) {
       handleExportScreenshot: vi.fn(), toggleFullscreen: vi.fn(), measurementMode: 'off', cycleMeasurementMode: vi.fn(),
       textureFileInputRef: useRef<HTMLInputElement>(null), calibFileInputRef: useRef<HTMLInputElement>(null),
       profilePicking: false, startProfilePick, setProfileClipping: vi.fn(),
+      lang: 'en', setLang: vi.fn(),
     }} />
   }
   render(<Harness />)
@@ -80,7 +81,7 @@ describe('viewer quick actions', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Vertical section (2 points)' }))
     window.removeEventListener('cv-nav-reveal', listen)
     expect(reveals).toEqual([
-      { category: 'layers', target: 'walls' },
+      { category: 'cave', target: 'walls' },
       { category: 'analysis', target: 'measurement' },
       { category: 'analysis', target: 'profile' },
     ])

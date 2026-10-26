@@ -36,6 +36,95 @@
 .nav-surface-group > h3 { margin: 6px 0 0; font-size: 13px; }
 .nav-accordion-heading h3 { font-size: 12px; margin: 0; }
 .nav-accordion-heading .cad-card-header { margin-bottom: 0; }
+.nav-accordion-header-row { margin-bottom: 6px; }
+
+/* ── Zjednotený štýl nadpisov (žltý/jantárový akcent ako v DMR 5.0) ── */
+.cad-card-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  color: #f59e0b !important;
+}
+.cad-card-title .material-symbols-outlined {
+  font-size: 16px !important;
+  color: #f59e0b !important;
+}
+
+.cad-badge {
+  font-size: 8.5px;
+  color: var(--cv-text-muted);
+  font-family: var(--cv-font-mono);
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--cv-border);
+}
+
+/* ── Informačné tlačidlo (i) pre sekcie ── */
+.cad-info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  font-size: 11px;
+  font-family: var(--cv-font-mono);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  padding: 0;
+  line-height: 1;
+}
+.cad-info-btn:hover {
+  background: rgba(245, 158, 11, 0.25);
+  border-color: #f59e0b;
+  color: #fbbf24;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.35);
+  transform: scale(1.08);
+}
+
+/* ── Výrazné tlačidlá na celú šírku a jednotný štýl ovládacích prvkov ── */
+.nav-panel-content .btn-fullwidth,
+.nav-panel-content .cad-tool-btn.btn-fullwidth {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 10px;
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: 5px;
+  background: var(--cv-surface-low);
+  border: 1px solid var(--cv-border);
+  color: var(--cv-text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.nav-panel-content .btn-fullwidth:hover,
+.nav-panel-content .cad-tool-btn.btn-fullwidth:hover {
+  background: var(--cv-surface-high);
+  border-color: #f59e0b;
+  color: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+}
+.nav-panel-content .btn-fullwidth.active,
+.nav-panel-content .cad-tool-btn.btn-fullwidth.active {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: #f59e0b;
+  color: #f59e0b;
+  font-weight: 700;
+}
 .nav-details-toggle { display: flex; justify-content: space-between; width: 100%; padding: 8px 0; margin-top: 6px; border: 0; background: transparent; color: var(--cv-primary); font-size: 11px !important; }
 .nav-accordion-body { margin-top: 6px; }
 .nav-panel-content .btn-back { white-space: normal; min-height: 36px; }

@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.5.8] - 2026-10-26
+### Samostatná záložka Povrch, jednotný CAD štýl, info dialógy a jazykový panel / Dedicated Surface tab, unified CAD style, info modals & language bar
+- **Oddelenie sekcií Jaskyňa a Povrch**: Pôvodná kombinovaná karta `Vrstvy & dáta` bola rozdelená na dve špecializované kategórie v bočnom paneli: **Jaskyňa & model** (`cave` - polygón, splaye, steny, SDF rekonštrukcia, stanice, LiDAR) a **Povrch & terén** (`surface` - DTM tieňovaný reliéf, výšková sieť, vrstevnice s kótami, sťahovanie DMR 5.0 WCS, WMS mapy ZBGIS, kalibrácia). / Separated cave survey operations from surface/terrain layers into two dedicated sidebar tabs: **Cave & Model** (`cave`) and **Surface & Terrain** (`surface`).
+- **Jednotný jantárovo-zlatý CAD štýl sekcií**: Vzhľad všetkých sekcií a accordionov bol zjednotený do prémiového CAD štýlu s jantárovo-zlatými nadpismi (`#f59e0b`), výraznými plnošírkovými tlačidlami a prehľadnými dotykovými ovládacími prvkami. / Unified section styling matching the DMR 5.0 panel with amber/yellow headers (`#f59e0b`), prominent full-width action buttons, and tactile CAD controls.
+- **Kontextové informačné tlačidlá (ℹ️) s dokumentačným oknom**: Pri každom paneli sa nachádza tlačidlo `ℹ️`, ktoré po kliknutí otvorí dialógové okno s podrobným vysvetlením funkcie danej sekcie, zoznamom kľúčových možností a priamym odkazom do príslušnej kapitoly používateľskej príručky. / Contextual info icon (`ℹ️`) on every sidebar accordion revealing a dedicated documentation popup with key feature descriptions and deep links to the user manual.
+- **Jazykový panel v hornej lište s automatickou geodetekciou**: V pravom rohu hornej lišty je integrovaný prepínač jazyka (`SK | EN | DE | FR`). Systém automaticky deteguje používateľov zo Slovenska a Česka (podľa časového pásma a jazyka) a predvolí slovenčinu, pre ostatné krajiny nastaví angličtinu. Voľba sa ukladá do `localStorage`. / Top-toolbar Language Bar (`SK | EN | DE | FR`) with automatic geolocation detection (Slovakia/Czechia default to Slovak, others to English) and persistent state in `localStorage`.
+
+
 ## [2.5.7] - 2026-10-26
 ### Vlastná veľkosť výseku terénu DMR 5.0 s krokom po 500 m / Custom DMR 5.0 terrain extent with 500 m stepping
 - **Vlastný rozsah výseku terénu**: Pridaná podpora pre nastavenie ľubovoľnej veľkosti územia pri sťahovaní DMR 5.0 cez WCS (od 500 m až po 10 km). / Added custom territory extent selection when downloading DMR 5.0 elevation terrain via WCS (from 500 m up to 10 km).

@@ -44,23 +44,26 @@ LochViewer executes 100% inside your web browser using WebGL and parallel Web Wo
 
 ## 2. User Interface (Top Bar & Tool Controls)
 
-Once a model is loaded, the sidebar groups detailed controls into five categories. A compact top toolbar provides direct access to frequent actions; hover an icon for its name. Cyan highlights indicate enabled modes. On small screens, scroll the icon strip horizontally.
+Once a model is loaded, the sidebar organizes all tools and settings into six dedicated categories with a unified amber CAD design (`#f59e0b`), full-width tactile action buttons, and contextual info icons (**ℹ️**) on every section. A compact top toolbar provides direct access to frequent actions; hover an icon for its name. Cyan highlights indicate enabled modes. A dedicated **Language Bar (SK | EN | DE | FR)** in the top-right corner automatically selects Slovak for visitors from Slovakia/Czechia and defaults to English for other locations. On small screens, scroll the icon strip horizontally.
 
 The quick actions, from left to right, are: **Open model, Reload original model, Export PNG, Automatic rotation, Orthographic/perspective, Plan, Elevation, Fit, Entrances, Fixed stations, All stations, Station labels, Centerline, Splays, Walls, Surface, Add image to surface, Measurement, Vertical section (scissors) and Fullscreen**. Reload reparses the retained original file, discarding model edits; it does not refresh the page or reread a changed disk file. Fixed stations are available only when the format supplies that metadata (LOX fixed flag); they are not inferred from GPS or entrances. Repeated **Plan** clicks toggle the view from above ↔ from below (north stays up; the view from below is mirrored). Repeated **Elevation** clicks orbit the model around four sides: from south → east → north → west. The current side is shown in the button tooltip.
 
-**Station labels** cycles through **number → full name → elevation → GPS → off**; GPS is skipped when unavailable. Full survey names such as `1@survey` are retained from LOX. Walls and Surface hide their constituent representations and restore them when re-enabled. The image button opens a small menu for a local image, its calibration file or ZBGIS orthophoto; detailed terrain calibration stays under **Layers & data → Surface**. Measurement and the combined splay-ray/endpoint toggle are additional quick actions.
+**Station labels** cycles through **number → full name → elevation → GPS → off**; GPS is skipped when unavailable. Full survey names such as `1@survey` are retained from LOX. Walls and Surface hide their constituent representations and restore them when re-enabled. The image button opens a small menu for a local image, its calibration file or ZBGIS orthophoto; detailed terrain calibration and DMR 5.0 WCS LiDAR downloads are housed in the dedicated **Surface & Terrain** category.
 
-Every quick action (except file and fullscreen actions) also switches the sidebar to the matching category, expands it and briefly highlights the related control — e.g. Splays → *Layers & data → Survey*, Measurement → *Tools & analysis*.
+Every quick action (except file and fullscreen actions) also switches the sidebar to the matching category, expands it and briefly highlights the related control — e.g. Walls → *Cave & Model → Walls*, Surface → *Surface & Terrain*, Measurement → *Tools & analysis*.
 
 **Vertical section (scissors)**: click the scissors icon in the top toolbar or enable *Tools & analysis → Vertical Profile (Line)*, then click 2 points in the model (stations, splay endpoints or terrain). The model is cut by a vertical plane through that line; offset and flip are visible right below the switch. *Create profile (line)* picks a new line and clicking the scissors again turns the section off.
 
 | Category | Controls |
 | :--- | :--- |
 | **Files & projects** | Open/close models, demos; **Sharing and available exports** contains sharing/iframe, PNG, generated texture/calibration and WebM recording with duration settings. |
-| **View & camera** | Perspective/orthographic projection, technical presets, Fit, altitude reference and automatic rotation. |
-| **Layers & data** | Survey legs, splays and endpoint dots, walls, stations and LiDAR. **Surface** exclusively contains terrain, texture sources, TIFF import and cave/surface calibration including the 3D gizmo. |
-| **Tools & analysis** | Distance/polygon measurement, horizontal/profile cuts, tectonics, cross-section/volume and LiDAR analysis/maps. |
-| **Settings & help** | Theme, legend, language, fullscreen and help. |
+| **View & camera** | Perspective/orthographic projection, technical presets (1-4), Fit, altitude reference (REL/ASL) and automatic rotation. |
+| **Cave & Model** | Underground cave body: survey network (centerline, splay rays, reference grid, bounding box), splay SDF reconstruction, 3D walls (materials, opacity, cross-sections), stations and LiDAR point clouds. |
+| **Surface & Terrain** | Overhead environment: DTM shaded relief, height grid, labeled contours, DMR 5.0 WCS direct download (GKÚ LiDAR SR), WMS orthophoto & elevation layers, custom textures, and 3D cave-surface calibration. |
+| **Tools & analysis** | Distance/polygon measurement, horizontal/profile cuts, tectonics (3 points), 2D cross-section/volume and LiDAR analysis (chimneys, windows, 2D plan map). |
+| **Settings & help** | Themes, legend, language settings, fullscreen and interactive user manual. |
+
+Every accordion panel includes an **ℹ️ (Info)** button. Clicking it opens a modal dialog with technical guidance, key parameter summaries, and direct links to the relevant manual chapter. All sidebar action buttons use a full-width tactile layout for comfortable touch operation on field tablets and desktop workstations.
 
 Layer switches remain accessible without opening their **Details** accordions. Opacity, color, SDF and LiDAR parameters are disclosed inside the relevant accordion and gated by layer/data availability. Collapse the sidebar to its icon rail; select any category to reopen it. On mobile, the menu button opens an overlay drawer: Tab/Shift+Tab stay inside, Escape or the close button dismisses it and restores focus. Enter/Space activate switches and accordion buttons. Categories are translated into SK/EN/FR/DE.
 

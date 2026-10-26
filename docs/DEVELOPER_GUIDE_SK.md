@@ -1,6 +1,41 @@
-# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.5.7)
+# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.5.8)
 
 *Kompletná technická špecifikácia, matematický aparát, architektúra a flow diagramy pre vývojárov.*
+
+### Architektúra rozhrania: Samostatná záložka Povrch, CAD Štýl a Dokumentačný register sekcií (v2.5.8)
+
+1. **Oddelenie sekcií Jaskyňa (`cave`) a Povrch (`surface`) v bočnom paneli**:
+   - **Kategórie navigácie (`reveal.ts`)**: Typový zväzok `NavCategory` bol rozšírený na `'project' | 'view' | 'cave' | 'surface' | 'analysis' | 'system'`.
+   - **Spätná kompatibilita**: Funkcia `revealInSidebar` automaticky normalizuje legacy požiadavku `'layers'` na `'cave'`. V komponente `NavigationSidebar` sa pre sekciu jaskyne vyhodnocuje `sections.cave ?? sections.layers`, čím je zaistená 100% kompatibilita so staršími testami a externými odkazmi.
+   - **Prepojenie s hornou lištou (`ViewerToolbar.tsx`)**: Tlačidlá pre polygónový ťah, splaye, steny a stanice odkazujú do kategórie `cave`. Tlačidlá pre povrch, textúry a DMR 5.0 odkazujú do kategórie `surface`.
+
+2. **Dokumentačný register sekcií (`sectionDocRegistry.ts`) a informačný modál (`SectionInfoModal.tsx`)**:
+   - **Centralizovaný register**: Každá sekcia a nástroj obsahuje bilingválne metadáta definované v `sectionDocRegistry.ts`:
+     ```typescript
+     export interface SectionDoc {
+       title: string;
+       badge?: string;
+       desc: string;
+       bullets: string[];
+       helpTab?: 'basics' | 'nav' | 'splays' | 'measuring' | 'clipping' | 'lidar' | 'terrain' | 'share';
+     }
+     ```
+   - **Informačné tlačidlo (`SidebarAccordion.tsx`)**: Komponent pri zadaní `infoTopic` a `lang` automaticky vykreslí tlačidlo `.cad-info-btn` so symbolom `ℹ️`.
+   - **Prístupnosť a modálne okno**: Kliknutím sa otvorí dialóg `SectionInfoModal` s jantárovým záhlavím, technickým odznakom, prehľadnými bodmi a možnosťou otvoriť priamo príslušnú kapitolu v globálnom okne Pomocníka (`HelpModal`).
+
+3. **Geolokalizovaná detekcia jazyka a lišta prepínania (`i18n/index.ts`, `ViewerToolbar.tsx`)**:
+   - Funkcia `getBrowserLanguage()` zisťuje preferenciu používateľa v nasledujúcej hierarchii:
+     1. Uložená hodnota v `localStorage.getItem('cv-language')`.
+     2. Kontrola časového pásma klienta cez `Intl.DateTimeFormat().resolvedOptions().timeZone`: ak patrí do `Europe/Bratislava` alebo `Europe/Prague`, vráti `'sk'`.
+     3. Kontrola jazyka prehliadača `navigator.language`: ak začína na `sk` alebo `cs`, vráti `'sk'`.
+     4. Pre všetky ostatné krajiny vráti `'en'`.
+   - V pravej časti hornej lišty je integrovaný prepínač `SK | EN | DE | FR` s okamžitou reaktivitou a zápisom do `localStorage`.
+
+4. **Jednotný vizuálny štýl CAD sekcií**:
+   - Jantárovo-zlaté nadpisy sekcií (`#f59e0b`) so zhodnou typografiou a ikonografiou.
+   - Výrazné celošírkové tlačidlá (`btn-fullwidth`) s jasným ohraničením a kontrastom pre jednoduchú identifikáciu na dotykových displejoch v teréne.
+
+---
 
 ### Sťahovanie a generovanie povrchového terénu DMR 5.0 (WCS 2.0.1) (2.5.7)
 

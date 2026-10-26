@@ -43,23 +43,26 @@ LochViewer spracováva dáta priamo vo vašom internetovom prehliadači prostred
 
 ## 2. Používateľské rozhranie (Horná lišta a nástroje)
 
-Po načítaní modelu bočný panel združuje podrobné nastavenia do piatich kategórií. Horná lišta obsahuje rýchle ikony s názvom pri podržaní kurzora; tyrkysová označuje zapnutý režim. Na malých obrazovkách pás ikon posúvajte vodorovne.
+Po načítaní modelu bočný panel združuje všetky nástroje a nastavenia do šiestich logických kategórií s jednotným jantárovo-žltým CAD ladením nadpisov (`#f59e0b`), výraznými tlačidlami na celú šírku a informačnými ikonami (**ℹ️**) pri každej sekcii. Horná lišta obsahuje rýchle ikony s názvom pri podržaní kurzora; tyrkysová označuje zapnutý režim. V pravom rohu hornej lišty sa nachádza **Jazykový panel (SK | EN | DE | FR)** – pri pripojení zo Slovenska alebo Česka je automaticky zvolená slovenčina, pri ostatných krajinách angličtina. Na malých obrazovkách pás ikon posúvajte vodorovne.
 
 Poradie rýchlych akcií: **Otvoriť model, Znovu načítať pôvodný model, Export PNG, Rotácia, Ortogonál/perspektíva, Pôdorys, Nárys, Fit, Vchody, Pevné stanice, Všetky stanice, Popisy staníc, Polygonálny ťah, Splaye, Steny, Povrch, Pridať obraz na povrch, Meranie, Vertikálny rez (nožnice) a Celá obrazovka**. Reload znovu spracuje uchovaný pôvodný súbor a zahodí úpravy modelu; neobnovuje stránku ani nečíta zmenený súbor z disku. Pevné stanice sú dostupné len pri príslušných metadátach formátu (príznak fixed v LOX), nie podľa GPS či vchodu. Opakované kliknutie na **Pôdorys** prepína pohľad zhora ↔ zdola (sever ostáva hore, pohľad zdola je zrkadlový). Opakované kliknutie na **Nárys** obieha model zo štyroch strán: z juhu → z východu → zo severu → zo západu. Aktuálna strana sa zobrazí v popise tlačidla.
 
-**Popisy staníc** cyklujú **číslo → úplný názov → nadmorská výška → GPS → vypnuté**; bez dostupných GPS sa tento krok preskočí. LOX zachováva úplné mená typu `1@jaskyna`. Steny a Povrch skryjú jednotlivé reprezentácie vrstvy a opätovným zapnutím obnovia ich nastavenie. Obraz na povrch otvorí menu pre miestny obraz, jeho kalibráciu alebo ortofotomapu ZBGIS; podrobné kalibrácie zostávajú vo **Vrstvy & dáta → Povrch**. Dodatočné rýchle ikony sprístupňujú Meranie a spoločné splay lúče/body.
+**Popisy staníc** cyklujú **číslo → úplný názov → nadmorská výška → GPS → vypnuté**; bez dostupných GPS sa tento krok preskočí. LOX zachováva úplné mená typu `1@jaskyna`. Steny a Povrch skryjú jednotlivé reprezentácie vrstvy a opätovným zapnutím obnovia ich nastavenie. Obraz na povrch otvorí menu pre miestny obraz, jeho kalibráciu alebo ortofotomapu ZBGIS; podrobné kalibrácie a sťahovanie reliéfu DMR 5.0 WCS sa nachádzajú v samostatnej záložke **Povrch & terén**.
 
-Každá rýchla ikona (okrem súboru a celej obrazovky) zároveň prepne bočný panel na príslušnú kategóriu, rozbalí ho a krátko zvýrazní zodpovedajúce nastavenie – napr. Splaye → *Vrstvy & dáta → Polygón*, Meranie → *Nástroje & analýza*.
+Každá rýchla ikona (okrem súboru a celej obrazovky) zároveň prepne bočný panel na príslušnú kategóriu, rozbalí ho a krátko zvýrazní zodpovedajúce nastavenie – napr. Steny → *Jaskyňa & model → Steny*, Povrch → *Povrch & terén*, Meranie → *Nástroje & analýza*.
 
 **Vertikálny rez (nožnice)**: kliknite na ikonu nožníc v hornej lište alebo zapnite *Nástroje & analýza → Vertikálny profil (línia)* a potom kliknite v modeli na 2 body (stanice, splay body alebo terén). Model sa odreže zvislou rovinou cez túto líniu; posun a otočenie strany sú hneď viditeľné pod prepínačom. Tlačidlo *Vytvoriť rez (línia)* vyberie novú líniu, opätovné kliknutie na nožnice rez vypne.
 
 | Kategória | Ovládanie |
 | :--- | :--- |
 | **Súbor & projekty** | Otvorenie/zatvorenie modelu, ukážky; **Zdieľanie a dostupné exporty** obsahuje zdieľanie/iframe, PNG, vytvorenú textúru/kalibráciu a WebM záznam vrátane dĺžky nahrávania. |
-| **Pohľad & kamera** | Perspektíva/ortogonál, prednastavené pohľady, Fit, výškový systém a automatická rotácia. |
-| **Vrstvy & dáta** | Meračská sieť, splay lúče aj koncové body, steny, stanice a LiDAR. **Povrch** výhradne združuje terén, zdroje textúr, TIFF import a kalibráciu jaskyne/povrchu vrátane 3D gizma. |
-| **Nástroje & analýza** | Meranie vzdialenosti/plochy, horizontálne/profilové rezy, tektonika, prierez/objem a LiDAR analýzy/mapy. |
-| **Nastavenia & pomoc** | Motív, legenda, jazyk, celá obrazovka a pomocník. |
+| **Pohľad & kamera** | Perspektíva/ortogonál, prednastavené pohľady (1-4), Fit, výškový systém (REL/ASL) a automatická rotácia. |
+| **Jaskyňa & model** | Podzemné teleso jaskyne: meračská sieť (centerline, lúče, mriežka, bounding box), splay lúče SDF rekonštrukcia, 3D steny (materiály, priehľadnosť, rezy), stanice a LiDAR mračná bodov. |
+| **Povrch & terén** | Samostatná sekcia pre nadložie: tieňovaný reliéf DTM, výšková sieť, vrstevnice s kótami, stiahnutie DMR 5.0 WCS (GKÚ LiDAR SR), WMS ortofoto a DMR vrstvy, vlastné textúry a 3D kalibrácia polohy jaskyne/povrchu. |
+| **Nástroje & analýza** | Meranie vzdialenosti/plochy, horizontálne/profilové rezy, tektonika (3 body), 2D prierez/objem a LiDAR analýzy (komíny, okná, 2D mapa). |
+| **Nastavenia & pomoc** | Farebné motívy, legenda prvkov, jazykové nastavenia, celá obrazovka a používateľský manuál. |
+
+Pri každom paneli (accordione) je umiestnená ikona **ℹ️ (Info)**. Po kliknutí sa otvorí modálne okno s podrobnou dokumentáciou danej sekcie, technickými parametrami a priamym odkazom na kapitolu v používateľskej príručke. Všetky tlačidlá v bočnom paneli majú jednotný plnošírkový dizajn pre pohodlné klikanie v teréne na tabletoch aj desktopoch.
 
 Hlavné prepínače vrstiev sú dostupné bez otvorenia **Podrobností**. Priehľadnosť, farby, SDF a LiDAR parametre sú v príslušnom accordione a zobrazujú sa podľa aktívnej vrstvy alebo dostupných dát. Na počítači panel zbalíte na pás ikon a otvoríte výberom kategórie. Na mobile ho otvorí tlačidlo menu; Tab/Shift+Tab zostávajú v paneli, Escape alebo krížik ho zatvoria a vrátia fokus. Enter/medzerník ovládajú prepínače aj accordiony. Kategórie sú preložené do SK/EN/FR/DE.
 

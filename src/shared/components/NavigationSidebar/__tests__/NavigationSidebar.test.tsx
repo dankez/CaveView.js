@@ -50,12 +50,12 @@ describe('NavigationSidebar', () => {
     fireEvent.change(screen.getByLabelText('Opacity'), { target: { value: '40' } })
     fireEvent.click(screen.getByRole('button', { name: 'Files & projects' }))
     expect(screen.getByRole('button', { name: 'Import' })).toBeVisible()
-    fireEvent.click(screen.getByRole('button', { name: 'Layers & data' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cave & Model' }))
     expect(screen.getByLabelText('Opacity')).toHaveValue('40')
     fireEvent.click(screen.getByRole('button', { name: 'Collapse to icons' }))
     expect(screen.queryByRole('button', { name: 'Walls Details' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Layers & data' })).toHaveFocus()
-    fireEvent.click(screen.getByRole('button', { name: 'Layers & data' }))
+    expect(screen.getByRole('button', { name: 'Cave & Model' })).toHaveFocus()
+    fireEvent.click(screen.getByRole('button', { name: 'Cave & Model' }))
     expect(details).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByTestId('scene')).toBe(canvas)
     expect(renderScene).toHaveBeenCalledTimes(1)
@@ -104,9 +104,43 @@ describe('NavigationSidebar', () => {
       expect(screen.getByRole('button', { name: 'Import' })).toBeVisible()
     }
   })
+
+  it('navigates between separate cave and surface categories', () => {
+    const dualSections = {
+      ...sections,
+      cave: <div data-testid="cave-content">Cave Tools</div>,
+      surface: <div data-testid="surface-content">Surface Tools</div>,
+    }
+    render(<NavigationSidebar lang="en" sections={dualSections} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Cave & Model' }))
+    expect(screen.getByTestId('cave-content')).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Surface & Terrain' }))
+    expect(screen.getByTestId('surface-content')).toBeVisible()
+  })
 })
 
 describe('SidebarAccordion', () => {
+  it('opens documentation popup when clicking info button', () => {
+    render(
+      <SidebarAccordion
+        heading={<h3>Survey Line</h3>}
+        detailsLabel="Details"
+        infoTopic="survey"
+        lang="en"
+      >
+        <div>Content</div>
+      </SidebarAccordion>
+    )
+    const infoBtn = screen.getByRole('button', { name: /Info:/i })
+    expect(infoBtn).toBeInTheDocument()
+    fireEvent.click(infoBtn)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText('Survey Network & Centerline')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
   it('keeps the primary switch available while disabled-layer details are hidden', () => {
     const props = {
       heading: <h3>SDF</h3>,

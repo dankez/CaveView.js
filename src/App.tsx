@@ -3,6 +3,7 @@ import { ViewerToolbar } from '@shared/components/ViewerToolbar'
 import { ProjectSection } from '@shared/components/NavigationSidebar/ProjectSection';
 import { ViewSection } from '@shared/components/NavigationSidebar/ViewSection';
 import { LayersSection } from '@shared/components/NavigationSidebar/LayersSection';
+import { SurfaceSection } from '@shared/components/NavigationSidebar/SurfaceSection';
 import { AnalysisSection } from '@shared/components/NavigationSidebar/AnalysisSection';
 import { SystemSection } from '@shared/components/NavigationSidebar/SystemSection';
 import type { NavigationBindings } from '@shared/components/NavigationSidebar/types';
@@ -1041,12 +1042,9 @@ export default function App() {
     const savedLang = localStorage.getItem('cv-language');
     if (savedLang) return; 
 
-    const browserLang = navigator.language.split('-')[0] as Language;
-    const supported: Language[] = ['sk', 'en', 'fr', 'de'];
-    
-    if (supported.includes(browserLang) && browserLang !== lang) {
-      console.log('Browser language detection:', browserLang);
-      setLang(browserLang);
+    const detected = getBrowserLanguage();
+    if (detected !== lang) {
+      setLang(detected);
     }
   }, []);
 
@@ -4202,7 +4200,8 @@ export default function App() {
     <NavigationSidebar lang={lang} sections={{
       project: <ProjectSection bindings={navigationBindings} />,
       view: <ViewSection bindings={navigationBindings} />,
-      layers: <LayersSection bindings={navigationBindings} />,
+      cave: <LayersSection bindings={navigationBindings} />,
+      surface: <SurfaceSection bindings={navigationBindings} />,
       analysis: <AnalysisSection bindings={navigationBindings} />,
       system: <SystemSection bindings={navigationBindings} />,
     }} />

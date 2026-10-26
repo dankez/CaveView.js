@@ -7,7 +7,7 @@ export function SystemSection({ bindings }: { bindings: Pick<NavigationBindings,
   const { toggleFullscreen, lang, applyTheme, currentTheme, t, setLang, setHelpDialogOpen } = bindings
   return <>
 <button type="button" className="btn-back" onClick={toggleFullscreen}>{t('navigation.fullscreen')}</button>
-      <SidebarAccordion heading={<h3>{t('navigation.appearance')}</h3>} detailsLabel={t('navigation.details')}><div className="" style={{ display: 'flex', gap: '2px', background: 'var(--cv-surface-low)', padding: '2px', borderRadius: '6px', border: '1px solid var(--cv-border)' }}>
+      <SidebarAccordion infoTopic="system" lang={lang} heading={<h3>{t('navigation.appearance')}</h3>} detailsLabel={t('navigation.details')}><div className="" style={{ display: 'flex', gap: '2px', background: 'var(--cv-surface-low)', padding: '2px', borderRadius: '6px', border: '1px solid var(--cv-border)' }}>
                   {(['classic', 'precision', 'light'] as const).map(th => (
                     <button type="button" key={th} aria-pressed={currentTheme === th} onClick={() => applyTheme(th)}
                       style={{ flex: 1, padding: '3px 6px', fontSize: '9px', fontWeight: 'bold', borderRadius: '4px', border: 'none', cursor: 'pointer',
@@ -48,7 +48,7 @@ export function SystemSection({ bindings }: { bindings: Pick<NavigationBindings,
                   ))}
                 </div></div>
       <button type="button" className="btn-back" data-close-navigation onClick={() => setHelpDialogOpen(true)}>{t('ui.help')}</button>
-      <SidebarAccordion heading={<div className="cad-card-header">
+      <SidebarAccordion infoTopic="system" lang={lang} heading={<div className="cad-card-header">
                         <div className="cad-card-title">
                           <span className="material-symbols-outlined" aria-hidden="true">help_outline</span>
                           {t('ui.help')}

@@ -208,15 +208,21 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 ))}
               </div>
 
-              <h4 style={{ color: '#38bdf8', marginTop: '20px' }}>🧭 {isSk ? 'Zjednotené menu' : 'Unified Sidebar'}</h4>
+              <h4 style={{ color: '#38bdf8', marginTop: '20px' }}>🧭 {isSk ? 'Zjednotené menu & CAD Rozhranie' : 'Unified Sidebar & CAD Interface'}</h4>
               <p>
                 {isSk 
-                  ? 'Ovládanie je v piatich kategóriách bočného panela; hlavné prepínače vrstiev zostávajú mimo zbaliteľných Podrobností:'
-                  : 'Controls are grouped in the five-category sidebar; layer switches remain available outside their Details accordions:'}
+                  ? 'Ovládanie je rozdelené do 6 prehľadných kategórií s jednotným jantárovo-žltým ladením nadpisov, výraznými dotykovými tlačidlami a informačnými ikonami (ℹ️) pri každej sekcii:'
+                  : 'Controls are organized into 6 clean categories with unified amber section titles, prominent tactile action buttons, and contextual documentation icons (ℹ️) on every section:'}
               </p>
               <p>{isSk
-                ? 'Súbor & projekty: import, zdieľanie a exporty vrátane WebM. Pohľad & kamera: projekcia, Fit a rotácia. Vrstvy & dáta: jaskyňa, LiDAR a Povrch; kalibrácia je výhradne pod Povrchom. Nástroje & analýza: meranie a rezy. Nastavenia & pomoc: motív, jazyk a návod.'
-                : 'Files & projects: import, sharing and exports including WebM. View & camera: projection, Fit and rotation. Layers & data: cave, LiDAR and Surface; calibration lives exclusively under Surface. Tools & analysis: measurement and cuts. Settings & help: theme, language and help.'}</p>
+                ? '1. Súbor & projekty: import, zdieľanie a exporty vrátane WebM. 2. Pohľad & kamera: projekcia, Fit a rotácia. 3. Jaskyňa & model: polygonálny ťah, splay lúče, 3D steny, Splay SDF rekonštrukcia a stanice. 4. Povrch & terén: tieňovaný reliéf DTM, vrstevnice, sťahovanie DMR 5.0 WCS, WMS vrstvy a kalibrácia. 5. Nástroje & analýza: meranie, horizontálny rez a vertikálny profil. 6. Nastavenia & pomoc: motív, jazyk a návod.'
+                : '1. Files & projects: import, sharing and exports including WebM. 2. View & camera: projection, Fit and rotation. 3. Cave & Model: centerline traverse, splay rays, 3D walls, Splay SDF walls and stations. 4. Surface & Terrain: DTM shaded relief, contours, DMR 5.0 WCS download, WMS layers and cave-surface calibration. 5. Tools & analysis: measurement, horizontal clipping and vertical profile. 6. Settings & help: themes, language and manual.'}</p>
+              <p>{isSk
+                ? 'Pri každom paneli nájdete malé tlačidlo (ℹ️) – po kliknutí sa otvorí vyskakovacie okno s technickým popisom nástroja, kľúčovými parametrami a preklikom do tohto sprievodcu.'
+                : 'Every accordion header includes a small (ℹ️) button that reveals an instant contextual guide with key options and direct links to the relevant manual chapter.'}</p>
+              <p>{isSk
+                ? 'V pravom rohu hornej lišty sa nachádza rýchly prepínač jazyka (SK | EN | DE | FR). Pri prístupe zo Slovenska a Česka je predvolená slovenčina, pre ostatné krajiny angličtina.'
+                : 'A dedicated Language Bar (SK | EN | DE | FR) is located in the top-right toolbar corner. Users from Slovakia/Czechia automatically default to Slovak, all other locations default to English.'}</p>
               <p>{isSk
                 ? 'Panel zbalíte na ikony a otvoríte výberom kategórie. Na mobile použite menu; Tab/Shift+Tab zostávajú v draweri a Escape ho zatvorí s návratom fokusu. Enter a medzerník ovládajú prepínače aj Podrobnosti.'
                 : 'Collapse the sidebar to icons and select a category to reopen it. On mobile, open the menu; Tab/Shift+Tab stay in the drawer and Escape closes it with focus restoration. Enter and Space activate switches and Details.'}</p>
