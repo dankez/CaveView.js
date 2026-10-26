@@ -56,8 +56,8 @@
     "hash": "e54fc599f48e365e708597ed9cdc2ae2"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/App.tsx": {
-    "mtime": 1793018131.5317516,
-    "hash": "4570aff6bd1ec2e3fb9f3b8d04196ed5"
+    "mtime": 1793020753.2541838,
+    "hash": "858acfe9c466f5057bbfd22780127f10"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/main.tsx": {
     "mtime": 1776409952.8888268,
@@ -196,8 +196,8 @@
     "hash": "3345d7c7b3762b50c5014f2f7bcac824"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/coords.ts": {
-    "mtime": 1793018119.2269022,
-    "hash": "9675ced7fd772942f8661b858f3b8b49"
+    "mtime": 1793020722.181453,
+    "hash": "bfc44383f94325eac7075c2236a8f83f"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/stationAltitude.ts": {
     "mtime": 1793014790.147555,
@@ -220,8 +220,8 @@
     "hash": "9ece0be4c012190a1d4ff2ef4d8b6e64"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/__tests__/stationAltitude.test.ts": {
-    "mtime": 1793017951.554999,
-    "hash": "cacdb8e50fbc5b69f88be03daae9515e"
+    "mtime": 1793020797.2208006,
+    "hash": "3253279930d68428591a8456eff82905"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/utils/__tests__/surfaceTextureCalibration.test.ts": {
     "mtime": 1787233721.339519,
@@ -300,8 +300,8 @@
     "hash": "5fd5dace73caae442ecf72063180f029"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/HelpModal.tsx": {
-    "mtime": 1793018038.0929055,
-    "hash": "ef206ebf2a87e67eb74d2d60ae9452b3"
+    "mtime": 1793020882.2270525,
+    "hash": "4f963a1f0b18fb1e9f7f959d44a15e47"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/src/shared/components/MeasurementPanel.tsx": {
     "mtime": 1792690399.533192,
@@ -1168,8 +1168,8 @@
     "hash": "c1870c04c463048a48a5e9923c4381b5"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/CHANGELOG.md": {
-    "mtime": 1793017999.5603893,
-    "hash": "eb634a99ac4db4474443cb28eb9ad818"
+    "mtime": 1793020903.1438673,
+    "hash": "1951173da03e705687bab3817f7eea7e"
   },
   "/home/dankez/AI-projekty/CaveView-modernized/agents.md": {
     "mtime": 1777201521.1427379,

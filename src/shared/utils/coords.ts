@@ -114,3 +114,14 @@ export function worldToWgs84(
 
   return null
 }
+
+/**
+ * Vytvorí URL pre ZBGIS terénny portál so zobrazením presného identifikačného bodu a centrovaním mapy.
+ * Formát: https://zbgis.skgeodesy.sk/mapka/sk/teren/identification/point/{lat},{lon}?pos={lat},{lon},{zoom}
+ */
+export function getZbgisPointUrl(lat: number, lon: number, zoom = 18): string {
+  const latStr = lat.toFixed(6)
+  const lonStr = lon.toFixed(6)
+  return `https://zbgis.skgeodesy.sk/mapka/sk/teren/identification/point/${latStr},${lonStr}?pos=${latStr},${lonStr},${zoom}`
+}
+

@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.5.5] - 2026-10-26
+### Presná bodová identifikácia v portáli ZBGIS Terén / Exact point identification pin in ZBGIS Terrain portal
+- **Presná identifikácia bodu na ZBGIS**: Aktualizovaný formát odkazu na štátny portál ZBGIS Terén (`https://zbgis.skgeodesy.sk/mapka/sk/teren/identification/point/{lat},{lon}?pos={lat},{lon},18`), ktorý pri otvorení priamo umiestni identifikačný terč a otvorí informačný dialóg s presnou nadmorskou výškou a údajmi DMR 5.0 pre zadané súradnice (aplikované pre jaskynné stanice aj najbližšie body povrchu). / Exact point identification URL in ZBGIS: updated link structure to activate the identify pin and elevation popup dialog directly at the target coordinates while centering the map at zoom 18 for both underground survey stations and closest surface points.
+
 ## [2.5.4] - 2026-10-26
 ### GPS súradnice najbližšieho bodu povrchu a prepojenie na ZBGIS LiDAR / Closest surface GPS coordinates & ZBGIS LiDAR integration
 - **GPS súradnice najbližšieho bodu povrchu**: V detaile stanice sa pri minimálnej 3D vzdialenosti k povrchu zobrazujú presné geodetické WGS84 GPS súradnice najbližšieho bodu terénu (`lat`, `lon`), odvodené z DTM alebo referenčného vchodu. / Station inspection card now displays exact geodetic WGS84 GPS coordinates (`lat`, `lon`) for the closest 3D surface point.

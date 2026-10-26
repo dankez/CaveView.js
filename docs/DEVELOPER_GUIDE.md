@@ -1,8 +1,8 @@
-# 🛠️ LochViewer - Developer & Mathematical Specification (v2.5.4)
+# 🛠️ LochViewer - Developer & Mathematical Specification (v2.5.5)
 
 *Comprehensive technical architecture, mathematical formulations, shader models, and Web Worker data flows for developers and contributors.*
 
-### Shortest 3D Distance to Surface (Minimum Rock Cover), GPS & ZBGIS LiDAR (2.5.4)
+### Shortest 3D Distance to Surface (Minimum Rock Cover), GPS & ZBGIS LiDAR (2.5.5)
 
 1. **Mathematical formulation and reference point hierarchy (`findReferenceStation`)**:
    - **Priority 1 (Cave Entrance)**: Station flagged with `isEntrance === true` or named with entrance keywords (`vchod`, `vstup`, `entrance`, `eingang`, `trou`, `boca`, `zavrt`). Reference altitude is $Z_{entrance}$. If GPS is present (`gps !== null`), type is `'entrance_gps'`, otherwise `'entrance'`.
@@ -32,7 +32,7 @@
      $$\varphi_{surf} = \varphi_{ref} + \frac{\Delta y}{M_{\varphi}}, \quad \lambda_{surf} = \lambda_{ref} + \frac{\Delta x}{N_{\lambda}}$$
    - **Interactive Map URL formatting**:
      - Google Maps: `https://maps.google.com/?q={lat},{lon}`
-     - ZBGIS LiDAR: `https://zbgis.skgeodesy.sk/mapka/sk/teren?pos={lat},{lon},18` (high-detail DMR 5.0 relief)
+     - ZBGIS LiDAR: `https://zbgis.skgeodesy.sk/mapka/sk/teren/identification/point/{lat},{lon}?pos={lat},{lon},18` (activates exact point identification pin/dialog with zoom 18 high-detail DMR 5.0)
 
 4. **3D visualization (`SurfaceDepthVisual`)**:
    - Rendered in centered survey local space within the cave group.

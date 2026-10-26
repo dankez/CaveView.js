@@ -13,7 +13,7 @@ import proj4 from 'proj4'
 
 import packageJson from '../package.json'
 import { SJTSK_DEF, fetchAltitudeFromZbgis, wgs84ToJtsk } from '@shared/utils/geoUtils';
-import { tryUtmToWgs84, tryJtskToWgs84, worldToWgs84 } from "@shared/utils/coords";
+import { tryUtmToWgs84, tryJtskToWgs84, worldToWgs84, getZbgisPointUrl } from "@shared/utils/coords";
 import type { ParsedCave, ViewerOptions, CaveSurface, StationLabel, Vec3, ViewerCameraSnapshot, ViewPreset } from '@shared/types';
 import type { TextureDownloadInspector } from '@shared/utils/XyzTileDownloader';
 import { clearBrowserTileCache } from '@shared/utils/tileCache';
@@ -558,7 +558,7 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
                             🗺️ {t('ui.googleMaps')}
                           </a>
                           <a
-                            href={`https://zbgis.skgeodesy.sk/mapka/sk/teren?pos=${st.closestSurfGps.lat.toFixed(6)},${st.closestSurfGps.lon.toFixed(6)},18`}
+                            href={getZbgisPointUrl(st.closestSurfGps.lat, st.closestSurfGps.lon)}
                             target="_blank" rel="noopener noreferrer"
                             style={{ fontSize: 10, color: '#f59e0b', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3 }}
                           >
@@ -618,7 +618,7 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
                           🗺️ {t('ui.googleMaps')}
                         </a>
                         <a
-                          href={`https://zbgis.skgeodesy.sk/mapka/sk/teren?pos=${st.gps.lat.toFixed(6)},${st.gps.lon.toFixed(6)},18`}
+                          href={getZbgisPointUrl(st.gps.lat, st.gps.lon)}
                           target="_blank" rel="noopener noreferrer"
                           style={{ fontSize: 11, color: '#f59e0b', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                         >

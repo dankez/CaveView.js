@@ -8,7 +8,7 @@ import {
   sampleSurfaceElevationAt,
   calculateStationDepths,
 } from '../stationAltitude'
-import { worldToWgs84 } from '../coords'
+import { worldToWgs84, getZbgisPointUrl } from '../coords'
 import type { ParsedCave, CaveSurface } from '@shared/types'
 
 describe('stationAltitude', () => {
@@ -254,6 +254,13 @@ describe('stationAltitude', () => {
       expect(offsetPoint!.lon).toBeGreaterThan(19.679950)
       // Roughly 10m north is ~0.00009 degrees lat
       expect(offsetPoint!.lat - 49.007470).toBeCloseTo(10 / 111200, 5)
+    })
+  })
+
+  describe('getZbgisPointUrl', () => {
+    it('constructs correct ZBGIS URL with identification point marker and pos query params', () => {
+      const url = getZbgisPointUrl(48.663962, 20.829461, 18)
+      expect(url).toBe('https://zbgis.skgeodesy.sk/mapka/sk/teren/identification/point/48.663962,20.829461?pos=48.663962,20.829461,18')
     })
   })
 })

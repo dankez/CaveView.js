@@ -2,7 +2,7 @@
 
 *Kompletná technická špecifikácia, matematický aparát, architektúra a flow diagramy pre vývojárov.*
 
-### Najkratšia 3D vzdialenosť k povrchu (minimálna hrúbka masívu), GPS a ZBGIS LiDAR (2.5.4)
+### Najkratšia 3D vzdialenosť k povrchu (minimálna hrúbka masívu), GPS a ZBGIS LiDAR (2.5.5)
 
 1. **Matematický aparát a hierarchia referenčného bodu (`findReferenceStation`)**:
    - **Priorita 1 (Vchod jaskyne)**: Stanica s `isEntrance === true` alebo názvom obsahujúcim `vchod`, `vstup`, `entrance`, `eingang`, `trou`, `boca`, `zavrt`. Výška vchodu je $Z_{vchod}$. Ak má stanica priradené GPS (`gps !== null`), typ je `'entrance_gps'`, inak `'entrance'`.
@@ -32,7 +32,7 @@
      $$\varphi_{surf} = \varphi_{ref} + \frac{\Delta y}{M_{\varphi}}, \quad \lambda_{surf} = \lambda_{ref} + \frac{\Delta x}{N_{\lambda}}$$
    - **Generovanie URL odkazov**:
      - Google Maps: `https://maps.google.com/?q={lat},{lon}`
-     - ZBGIS LiDAR: `https://zbgis.skgeodesy.sk/mapka/sk/teren?pos={lat},{lon},18` (mierka 18 pre detailný DMR 5.0)
+     - ZBGIS LiDAR: `https://zbgis.skgeodesy.sk/mapka/sk/teren/identification/point/{lat},{lon}?pos={lat},{lon},18` (presná identifikácia bodu s terčom a dialógom, mierka 18 pre detailný DMR 5.0)
 
 4. **3D vizualizácia (`SurfaceDepthVisual`)**:
    - Vykresľuje sa v rámci lokálnych centrovaných súradníc skupiny jaskyne.
