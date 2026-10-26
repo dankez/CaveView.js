@@ -1,8 +1,8 @@
-# 🛠️ LochViewer - Developer & Mathematical Specification (v2.5.3)
+# 🛠️ LochViewer - Developer & Mathematical Specification (v2.5.4)
 
 *Comprehensive technical architecture, mathematical formulations, shader models, and Web Worker data flows for developers and contributors.*
 
-### Shortest 3D Distance to Surface (Minimum Rock Cover) and Vertical Depth (2.5.3)
+### Shortest 3D Distance to Surface (Minimum Rock Cover), GPS & ZBGIS LiDAR (2.5.4)
 
 1. **Mathematical formulation and reference point hierarchy (`findReferenceStation`)**:
    - **Priority 1 (Cave Entrance)**: Station flagged with `isEntrance === true` or named with entrance keywords (`vchod`, `vstup`, `entrance`, `eingang`, `trou`, `boca`, `zavrt`). Reference altitude is $Z_{entrance}$. If GPS is present (`gps !== null`), type is `'entrance_gps'`, otherwise `'entrance'`.
@@ -20,12 +20,19 @@
    - Vertical depth below surface:
      $$\text{distToSurf} = Z_{surface} - (Z_{point} + o_{cave, z})$$
 
-3. **True shortest 3D distance to surface (`findClosestSurfacePoint`)**:
+3. **True shortest 3D distance to surface (`findClosestSurfacePoint`) and GPS (`worldToWgs84`)**:
    - For a cave survey point $\mathbf{Q} = (X_q, Y_q, Z_q)$ and a surface mesh represented by a triangulated DTM grid, find point $\mathbf{P}^* \in \mathcal{S}_{DTM}$ that minimizes 3D Euclidean distance:
      $$d_{3D}^* = \min_{\mathbf{P} \in \mathcal{S}_{DTM}} \|\mathbf{Q} - \mathbf{P}\|$$
    - **Search space bounding**: Because vertical depth $d_{vert} = |Z_{surface} - Z_q|$ is known, the shortest distance satisfies $d_{3D}^* \le d_{vert}$. The horizontal search radius is bounded by $R_{max} = d_{vert}$, corresponding to a compact cell window $[c_{min}, c_{max}] \times [r_{min}, r_{max}]$ via inverse DTM calibration transform.
    - **Exact point-to-triangle projection (Christer Ericson algorithm)**: Each quad cell is split into triangles $(V_{00}, V_{10}, V_{01})$ and $(V_{10}, V_{11}, V_{01})$. Point projection operates without heap allocations using Voronoi feature regions (vertices, edges, interior).
-   - On inclined terrain (e.g. slope angle $\alpha = 45^\circ$), closest distance is $d_{3D}^* = d_{vert} \cdot \cos(\alpha) \approx 0.707 \cdot d_{vert}$, yielding the critical minimal rock cover.
+   - **Geodetic conversion to WGS84 (`worldToWgs84`)**:
+     UTM or S-JTSK coordinates are converted directly via standard projections. In local cave coordinates with reference station GPS $(\varphi_{ref}, \lambda_{ref})$, metric offsets $(\Delta x, \Delta y)$ are projected onto the WGS84 ellipsoid:
+     $$M_{\varphi} = 111132.92 - 559.82 \cos(2\varphi_{ref}) + 1.175 \cos(4\varphi_{ref})$$
+     $$N_{\lambda} = 111412.84 \cos(\varphi_{ref}) - 93.5 \cos(3\varphi_{ref})$$
+     $$\varphi_{surf} = \varphi_{ref} + \frac{\Delta y}{M_{\varphi}}, \quad \lambda_{surf} = \lambda_{ref} + \frac{\Delta x}{N_{\lambda}}$$
+   - **Interactive Map URL formatting**:
+     - Google Maps: `https://maps.google.com/?q={lat},{lon}`
+     - ZBGIS LiDAR: `https://zbgis.skgeodesy.sk/mapka/sk/teren?pos={lat},{lon},18` (high-detail DMR 5.0 relief)
 
 4. **3D visualization (`SurfaceDepthVisual`)**:
    - Rendered in centered survey local space within the cave group.

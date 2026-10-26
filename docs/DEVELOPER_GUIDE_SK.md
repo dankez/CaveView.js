@@ -1,8 +1,8 @@
-# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.5.3)
+# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.5.4)
 
 *Kompletná technická špecifikácia, matematický aparát, architektúra a flow diagramy pre vývojárov.*
 
-### Najkratšia 3D vzdialenosť k povrchu (minimálna hrúbka masívu) a vertikálna hĺbka (2.5.3)
+### Najkratšia 3D vzdialenosť k povrchu (minimálna hrúbka masívu), GPS a ZBGIS LiDAR (2.5.4)
 
 1. **Matematický aparát a hierarchia referenčného bodu (`findReferenceStation`)**:
    - **Priorita 1 (Vchod jaskyne)**: Stanica s `isEntrance === true` alebo názvom obsahujúcim `vchod`, `vstup`, `entrance`, `eingang`, `trou`, `boca`, `zavrt`. Výška vchodu je $Z_{vchod}$. Ak má stanica priradené GPS (`gps !== null`), typ je `'entrance_gps'`, inak `'entrance'`.
@@ -20,19 +20,26 @@
    - Vertikálna hĺbka bodu priamo pod povrchom:
      $$\text{distToSurf} = Z_{povrch} - (Z_{bod} + o_{cave, z})$$
 
-3. **Geometricky najkratšia 3D vzdialenosť k povrchu (`findClosestSurfacePoint`)**:
+3. **Geometricky najkratšia 3D vzdialenosť k povrchu (`findClosestSurfacePoint`) a GPS (`worldToWgs84`)**:
    - Pre bod v jaskyni $\mathbf{Q} = (X_q, Y_q, Z_q)$ a povrch reprezentovaný triangulovanou DTM mriežkou hľadáme bod $\mathbf{P}^* \in \mathcal{S}_{DTM}$, ktorý minimalizuje euklidovskú vzdialenosť v 3D:
      $$d_{3D}^* = \min_{\mathbf{P} \in \mathcal{S}_{DTM}} \|\mathbf{Q} - \mathbf{P}\|$$
    - **Ohraničenie vyhľadávacieho priestoru**: Ak je známa zvislá hĺbka $d_{vert} = |Z_{povrch} - Z_q|$, najkratšia vzdialenosť spĺňa $d_{3D}^* \le d_{vert}$. Horizontálny polomer hľadania v rovine $X-Y$ je preto striktne obmedzený $R_{max} = d_{vert}$. Cez inverznú maticu DTM kalibrácie sa ohraničí rozsah mriežky $[c_{min}, c_{max}] \times [r_{min}, r_{max}]$.
    - **Projekcia bodu na trojuholník (Christer Ericson algorithm)**: Každý štvorcový element mriežky je rozdelený na dva trojuholníky $(V_{00}, V_{10}, V_{01})$ a $(V_{10}, V_{11}, V_{01})$. Výpočet projekcie $\mathbf{Q}$ na trojuholník prebieha bez alokácie pamäte v pamäťovom registri s overením Voronoiových oblastí vrcholov, hrán a plochy trojuholníka.
-   - V strmom svahu (napr. uhol sklonu $\alpha = 45^\circ$) je najkratšia vzdialenosť $d_{3D}^* = d_{vert} \cdot \cos(\alpha) \approx 0.707 \cdot d_{vert}$, čo predstavuje kľúčovú hodnotu minimálnej hrúbky horninového masívu.
+   - **Geodetický prevod svetových súradníc na WGS84 (`worldToWgs84`)**:
+     Ak má povrchový bod súradnice UTM alebo S-JTSK, vykoná sa priama rigorózna transformácia. Ak je model v lokálnych meračských súradniciach a je známy referenčný GPS bod vchodu $(\varphi_{ref}, \lambda_{ref})$, odchýlka $(\Delta x, \Delta y)$ sa prepočíta podľa meridiánovej a rovnobežkovej metriky WGS84 elipsoidu:
+     $$M_{\varphi} = 111132.92 - 559.82 \cos(2\varphi_{ref}) + 1.175 \cos(4\varphi_{ref})$$
+     $$N_{\lambda} = 111412.84 \cos(\varphi_{ref}) - 93.5 \cos(3\varphi_{ref})$$
+     $$\varphi_{surf} = \varphi_{ref} + \frac{\Delta y}{M_{\varphi}}, \quad \lambda_{surf} = \lambda_{ref} + \frac{\Delta x}{N_{\lambda}}$$
+   - **Generovanie URL odkazov**:
+     - Google Maps: `https://maps.google.com/?q={lat},{lon}`
+     - ZBGIS LiDAR: `https://zbgis.skgeodesy.sk/mapka/sk/teren?pos={lat},{lon},18` (mierka 18 pre detailný DMR 5.0)
 
 4. **3D vizualizácia (`SurfaceDepthVisual`)**:
    - Vykresľuje sa v rámci lokálnych centrovaných súradníc skupiny jaskyne.
    - Počiatočný bod v jaskyni: $\mathbf{p}_{station} = (pos.x, pos.z, -pos.y)$.
    - Kolmý bod na povrchu: $\mathbf{p}_{vert} = (pos.x, pos.z + \text{distToSurf}, -pos.y)$.
    - Najbližší 3D bod na povrchu: $\mathbf{p}_{closest} = (closestSurfPos.x, closestSurfPos.z, -closestSurfPos.y)$.
-   - **Najkratšia 3D spojnica**: výrazná jantárovo-oranžová línia (`color="#f59e0b"`, `lineWidth={3.8}`, `dashed={true}`) s dvojitým terčom na povrchu a štítkom mierky $\min d_{3D}$.
+   - **Najkratšia 3D spojnica**: výrazná jantárovo-oranžová línia (`color="#f59e0b"`, `lineWidth={3.8}`, `dashed={true}`) s dvojitým terčom na povrchu a štítkom mierky $\min d_{3D}$ doplneným o GPS súradnice.
    - **Vertikálna línia**: jemná svetlomodrá čiarkovaná línia (`color="#38bdf8"`, `lineWidth={1.8}`) s kótou $Z_{povrch}$ kolmo hore.
    - **Separácia a zjednotenie**: Ak je vzdialenosť $\|\mathbf{p}_{vert} - \mathbf{p}_{closest}\| < 0.25\text{ m}$ (rovný terén nad jaskyňou), línia sa vykreslí v jednom dominantnom štýle so združeným popisom, čím sa predchádza prekrývaniu a vizuálnemu šumu.
    - Komponent je plne paritný pre Engine v1 (`CaveViewer3D`) aj Engine v2 (`CaveViewerNextGen`).

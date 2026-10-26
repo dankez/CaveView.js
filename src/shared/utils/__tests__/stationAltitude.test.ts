@@ -8,6 +8,7 @@ import {
   sampleSurfaceElevationAt,
   calculateStationDepths,
 } from '../stationAltitude'
+import { worldToWgs84 } from '../coords'
 import type { ParsedCave, CaveSurface } from '@shared/types'
 
 describe('stationAltitude', () => {
@@ -229,6 +230,30 @@ describe('stationAltitude', () => {
       expect(depths.closestSurfDist).toBeCloseTo(30 / Math.SQRT2, 2)
       expect(depths.closestHorizontalDist).toBeCloseTo(15, 1)
       expect(depths.closestSurfAltitude).toBeCloseTo(75, 1)
+    })
+  })
+
+  describe('worldToWgs84', () => {
+    it('calculates GPS coordinates for an offset surface point given a reference station GPS', () => {
+      const refPoint = {
+        x: 100,
+        y: 200,
+        gps: { lat: 49.007470, lon: 19.679950 }
+      }
+
+      // Exact match at reference point
+      const same = worldToWgs84(100, 200, refPoint)
+      expect(same).not.toBeNull()
+      expect(same?.lat).toBeCloseTo(49.007470, 6)
+      expect(same?.lon).toBeCloseTo(19.679950, 6)
+
+      // Point offset 10m north, 20m east
+      const offsetPoint = worldToWgs84(120, 210, refPoint)
+      expect(offsetPoint).not.toBeNull()
+      expect(offsetPoint!.lat).toBeGreaterThan(49.007470)
+      expect(offsetPoint!.lon).toBeGreaterThan(19.679950)
+      // Roughly 10m north is ~0.00009 degrees lat
+      expect(offsetPoint!.lat - 49.007470).toBeCloseTo(10 / 111200, 5)
     })
   })
 })

@@ -13,7 +13,7 @@ import proj4 from 'proj4'
 
 import packageJson from '../package.json'
 import { SJTSK_DEF, fetchAltitudeFromZbgis, wgs84ToJtsk } from '@shared/utils/geoUtils';
-import { tryUtmToWgs84, tryJtskToWgs84 } from "@shared/utils/coords";
+import { tryUtmToWgs84, tryJtskToWgs84, worldToWgs84 } from "@shared/utils/coords";
 import type { ParsedCave, ViewerOptions, CaveSurface, StationLabel, Vec3, ViewerCameraSnapshot, ViewPreset } from '@shared/types';
 import type { TextureDownloadInspector } from '@shared/utils/XyzTileDownloader';
 import { clearBrowserTileCache } from '@shared/utils/tileCache';
@@ -258,6 +258,7 @@ export interface SelStation {
   closestSurfWorld?: Vec3 | null  // World súradnice najbližšieho bodu povrchu
   closestSurfAltitude?: number | null // m n.m. v najbližšom bode povrchu
   closestHorizontalDist?: number | null // m, horizontálny posun od kolmice
+  closestSurfGps?: { lat: number; lon: number } | null // GPS súradnice najbližšieho bodu povrchu
   entranceAlt?: number | null   // m n.m. nadmorská výška referenčného vchodu / bodu
   denivEntrance?: number | null // m, prevýšenie / denivelácia od vchodu (altitude - entranceAlt)
   refStationName?: string | null // meno referenčného vchodu / bodu
@@ -507,13 +508,72 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
 
             {/* 2. Najkratšia 3D vzdialenosť k povrchu (minimálna hrúbka masívu) */}
             {stations.length === 1 && (
-              <Row
-                label={t('stations.closestSurfaceDist')}
-                value={st.closestSurfDist === null || st.closestSurfDist === undefined ? t('measuring.unavailable') : `${st.closestSurfDist.toFixed(1)} m`}
-                sub={st.closestSurfDist === null || st.closestSurfDist === undefined
-                  ? t('stations.noSurfaceDtm')
-                  : `${t('stations.minRockCover')}${st.closestHorizontalDist !== null && st.closestHorizontalDist !== undefined ? ` (${t('stations.horizontalOffset')}: ${st.closestHorizontalDist.toFixed(1)} m, ${t('stations.surfaceAltitude')}: ${st.closestSurfAltitude?.toFixed(1)} m)` : ''}`}
-              />
+              <div style={{
+                background: 'rgba(245, 158, 11, 0.08)',
+                border: '1px solid rgba(245, 158, 11, 0.35)',
+                borderRadius: 8,
+                padding: '8px 10px',
+                margin: '6px 0'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 11, color: '#fbbf24', fontWeight: 600 }}>
+                    ★ {t('stations.closestSurfaceDist')}
+                  </span>
+                  <span style={{ fontSize: 13, color: '#fef08a', fontWeight: 700, fontFamily: 'monospace' }}>
+                    {st.closestSurfDist === null || st.closestSurfDist === undefined ? t('measuring.unavailable') : `${st.closestSurfDist.toFixed(1)} m`}
+                  </span>
+                </div>
+
+                {st.closestSurfDist !== null && st.closestSurfDist !== undefined ? (
+                  <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', color: '#cbd5e1' }}>
+                      <span>{t('stations.minRockCover')}</span>
+                      <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#fde68a' }}>
+                        {st.closestHorizontalDist != null && `${t('stations.horizontalOffset')}: ${st.closestHorizontalDist.toFixed(1)} m`}
+                        {st.closestSurfAltitude != null && ` • ${t('stations.surfaceAltitude')}: ${st.closestSurfAltitude.toFixed(1)} m`}
+                      </span>
+                    </div>
+
+                    {st.closestSurfGps && (
+                      <div style={{
+                        marginTop: 4,
+                        paddingTop: 4,
+                        borderTop: '1px dashed rgba(245, 158, 11, 0.25)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 3
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ color: '#d97706', fontWeight: 600, fontSize: 10 }}>{t('stations.surfaceGps')}:</span>
+                          <span style={{ color: '#fde68a', fontFamily: 'monospace', fontSize: 10 }}>
+                            {st.closestSurfGps.lat.toFixed(6)}°, {st.closestSurfGps.lon.toFixed(6)}°
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: 14, marginTop: 2, alignItems: 'center' }}>
+                          <a
+                            href={`https://maps.google.com/?q=${st.closestSurfGps.lat.toFixed(6)},${st.closestSurfGps.lon.toFixed(6)}`}
+                            target="_blank" rel="noopener noreferrer"
+                            style={{ fontSize: 10, color: '#38bdf8', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                          >
+                            🗺️ {t('ui.googleMaps')}
+                          </a>
+                          <a
+                            href={`https://zbgis.skgeodesy.sk/mapka/sk/teren?pos=${st.closestSurfGps.lat.toFixed(6)},${st.closestSurfGps.lon.toFixed(6)},18`}
+                            target="_blank" rel="noopener noreferrer"
+                            style={{ fontSize: 10, color: '#f59e0b', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                          >
+                            🏔️ {t('ui.zbgisLidar')}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 10, color: '#64748b', marginTop: 3 }}>
+                    {t('stations.noSurfaceDtm')}
+                  </div>
+                )}
+              </div>
             )}
 
             {/* 3. Vertikálna hĺbka pod povrchom (kolmo hore) */}
@@ -549,13 +609,20 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
                     <>
                       <Row label="Latitude" value={`${st.gps.lat.toFixed(6)}°`} />
                       <Row label="Longitude" value={`${st.gps.lon.toFixed(6)}°`} />
-                      <div style={{ marginTop: 4 }}>
+                      <div style={{ marginTop: 6, display: 'flex', gap: 14, alignItems: 'center' }}>
                         <a
                           href={`https://maps.google.com/?q=${st.gps.lat.toFixed(6)},${st.gps.lon.toFixed(6)}`}
                           target="_blank" rel="noopener noreferrer"
-                          style={{ fontSize: 11, color: '#4fc3f7', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
+                          style={{ fontSize: 11, color: '#4fc3f7', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                         >
                           🗺️ {t('ui.googleMaps')}
+                        </a>
+                        <a
+                          href={`https://zbgis.skgeodesy.sk/mapka/sk/teren?pos=${st.gps.lat.toFixed(6)},${st.gps.lon.toFixed(6)},18`}
+                          target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: 11, color: '#f59e0b', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                        >
+                          🏔️ {t('ui.zbgisLidar')}
                         </a>
                       </div>
                     </>
@@ -1924,6 +1991,10 @@ export default function App() {
       z: depthInfo.closestSurfWorld.z - cave.centerOffset.z,
     } : null
 
+    const closestGps = depthInfo.closestSurfWorld ? (
+      worldToWgs84(depthInfo.closestSurfWorld.x, depthInfo.closestSurfWorld.y, { x: ox, y: oy, gps: gps || undefined })
+    ) : null
+
     const newSt: SelStation = { 
       idx, name, origX: ox, origY: oy, altitude: alt, gps,
       distToSurf: depthInfo.distToSurf,
@@ -1933,6 +2004,7 @@ export default function App() {
       closestSurfWorld: depthInfo.closestSurfWorld,
       closestSurfAltitude: depthInfo.closestSurfAltitude,
       closestHorizontalDist: depthInfo.closestHorizontalDist,
+      closestSurfGps: closestGps,
       denivEntrance: depthInfo.denivEntrance,
       refStationName: depthInfo.refStationName,
       refStationType: depthInfo.refStationType,
@@ -2043,6 +2115,7 @@ export default function App() {
       closestSurfWorld: { x: origX, y: origY, z: altitude },
       closestSurfAltitude: altitude,
       closestHorizontalDist: 0,
+      closestSurfGps: gps,
       denivEntrance: depthInfo.denivEntrance,
       refStationName: depthInfo.refStationName,
       refStationType: depthInfo.refStationType,
@@ -2157,6 +2230,10 @@ export default function App() {
         z: depthInfo.closestSurfWorld.z - newOffsetZ,
       } : null
 
+      const closestGps = depthInfo.closestSurfWorld ? (
+        worldToWgs84(depthInfo.closestSurfWorld.x, depthInfo.closestSurfWorld.y, { x: ox, y: oy, gps: gpsNew || undefined })
+      ) : null
+
       return { 
         ...s, 
         origX: ox, 
@@ -2170,6 +2247,7 @@ export default function App() {
         closestSurfWorld: depthInfo.closestSurfWorld,
         closestSurfAltitude: depthInfo.closestSurfAltitude,
         closestHorizontalDist: depthInfo.closestHorizontalDist,
+        closestSurfGps: closestGps,
         denivEntrance: depthInfo.denivEntrance,
         refStationName: depthInfo.refStationName,
         refStationType: depthInfo.refStationType,
@@ -2208,6 +2286,10 @@ export default function App() {
       z: depthInfo.closestSurfWorld.z - (cave.centerOffset?.z || 0),
     } : null
 
+    const closestGps = depthInfo.closestSurfWorld ? (
+      worldToWgs84(depthInfo.closestSurfWorld.x, depthInfo.closestSurfWorld.y, { x: origX, y: origY, gps: gps || undefined })
+    ) : null
+
     return { 
       idx, name: sl.name, origX, origY, altitude, gps,
       distToSurf: depthInfo.distToSurf,
@@ -2217,6 +2299,7 @@ export default function App() {
       closestSurfWorld: depthInfo.closestSurfWorld,
       closestSurfAltitude: depthInfo.closestSurfAltitude,
       closestHorizontalDist: depthInfo.closestHorizontalDist,
+      closestSurfGps: closestGps,
       denivEntrance: depthInfo.denivEntrance,
       refStationName: depthInfo.refStationName,
       refStationType: depthInfo.refStationType,

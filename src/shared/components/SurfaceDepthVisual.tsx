@@ -127,11 +127,11 @@ export const SurfaceDepthVisual: React.FC<SurfaceDepthVisualProps> = React.memo(
       {closestSurfAltitude !== null && closestSurfAltitude !== undefined && (
         <Html position={[pClosest.x, pClosest.y + 0.45, pClosest.z]} center distanceFactor={14}>
           <div style={{
-            background: 'rgba(15, 23, 42, 0.88)',
+            background: 'rgba(15, 23, 42, 0.90)',
             backdropFilter: 'blur(4px)',
-            border: '1px solid rgba(245, 158, 11, 0.5)',
+            border: '1px solid rgba(245, 158, 11, 0.55)',
             borderRadius: '4px',
-            padding: '2px 6px',
+            padding: '2px 7px',
             color: '#cbd5e1',
             fontSize: '10px',
             fontFamily: 'monospace',
@@ -140,6 +140,11 @@ export const SurfaceDepthVisual: React.FC<SurfaceDepthVisualProps> = React.memo(
             userSelect: 'none'
           }}>
             {surfLabel}: <span style={{ color: '#fbbf24', fontWeight: 600 }}>{closestSurfAltitude.toFixed(1)} m n.m.</span>
+            {station.closestSurfGps && (
+              <span style={{ color: '#94a3b8', marginLeft: 6, fontSize: '9px' }}>
+                ({station.closestSurfGps.lat.toFixed(5)}°, {station.closestSurfGps.lon.toFixed(5)}°)
+              </span>
+            )}
           </div>
         </Html>
       )}
