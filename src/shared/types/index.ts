@@ -339,4 +339,5 @@ export interface CaveViewerNextGenProps {
   anomalies?: any[];
   activeAnomalyId?: string | null;
   onSurfaceOffsetChange?: (offset: Vec3) => void;
+  lang?: string;
 }

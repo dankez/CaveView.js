@@ -17,6 +17,7 @@ import {
   Character3D, 
   ManualConnection 
 } from '@shared/components/CaveSharedElements'
+import { SurfaceDepthVisual } from '@shared/components/SurfaceDepthVisual'
 import { TectonicPlaneVisual } from '@shared/components/TectonicPlaneVisual'
 import { SurveyPointPicker } from '@shared/components/SurveyPointPicker'
 import { MeasurementOverlay } from '@shared/components/MeasurementOverlay'
@@ -1805,6 +1806,7 @@ interface Props {
   selectedStations?: SelStation[]
   activeProfilePoints?: SelStation[] | null
   isMeasuringMode: boolean
+  lang?: string
 }
 
 
@@ -1813,7 +1815,7 @@ interface Props {
 const CaveViewer3D = ({ 
   cave, options: o, onStationClick, onSurfaceClick, onBackgroundClick, onMoveStateChange, onCameraUpdate, 
   onProcessingStart, onProcessingEnd, onStatusChange, onTextureReady, onTextureDownloadInfo, manualConnection, placedCaver, fitTrigger, selectedStations, activeProfilePoints,
-  contourInterval, minorInterval, isMeasuringMode
+  contourInterval, minorInterval, isMeasuringMode, lang = 'sk'
 }: Props) => {
   const [isMoving, setIsMoving] = useState(false)
   const [isFullyIdle, setIsFullyIdle] = useState(true)
@@ -2096,6 +2098,9 @@ const CaveViewer3D = ({
             p2={selectedStations[1].pos}
             p3={selectedStations[2].pos}
           />
+        )}
+        {selectedStations && selectedStations.length === 1 && selectedStations[0].distToSurf !== null && selectedStations[0].surfaceZ !== null && (
+          <SurfaceDepthVisual station={selectedStations[0]} lang={lang} />
         )}
       </group>
  

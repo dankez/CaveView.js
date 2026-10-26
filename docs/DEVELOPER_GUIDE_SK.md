@@ -1,6 +1,33 @@
-# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.4.34)
+# 🛠️ LochViewer - Vývojárska a matematická dokumentácia (v2.5.2)
 
 *Kompletná technická špecifikácia, matematický aparát, architektúra a flow diagramy pre vývojárov.*
+
+### Rozlíšenie hĺbky pod povrchom a denivelácie od vchodu s 3D vizualizáciou (2.5.2)
+
+1. **Matematický aparát a hierarchia referenčného bodu (`findReferenceStation`)**:
+   - **Priorita 1 (Vchod jaskyne)**: Stanica s `isEntrance === true` alebo názvom obsahujúcim `vchod`, `vstup`, `entrance`, `eingang`, `trou`, `boca`, `zavrt`. Výška vchodu je $Z_{vchod}$. Ak má stanica priradené GPS (`gps !== null`), typ je `'entrance_gps'`, inak `'entrance'`.
+   - **Priorita 2 (Bod s najnižším číslom)**: Ak jaskyňa nemá definovaný vchod ani GPS, vyradia sa povrchové stanice (názov s `surface`, `povrch`, `teren`, `gps`, `fix` alebo stanice pripojené výhradne k segmentom s `type === 'surface'`). Zo zostávajúcich staníc sa vyberie bod s minimálnym číselným identifikátorom (napr. 0, 1, 2... resp. najnižším indexom `idx`). Typ je `'lowest_station'`.
+   - **Denivelácia od vchodu / referenčného bodu**:
+     $$\Delta Z_{vchod} = Z_{bod} - Z_{ref}$$
+     Kladná hodnota ($\Delta Z > 0$) vyjadruje polohu nad úrovňou vchodu (napr. komíny, horné poschodia), záporná hodnota ($\Delta Z < 0$) polohu pod úrovňou vchodu.
+
+2. **Hĺbka pod povrchom a kolmé vzorkovanie DTM (`sampleSurfaceElevationAt`)**:
+   - V 3D scéne s posunom kalibrácie jaskyne $\mathbf{o}_{cave}$ a posunom povrchu $\mathbf{o}_{surf}$ platí pre horizontálnu polohu kolmo nad bodom jaskyne $(X_{cave}, Y_{cave})$:
+     $$X_{DTM} = X_{cave} + o_{cave, x} - o_{surf, x}$$
+     $$Y_{DTM} = Y_{cave} + o_{cave, y} - o_{surf, y}$$
+   - Z mriežky DTM sa interpoluje nadmorská výška povrchu $Z_{raw} = \text{sampleDtmAt}(X_{DTM}, Y_{DTM})$. Skutočná výška povrchu v scéne je:
+     $$Z_{povrch} = Z_{raw} + o_{surf, z}$$
+   - Hĺbka bodu pod povrchom:
+     $$\text{distToSurf} = Z_{povrch} - (Z_{bod} + o_{cave, z})$$
+     Ak $\text{distToSurf} \ge 0$, jaskyňa sa nachádza pod terénom; ak $\text{distToSurf} < 0$, bod leží nad povrchom terénu.
+
+3. **3D vizualizácia (`SurfaceDepthVisual`)**:
+   - Vykresľuje sa v rámci lokálnych centrovaných súradníc skupiny jaskyne.
+   - Počiatočný bod v jaskyni: $\mathbf{p}_1 = (pos.x, pos.z, -pos.y)$.
+   - Koncový bod na povrchu priamo kolmo nad bodom: $\mathbf{p}_2 = (pos.x, pos.z + \text{distToSurf}, -pos.y)$.
+   - Vertikálna čiarkovaná línia pozdĺž osi Y scény využíva `@react-three/drei` komponent `Line` (`dashed={true}`, `dashSize=0.8`, `gapSize=0.4`, `color="#38bdf8"`).
+   - Na povrchu $\mathbf{p}_2$ je umiestnený horizontálny terč (ring + circle s `rotation={[-π/2, 0, 0]}`) a HTML štítok s $Z_{povrch}$. V polovici zvislej línie sa zobrazuje HTML kóta s hĺbkou v metroch v mierke.
+   - Komponent je plne paritný pre Engine v1 (`CaveViewer3D`) aj Engine v2 (`CaveViewerNextGen`).
 
 ### Výber staníc, meranie a rýchla lišta (2.4.34)
 

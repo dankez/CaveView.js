@@ -14,6 +14,7 @@ import {
   Character3D, 
   ManualConnection 
 } from '@shared/components/CaveSharedElements'
+import { SurfaceDepthVisual } from '@shared/components/SurfaceDepthVisual'
 import { TectonicPlaneVisual } from '@shared/components/TectonicPlaneVisual'
 import { SurveyPointPicker } from '@shared/components/SurveyPointPicker'
 import { MeasurementOverlay } from '@shared/components/MeasurementOverlay'
@@ -336,7 +337,7 @@ const NavigationHandler = ({
 const CaveViewerNextGen = ({ 
   cave, options: o, onStationClick, onCameraUpdate, onStatusChange, fitTrigger, 
   selectedStations, activeProfilePoints, isMeasuringMode, manualConnection,
-  anomalies, activeAnomalyId, onSurfaceOffsetChange
+  anomalies, activeAnomalyId, onSurfaceOffsetChange, lang = 'sk'
 }: CaveViewerNextGenProps) => {
   const [isMoving, setIsModelMoving] = useState(false)
   const [isFullyIdle, setIsFullyIdle] = useState(true)
@@ -574,6 +575,10 @@ const CaveViewerNextGen = ({
             p2={selectedStations[1].pos}
             p3={selectedStations[2].pos}
           />
+        )}
+
+        {selectedStations && selectedStations.length === 1 && selectedStations[0].distToSurf !== null && selectedStations[0].surfaceZ !== null && (
+          <SurfaceDepthVisual station={selectedStations[0]} lang={lang} />
         )}
 
         {o.placedCaver && (

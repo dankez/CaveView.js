@@ -134,7 +134,10 @@ Surveys created with modern laser distometers (DistoX, CaveTRom, BRIC) contain h
 
 ## 5. Survey Measurement, Polygon Area & Structural Geology (Tectonics)
 
-Click a station outside measurement mode to inspect its name, original X/Y, source height, GPS when convertible and depth below a covering DTM. Missing GPS/terrain is shown as unavailable, not estimated. Unreferenced LiDAR height is the file's Z, not a guaranteed sea-level elevation.
+Click a station outside measurement mode to open a comprehensive point inspection card:
+* **Identification & Coordinates**: Station name, original $X$ and $Y$ coordinates, source elevation $Z$, and GPS (WGS84 lat/lon with manual editing and model georeferencing).
+* **Denivelation from Entrance / Reference Point**: Relative elevation difference from the entrance ($\pm$ value). If the cave defines an entrance with GPS or elevation, it compares against it; if neither entrance nor GPS exists, it references the lowest-numbered underground survey station (typically 0, 1, 2...). Positive values indicate ascents (chimneys, upper levels), negative values indicate descents.
+* **Depth below Surface (DTM)**: Vertical elevation difference between the terrain surface directly overhead and the station ($Z_{surface} - Z_{point}$). When DTM terrain is available, a vertical blue dashed line is rendered in the 3D scene from the station up to a surface target with a scaled depth badge. Missing GPS/terrain is shown as unavailable, not estimated. Unreferenced LiDAR height is the file's $Z$, not a guaranteed sea-level elevation.
 
 Select the ruler in the top toolbar or **Tools & analysis → Measurement** to open the **Measurement Panel**. Survey stations and enabled splay endpoints snap within 10 screen pixels in both engines; dragging rotates without adding points. Cave meshes/terrain and LiDAR points can also be picked.
 

@@ -1,6 +1,33 @@
-# 🛠️ LochViewer - Developer & Mathematical Specification (v2.4.34)
+# 🛠️ LochViewer - Developer & Mathematical Specification (v2.5.2)
 
 *Comprehensive technical architecture, mathematical formulations, shader models, and Web Worker data flows for developers and contributors.*
+
+### Distinct surface depth vs entrance denivelation with 3D visualization (2.5.2)
+
+1. **Mathematical formulation and reference point hierarchy (`findReferenceStation`)**:
+   - **Priority 1 (Cave Entrance)**: Station flagged with `isEntrance === true` or named with entrance keywords (`vchod`, `vstup`, `entrance`, `eingang`, `trou`, `boca`, `zavrt`). Reference altitude is $Z_{entrance}$. If GPS is present (`gps !== null`), type is `'entrance_gps'`, otherwise `'entrance'`.
+   - **Priority 2 (Lowest-numbered station)**: If the cave defines neither entrance nor GPS, surface stations are excluded (names containing `surface`, `povrch`, `teren`, `gps`, `fix`, or connected only to segments of `type === 'surface'`). The remaining underground station with the lowest numeric identifier (e.g. 0, 1, 2... or lowest index `idx`) is selected. Type is `'lowest_station'`.
+   - **Denivelation from entrance / reference point**:
+     $$\Delta Z_{entrance} = Z_{point} - Z_{ref}$$
+     Positive values ($\Delta Z > 0$) indicate locations above entrance level (chimneys, upper galleries); negative values ($\Delta Z < 0$) indicate depths below entrance level.
+
+2. **Depth below surface and orthogonal DTM sampling (`sampleSurfaceElevationAt`)**:
+   - In 3D space with cave calibration offset $\mathbf{o}_{cave}$ and surface offset $\mathbf{o}_{surf}$, the horizontal sampling coordinate directly overhead is:
+     $$X_{DTM} = X_{cave} + o_{cave, x} - o_{surf, x}$$
+     $$Y_{DTM} = Y_{cave} + o_{cave, y} - o_{surf, y}$$
+   - Sampling the DTM elevation grid yields raw altitude $Z_{raw} = \text{sampleDtmAt}(X_{DTM}, Y_{DTM})$. Real-world surface altitude is:
+     $$Z_{surface} = Z_{raw} + o_{surf, z}$$
+   - Point depth below surface:
+     $$\text{distToSurf} = Z_{surface} - (Z_{point} + o_{cave, z})$$
+     If $\text{distToSurf} \ge 0$, the passage is underground; if $\text{distToSurf} < 0$, the point is above the terrain.
+
+3. **3D visualization (`SurfaceDepthVisual`)**:
+   - Rendered in centered survey local space within the cave group.
+   - Point in cave: $\mathbf{p}_1 = (pos.x, pos.z, -pos.y)$.
+   - Surface point directly above: $\mathbf{p}_2 = (pos.x, pos.z + \text{distToSurf}, -pos.y)$.
+   - The vertical line along the scene Y axis uses `@react-three/drei`'s `Line` (`dashed={true}`, `dashSize=0.8`, `gapSize=0.4`, `color="#38bdf8"`).
+   - At $\mathbf{p}_2$, a horizontal circular target (`ring` + `circle` with `rotation={[-π/2, 0, 0]}`) and an HTML badge display $Z_{surface}$. At line midpoint, an HTML badge displays the depth in meters in scale.
+   - 100% parity across Engine v1 (`CaveViewer3D`) and Engine v2 (`CaveViewerNextGen`).
 
 ### Station selection, measurement and quick toolbar (2.4.34)
 

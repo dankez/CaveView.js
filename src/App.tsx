@@ -31,6 +31,7 @@ import { CompassRose } from '@shared/components/CompassRose';
 import { FloatingClippingSlider } from '@shared/components/FloatingClippingSlider';
 import { MeasurementPanel } from '@shared/components/MeasurementPanel';
 import { resolveStationPosition } from '@shared/utils/stationInteraction'
+import { calculateStationDepths, findReferenceStation, sampleDtmAt } from '@shared/utils/stationAltitude'
 
 const HelpModal = React.lazy(() => import('@shared/components/HelpModal').then(m => ({ default: m.HelpModal })))
 
@@ -239,29 +240,6 @@ const SUPPORTED = [
 ]
 
 
-/** Interpoluje výšku povrchu DTM pre danú world-space poziciú (x, y).
- *  Vráti výšku v metroch alebo null ak je bod mimo gridu. */
-function sampleDtmAt(surface: CaveSurface, worldX: number, worldY: number): number | null {
-  const { dtm } = surface
-  const { data, samples, lines, calib } = dtm
-  const det = calib.xx * calib.yy - calib.xy * calib.yx
-  if (Math.abs(det) < 1e-12) return null
-
-  const dx  = worldX - calib.xOrigin
-  const dy  = worldY - calib.yOrigin
-  const col = (dx * calib.yy - dy * calib.xy) / det
-  const row = (dy * calib.xx - dx * calib.yx) / det
-
-  if (col < 0 || col >= samples - 1 || row < 0 || row >= lines - 1) return null
-
-  const c0 = Math.floor(col), r0 = Math.floor(row)
-  const fc = col - c0, fr = row - r0
-  const z00 = data[r0 * samples + c0]
-  const z10 = data[r0 * samples + c0 + 1]
-  const z01 = data[(r0 + 1) * samples + c0]
-  const z11 = data[(r0 + 1) * samples + c0 + 1]
-  return z00 * (1 - fc) * (1 - fr) + z10 * fc * (1 - fr) + z01 * (1 - fc) * fr + z11 * fc * fr
-}
 
 // ─── Station detail card ─────────────────────────────────────────────────────────────
 
@@ -273,7 +251,12 @@ export interface SelStation {
   altitude:     number    // m n.m.
   pos:          Vec3      // Pridané súradnice pre 3D
   gps:          { lat: number; lon: number; zone?: number; epsg?: string } | null
-  distToSurf:   number | null   // m, kladné = jaskyňa je pod povrchom
+  distToSurf:   number | null   // m, kladné = jaskyňa je pod povrchom, záporné = nad povrchom
+  surfaceZ?:    number | null   // m n.m. nadmorská výška povrchu priamo kolmo nad bodom
+  entranceAlt?: number | null   // m n.m. nadmorská výška referenčného vchodu / bodu
+  denivEntrance?: number | null // m, prevýšenie / denivelácia od vchodu (altitude - entranceAlt)
+  refStationName?: string | null // meno referenčného vchodu / bodu
+  refStationType?: 'entrance_gps' | 'entrance' | 'lowest_station' | 'none'
   screenX:      number
   screenY:      number
   centerX?:     number
@@ -490,7 +473,7 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
               <Row
                 label={t('stations.altitude')}
                 value={`${st.altitude.toFixed(2)} m`}
-                sub={st.gps ? (baseAltitude !== undefined ? `n.m. (${(st.altitude - baseAltitude) >= 0 ? '+' : ''}${(st.altitude - baseAltitude).toFixed(2)} m rel)` : 'n.m.') : 'Z'}
+                sub={st.gps ? 'm n.m.' : 'Z (rel)'}
               />
             ) : (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
@@ -502,11 +485,29 @@ function StationDetailCard({ stations, onClose, onPlaceCaver, onSetProfile, onUp
               </div>
             )}
 
+            {/* 1. Denivelácia od vchodu / referenčného bodu (+/- hodnota) */}
             {stations.length === 1 && (
               <Row
-                label={t('stations.depth')}
-                value={st.distToSurf === null ? t('measuring.unavailable') : Math.abs(st.distToSurf).toFixed(1) + ' m'}
-                sub={st.distToSurf === null ? undefined : (st.distToSurf >= 0 ? `(${t('terrain.title').toLowerCase()})` : `(nad ${t('terrain.title').toLowerCase()})`)}
+                label={st.refStationType === 'lowest_station'
+                  ? `${t('stations.refDenivelation')} ${st.refStationName || ''}`.trim()
+                  : t('stations.entranceDenivelation')}
+                value={st.denivEntrance !== null && st.denivEntrance !== undefined
+                  ? `${st.denivEntrance >= 0 ? '+' : ''}${st.denivEntrance.toFixed(2)} m`
+                  : (baseAltitude !== undefined ? `${(st.altitude - baseAltitude) >= 0 ? '+' : ''}${(st.altitude - baseAltitude).toFixed(2)} m` : t('measuring.unavailable'))}
+                sub={st.refStationName ? (
+                  `${st.refStationType === 'entrance_gps' ? 'vchod s GPS' : st.refStationType === 'entrance' ? 'vchod' : 'ref. bod'} ${st.refStationName}${st.entranceAlt !== null && st.entranceAlt !== undefined ? ` (${st.entranceAlt.toFixed(1)} m)` : ''}`
+                ) : undefined}
+              />
+            )}
+
+            {/* 2. Hĺbka pod povrchom (DTM mriežka kolmo nad bodom) */}
+            {stations.length === 1 && (
+              <Row
+                label={t('stations.surfaceDepth')}
+                value={st.distToSurf === null || st.distToSurf === undefined ? t('measuring.unavailable') : `${Math.abs(st.distToSurf).toFixed(1)} m`}
+                sub={st.distToSurf === null || st.distToSurf === undefined
+                  ? t('stations.noSurfaceDtm')
+                  : `${st.distToSurf >= 0 ? t('stations.underSurface') : t('stations.aboveSurface')}${st.surfaceZ !== null && st.surfaceZ !== undefined ? ` (${t('stations.surfaceAltitude')}: ${st.surfaceZ.toFixed(1)} m)` : ''}`}
               />
             )}
 
@@ -849,6 +850,12 @@ export default function App() {
   const [activeProfilePoints, setActiveProfilePoints] = useState<SelStation[] | null>(null)
   const [cave, setCave] = useState<ParsedCave | null>(null)
   const isPlyLidar = useMemo(() => isPlyLidarData(loadedFile?.ext, cave), [loadedFile?.ext, cave])
+  const refStationInfo = useMemo(() => cave ? findReferenceStation(cave) : null, [cave])
+  const baseAltitude = useMemo(() => {
+    if (refStationInfo && refStationInfo.type !== 'none') return refStationInfo.altitude
+    if (!cave) return undefined
+    return cave.stations?.[0] ? (cave.stations[0].z + (cave.centerOffset?.z || 0)) : undefined
+  }, [cave, refStationInfo])
   const [isDragging, setIsDragging] = useState(false)
   const [progress, setProgress] = useState(0)
   const [loadingStatus, setLoadingStatus] = useState<string>('')
@@ -1889,17 +1896,21 @@ export default function App() {
       gps = tryJtskToWgs84(ox, oy);
     }
 
-    let distToSurf: number | null = null
-    if (cave.surfaces?.length > 0) {
-      const surf = cave.surfaces[0]
-      const zSurf = sampleDtmAt(surf,
-        ox + opts.caveCalibrationOffset.x - opts.surfaceOffset.x,
-        oy + opts.caveCalibrationOffset.y - opts.surfaceOffset.y)
-      if (zSurf !== null && Number.isFinite(zSurf)) distToSurf = zSurf + opts.surfaceOffset.z - alt - opts.caveCalibrationOffset.z
-    }
+    const depthInfo = calculateStationDepths(
+      cave,
+      { x: ox, y: oy, z: alt },
+      { caveCalibrationOffset: opts.caveCalibrationOffset, surfaceOffset: opts.surfaceOffset }
+    )
 
     const newSt: SelStation = { 
-      idx, name, origX: ox, origY: oy, altitude: alt, gps, distToSurf, screenX, screenY,
+      idx, name, origX: ox, origY: oy, altitude: alt, gps,
+      distToSurf: depthInfo.distToSurf,
+      surfaceZ: depthInfo.surfaceZ,
+      denivEntrance: depthInfo.denivEntrance,
+      refStationName: depthInfo.refStationName,
+      refStationType: depthInfo.refStationType,
+      entranceAlt: depthInfo.entranceAlt,
+      screenX, screenY,
       pos: resolved.position,
       centerX: cave.centerOffset.x, centerY: cave.centerOffset.y, centerZ: cave.centerOffset.z
     }
@@ -1981,12 +1992,24 @@ export default function App() {
       gps = tryJtskToWgs84(origX, origY);
     }
 
+    const depthInfo = calculateStationDepths(
+      cave,
+      { x: origX, y: origY, z: altitude },
+      { caveCalibrationOffset: opts.caveCalibrationOffset, surfaceOffset: opts.surfaceOffset }
+    )
+
     const sid = `Z${surfNextId.current++}`
     const newSt: SelStation = {
       idx: -1,
       name: sid,
       origX, origY, altitude,
-      gps, distToSurf: 0,
+      gps,
+      distToSurf: 0,
+      surfaceZ: altitude,
+      denivEntrance: depthInfo.denivEntrance,
+      refStationName: depthInfo.refStationName,
+      refStationType: depthInfo.refStationType,
+      entranceAlt: depthInfo.entranceAlt,
       screenX, screenY,
       pos: {
         x: origX - cave.centerOffset.x - opts.caveCalibrationOffset.x,
@@ -2014,7 +2037,7 @@ export default function App() {
     if (measurementMode === 'off') {
       setShowStationCard(true)
     }
-  }, [cave, isMeasuringMode, measurementMode, opts.caveCalibrationOffset])
+  }, [cave, isMeasuringMode, measurementMode, opts.caveCalibrationOffset, opts.surfaceOffset])
 
   useEffect(() => {
     if (selectedStations.length > 0) {
@@ -2054,55 +2077,65 @@ export default function App() {
     const newOffsetZ = alt - refPos.z
     const newCenterOffset = { x: newOffsetX, y: newOffsetY, z: newOffsetZ }
 
-    setCave((prev: ParsedCave | null) => {
-      if (!prev) return null
-      
-      // 3. Prepočítaj VŠETKY stationLabels (georeferencujeme celý model)
-      const newStationLabels = prev.stationLabels.map(sl => {
-        const ox = sl.pos.x + newOffsetX
-        const oy = sl.pos.y + newOffsetY
-        const newAlt = sl.pos.z + newOffsetZ
-        const newGps = tryJtskToWgs84(ox, oy)
-        return {
-          ...sl,
-          gps: newGps || null,
-          altitude: newAlt
-        }
-      })
-
-      // 4. Aktualizuj povrchy (surfaces)
-      const newSurfaces = prev.surfaces.map(s => ({
-        ...s,
-        centerOffset: newCenterOffset
-      }))
-
-      return { 
-        ...prev, 
-        centerOffset: newCenterOffset, 
-        stationLabels: newStationLabels,
-        surfaces: newSurfaces
+    // 3. Prepočítaj VŠETKY stationLabels (georeferencujeme celý model)
+    const newStationLabels = cave.stationLabels.map(sl => {
+      const ox = sl.pos.x + newOffsetX
+      const oy = sl.pos.y + newOffsetY
+      const newAlt = sl.pos.z + newOffsetZ
+      const newGps = tryJtskToWgs84(ox, oy)
+      return {
+        ...sl,
+        gps: newGps || null,
+        altitude: newAlt
       }
     })
+
+    // 4. Aktualizuj povrchy (surfaces)
+    const newSurfaces = cave.surfaces.map(s => ({
+      ...s,
+      centerOffset: newCenterOffset
+    }))
+
+    const updatedCave: ParsedCave = { 
+      ...cave, 
+      centerOffset: newCenterOffset, 
+      stationLabels: newStationLabels,
+      surfaces: newSurfaces
+    }
+
+    setCave(updatedCave)
     
     // 5. Aktualizácia vybraných staníc pre okamžitú odozvu v UI
     setSelectedStations(prev => prev.map(s => {
       const ox = s.pos.x + newOffsetX
       const oy = s.pos.y + newOffsetY
       const altNew = s.pos.z + newOffsetZ
-      const gpsNew = tryJtskToWgs84(ox, oy)
+      const gpsNew = tryJtskToWgs84(ox, oy) || tryUtmToWgs84(ox, oy)
       
+      const depthInfo = calculateStationDepths(
+        updatedCave,
+        { x: ox, y: oy, z: altNew },
+        { caveCalibrationOffset: opts.caveCalibrationOffset, surfaceOffset: opts.surfaceOffset }
+      )
+
       return { 
         ...s, 
         origX: ox, 
         origY: oy, 
         altitude: altNew, 
         gps: gpsNew || null,
+        distToSurf: depthInfo.distToSurf,
+        surfaceZ: depthInfo.surfaceZ,
+        denivEntrance: depthInfo.denivEntrance,
+        refStationName: depthInfo.refStationName,
+        refStationType: depthInfo.refStationType,
+        entranceAlt: depthInfo.entranceAlt,
         centerX: newOffsetX,
         centerY: newOffsetY,
         centerZ: newOffsetZ
       }
     }))
-  }, [cave, selectedStations])
+  }, [cave, selectedStations, opts.caveCalibrationOffset, opts.surfaceOffset])
 
   const stationMeta = new Map<number, { name: string; z: number; isEntrance?: boolean }>()
   const findStationByName = (name: string): SelStation | null => {
@@ -2119,13 +2152,20 @@ export default function App() {
 
     const gps = tryUtmToWgs84(origX, origY) || tryJtskToWgs84(origX, origY) || null
 
-    let distToSurf: number | null = null
-    if (cave.surfaces?.length > 0) {
-      const zSurf = sampleDtmAt(cave.surfaces[0], origX, origY)
-      if (zSurf !== null) distToSurf = zSurf - altitude
-    }
+    const depthInfo = calculateStationDepths(
+      cave,
+      { x: origX, y: origY, z: altitude },
+      { caveCalibrationOffset: opts.caveCalibrationOffset, surfaceOffset: opts.surfaceOffset }
+    )
+
     return { 
-      idx, name: sl.name, origX, origY, altitude, gps, distToSurf, 
+      idx, name: sl.name, origX, origY, altitude, gps,
+      distToSurf: depthInfo.distToSurf,
+      surfaceZ: depthInfo.surfaceZ,
+      denivEntrance: depthInfo.denivEntrance,
+      refStationName: depthInfo.refStationName,
+      refStationType: depthInfo.refStationType,
+      entranceAlt: depthInfo.entranceAlt,
       screenX: window.innerWidth/2 - 140, screenY: window.innerHeight/2 - 150,
       pos: sl.pos,
       centerX: cave.centerOffset?.x || 0, centerY: cave.centerOffset?.y || 0, centerZ: cave.centerOffset?.z || 0
@@ -3792,6 +3832,7 @@ export default function App() {
                         activeProfilePoints={activeProfilePoints}
                         isMeasuringMode={isMeasuringMode}
                         manualConnection={manualConnectionMemo}
+                        lang={lang}
                       />
                     ) : (
                       <CaveViewerNextGen
@@ -3807,6 +3848,7 @@ export default function App() {
                         anomalies={anomalies}
                         activeAnomalyId={activeAnomalyId}
                         onSurfaceOffsetChange={handleSurfaceOffsetChange}
+                        lang={lang}
                       />
                     )}
 	                  </ErrorBoundary>
@@ -3868,7 +3910,7 @@ export default function App() {
                       setOpts(p => ({ ...p, showProfileClipping: true, profileClipOffset: 0 }))
                     }}
                     lang={lang}
-                    baseAltitude={cave.stationLabels?.[0]?.altitude ?? (cave.stations?.[0] ? (cave.stations[0].z + (cave.centerOffset?.z || 0)) : undefined)}
+                    baseAltitude={baseAltitude}
                     altitudeMode={opts.altitudeMode}
                   />
                 )}
@@ -3887,7 +3929,7 @@ export default function App() {
                       onUpdateGps={handleUpdateGps}
                       t={t}
                       lang={lang}
-                      baseAltitude={cave.stationLabels?.[0]?.altitude ?? (cave.stations?.[0] ? (cave.stations[0].z + (cave.centerOffset?.z || 0)) : undefined)}
+                      baseAltitude={baseAltitude}
                       altitudeMode={opts.altitudeMode}
                     />
                 )}
@@ -3927,7 +3969,7 @@ export default function App() {
               caveLegend={legendCave} 
               surfLegend={legendSurf} 
               lang={lang} 
-              baseAltitude={cave?.stationLabels?.[0]?.altitude ?? (cave?.stations?.[0] ? (cave.stations[0].z + (cave.centerOffset?.z || 0)) : undefined)}
+              baseAltitude={baseAltitude}
               altitudeMode={opts.altitudeMode}
             />
             <ProcessingOverlay info={processingInfo} lang={lang} />

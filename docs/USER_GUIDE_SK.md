@@ -134,7 +134,10 @@ Tradičné jaskynné polygóny často obsahujú stovky až tisíce laserových z
 
 ## 5. Nástroje merania vzdialeností, plôch a štruktúrnej geológie (Tektonika)
 
-Kliknutím na stanicu mimo meracieho režimu zobrazíte meno, pôvodné X/Y, výšku zo súboru, GPS pri známej konverzii a hĺbku pod pokrývajúcim DTM. Chýbajúce GPS alebo terén sa označia ako nedostupné, neodhadujú sa. Výška nereferencovaného LiDAR modelu je Z zo súboru, nie zaručená nadmorská výška.
+Kliknutím na stanicu mimo meracieho režimu zobrazíte podrobnú kartu bodu:
+* **Názov a súradnice**: meno stanice, pôvodné súradnice $X$ a $Y$, nadmorská výška $Z$ zo súboru a GPS (WGS84 lat/lon s možnosťou manuálnej úpravy a georeferencovania).
+* **Denivelácia od vchodu / referenčného bodu**: relatívny výškový rozdiel voči vchodu ($\pm$ hodnota). Ak má jaskyňa vchod s GPS alebo zameranou výškou, porovnáva sa s ním; ak jaskyňa nemá zadaný vchod ani GPS, odvodí sa od nepovrchového bodu s najnižším číslom (často 0, 1, 2...). Kladné hodnoty značia stúpanie (komíny, vyššie poschodia), záporné zostup (hlbšie časti jaskyne).
+* **Hĺbka pod povrchom (DTM)**: výškový rozdiel medzi povrchom terénu priamo kolmo nad bodom a stanicou ($Z_{povrch} - Z_{bod}$). Pri dostupnom DTM povrchu sa v 3D scéne vykreslí zvislá modrá čiarkovaná čiara s terčom na povrchu a štítkom mierky. Ak terén nie je načítaný alebo bod leží mimo DTM, hodnota sa označí ako nedostupná a neodhaduje sa. Výška nereferencovaného LiDAR modelu je $Z$ zo súboru, nie zaručená nadmorská výška.
 
 Pravítkom v hornej lište alebo vo **Nástroje & analýza → Meranie** otvoríte merací panel. Stanice a zapnuté splay konce sa v oboch enginoch prichytávajú do 10 pixelov od kliknutia. Ťahanie otáča model bez pridania bodu. Vyberať možno aj povrch siete/terénu a body LiDAR.
 

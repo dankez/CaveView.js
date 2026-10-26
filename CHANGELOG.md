@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.5.2] - 2026-10-26
+### Rozlíšenie hĺbky pod povrchom a denivelácie od vchodu s 3D vizualizáciou / Distinct surface depth vs entrance denivelation with 3D visualization
+- **Oddelenie metrík v detaile bodu**: Karta stanice teraz jasne rozlišuje „Deniveláciu od vchodu“ (± hodnota od primárneho vchodu s GPS/výškou alebo najnižšie očíslovaného nepovrchového bodu 0, 1...) a „Hĺbku pod povrchom“ (kolmý rozdiel výšky terénu DTM a bodu). / Separated metrics in station detail: clearly distinguishes “Denivelation from entrance” (± value from primary entrance with GPS or lowest non-surface survey station 0, 1...) and “Depth below surface” (vertical difference between DTM terrain and cave point).
+- **3D zvislá čiarkovaná čiara**: Pri výbere stanice sa v 3D scéne (Engine v1 aj v2) vykreslí zvislá čiarkovaná línia s terčom na povrchu a kótou hĺbky/nadmorskej výšky povrchu v mierke. / Interactive 3D vertical dashed line in both Engine v1 & v2 from selected cave station straight up to the DTM surface with surface target and altitude badge in scale.
+- **Robustné hľadanie referenčného bodu**: Algoritmus automaticky deteguje vchod jaskyne (podľa príznakov formátu alebo kľúčových slov), a ak jaskyňa nemá vchod ani GPS, referenčnú výšku odvodí z bodu s najnižším číslom (mimo povrchových staníc). / Robust reference station detection prioritizing entrances with GPS/altitude, falling back to lowest-numbered underground survey stations (filtering out surface/GPS points).
+
 ## [2.5.1] - 2026-10-22
 ### Priamy vertikálny rez a prepojenie lišty s bočným panelom / Direct vertical section and toolbar → sidebar reveal
 - Prepínač „Vertikálny profil (línia)“ aj nová ikona nožníc v hornej lište spustia výber 2 bodov v modeli a hneď odrežú model; posun a otočenie sú viditeľné bez rozbaľovania. / The Vertical Profile switch and new toolbar scissors pick 2 model points and cut immediately; offset and flip are visible without expanding details.

@@ -25,6 +25,7 @@ graphify-out/cache/
 
 # Local test runs
 .playwright-cli/
+.playwright-mcp/
 /*.png
 !docs/images/*.png
 test_models.js
