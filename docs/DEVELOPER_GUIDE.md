@@ -300,6 +300,30 @@ $$\text{smin}(d_1, d_2, k) = \min(d_1, d_2) - \frac{h^2 \cdot k}{4}$$
 ### 3.3 Bisector Normal Plane
 To avoid ray collisions between adjacent survey stations $A$ and $B$, a bisector plane is erected at midpoint $M = \frac{A + B}{2}$ with normal vector $\vec{u} = \frac{B - A}{\|B - A\|}$. Splay points from station $A$ are rejected if $\vec{u} \cdot (P - M) > 0$.
 
+### 3.4 Narrow-Band Bounding-Box Splatting, 1D Half-Space Scanline Clipping & Trilinear Normals (v2.5.12)
+Instead of brute-forcing all tetrahedrons and capsules at every grid voxel ($O(V \times (T + C))$), `splayWall.worker.ts` implements **Narrow-Band Bounding-Box Splatting** ($O(V_{\text{active}})$):
+1. **Narrow-Band Active Padding**: Each primitive (tetrahedron or capsule) is splatted only within its voxel AABB expanded by:
+   $$\text{bandPad} = \max(0, \text{isovalue}) + k + 1.85 \cdot \Delta v$$
+   At each voxel with current distance $\text{cur}$, the effective culling threshold is $\text{cullDist} = \min(\text{bandPad},\ \text{cur} + k)$, since $\text{smin}(\text{cur}, d, k) \equiv \text{cur}$ whenever $d \ge \text{cur} + k$.
+2. **Precomputed Tetrahedron Half-Spaces & 1D Scanline Clipping (`precomputeTetrahedrons`)**:
+   Each of the 4 faces $i \in \{0,1,2,3\}$ stores an outward unit normal $\vec{n}_i$ and plane offset $d_i$. Along each X-scanline at $(y, z)$, the signed plane distance is linear: $s_i(x) = b_i + x \cdot m_i$ where $m_i = n_{ix} \cdot \Delta v$. Prior to entering the inner X-loop, the scanline range $[x_{\text{start}}, x_{\text{end}}]$ is clipped against $b_i + x \cdot m_i \le \text{bandPad}$ for all 4 faces.
+3. **$O(1)$ Exact Interior Tetrahedron SDF**:
+   When $\max(s_0, s_1, s_2, s_3) \le 0$, the voxel lies inside the convex tetrahedron and its exact signed distance to the boundary is:
+   $$\text{SDF}_{\text{in}}(P) = \max(s_0, s_1, s_2, s_3)$$
+   computed in $O(1)$ with zero triangle evaluations and zero `Math.sqrt` calls. Exterior points ($\max_i s_i > 0$) evaluate `pointToTriangleDistSqScalar` only on visible faces ($s_i > 0$) using zero-allocation scalar arithmetic.
+4. **$O(1)$ Trilinear Sub-Voxel Normals in Surface Nets (`extractSurfaceNets`)**:
+   Mesh vertex normals are computed in $O(1)$ from the 8 cell corner SDF values $(c_{000} \dots c_{111})$ at local sub-voxel coordinates $(u, v, w) \in [0, 1]^3$ via trilinear gradient interpolation, eliminating 6 full-scene `evaluateSDF` calls per vertex.
+
+### 3.5 Cut Cross-Section Edge Extraction (BVH Shapecast & ClippingEdges, v2.5.13)
+To render real-time red clipping edges along sliced cave walls (`colorClippingEdges = "#ff4444"`), CaveView utilizes `three-mesh-bvh`:
+1. **BVH Indexing**:
+   Whenever a Splay mesh is generated or retrieved from cache (`createSplayBufferGeometry`), `geo.computeBoundsTree()` constructs an accelerated bounding volume hierarchy.
+2. **Triangle-Plane Intersection**:
+   For each clipping plane $\pi = (\vec{n}, d)$, `shapecast(intersectsBounds, intersectsTriangle)` visits intersecting leaves. Segments intersecting $\pi$ are interpolated linearly:
+   $$t = \frac{|d_i|}{|d_i| + |d_{i+1}|},\quad P = P_i + t(P_{i+1} - P_i)$$
+3. **Multi-Plane Visibility Culling**:
+   When horizontal and vertical profile clipping are both active, line segment endpoints are checked against all secondary clipping planes ($\pi_j \cdot P_k + d_j \ge -10^{-4}$); discarded segments are pruned before rendering.
+
 ---
 
 ## 4. Structural Geology & Tectonics Formulation (Dip & Strike)

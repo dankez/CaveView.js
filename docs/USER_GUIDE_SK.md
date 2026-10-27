@@ -248,6 +248,12 @@ Jaskyňa neexistuje vo vákuu – pochopenie jej vzťahu k povrchovému reliéfu
    * **Okamžitá odozva pri rotácii a posune**: Počas aktívneho pohybu kamery sa dočasne potláča vykresľovanie HTML štítkov nadmorských výšok, čím sa eliminuje prepočítavanie DOM prvkov a prepady snímkovej frekvencie. Po zastavení pohybu (180 ms idle stabilizácia) sa kóty okamžite zobrazia na vrstevniciach.
    * **Zdieľaný odľahčený materiál**: Vrstevnice namiesto ťažkého PBR osvetlenia používajú optimalizovaný `MeshBasicMaterial` inštanciovaný raz na úrovni celého terénu a zdieľaný naprieč všetkými dlaždicami s hardvérovým orezávaním odvrátených plôch (`FrontSide`).
    * **Inteligentný limit hustoty**: Počet zobrazených kót je obmedzený na maximálne 36 rovnomerne rozložených štítkov, čím sa zabraňuje zahlteniu prehliadača aj pri rozsiahlych LiDAR masívoch.
+12. **Ultrarýchle generovanie Splay SDF 3D stien (~75× zrýchlenie, v2.5.12)**:
+   * **Narrow-Band Bounding-Box Splatting**: Výpočet 3D stien zo splay lúčov vyhodnocuje objemové pole vzdialeností (SDF) výlučne v úzkom pásme okolo skutočného povrchu chodby namiesto celej prázdnej 3D mriežky.
+   * **Polpriestorové orezávanie a trilineárne normály**: Vďaka 1D scanline orezávaniu štvorstenov, $O(1)$ vnútornému SDF a analytickým trilineárnym normálam v algoritme Surface Nets trvá vygenerovanie vodotesného 3D modelu stien zlomok sekundy (zrýchlenie z >31 s na ~0,4 s).
+13. **Zvýraznenie hrany rezu na červeno pre Splay SDF model (v2.5.13)**:
+   * Pri horizontálnom reze (Z-Clipping) alebo vertikálnom reze profilom sa na Splay SDF modeli stien zobrazuje zreteľná červená čiara rezu (`colorClippingEdges`), identicky ako pri ručne kreslených stenách (scraps).
+   * Vďaka prepočítanému BVH priestorovému stromu (`three-mesh-bvh`) sa prieniková krivka rezu počíta a vykresľuje v reálnom čase bez zníženia snímkovej frekvencie.
 
 ---
 

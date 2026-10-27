@@ -305,6 +305,30 @@ $$\text{smin}(d_1, d_2, k) = \min(d_1, d_2) - \frac{h^2 \cdot k}{4}$$
 ### 3.3 Bisektorová deliaca rovina (Bisector Normal Plane)
 Aby sa zabránilo kolíziám lúčov medzi susednými stanicami $A$ a $B$, je v strede spojnice $M = \frac{A + B}{2}$ definovaná deliaca normálová rovina so smerovým vektorom $\vec{u} = \frac{B - A}{\|B - A\|}$. Splay body zo stanice $A$ sú orezané podmienkou $\vec{u} \cdot (P - M) \le 0$.
 
+### 3.4 Optimalizovaný Narrow-Band Splatting, 1D polpriestorové orezávanie a trilineárne normály (v2.5.12)
+Namiesto hrubého vyhodnocovania všetkých štvorstenov a kapsúl v každom voxeli mriežky ($O(V \times (T + C))$) implementuje `splayWall.worker.ts` algoritmus **Narrow-Band Bounding-Box Splatting** ($O(V_{\text{active}})$):
+1. **Úzke pásmo (Narrow-Band Padding)**: Každé teleso (štvorsten alebo kapsula) sa vpisuje iba do voxelov svojho AABB rozšíreného o polomer aktívneho pásma:
+   $$\text{bandPad} = \max(0, \text{isovalue}) + k + 1{,}85 \cdot \Delta v$$
+   Pre každý voxel s aktuálnou hodnotou $\text{cur}$ platí prah vplyvu $\text{cullDist} = \min(\text{bandPad},\ \text{cur} + k)$, pretože pre $d \ge \text{cur} + k$ platí $\text{smin}(\text{cur}, d, k) \equiv \text{cur}$.
+2. **Predpočítané polpriestory štvorstena a 1D Scanline Clipping (`precomputeTetrahedrons`)**:
+   Každá zo 4 stien štvorstena $i \in \{0,1,2,3\}$ má predpočítanú vonkajšiu jednotkovú normálu $\vec{n}_i$ a posun $d_i$. Pozdĺž riadku v osi $X$ je orientovaná vzdialenosť lineárnou funkciou $s_i(x) = b_i + x \cdot m_i$, kde $m_i = n_{ix} \cdot \Delta v$. Pred vstupom do slučky $X$ sa interval $[x_{\text{start}}, x_{\text{end}}]$ analyticky oreže nerovnosťami $b_i + x \cdot m_i \le \text{bandPad}$.
+3. **$O(1)$ vnútorná SDF konvexného štvorstena**:
+   Ak $\max(s_0, s_1, s_2, s_3) \le 0$, bod leží vo vnútri konvexného štvorstena a jeho presná znamienková vzdialenosť k hranici je priamo:
+   $$\text{SDF}_{\text{in}}(P) = \max(s_0, s_1, s_2, s_3)$$
+   bez výpočtu vzdialenosti k trojuholníkom a bez volania `Math.sqrt`. Pre vonkajšie body ($\max_i s_i > 0$) sa testujú iba privrátené steny ($s_i > 0$) cez bezalokačnú skalárnu funkciu `pointToTriangleDistSqScalar`.
+4. **Analytický trilineárny gradient v Surface Nets (`extractSurfaceNets`)**:
+   Normály vrcholov siete sa počítajú v $O(1)$ priamo z 8 rohov aktívnej bunky $(c_{000} \dots c_{111})$ na lokálnych sub-voxelových súradniciach $(u, v, w) \in [0, 1]^3$ trilineárnou interpoláciou parciálnych derivácií $(\partial f / \partial x, \partial f / \partial y, \partial f / \partial z)$, čím odpadá 6 globálnych volaní `evaluateSDF` na každý vrchol.
+
+### 3.5 Detekcia a vizualizácia hrany rezu (BVH Shapecast & ClippingEdges, v2.5.13)
+Pre vizualizáciu rezu stien jaskyne na červeno (`colorClippingEdges = "#ff4444"`) sa využíva priestorový strom `three-mesh-bvh`:
+1. **Inicializácia BVH stromu**:
+   Pri vytvorení `THREE.BufferGeometry` v `createSplayBufferGeometry` sa vyvolá `geo.computeBoundsTree()`.
+2. **Prienik trojuholníka s rovinou rezu**:
+   Pre každú rovinu rezu $\pi = (\vec{n}, d)$ strom prechádza bunky metódou `shapecast(intersectsBounds, intersectsTriangle)`. Ak trojuholník pretína rovinu, body prieniku úsečky sa interpolujú:
+   $$t = \frac{|d_i|}{|d_i| + |d_{i+1}|},\quad P = P_i + t(P_{i+1} - P_i)$$
+3. **Viacrovinové filtrovanie (Multi-Plane Culling)**:
+   Pri súčasnej aktivácii horizontálneho a profilového rezu sa overuje viditeľnosť oboch koncov úsečky voči všetkým ostatným aktívnym rovinám ($\pi_j \cdot P_k + d_j \ge -10^{-4}$); odrezané segmenty sú eliminované.
+
 ---
 
 ## 4. Výpočet štruktúrnej geológie a tektoniky (Dip & Strike)

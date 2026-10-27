@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as THREE from 'three';
+import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
 import { elevColor, normZ } from '@shared/utils/colorUtils';
 import { getSplayCacheKey, getCachedSplayGeometry, setCachedSplayGeometry } from '../utils/splayCache';
+import { ClippingEdges } from '@shared/components/Scraps';
 import type {
   SplayCaveWallsProps,
   SplayWorkerInputMessage,
@@ -11,6 +13,12 @@ import type {
   SplayPoint,
   StationWithSplays,
 } from '../types/splayTypes';
+
+if (!(THREE.BufferGeometry.prototype as any).computeBoundsTree) {
+  (THREE.BufferGeometry.prototype as any).computeBoundsTree = computeBoundsTree;
+  (THREE.BufferGeometry.prototype as any).disposeBoundsTree = disposeBoundsTree;
+  THREE.Mesh.prototype.raycast = acceleratedRaycast;
+}
 
 function createSplayBufferGeometry(
   data: SplayMeshGeometryData,
@@ -26,6 +34,11 @@ function createSplayBufferGeometry(
   // Recompute bounding sphere/box for Three.js frustum culling
   geo.computeBoundingBox();
   geo.computeBoundingSphere();
+
+  // Precompute BVH bounds tree for rapid raycasting and cross-section clipping edges
+  if ((geo as any).computeBoundsTree) {
+    (geo as any).computeBoundsTree();
+  }
 
   // Calculate altitude vertex colors for "Color by height"
   const minZ = cave?.bounds?.min ? cave.bounds.min.z : (geo.boundingBox ? geo.boundingBox.min.y : 0);
@@ -216,7 +229,10 @@ export const SplayCaveWalls: React.FC<SplayCaveWallsProps> = ({
     if (cached) {
       const geo = createSplayBufferGeometry(cached, cave);
       setGeometry(prev => {
-        if (prev) prev.dispose();
+        if (prev) {
+          (prev as any).disposeBoundsTree?.();
+          prev.dispose();
+        }
         return geo;
       });
       setIsComputing(false);
@@ -271,7 +287,10 @@ export const SplayCaveWalls: React.FC<SplayCaveWallsProps> = ({
 
         // Safely dispose old geometry
         setGeometry(prev => {
-          if (prev) prev.dispose();
+          if (prev) {
+            (prev as any).disposeBoundsTree?.();
+            prev.dispose();
+          }
           return geo;
         });
 
@@ -338,6 +357,7 @@ export const SplayCaveWalls: React.FC<SplayCaveWallsProps> = ({
   useEffect(() => {
     return () => {
       if (geometry) {
+        (geometry as any).disposeBoundsTree?.();
         geometry.dispose();
       }
     };
@@ -348,23 +368,31 @@ export const SplayCaveWalls: React.FC<SplayCaveWallsProps> = ({
   }
 
   return (
-    <mesh
-      geometry={geometry}
-      castShadow
-      receiveShadow
-    >
-      <meshStandardMaterial
-        color={showAltitude ? '#ffffff' : wallColor}
-        vertexColors={showAltitude}
-        roughness={roughness}
-        metalness={metalness}
-        opacity={wallOpacity}
-        transparent={wallTransparent}
-        wireframe={wireframe}
-        side={THREE.DoubleSide}
-        clippingPlanes={clippingPlanes}
+    <>
+      <mesh
+        geometry={geometry}
+        castShadow
+        receiveShadow
+      >
+        <meshStandardMaterial
+          color={showAltitude ? '#ffffff' : wallColor}
+          vertexColors={showAltitude}
+          roughness={roughness}
+          metalness={metalness}
+          opacity={wallOpacity}
+          transparent={wallTransparent}
+          wireframe={wireframe}
+          side={THREE.DoubleSide}
+          clippingPlanes={clippingPlanes}
+        />
+      </mesh>
+      <ClippingEdges
+        geo={geometry}
+        planes={clippingPlanes || []}
+        active={options?.showClippingEdges ?? true}
+        color={options?.colorClippingEdges || '#ff4444'}
       />
-    </mesh>
+    </>
   );
 };
 

@@ -1,6 +1,13 @@
 import React, { useMemo, useEffect, useState, useRef } from 'react'
 import * as THREE from 'three'
+import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+
+if (!(THREE.BufferGeometry.prototype as any).computeBoundsTree) {
+  (THREE.BufferGeometry.prototype as any).computeBoundsTree = computeBoundsTree;
+  (THREE.BufferGeometry.prototype as any).disposeBoundsTree = disposeBoundsTree;
+  THREE.Mesh.prototype.raycast = acceleratedRaycast;
+}
 import { elevColor, normZ } from '@shared/utils/colorUtils'
 import { buildSplayWallGeometry } from '@shared/utils/surfaceReconstruction'
 import type { ParsedCave, ViewerOptions, Vec3 } from '@shared/types'
@@ -497,7 +504,7 @@ export function buildScrapsGeo(cave: ParsedCave, withColors: boolean, smooth: bo
 export const ClippingEdges = React.memo(({ geo, planes, active, color = "#ff4444" }: { geo: THREE.BufferGeometry | null, planes: THREE.Plane[], active: boolean, color?: string }) => {
   const lineRef = useRef<THREE.LineSegments>(null!);
   const [lineGeo] = useState(() => new THREE.BufferGeometry());
-  const [posAttr] = useState(() => new THREE.BufferAttribute(new Float32Array(30000), 3));
+  const [posAttr, setPosAttr] = useState(() => new THREE.BufferAttribute(new Float32Array(60000), 3));
   const p1 = useMemo(() => new THREE.Vector3(), []);
   const p2 = useMemo(() => new THREE.Vector3(), []);
   const points = useMemo(() => [p1, p2], [p1, p2]);
@@ -507,15 +514,29 @@ export const ClippingEdges = React.memo(({ geo, planes, active, color = "#ff4444
   }, [lineGeo, posAttr]);
 
   useEffect(() => {
-    // @ts-ignore
-    if (!active || planes.length === 0 || !geo || !geo.boundsTree || !lineRef.current) {
+    if (!geo) {
+      if (lineRef.current) lineRef.current.visible = false;
+      return;
+    }
+
+    if (!active || !planes || planes.length === 0 || !lineRef.current) {
+      if (lineRef.current) lineRef.current.visible = false;
+      return;
+    }
+
+    // Ensure boundsTree is available
+    if (!(geo as any).boundsTree && (geo as any).computeBoundsTree) {
+      (geo as any).computeBoundsTree();
+    }
+
+    if (!(geo as any).boundsTree) {
       if (lineRef.current) lineRef.current.visible = false;
       return;
     }
 
     lineRef.current.visible = true;
     let segmentCount = 0;
-    const array = posAttr.array as Float32Array;
+    let array = posAttr.array as Float32Array;
 
     planes.forEach(plane => {
       // @ts-ignore
@@ -523,12 +544,30 @@ export const ClippingEdges = React.memo(({ geo, planes, active, color = "#ff4444
         intersectsBounds: box => plane.intersectsBox(box),
         intersectsTriangle: (tri) => {
           if (intersectTrianglePlane(tri, plane, points)) {
-            const idx = segmentCount * 6;
-            if (idx + 5 < array.length) {
-              array[idx]   = points[0].x; array[idx+1] = points[0].y; array[idx+2] = points[0].z;
-              array[idx+3] = points[1].x; array[idx+4] = points[1].y; array[idx+5] = points[1].z;
-              segmentCount++;
+            // If multiple planes are active, ensure the segment is on the visible side of all other planes
+            if (planes.length > 1) {
+              for (let i = 0; i < planes.length; i++) {
+                const other = planes[i];
+                if (other === plane) continue;
+                if (other.distanceToPoint(points[0]) < -1e-4 && other.distanceToPoint(points[1]) < -1e-4) {
+                  return;
+                }
+              }
             }
+
+            const idx = segmentCount * 6;
+            if (idx + 5 >= array.length) {
+              const newArray = new Float32Array(array.length * 2);
+              newArray.set(array);
+              const newAttr = new THREE.BufferAttribute(newArray, 3);
+              lineGeo.setAttribute('position', newAttr);
+              setPosAttr(newAttr);
+              array = newArray;
+            }
+
+            array[idx]   = points[0].x; array[idx+1] = points[0].y; array[idx+2] = points[0].z;
+            array[idx+3] = points[1].x; array[idx+4] = points[1].y; array[idx+5] = points[1].z;
+            segmentCount++;
           }
         }
       });
@@ -536,7 +575,7 @@ export const ClippingEdges = React.memo(({ geo, planes, active, color = "#ff4444
 
     lineGeo.setDrawRange(0, segmentCount * 2);
     posAttr.needsUpdate = true;
-  }, [geo, planes, active]);
+  }, [geo, planes, active, posAttr, lineGeo]);
 
   return (
     <lineSegments ref={lineRef} geometry={lineGeo} renderOrder={1000} frustumCulled={false}>

@@ -216,6 +216,12 @@ For massive LiDAR scans (`.ply` format), LochViewer automatically activates **En
   - **Deferred DOM Labels during Camera Navigation**: HTML elevation markers are temporarily hidden during continuous camera orbit/pan/zoom (`isMoving`), eliminating hundreds of DOM projections, layout reflows, and frame drops. Labels reappear seamlessly after motion settles (180 ms threshold).
   - **Shared Lightweight `MeshBasicMaterial`**: Contour lines replace the heavy double-sided `MeshStandardMaterial` (which executed full PBR lighting calculations on 500,000 triangles) with a single, shared `MeshBasicMaterial` featuring hardware front-face culling (`FrontSide`) across all terrain tiles.
   - **Balanced Label Budget**: Capped at a maximum of 36 globally distributed labels, preventing DOM overhead and memory pressure on complex terrains.
+* **Ultra-Fast Splay SDF 3D Wall Generation (~75x Speedup, v2.5.12)**:
+  - **Narrow-Band Bounding-Box Splatting**: Splay SDF wall reconstruction evaluates the volumetric distance field exclusively within the active narrow band around cave passages rather than brute-forcing empty rock across the entire 3D bounding box.
+  - **1D Half-Space Scanline Clipping & Trilinear Normals**: Combined with precomputed outward half-space planes, $O(1)$ interior tetrahedron SDF, zero-allocation scalar math, and $O(1)$ trilinear Surface Nets normals, 3D cave wall generation completes in ~0.4 s instead of >31 s.
+* **Red Cut Edge Visualization for Splay SDF Walls (v2.5.13)**:
+  - Horizontal Z-clipping and vertical profile cuts now display an exact, high-visibility red cross-section outline (`colorClippingEdges`) along Splay SDF 3D walls, identical to traditional scrap walls.
+  - Driven by the precomputed BVH spatial index (`three-mesh-bvh`), intersection curves are evaluated in real time with zero frame drops during slider interaction.
 
 ---
 

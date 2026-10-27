@@ -538,7 +538,7 @@ const CaveViewerNextGen = ({
             cave={cave} 
             options={o} 
             showAltitude={o.scrapsAltitude}
-            clippingPlanes={compositeClippingPlanes}
+            clippingPlanes={caveClippingPlanes}
             isMoving={!isFullyIdle}
             onStatusChange={onStatusChange}
           />
