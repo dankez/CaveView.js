@@ -300,8 +300,8 @@ export function SurfaceSection({ bindings }: { bindings: Pick<NavigationBindings
                                     <button onClick={() => setOpts(p => ({ ...p, surfaceTextureCalibration: null }))} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#f87171', padding: 0, cursor: 'pointer' }}>✕</button>
                                   </div>
                                 )}
-                                <input type="file" ref={calibFileInputRef} onChange={handleCalibFile} accept=".txt" style={{ display: 'none' }} />
-                                <input type="file" ref={textureFileInputRef} onChange={handleTextureFile} accept="image/*" style={{ display: 'none' }} />
+                                <input type="file" ref={calibFileInputRef} onChange={handleCalibFile} accept=".txt" style={{ display: 'none' }} aria-label={lang === 'sk' ? 'Kalibračný súbor' : 'Calibration file'} />
+                                <input type="file" ref={textureFileInputRef} onChange={handleTextureFile} accept="image/*" style={{ display: 'none' }} aria-label={lang === 'sk' ? 'Textúra povrchu' : 'Surface texture image'} />
                               </div>
                             </div>
                           )}

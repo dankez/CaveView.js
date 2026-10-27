@@ -332,6 +332,17 @@ To render real-time red clipping edges along sliced cave walls (`colorClippingEd
 2. **Instant 0 ms Shader State Toggling**:
    The `splayAltitude` option toggles `vertexColors: boolean` and `color: Color`. Because vertex colors are pre-allocated directly in GPU memory, switching between elevation coloring and custom solid colors occurs in a single frame without background worker re-execution.
 
+### 3.7 Web Quality, WCAG 2.2 Accessibility & SEO Optimization (v2.5.15)
+1. **WCAG 2.2 AA Contrast & Accessibility Tree Conformance**:
+   - Explicit `aria-label` attributes added to all file input nodes (`<input type="file">`) across `App.tsx`, `ProjectSection.tsx`, and `SurfaceSection.tsx` with dynamic localization via `t()`.
+   - Text color contrast ratios increased to $C = \frac{L_1 + 0.05}{L_2 + 0.05} \ge 4.5:1$ on `.changelog-badge` (6.8:1), `.changelog-group` (7.5:1), and `/privacy.html` footer link (>6.5:1).
+2. **Font Transfer Budget & Critical Path Optimization**:
+   - Replaced unbounded open variable axes query for Material Symbols (`opsz,wght,FILL,GRAD@...`) with a fixed glyph specification and `&display=swap` (`@24,400,0,0&display=swap`), slashing font weight from **3,912 KiB down to 323 KiB (92% reduction)**.
+   - Removed client-side `http-equiv="Cache-Control"` meta tags from HTML head, allowing standard HTTP caching on CDN and web server layers.
+3. **Crawlability & AI Assistant Interoperability**:
+   - Added static `robots.txt` and `sitemap.xml` in `public/`, eliminating SPA routing fallback and providing 100% SEO indexability.
+   - Published standardized `public/llms.txt` for AI agentic discoverability.
+
 ---
 
 ## 4. Structural Geology & Tectonics Formulation (Dip & Strike)

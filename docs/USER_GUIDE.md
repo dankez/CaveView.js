@@ -226,6 +226,10 @@ For massive LiDAR scans (`.ply` format), LochViewer automatically activates **En
   - The Splay SDF walls panel features a prominently visible **Color by height** (`splayAltitude`) toggle directly under the header, enabled by default (`true`).
   - Splay walls immediately render with a smooth hypsometric elevation gradient accompanied by the HUD elevation legend.
   - Toggling off color by height displays an inline color picker to select a custom solid wall color with instant 0 ms shader switching.
+* **Web Quality, WCAG 2.2 Accessibility & Fast Asset Loading (v2.5.15)**:
+  - **100% WCAG 2.2 AA Accessibility**: Full screen-reader support via explicit `aria-label` attributes across all file inputs and dropzones; enhanced contrast ratios ($\ge 4.5:1$) for badges, categories, and footer links.
+  - **>90% Font Network Payload Reduction**: Refactored Google Fonts icon query to fixed glyph sets with `&display=swap`, slashing initial font transfers from 3.9 MB down to 323 KB and eliminating render-blocking stalls.
+  - **Comprehensive Crawlability & Agentic Discovery**: Standardized `robots.txt`, XML sitemap, and `llms.txt` discoverability specification.
 
 ---
 

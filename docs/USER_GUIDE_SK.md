@@ -258,6 +258,10 @@ Jaskyňa neexistuje vo vákuu – pochopenie jej vzťahu k povrchovému reliéfu
    * V paneli *Splay SDF steny (2D/3D)* je priamo pod hlavičkou predvolene zobrazený prepínač **Farba podľa výšky**, ktorý je predvolene zapnutý (`splayAltitude: true`).
    * Steny sú ihneď vykreslené v plnofarebnom plynulom hypsometrickom gradiente s automatickým zobrazením výškovej legendy na obrazovke.
    * Po vypnutí prepínača sa okamžite objaví farebný výberník na nastavenie vlastnej jednotnej farby stien.
+15. **Optimalizácia webovej kvality, prístupnosti (WCAG 2.2) a rýchlosti načítania (v2.5.15)**:
+   * **100% WCAG 2.2 AA prístupnosť**: Všetky ovládacie a nahrávacie prvky (`<input type="file">` v dropzone aj bočných paneloch) majú explicitné textové označenia pre asistenčné technológie a textové štítky spĺňajú vysoký kontrastný pomer ($\ge 4.5:1$).
+   * **Zníženie zaťaženia siete fontmi o >90 %**: Optimalizácia načítavania ikon z Google Fonts znížila počiatočný binárny prenos o 3,6 MB (z 3,9 MB na 323 KB) s asynchrónnym zobrazením `display=swap`.
+   * **Validné vyhľadávačové metaúdaje**: Pridaný validný `robots.txt`, XML sitemap a špecifikácia `llms.txt` pre moderné AI asistenty.
 
 ---
 

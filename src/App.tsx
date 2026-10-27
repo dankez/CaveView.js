@@ -3434,11 +3434,11 @@ export default function App() {
         .changelog-title { font-size: 12px; font-weight: 800; color: #f8fafc; text-transform: uppercase; letter-spacing: .2em; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; }
         .changelog-ver { font-size: 13px; font-weight: 700; color: #6366f1; margin-top: 2rem; margin-bottom: 0.8rem; border-bottom: 1px solid rgba(99,102,241,0.1); padding-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
         .changelog-ver:first-of-type { margin-top: 0; }
-        .changelog-badge { font-size: 8px; background: #3b82f6; color: white; padding: 2px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing:.08em; }
+        .changelog-badge { font-size: 8px; background: #1d4ed8; color: white; padding: 2px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing:.08em; }
         .changelog-list { list-style: none; padding: 0; margin: 0; }
         .changelog-item { font-size: 11.5px; color: #94a3b8; margin-bottom: 0.7rem; line-height: 1.6; display: flex; gap: 10px; }
         .changelog-item:before { content: "→"; color: #6366f1; flex-shrink: 0; font-weight: bold; }
-        .changelog-group { font-size: 9px; font-weight: 800; color: #475569; text-transform: uppercase; margin: 1rem 0 0.5rem 0; letter-spacing: 0.1em; background: rgba(255,255,255,0.03); padding: 2px 6px; border-radius: 3px; display: inline-block; }
+        .changelog-group { font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin: 1rem 0 0.5rem 0; letter-spacing: 0.1em; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 3px; display: inline-block; }
         .logo-icon{font-size:4rem;filter:drop-shadow(0 0 28px rgba(99,179,237,.55));animation:float 4s ease-in-out infinite}
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
         .logo-title{font-size:2.8rem;font-weight:800;letter-spacing:-.02em;background:linear-gradient(135deg,#63b3ed 0%,#9f7aea 50%,#63b3ed 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 4s linear infinite}
@@ -3851,7 +3851,7 @@ export default function App() {
                 >
                   📁 {t('welcome.selectFile')}
                 </button>
-                <input ref={fileInputRef} type="file" accept=".lox,.3d,.plt,.ply,.stl" onChange={e => {
+                <input ref={fileInputRef} type="file" aria-label={t('welcome.selectFile')} accept=".lox,.3d,.plt,.ply,.stl" onChange={e => {
                   const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''
                 }} />
               </div>
@@ -4448,8 +4448,8 @@ export default function App() {
         )
       })()}
       {!isEmbedMode && (
-        <div style={{ position: 'fixed', bottom: '10px', right: '12px', fontSize: '10px', opacity: 0.4, zIndex: 1000, pointerEvents: 'auto' }}>
-          <a href="/privacy.html" style={{ color: 'white', textDecoration: 'none' }}>Privacy Policy</a>
+        <div style={{ position: 'fixed', bottom: '10px', right: '12px', fontSize: '10px', opacity: 0.75, zIndex: 1000, pointerEvents: 'auto' }}>
+          <a href="/privacy.html" style={{ color: '#e2e8f0', textDecoration: 'none' }}>Privacy Policy</a>
         </div>
       )}
     </>

@@ -48,7 +48,7 @@ export function ProjectSection({ bindings }: { bindings: Pick<NavigationBindings
                           </div>
                         )}
                       </div>
-      <label className="btn-back">{t('navigation.openFile')}<input type="file" accept=".lox,.3d,.plt,.ply,.stl" onChange={e => { const file = e.target.files?.[0]; if (file) void handleFile(file); e.target.value = '' }} /></label>
+      <label className="btn-back">{t('navigation.openFile')}<input type="file" aria-label={t('navigation.openFile')} accept=".lox,.3d,.plt,.ply,.stl" onChange={e => { const file = e.target.files?.[0]; if (file) void handleFile(file); e.target.value = '' }} /></label>
       <button type="button" className="btn-back" onClick={handleReset}>{t('navigation.closeModel')}</button>
       <SidebarAccordion heading={<h3>{t('welcome.demoTitle')}</h3>} detailsLabel={t('navigation.details')}>
         <button type="button" className="btn-back" onClick={() => loadFromUrl('/test_simple.lox', 'model-simple.lox')}>LOX · Simple</button>

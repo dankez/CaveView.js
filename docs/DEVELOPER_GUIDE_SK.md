@@ -337,6 +337,16 @@ Pre vizualizáciu rezu stien jaskyne na červeno (`colorClippingEdges = "#ff4444
 2. **Okamžité prepínanie shaderu (0 ms)**:
    Prepínač `splayAltitude` riadi vlastnosti materiálu `vertexColors: boolean` a `color: Color`. Keďže farby sú už predpočítané v GPU pamäti, prepnutie nevyžaduje opätovný beh workera a prebehne v jedinom vykresľovacom cykle.
 
+### 3.7 Webová kvalita, WCAG 2.2 a SEO optimalizácia (v2.5.15)
+1. **WCAG 2.2 AA kontrast a strom prístupnosti**:
+   - Všetky uzly pre výber súborov `<input type="file">` v `App.tsx`, `ProjectSection.tsx` a `SurfaceSection.tsx` obsahujú explicitný atribút `aria-label` mapovaný cez lokalizačnú funkciu `t()`, čím sa odstraňujú neoznačené prvky v strome prístupnosti.
+   - Textové prvky spĺňajú podmienku kontrastu $C = \frac{L_1 + 0{,}05}{L_2 + 0{,}05} \ge 4{,}5:1$ (úprava odznakov `.changelog-badge`, kategórií `.changelog-group` a pätičkového odkazu `/privacy.html`).
+2. **Optimalizácia prenosu fontov a CSS render-blocking**:
+   - Nahradenie neohraničených variabilných osí Google Fontu Material Symbols (`opsz,wght,FILL,GRAD@...`) fixným formátom s `&display=swap` (`@24,400,0,0&display=swap`) znížilo binárny súbor z **3 912 KiB na 323 KiB (92% úspora)**.
+   - Odstránenie meta značiek zakazujúcich vyrovnávaciu pamäť (`http-equiv="Cache-Control"`) z `index.html` v prospech správneho riadenia HTTP hlavičiek na serveri.
+3. **Plné pokrytie vyhľadávacích a AI crawlerov**:
+   - Statické súbory `robots.txt`, `sitemap.xml` a `llms.txt` v priečinku `public/` eliminujú nežiaduci SPA fallback a zabezpečujú 100% SEO indexovateľnosť a interoperabilitu s AI agentmi.
+
 ---
 
 ## 4. Výpočet štruktúrnej geológie a tektoniky (Dip & Strike)

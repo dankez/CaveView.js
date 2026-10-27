@@ -200,7 +200,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                 ].map(f => (
                   <div key={f.ext} style={{ background: 'rgba(30, 41, 59, 0.6)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                      <span style={{ background: '#3b82f6', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px' }}>{f.ext}</span>
+                      <span style={{ background: '#1d4ed8', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px' }}>{f.ext}</span>
                       <strong style={{ fontSize: '12px', color: '#f8fafc' }}>{f.name}</strong>
                     </div>
                     <div style={{ fontSize: '11px', color: '#94a3b8' }}>{isSk ? f.descSk : f.descEn}</div>
