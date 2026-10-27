@@ -537,7 +537,7 @@ const CaveViewerNextGen = ({
           <SplayCaveWalls 
             cave={cave} 
             options={o} 
-            showAltitude={o.scrapsAltitude}
+            showAltitude={o.splayAltitude ?? true}
             clippingPlanes={caveClippingPlanes}
             isMoving={!isFullyIdle}
             onStatusChange={onStatusChange}

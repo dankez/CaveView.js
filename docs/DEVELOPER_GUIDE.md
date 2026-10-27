@@ -324,6 +324,14 @@ To render real-time red clipping edges along sliced cave walls (`colorClippingEd
 3. **Multi-Plane Visibility Culling**:
    When horizontal and vertical profile clipping are both active, line segment endpoints are checked against all secondary clipping planes ($\pi_j \cdot P_k + d_j \ge -10^{-4}$); discarded segments are pruned before rendering.
 
+### 3.6 Hypsometric Splay SDF Wall Coloring (`splayAltitude`, v2.5.14)
+1. **GPU Vertex Buffer Elevation Attribution**:
+   During surface generation in `createSplayBufferGeometry`, each vertex $i$ with vertical coordinate $y_i$ (Three.js $Y$ represents survey altitude $Z$) is normalized to $t \in [0, 1]$ and assigned an RGB color:
+   $$t = \text{clamp}\left(\frac{y_i - Z_{\min}}{Z_{\max} - Z_{\min}},\ 0,\ 1\right),\quad C_i = \text{elevColor}(t)$$
+   stored permanently in `THREE.BufferAttribute(colors, 3)` under the `color` attribute.
+2. **Instant 0 ms Shader State Toggling**:
+   The `splayAltitude` option toggles `vertexColors: boolean` and `color: Color`. Because vertex colors are pre-allocated directly in GPU memory, switching between elevation coloring and custom solid colors occurs in a single frame without background worker re-execution.
+
 ---
 
 ## 4. Structural Geology & Tectonics Formulation (Dip & Strike)

@@ -2025,7 +2025,7 @@ const CaveViewer3D = ({
           <SplayCaveWalls 
             cave={cave} 
             options={o} 
-            showAltitude={o.scrapsAltitude}
+            showAltitude={o.splayAltitude ?? true}
             clippingPlanes={caveClippingPlanes}
             isMoving={!isFullyIdle}
             onStatusChange={onStatusChange}

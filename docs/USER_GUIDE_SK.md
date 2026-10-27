@@ -254,6 +254,10 @@ Jaskyňa neexistuje vo vákuu – pochopenie jej vzťahu k povrchovému reliéfu
 13. **Zvýraznenie hrany rezu na červeno pre Splay SDF model (v2.5.13)**:
    * Pri horizontálnom reze (Z-Clipping) alebo vertikálnom reze profilom sa na Splay SDF modeli stien zobrazuje zreteľná červená čiara rezu (`colorClippingEdges`), identicky ako pri ručne kreslených stenách (scraps).
    * Vďaka prepočítanému BVH priestorovému stromu (`three-mesh-bvh`) sa prieniková krivka rezu počíta a vykresľuje v reálnom čase bez zníženia snímkovej frekvencie.
+14. **Farba podľa výšky pre Splay SDF model stien (v2.5.14)**:
+   * V paneli *Splay SDF steny (2D/3D)* je priamo pod hlavičkou predvolene zobrazený prepínač **Farba podľa výšky**, ktorý je predvolene zapnutý (`splayAltitude: true`).
+   * Steny sú ihneď vykreslené v plnofarebnom plynulom hypsometrickom gradiente s automatickým zobrazením výškovej legendy na obrazovke.
+   * Po vypnutí prepínača sa okamžite objaví farebný výberník na nastavenie vlastnej jednotnej farby stien.
 
 ---
 

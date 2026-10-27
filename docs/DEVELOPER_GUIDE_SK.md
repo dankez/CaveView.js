@@ -329,6 +329,14 @@ Pre vizualizáciu rezu stien jaskyne na červeno (`colorClippingEdges = "#ff4444
 3. **Viacrovinové filtrovanie (Multi-Plane Culling)**:
    Pri súčasnej aktivácii horizontálneho a profilového rezu sa overuje viditeľnosť oboch koncov úsečky voči všetkým ostatným aktívnym rovinám ($\pi_j \cdot P_k + d_j \ge -10^{-4}$); odrezané segmenty sú eliminované.
 
+### 3.6 Hypsometrické farbenie Splay SDF stien (`splayAltitude`, v2.5.14)
+1. **Normalizácia výšky a výpočet farby vo vertex bufferi**:
+   Pri extrakcii geometrie v `createSplayBufferGeometry` sa pre každý vrchol $i$ s vertikálnou súradnicou $y_i$ (os $Y$ v Three.js zodpovedá nadmorskej výške $Z$ v jaskynnom rámci) vypočíta normalizovaná hodnota $t \in [0, 1]$ a RGB farba:
+   $$t = \text{clamp}\left(\frac{y_i - Z_{\min}}{Z_{\max} - Z_{\min}},\ 0,\ 1\right),\quad C_i = \text{elevColor}(t)$$
+   Tieto farby sú trvalo uložené v `THREE.BufferAttribute(colors, 3)` pod názvom `color`.
+2. **Okamžité prepínanie shaderu (0 ms)**:
+   Prepínač `splayAltitude` riadi vlastnosti materiálu `vertexColors: boolean` a `color: Color`. Keďže farby sú už predpočítané v GPU pamäti, prepnutie nevyžaduje opätovný beh workera a prebehne v jedinom vykresľovacom cykle.
+
 ---
 
 ## 4. Výpočet štruktúrnej geológie a tektoniky (Dip & Strike)

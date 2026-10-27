@@ -118,7 +118,25 @@ export function LayersSection({ bindings }: { bindings: NavigationBindings }) {
                           }} role="switch"
                           aria-checked={opts.enableSplayWalls} aria-label={lang === 'sk' ? 'Splay SDF steny' : 'Splay SDF walls'} />
                       </div>
-                    </div>} detailsLabel={t('navigation.details')} enabled={opts.enableSplayWalls}>
+                    </div>} detailsLabel={t('navigation.details')} enabled={opts.enableSplayWalls}
+                    primary={
+                      <div className="toggle-row">
+                        <label className="toggle-label">{t('cave.altitude')}</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {!(opts.splayAltitude ?? true) && (
+                            <ColorPicker t={t} value={opts.colorScraps} onChange={c => setOpts(p => ({ ...p, colorScraps: c }))} />
+                          )}
+                          <button
+                            type="button"
+                            className={`switch${(opts.splayAltitude ?? true) ? ' on' : ''}`}
+                            onClick={() => toggleOpt('splayAltitude')}
+                            role="switch"
+                            aria-checked={opts.splayAltitude ?? true}
+                            aria-label={t('cave.altitude')}
+                          />
+                        </div>
+                      </div>
+                    }>
 
                     {/* Prominently visible Hranatosť / Ostré steny */}
                     <div className="cad-subcard">

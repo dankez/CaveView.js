@@ -188,6 +188,7 @@ export interface ViewerOptions {
   splayVoxelSize?: number
   splaySmoothK?: number
   splayCapsuleRadius?: number
+  splayAltitude?: boolean
   enableEDL?: boolean
   // Survey
   showSplay:           boolean

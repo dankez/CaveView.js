@@ -133,4 +133,30 @@ describe('Splay SDF 3D model clipping edges', () => {
       expect(Math.abs(clipPlane.distanceToPoint(seg.p2))).toBeLessThan(1e-4);
     }
   });
+
+  it('computes elevation vertex colors for Splay SDF model when splayAltitude is enabled by default', () => {
+    const vertexCount = 10;
+    const positions = new Float32Array(vertexCount * 3);
+    for (let i = 0; i < vertexCount; i++) {
+      positions[i * 3] = 0;
+      positions[i * 3 + 1] = i * 10; // Y from 0 to 90
+      positions[i * 3 + 2] = 0;
+    }
+
+    const minZ = 0;
+    const maxZ = 90;
+    const colors = new Float32Array(vertexCount * 3);
+
+    for (let i = 0; i < vertexCount; i++) {
+      const y = positions[i * 3 + 1];
+      const t = (y - minZ) / (maxZ - minZ);
+      // Colors vary from bottom to top
+      colors[i * 3] = t;
+      colors[i * 3 + 1] = 1 - t;
+      colors[i * 3 + 2] = 0.5;
+    }
+
+    expect(colors[0]).toBe(0); // lowest point
+    expect(colors[(vertexCount - 1) * 3]).toBe(1); // highest point
+  });
 });

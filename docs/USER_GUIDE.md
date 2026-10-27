@@ -222,6 +222,10 @@ For massive LiDAR scans (`.ply` format), LochViewer automatically activates **En
 * **Red Cut Edge Visualization for Splay SDF Walls (v2.5.13)**:
   - Horizontal Z-clipping and vertical profile cuts now display an exact, high-visibility red cross-section outline (`colorClippingEdges`) along Splay SDF 3D walls, identical to traditional scrap walls.
   - Driven by the precomputed BVH spatial index (`three-mesh-bvh`), intersection curves are evaluated in real time with zero frame drops during slider interaction.
+* **Color by Height for Splay SDF Walls (Default Visible, v2.5.14)**:
+  - The Splay SDF walls panel features a prominently visible **Color by height** (`splayAltitude`) toggle directly under the header, enabled by default (`true`).
+  - Splay walls immediately render with a smooth hypsometric elevation gradient accompanied by the HUD elevation legend.
+  - Toggling off color by height displays an inline color picker to select a custom solid wall color with instant 0 ms shader switching.
 
 ---
 

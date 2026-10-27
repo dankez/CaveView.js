@@ -1150,6 +1150,7 @@ export default function App() {
     splayVoxelSize:      0.22,
     splaySmoothK:        0.06,
     splayCapsuleRadius:  0.10,
+    splayAltitude:       true,
     enableEDL:           false,
     cameraProjection:    'perspective',
     altitudeMode:        'absolute',
@@ -2938,6 +2939,7 @@ export default function App() {
       splaySmoothK:        p.has('smin') ? parseFloat(p.get('smin')!) : prev.splaySmoothK,
       splayCapsuleRadius:  p.has('srad') ? parseFloat(p.get('srad')!) : prev.splayCapsuleRadius,
       splayVoxelSize:      p.has('svox') ? parseFloat(p.get('svox')!) : prev.splayVoxelSize,
+      splayAltitude:       p.has('salt') ? p.get('salt') === '1' : (prev.splayAltitude ?? true),
       // Theme
       ...(p.get('theme') ? (() => { const th = p.get('theme') as keyof typeof THEMES; return THEMES[th] ?? {} })() : {}),
       // Terrain surface
@@ -3019,6 +3021,7 @@ export default function App() {
     // Splay SDF Walls (2D) & Parameters
     if (o.enableSplayWalls) {
       p.set('sdf', '1')
+      if (o.splayAltitude === false) p.set('salt', '0')
       if (o.splaySmoothK !== undefined && o.splaySmoothK !== 0.06) p.set('smin', String(o.splaySmoothK))
       if (o.splayCapsuleRadius !== undefined && o.splayCapsuleRadius !== 0.10) p.set('srad', String(o.splayCapsuleRadius))
       if (o.splayVoxelSize !== undefined && o.splayVoxelSize !== 0.22) p.set('svox', String(o.splayVoxelSize))
@@ -3234,7 +3237,7 @@ export default function App() {
 
   // Compute stats for Legend
   const legendCave = useMemo(() => {
-    if (!cave || (!opts.scrapsAltitude && !opts.traverseAltitude)) return null
+    if (!cave || (!opts.scrapsAltitude && !opts.traverseAltitude && !(opts.splayAltitude && opts.enableSplayWalls))) return null
     let minZ = Infinity, maxZ = -Infinity
     if (cave.scraps?.length) {
       for (const sc of cave.scraps) {

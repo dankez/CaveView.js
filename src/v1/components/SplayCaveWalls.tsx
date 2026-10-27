@@ -96,7 +96,7 @@ export const SplayCaveWalls: React.FC<SplayCaveWallsProps> = ({
   const isovalue = isovalueProp ?? options?.splayIsovalue ?? 0.0;
   const capsuleRadius = capsuleRadiusProp ?? options?.splayCapsuleRadius ?? 0.10; // Tight corridor radius
 
-  const showAltitude = showAltitudeProp ?? options?.scrapsAltitude ?? false;
+  const showAltitude = showAltitudeProp ?? options?.splayAltitude ?? options?.scrapsAltitude ?? true;
   const wallColor = color ?? options?.colorScraps ?? '#cbd5e1';
   const wallOpacity = opacity ?? options?.scrapsOpacity ?? 0.85;
   const wallTransparent = transparent ?? (wallOpacity < 1.0);
@@ -375,6 +375,7 @@ export const SplayCaveWalls: React.FC<SplayCaveWallsProps> = ({
         receiveShadow
       >
         <meshStandardMaterial
+          key={showAltitude ? 'alt' : 'mono'}
           color={showAltitude ? '#ffffff' : wallColor}
           vertexColors={showAltitude}
           roughness={roughness}
